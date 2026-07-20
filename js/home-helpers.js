@@ -215,6 +215,59 @@
     return labels.join('');
   }
 
+  // 레일 항목의 태그 칩 줄 수 상한. 태그 개수가 글마다 달라 그대로 두면 라벨
+  // 영역이 1~3행으로 들쭉날쭉해지고, 그 편차가 카드 높이 → 4컬럼 하단 어긋남으로
+  // 이어진다(실측: 열별 카드 높이 635~791px). 칩 폭이 카테고리명 길이에 따라
+  // 크게 달라 개수 기준으로는 행 수를 보장할 수 없으므로 렌더 후 실제 위치를
+  // 재서 넘치는 칩만 숨기고 "+N" 으로 대체한다.
+  var MINI_LABEL_MAX_ROWS = 2;
+
+  function clampMiniLabelRows(scope) {
+    var root = scope && scope.querySelectorAll ? scope : document;
+    root.querySelectorAll('.mini-item-labels').forEach(function (box) {
+      // 리사이즈 재계산을 위해 이전 결과를 먼저 되돌린다.
+      var prev = box.querySelector('.mini-label-more');
+      if (prev) prev.remove();
+      var chips = Array.prototype.slice.call(box.children);
+      if (!chips.length) return;
+      chips.forEach(function (chip) { chip.hidden = false; });
+
+      var tops = [];
+      chips.forEach(function (chip) {
+        if (tops.indexOf(chip.offsetTop) === -1) tops.push(chip.offsetTop);
+      });
+      if (tops.length <= MINI_LABEL_MAX_ROWS) return;
+
+      var lastAllowedTop = tops[MINI_LABEL_MAX_ROWS - 1];
+      var hiddenCount = 0;
+      chips.forEach(function (chip) {
+        if (chip.offsetTop > lastAllowedTop) {
+          chip.hidden = true;
+          hiddenCount += 1;
+        }
+      });
+      if (!hiddenCount) return;
+
+      var badge = document.createElement('span');
+      badge.className = 'post-kicker mini-label-more';
+      badge.textContent = '+' + hiddenCount;
+      badge.setAttribute('aria-label', '태그 ' + hiddenCount + '개 더 있음');
+      box.appendChild(badge);
+
+      // 배지 자체가 허용 행을 넘겨 밀려나면 보이는 칩을 뒤에서부터 하나씩 더
+      // 접는다. guard 는 레이아웃이 수렴하지 않는 경우의 무한루프 방지.
+      var guard = 0;
+      while (badge.offsetTop > lastAllowedTop && guard < 12) {
+        var visible = chips.filter(function (chip) { return !chip.hidden; });
+        if (visible.length <= 1) break;
+        visible[visible.length - 1].hidden = true;
+        hiddenCount += 1;
+        badge.textContent = '+' + hiddenCount;
+        guard += 1;
+      }
+    });
+  }
+
   function buildMiniShareButton(post) {
     return '<button class="mini-share-link" type="button" data-share-url="/post/' + post.id + '" data-share-title="' + GW.escapeHtml(post.title) + '">공유하기</button>';
   }
@@ -336,6 +389,7 @@
     getSortedPostTags: getSortedPostTags,
     isTransparentPng: isTransparentPng,
     buildMiniLabels: buildMiniLabels,
+    clampMiniLabelRows: clampMiniLabelRows,
     buildMiniShareButton: buildMiniShareButton,
     normalizeResponsiveMedia: normalizeResponsiveMedia,
     getResponsiveMediaStyle: getResponsiveMediaStyle,

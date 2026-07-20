@@ -2371,12 +2371,35 @@ body[data-home-bootstrap] .lang-btn:hover {
 
 .mini-item .category-tag { margin-bottom: 0; }
 
+/* 태그 칩 영역은 높이를 2행으로 고정한다.
+   글마다 태그 개수가 달라 자유롭게 늘어나면 1~3행으로 갈리고, 그 편차가 그대로
+   카드 높이 → 4컬럼 레일 하단 어긋남이 된다(수정 전 실측: 열별 635~791px).
+   넘치는 칩은 js/home-helpers.js clampMiniLabelRows 가 숨기고 "+N" 으로 바꾼다.
+   여기 overflow:hidden 은 JS 실행 전(SSR 첫 페인트) 한 프레임 동안 3행이
+   비쳐 보이는 것을 막는 안전망이다 — offsetTop 측정에는 영향이 없다. */
 .mini-item-labels {
+  --mini-label-row-h: 20px;
+  --mini-label-gap: 6px;
   display: flex;
   align-items: flex-start;
-  gap: 6px;
+  gap: var(--mini-label-gap);
   flex-wrap: wrap;
   margin-bottom: 6px;
+  min-height: calc(var(--mini-label-row-h) * 2 + var(--mini-label-gap));
+  max-height: calc(var(--mini-label-row-h) * 2 + var(--mini-label-gap));
+  overflow: hidden;
+}
+
+/* flex 컨테이너 안에서는 UA 기본 [hidden]{display:none} 이 display:flex 등에
+   덮일 수 있어 명시한다. */
+.mini-item-labels > [hidden] { display: none !important; }
+
+.mini-item-labels .mini-label-more {
+  background: var(--gray-100);
+  border-color: var(--gray-300);
+  color: var(--gray-700);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 .mini-item-labels .post-kicker {

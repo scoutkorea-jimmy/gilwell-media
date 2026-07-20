@@ -159,6 +159,10 @@
         }
       );
     });
+
+    // 모든 레일을 그린 뒤 한 번에 클램프한다. 항목별로 하면 레이아웃을 여러 번
+    // 강제로 계산하게 된다.
+    helpers.clampMiniLabelRows();
   }
 
   GW.HomeRender = {

@@ -1,6 +1,28 @@
 {
   "items": [
   {
+    "version": "00.176.02",
+    "date": "2026-07-21",
+    "released_at": "2026-07-21 02:10:00 KST",
+    "summary": "홈 4컬럼 소식 레일의 아래쪽 높이가 열마다 어긋나던 문제를 고쳤다. 원인은 글마다 다른 태그 개수였고, 태그 줄이 넘치면 '+N'으로 접도록 했다.",
+    "for_users": [
+      "한국·아시아태평양·세계·인물 4개 열의 카드 아래쪽이 서로 다른 높이에서 끝나 계단처럼 어긋나 보이던 문제를 고쳤습니다. 이제 네 열의 높이가 같습니다.",
+      "태그가 많은 글에서 태그 줄이 3줄까지 늘어나 카드가 길어지던 것을 2줄로 제한했습니다. 넘치는 태그는 '+1' 같은 표시로 접힙니다.",
+      "태그가 영역 밖으로 삐져나오거나 잘려 보이는 일이 없습니다."
+    ],
+    "for_developers": [
+      "근본 원인: .mini-item-labels 가 flex-wrap: wrap 에 개수 제한이 없어 태그 수에 따라 1~3행으로 갈렸다. 실측 결과 행 높이 20/46/72px 가 그대로 카드 높이로 전이돼 열별 카드 높이가 635·713·713·791px 로 벌어졌다.",
+      "칩 폭이 카테고리명 길이에 크게 좌우되어(예: '아시아-태평양 스카우트 소식') 개수 상한만으로는 행 수를 보장할 수 없다. 그래서 렌더 후 offsetTop 으로 실제 행을 판별하는 방식을 택했다.",
+      "js/home-helpers.js: clampMiniLabelRows(scope) 추가 — 칩들의 offsetTop 집합으로 행을 구해 MINI_LABEL_MAX_ROWS(2) 를 넘는 칩을 hidden 처리하고 '+N' 배지를 붙인다. 배지 자체가 다음 행으로 밀리면 뒤에서부터 한 개씩 더 접는다(guard 12회로 무한루프 차단). 리사이즈 재계산을 위해 매 호출 시작에 이전 결과를 되돌린다.",
+      "js/home-render.js: applyMiniSections 마지막에 1회 호출 — 항목별 호출은 강제 레이아웃을 반복시킨다.",
+      "js/home-runtime.js: resize 에 150ms 디바운스 재계산 연결(모바일 URL 바 여닫힘으로 resize 가 연속 발생).",
+      "css/style.css: .mini-item-labels 에 min/max-height 를 2행(20px*2 + gap 6px = 46px)으로 고정하고 overflow:hidden — JS 실행 전 SSR 첫 페인트에서 3행이 비치는 것을 막는 안전망이며 offsetTop 측정에는 영향이 없다. flex 컨테이너에서 UA 기본 [hidden] 이 무시될 수 있어 .mini-item-labels > [hidden]{display:none!important} 를 명시. .mini-label-more 는 gray-100/300/700 토큰 사용.",
+      "검증: 프리뷰 배포에 Playwright 로 390/768/1024/1512px 측정 — 라벨 높이 전부 46px 단일값, 아래·옆 넘침 0, 열별 카드 높이 739px 로 동일. 수정 전 프로덕션에서는 동일 테스트가 4건 모두 실패(713/791/713/635).",
+      "tests/smoke-home-label-clamp.spec.ts 추가.",
+      "사이트 버전 00.176.01 → 00.176.02."
+    ]
+  },
+  {
     "version": "00.176.01",
     "date": "2026-07-21",
     "released_at": "2026-07-21 01:20:00 KST",
