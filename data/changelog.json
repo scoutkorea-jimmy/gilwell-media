@@ -1,6 +1,35 @@
 {
   "items": [
   {
+    "version": "00.175.00",
+    "date": "2026-07-20",
+    "released_at": "2026-07-20 16:10:00 KST",
+    "summary": "홈 데이터 요청이 느리거나 실패해도 상단 메뉴가 사라지거나 이미 보이던 기사가 오류 문구로 덮이지 않도록, 화면 표시를 데이터 요청에서 떼어냈다.",
+    "for_users": [
+      "홈에서 데이터 요청이 실패하면 상단 메뉴 전체가 빈 칸으로 남아 다른 페이지로 갈 수 없던 문제를 고쳤습니다. 이제 메뉴는 데이터와 무관하게 항상 먼저 표시됩니다.",
+      "서버가 이미 채워 보낸 기사 목록이 잠시 뒤 '불러오지 못했습니다' 문구로 덮이던 현상을 없앴습니다. 실제로 비어 있는 자리에만 안내가 표시됩니다.",
+      "네트워크 오류를 '기사 0건 · 방문자 0'처럼 사실인 양 표시하던 부분을 제거했습니다.",
+      "응답이 오지 않는 요청에 12초 상한을 둬, 로딩 표시가 무한히 도는 상태와 그 뒤로 새로고침이 전혀 먹지 않던 상태를 함께 해소했습니다.",
+      "기념품 도감을 못 불러오면 조용히 빈 칸으로 두던 것을 안내 문구 표시 + 운영자 기록으로 바꿨습니다.",
+      "뒤로가기로 홈에 돌아왔을 때 자동 갱신과 '최근 업데이트' 시각이 멈춰 있던 문제를 고쳤습니다.",
+      "메뉴가 1분마다 다시 그려지며 열어 둔 하위 메뉴가 닫히고 키보드 포커스가 풀리던 문제, 그리고 그 이후 마우스를 빼도 하위 메뉴가 닫히지 않던 문제를 고쳤습니다.",
+      "브라우저가 저장소를 차단한 환경(쿠키 전체 차단 등)에서 홈 기능이 통째로 멈추던 문제를 고쳤습니다. 언어 전환도 그 환경에서 동작합니다."
+    ],
+    "for_developers": [
+      "근본 원인: nav 노출 스위치(.is-ready)가 site-chrome.js renderManagedNav 에만 달려 있고, 홈은 bootstrapStandardPage 에서 renderManagedNav:false 로 꺼 둔 채 applyData → applyLang 경로에서만 그렸다. 즉 nav 가시성이 /api/home 성공에 종속돼 있었다.",
+      "functions/[[path]].js: loadNavLabels 를 최상위에서 한 번만 읽어 프로미스로 loadHomeSsrContent 에 전달(기존 병렬성 유지, 중복 조회 제거)하고, applyTranslationBootstrap 이 window.GW_BOOT_NAV_LABELS 를 주입한다. 이로써 site-chrome.js 가 첫 실행 시점에 서버 라벨로 nav 를 그린다.",
+      "js/home-runtime.js: bootstrapStandardPage 의 renderManagedNav:false / markActiveNav:false 제거.",
+      "js/home-runtime.js: renderLoadFailure 가 renderBlockErrorIfEmpty 를 쓰도록 변경 — 컨테이너에 .loading-state 가 남아 있을 때(=SSR 이 채우지 못한 자리)만 오류를 그린다. GW._statsData 0 리셋과 renderHomeFooterStats({}) 호출 제거.",
+      "js/main.js: GW.apiFetch 에 AbortController 기반 기본 타임아웃 도입(GW.API_FETCH_TIMEOUT_MS = 12000, chatbot.js 의 검증값과 동일). options.timeoutMs 로 조정, 0 이하면 미적용, 호출부가 signal 을 넘긴 경우 덮어쓰지 않음. finally 에서 clearTimeout.",
+      "js/site-chrome.js: 최상위 localStorage 직접 접근을 GW.readStoredLang() 가드로 교체 — 이 줄에서 throw 하면 IIFE 전체가 죽어 GW.t/applyLang/renderManagedNav/bootstrapStandardPage 가 미정의 상태가 되고 홈 init 이 통째로 중단됐다. GW.setLang 도 저장 성공 시에만 reload, 실패 시 applyLang 으로 즉시 적용.",
+      "js/site-chrome.js: renderManagedNav 에 getNavRenderSignature(lang + path + 전체 라벨) 가드 추가. 시그니처 동일 + 이미 .is-ready 면 재렌더를 건너뛴다. 60초 주기 innerHTML 교체로 드롭다운·포커스가 날아가고 setupNavDropdowns 의 그룹별 mouseleave 핸들러가 죽은 노드에 남던 문제 해소. options.force 로 강제 가능.",
+      "js/home-hero.js: 전환 종료 setTimeout 을 transitionTimer 로 보관하고 destroy() 에서 clearTimeout. 보관 전에는 재렌더 중 in-flight 콜백이 renderDots 로 살아 있는 dots 를 덮고 setAutoTimer 로 방금 정리한 인터벌을 되살려(핸들 소실) 페이지 수명 내내 잔존했다. 자동 전환 인터벌에 visibilityState 가드 추가, cat.label 을 GW.escapeHtml 처리(형제 호출부 3곳과 통일).",
+      "js/home-runtime.js: startHomeRefreshTimer() 추출 후 pageshow 에서 startHomeRefreshTimer + startFreshnessTick 재호출 — pagehide 가 걷어낸 타이머가 bfcache 복귀 시 되살아나지 않던 문제 해소.",
+      "js/home-runtime.js + js/home-helpers.js: 기념품 레일 실패 시 grid.innerHTML='' 대신 HOME_FAILURE_MESSAGES.memorabilia 문구를 .home-memorabilia-empty(grid-column: 1/-1)로 렌더하고 home_memorabilia_rail_failed 이슈를 보고.",
+      "사이트 버전 00.174.01 → 00.175.00."
+    ]
+  },
+  {
     "version": "00.174.01",
     "date": "2026-07-20",
     "released_at": "2026-07-20 14:20:00 KST",

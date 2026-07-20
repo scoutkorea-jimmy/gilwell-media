@@ -10,6 +10,11 @@
     var slides = [];
     var current = 0;
     var timer = null;
+    // 전환 마무리 콜백(560ms)의 핸들. 보관하지 않으면 destroy() 가 이걸 못 끊어서,
+    // 전환 도중 백그라운드 갱신으로 히어로가 재생성될 때 죽은 슬라이더의 콜백이
+    // 뒤늦게 실행돼 renderDots 로 살아 있는 점을 덮어쓰고 setAutoTimer 로
+    // 방금 정리한 인터벌을 되살린다(핸들이 없어 두 번 다시 못 끊는다).
+    var transitionTimer = null;
     var animating = false;
     var intervalMs = (data && data.interval_ms) || 3000;
     var touchState = null;
@@ -79,7 +84,7 @@
         '<div class="site-hero-bg-text">' + (post.subtitle ? GW.escapeHtml(post.subtitle) : '') + '</div>' +
         '<div class="site-hero-content">' +
           '<div class="site-hero-labels">' +
-            '<span class="category-tag ' + cat.tagClass + '">' + cat.label + '</span>' +
+            '<span class="category-tag ' + cat.tagClass + '">' + GW.escapeHtml(cat.label) + '</span>' +
             heroTags.map(function (tag) {
               return '<span class="post-kicker tag-' + GW.escapeHtml(post.category) + '-kicker">' + GW.escapeHtml(tag) + '</span>';
             }).join('') +
@@ -128,6 +133,10 @@
       clearInterval(timer);
       if (!paused && slides.length > 1) {
         timer = setInterval(function () {
+          // 숨겨진 탭에서는 넘기지 않는다. 보이지 않는 전환에 렌더·배터리를 쓰고,
+          // 복귀 시 엉뚱한 슬라이드에서 시작하게 된다. (홈의 다른 주기 작업도
+          // 같은 규칙 — home-runtime.js 의 갱신·상대시각 타이머 참조)
+          if (document.visibilityState !== 'visible') return;
           goTo(current + 1, 1);
         }, intervalMs);
       }
@@ -229,7 +238,9 @@
         nextSlide.style.transform = 'translateX(0)';
       });
 
-      setTimeout(function () {
+      clearTimeout(transitionTimer);
+      transitionTimer = setTimeout(function () {
+        transitionTimer = null;
         slides.forEach(function (slide, slideIndex) {
           if (slideIndex === nextIndex) {
             slide.classList.remove('before', 'transitioning');
@@ -290,6 +301,10 @@
       GW._homeHeroState = Object.assign(GW._homeHeroState || {}, {
         destroy: function () {
           clearInterval(timer);
+          timer = null;
+          clearTimeout(transitionTimer);
+          transitionTimer = null;
+          animating = false;
           if (GW._homeHeroState && GW._homeHeroState.touch && slider) {
             slider.removeEventListener('touchstart', GW._homeHeroState.touch.start);
             slider.removeEventListener('touchmove', GW._homeHeroState.touch.move);

@@ -289,6 +289,17 @@
       });
     }
 
+    // SSR(functions/[[path]].js applyHomeSsrContent)이 이미 실제 기사로 채워 둔
+    // 컨테이너는 클라이언트 fetch 가 실패해도 그대로 둔다. 아직 아무것도 못 받은
+    // 컨테이너만 스켈레톤(.loading-state)을 달고 있으므로 그것이 판별 기준이다.
+    // 이 구분이 없던 시절엔 완성된 홈이 1초 뒤 오류 문구 벽으로 덮여버렸다.
+    function renderBlockErrorIfEmpty(id, key) {
+      var el = document.getElementById(id);
+      if (!el) return;
+      if (!el.querySelector('.loading-state')) return;
+      helpers.renderHomeBlockError(el, key);
+    }
+
     function renderLoadFailure() {
       latestFatalState = true;
       latestIssueKeys = [];
@@ -296,19 +307,18 @@
       var bar = document.getElementById('home-freshness-bar');
       if (bar) bar.hidden = true;
       GW.renderTickerItems('ticker-inner');
-      GW._statsData = { korea: 0, apr: 0, wosm: 0, people: 0, today: 0 };
-      if (GW._renderStats) GW._renderStats();
-      helpers.renderHomeFooterStats({});
-      helpers.renderHomeBlockError(document.getElementById('home-lead-story'), 'lead');
-      helpers.renderHomeBlockError(document.getElementById('latest-list'), 'latest');
-      helpers.renderHomeBlockError(document.getElementById('popular-list'), 'popular');
-      helpers.renderHomeBlockError(document.getElementById('popular-list-mobile'), 'popular');
-      helpers.renderHomeBlockError(document.getElementById('picks-list'), 'picks');
-      helpers.renderHomeBlockError(document.getElementById('picks-list-mobile'), 'picks');
-      helpers.renderHomeBlockError(document.getElementById('col-korea'), 'korea');
-      helpers.renderHomeBlockError(document.getElementById('col-apr'), 'apr');
-      helpers.renderHomeBlockError(document.getElementById('col-wosm'), 'wosm');
-      helpers.renderHomeBlockError(document.getElementById('col-people'), 'people');
+      // 통계는 0 으로 덮어쓰지 않는다. 네트워크 실패를 "기사 0건 · 방문자 0"
+      // 이라는 사실처럼 표시하게 되고, SSR 이 넣어 둔 실제 수치까지 지워진다.
+      renderBlockErrorIfEmpty('home-lead-story', 'lead');
+      renderBlockErrorIfEmpty('latest-list', 'latest');
+      renderBlockErrorIfEmpty('popular-list', 'popular');
+      renderBlockErrorIfEmpty('popular-list-mobile', 'popular');
+      renderBlockErrorIfEmpty('picks-list', 'picks');
+      renderBlockErrorIfEmpty('picks-list-mobile', 'picks');
+      renderBlockErrorIfEmpty('col-korea', 'korea');
+      renderBlockErrorIfEmpty('col-apr', 'apr');
+      renderBlockErrorIfEmpty('col-wosm', 'wosm');
+      renderBlockErrorIfEmpty('col-people', 'people');
       syncHomeStatusBanner();
     }
 
@@ -339,8 +349,19 @@
       setSectionInteractiveState(document.querySelector('.home-2col'), !isMobile);
     }
 
+    function startHomeRefreshTimer() {
+      if (homeRefreshTimer !== null) return;
+      homeRefreshTimer = window.setInterval(function () {
+        if (document.visibilityState === 'visible') refreshHomeData();
+      }, 60000);
+    }
+
     function initRefreshLifecycle() {
       window.addEventListener('pageshow', function (event) {
+        // bfcache 복귀 시 pagehide 에서 걷어낸 타이머를 되살린다. 이게 없으면
+        // 뒤로가기로 돌아온 세션은 자동 갱신·상대시각 갱신이 영구히 멈춘다.
+        startHomeRefreshTimer();
+        startFreshnessTick();
         refreshHomeData({ force: !!event.persisted });
       });
       window.addEventListener('focus', function () {
@@ -349,9 +370,7 @@
       document.addEventListener('visibilitychange', function () {
         if (document.visibilityState === 'visible') refreshHomeData({ force: true });
       });
-      homeRefreshTimer = window.setInterval(function () {
-        if (document.visibilityState === 'visible') refreshHomeData();
-      }, 60000);
+      startHomeRefreshTimer();
       window.addEventListener('pagehide', function () {
         if (homeRefreshTimer !== null) {
           clearInterval(homeRefreshTimer);
@@ -489,7 +508,17 @@
         })
         .catch(function (err) {
           try { console.warn('[GW memorabilia-rail]', err); } catch (_) {}
-          grid.innerHTML = '';
+          // 이전에는 빈 문자열로 지워 방문자에게도 운영자에게도 아무 신호가
+          // 남지 않았다. 다른 홈 섹션과 같은 문구 원본 + 이슈 보고로 통일한다.
+          // 클래스는 이 그리드의 빈 상태와 같은 .home-memorabilia-empty
+          // (grid-column: 1 / -1) 를 써야 한 칸으로 찌그러지지 않는다.
+          grid.innerHTML = '<div class="home-memorabilia-empty">' +
+            GW.escapeHtml(helpers.getHomeBlockErrorMessage('memorabilia')) + '</div>';
+          helpers.reportHomepageIssue('home_memorabilia_rail_failed', {
+            section: 'homepage',
+            message: (err && err.message) || 'memorabilia rail fetch failed',
+            path: '/api/memorabilia'
+          });
         });
     }
 
@@ -498,9 +527,11 @@
       if (window.__GW_HOME_INIT__) return;
       window.__GW_HOME_INIT__ = true;
 
+      // nav 는 여기서 즉시 그린다. 라벨은 서버가 GW_BOOT_NAV_LABELS 로 주입하므로
+      // /api/home 을 기다릴 필요가 없다. 이전에는 renderManagedNav:false 로 꺼 두고
+      // applyData → applyLang 경로에서만 그려서, /api/home 이 실패·지연되면 nav 에
+      // .is-ready 가 끝내 붙지 않아 상단 메뉴가 영구히 보이지 않았다.
       GW.bootstrapStandardPage({
-        renderManagedNav: false,
-        markActiveNav: false,
         loadTicker: false,
         loadStats: false,
         loadTranslations: false

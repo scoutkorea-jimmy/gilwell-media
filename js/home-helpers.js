@@ -13,7 +13,8 @@
     korea: 'Korea 소식을 잠시 불러오지 못했습니다',
     apr: 'APR 소식을 잠시 불러오지 못했습니다',
     wosm: 'WOSM 소식을 잠시 불러오지 못했습니다',
-    people: '스카우트 인물 소식을 잠시 불러오지 못했습니다'
+    people: '스카우트 인물 소식을 잠시 불러오지 못했습니다',
+    memorabilia: '스카우트 기념품 도감을 잠시 불러오지 못했습니다'
   };
   var HOME_FAILURE_LABELS = {
     site_meta: '사이트 메타',

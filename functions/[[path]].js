@@ -32,11 +32,17 @@ export async function onRequest(context) {
 
   const html = await response.text();
   const siteMeta = await loadSiteMeta(env);
-  const [translationStrings, publicRuntime, homeSsr, pageExtraSchema] = await Promise.all([
+  // navLabels 는 한 번만 읽어 (1) 부트스트랩 주입과 (2) 홈 SSR 양쪽이 공유한다.
+  // 이전에는 loadHomeSsrContent 안에서만 읽어 클라이언트가 /api/home 응답 전까지
+  // 라벨을 알 수 없었고, 그 탓에 nav 노출이 /api/home 성공에 묶여 있었다.
+  // 프로미스를 그대로 넘겨 기존 병렬성은 유지한다.
+  const navLabelsPromise = loadNavLabels(env).catch(() => ({}));
+  const [translationStrings, publicRuntime, homeSsr, pageExtraSchema, navLabels] = await Promise.all([
     loadTranslationStrings(env),
     loadPublicRuntime(env),
-    pageKey === 'home' ? loadHomeSsrContent(env, url.origin) : Promise.resolve(null),
+    pageKey === 'home' ? loadHomeSsrContent(env, url.origin, navLabelsPromise) : Promise.resolve(null),
     loadPageExtraSchema(env, url.origin, pageKey),
+    navLabelsPromise,
   ]);
   const pageMeta = siteMeta.pages[pageKey] || siteMeta.pages.home;
   const canonicalPath = getCanonicalPath(url.pathname, pageKey);
@@ -66,7 +72,7 @@ export async function onRequest(context) {
   if (pageKey === 'home' && homeSsr) {
     baseResponse = applyHomeSsrContent(baseResponse, homeSsr);
   }
-  return applyTranslationBootstrap(baseResponse, translationStrings, publicRuntime);
+  return applyTranslationBootstrap(baseResponse, translationStrings, publicRuntime, navLabels);
 }
 
 function getCanonicalPath(pathname, pageKey) {
@@ -219,10 +225,14 @@ async function loadTranslationStrings(env) {
   }
 }
 
-function applyTranslationBootstrap(response, strings, runtime) {
+function applyTranslationBootstrap(response, strings, runtime, navLabels) {
   const safeStrings = strings && typeof strings === 'object' ? strings : {};
   const safeRuntime = runtime && typeof runtime === 'object' ? runtime : {};
-  const bootstrap = `<script>window.GW_BOOT_CUSTOM_STRINGS=${serializeForInlineScript(safeStrings)};window.GW_BOOT_RUNTIME=${serializeForInlineScript(safeRuntime)};window.GW_KAKAO_JS_KEY=${serializeForInlineScript(String(safeRuntime.kakao_js_key || ''))};</script>`;
+  // GW_BOOT_NAV_LABELS 가 있어야 site-chrome.js 가 첫 스크립트 실행 시점에 정확한
+  // 라벨로 nav 를 그릴 수 있다. 없으면 GW.STRINGS 기본값으로 그렸다가 데이터
+  // 도착 후 교체돼 영문 라벨이 한 번 바뀌어 보인다.
+  const safeNavLabels = navLabels && typeof navLabels === 'object' ? navLabels : {};
+  const bootstrap = `<script>window.GW_BOOT_CUSTOM_STRINGS=${serializeForInlineScript(safeStrings)};window.GW_BOOT_NAV_LABELS=${serializeForInlineScript(safeNavLabels)};window.GW_BOOT_RUNTIME=${serializeForInlineScript(safeRuntime)};window.GW_KAKAO_JS_KEY=${serializeForInlineScript(String(safeRuntime.kakao_js_key || ''))};</script>`;
   return new HTMLRewriter()
     .on('head', {
       element(element) {
@@ -283,10 +293,10 @@ function normalizeTranslationStrings(parsed) {
   return sanitized;
 }
 
-async function loadHomeSsrContent(env, origin) {
+async function loadHomeSsrContent(env, origin, navLabelsPromise) {
   try {
     const [navLabels, leadData, latestPosts, popularPosts, picksPosts, koreaPosts, aprPosts, wosmPosts, peoplePosts, footerAnalytics] = await Promise.all([
-      loadNavLabels(env).catch(() => ({})),
+      navLabelsPromise,
       loadHomeLead(env, origin).catch(() => ({ post: null })),
       loadLatestPosts(env, origin, 4).catch(() => []),
       loadPopularPosts(env, origin, 4).catch(() => []),

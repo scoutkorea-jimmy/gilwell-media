@@ -6,9 +6,9 @@
   'use strict';
 
   const GW = window.GW = {};
-  GW.APP_VERSION = '00.174.01';
+  GW.APP_VERSION = '00.175.00';
   GW.ADMIN_VERSION = '03.150.01';
-  GW.ASSET_VERSION = '20260720133731';
+  GW.ASSET_VERSION = '20260720141805';
   GW.PALETTE = {
     scoutingPurple: '#622599',
     canvasWhite: '#FFFFFF',
@@ -2023,13 +2023,42 @@
    * Uses same-origin cookies for admin auth.
    * Throws an Error with .status if the response is not ok.
    */
+  // 응답이 영영 오지 않는 요청을 끊는 기본 상한. 이게 없으면 호출부의 catch 가
+  // 아예 실행되지 않아 스켈레톤이 무한히 돌고, 홈의 경우 in-flight 프로미스가
+  // 해제되지 않아 이후 모든 재시도 경로(포커스·60초·"다시 시도")까지 막힌다.
+  // 값은 chatbot.js 의 검증된 12초와 맞춘다. 호출부가 options.timeoutMs 로 조정
+  // 가능하며, 0 이하이면 상한을 걸지 않는다(장시간 업로드 등).
+  GW.API_FETCH_TIMEOUT_MS = 12000;
+
   GW.apiFetch = async function (url, options) {
     const headers = Object.assign({ 'Content-Type': 'application/json' },
                                    (options && options.headers) || {});
-    const res  = await fetch(url, Object.assign({}, options, {
+    const opts = Object.assign({}, options, {
       headers,
       credentials: 'same-origin',
-    }));
+    });
+    delete opts.timeoutMs;
+
+    const timeoutMs = options && typeof options.timeoutMs === 'number'
+      ? options.timeoutMs
+      : GW.API_FETCH_TIMEOUT_MS;
+    // 호출부가 이미 signal 을 넘겼다면 그 제어권을 존중하고 덧씌우지 않는다.
+    const canAbort = timeoutMs > 0 && !opts.signal && typeof AbortController !== 'undefined';
+    const ac = canAbort ? new AbortController() : null;
+    let timeoutId = null;
+    if (ac) {
+      opts.signal = ac.signal;
+      timeoutId = setTimeout(function () {
+        try { ac.abort(); } catch (_) {}
+      }, timeoutMs);
+    }
+
+    let res;
+    try {
+      res = await fetch(url, opts);
+    } finally {
+      if (timeoutId !== null) clearTimeout(timeoutId);
+    }
     const data = await res.json().catch(function () { return {}; });
 
     if (!res.ok) {

@@ -79,7 +79,18 @@
 
   GW._customStrings = window.GW_BOOT_CUSTOM_STRINGS || {};
   GW._navLabels = window.GW_BOOT_NAV_LABELS || {};
-  GW.lang = localStorage.getItem('gw_lang') || 'ko';
+  // Safari '모든 쿠키 차단'·일부 WebView·파티션된 iframe 에서는 localStorage 접근
+  // 자체가 throw 한다. 여기는 IIFE 최상단이라 가드가 없으면 이 줄에서 모듈 전체가
+  // 죽고 GW.t / applyLang / renderManagedNav / bootstrapStandardPage 가 아예
+  // 정의되지 않아 홈이 통째로 멈춘다. (js/main.js 의 GW.t 사고와 같은 형태)
+  GW.readStoredLang = function () {
+    try {
+      return (window.localStorage && window.localStorage.getItem('gw_lang')) || '';
+    } catch (_) {
+      return '';
+    }
+  };
+  GW.lang = GW.readStoredLang() || 'ko';
   GW.LOCKED_TRANSLATION_KEYS = {
     'nav.contributors': true,
     'nav.home': true,
@@ -147,8 +158,21 @@
   ];
 
   GW.setLang = function (lang) {
-    localStorage.setItem('gw_lang', lang);
-    location.reload();
+    GW.lang = lang;
+    var stored = false;
+    try {
+      if (window.localStorage) {
+        window.localStorage.setItem('gw_lang', lang);
+        stored = true;
+      }
+    } catch (_) {}
+    // 저장에 성공했을 때만 리로드한다. 저장이 막힌 환경(쿠키 차단 등)에서 리로드하면
+    // 다시 기본 언어로 돌아와 버튼이 먹통처럼 보이므로, 그 경우엔 그 자리에서 적용한다.
+    if (stored) {
+      location.reload();
+      return;
+    }
+    GW.applyLang();
   };
 
   GW.isMobileViewport = function () {
@@ -397,8 +421,32 @@
   };
 
   // ── 1차/2차 nav 렌더 (drop-down 지원) ──────────────────────────────────────
-  GW.renderManagedNav = function () {
+  // 홈은 60초 주기 + 포커스 복귀마다 applyLang() 을 호출하고, applyLang 은 다시
+  // renderManagedNav 를 부른다. 아무 변화가 없어도 innerHTML 을 갈아엎으면
+  //  (1) 열려 있던 드롭다운이 사라지고
+  //  (2) 키보드 포커스가 <body> 로 튕기며
+  //  (3) setupNavDropdowns 의 그룹별 mouseleave 핸들러가 죽은 노드에 남아
+  //      이후로는 마우스를 빼도 패널이 닫히지 않는다 (핸들러는 _navDropdownsBound
+  //      가드 때문에 재부착되지 않음).
+  // 그래서 라벨·언어·경로 시그니처가 실제로 바뀐 경우에만 다시 그린다.
+  function getNavRenderSignature(currentPath) {
+    var labelParts = [];
+    GW.NAV_STRUCTURE.forEach(function (item) {
+      labelParts.push(item.key + '=' + GW.t(item.key));
+      (item.children || []).forEach(function (child) {
+        labelParts.push(child.key + '=' + GW.t(child.key));
+      });
+    });
+    return GW.lang + '|' + currentPath + '|' + labelParts.join('');
+  }
+
+  GW.renderManagedNav = function (options) {
     var currentPath = (window.location.pathname || '/').replace(/\/+$/, '') || '/';
+    var signature = getNavRenderSignature(currentPath);
+    var force = !!(options && options.force);
+    var alreadyRendered = !!document.querySelector('.nav[data-managed-nav].is-ready');
+    if (!force && alreadyRendered && GW._navRenderSignature === signature) return;
+    GW._navRenderSignature = signature;
     document.querySelectorAll('.nav[data-managed-nav]').forEach(function (nav) {
       // NAV_STRUCTURE 기반 마크업 전체 재구성 — 기존 anchors 는 모두 교체.
       var html = GW.NAV_STRUCTURE.map(function (item) {
