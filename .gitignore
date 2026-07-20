@@ -18,3 +18,5 @@ BP미디어 카드뉴스*.html
 test-results/
 playwright-report/
 playwright/.cache/
+test-results/
+playwright-report/
