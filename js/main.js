@@ -6,9 +6,9 @@
   'use strict';
 
   const GW = window.GW = {};
-  GW.APP_VERSION = '00.173.00';
-  GW.ADMIN_VERSION = '03.150.00';
-  GW.ASSET_VERSION = '20260707061709';
+  GW.APP_VERSION = '00.174.00';
+  GW.ADMIN_VERSION = '03.150.01';
+  GW.ASSET_VERSION = '20260720133114';
   GW.PALETTE = {
     scoutingPurple: '#622599',
     canvasWhite: '#FFFFFF',
@@ -41,10 +41,11 @@
     people:{ label: 'Scout People', tagClass: 'tag-people', color: GW.PALETTE.scoutingPurple },
     glossary:{ label: 'Glossary', tagClass: 'tag-glossary', color: GW.PALETTE.midnightPurple },
   };
-  GW.SITE_META_PAGE_KEYS = ['home', 'latest', 'korea', 'apr', 'wosm', 'wosm_members', 'people', 'glossary', 'contributors', 'search', 'ai_guide'];
+  GW.SITE_META_PAGE_KEYS = ['home', 'latest', 'jamboree16', 'korea', 'apr', 'wosm', 'wosm_members', 'people', 'glossary', 'contributors', 'search', 'ai_guide'];
   GW.SITE_META_PAGE_LABELS = {
     home: '홈',
     latest: '최신 뉴스',
+    jamboree16: '제16회 한국잼버리 특별관',
     korea: 'Korea',
     apr: 'APR',
     wosm: 'WOSM',
@@ -59,6 +60,7 @@
     { key: 'nav.contributors', label: '도움을 주신 분들' },
     { key: 'nav.home', label: '홈' },
     { key: 'nav.latest', label: '최신 소식' },
+    { key: 'nav.jamboree16', label: '제16회 한국잼버리' },
     { key: 'nav.korea', label: 'Korea' },
     { key: 'nav.apr', label: 'APR' },
     { key: 'nav.wosm', label: 'WOSM' },

@@ -78,6 +78,10 @@ const DEFAULT_SITE_META = {
       title: '편집 정책 · BP미디어',
       description: 'BP미디어의 편집 원칙, 출처 검증 절차, 정정 정책, AI 사용 범위, 그리고 AI 크롤러·LLM 인용 정책을 공개합니다.',
     },
+    jamboree16: {
+      title: '제16회 한국잼버리 특별관 · BP미디어',
+      description: '2026년 8월 5일부터 9일까지 강원특별자치도 세계잼버리수련장에서 열리는 제16회 한국잼버리(16th Korea National Jamboree)의 개요, 주제, 주요 프로그램과 관련 소식을 한 곳에 모았습니다.',
+    },
     about: {
       title: '운영 주체 · BP미디어',
       description: 'BP미디어(길웰미디어)의 운영 주체, 공식 스카우트 연맹과의 관계, 뉴스 편집·재가공 방식, 저작권·출처 정책, 운영·재정 투명성을 안내합니다.',
@@ -402,6 +406,7 @@ function buildBreadcrumbStructuredData(pageKey, url) {
 function getBreadcrumbLabel(pageKey) {
   const labels = {
     latest: '최신 소식',
+    jamboree16: '제16회 한국잼버리 특별관',
     korea: 'Korea',
     apr: 'APR',
     wosm: 'WOSM',
@@ -419,6 +424,7 @@ function getPageTopic(pageKey) {
   const topics = {
     home: '스카우트 뉴스',
     latest: '최신 소식',
+    jamboree16: '제16회 한국잼버리',
     korea: '한국 스카우트 소식',
     apr: '아시아태평양 스카우트 소식',
     wosm: '세계스카우트연맹 소식',
@@ -436,6 +442,7 @@ function getPageKeywords(pageKey) {
   const keywords = {
     home: 'BP미디어, 비피미디어, BPmedia, The BP Post, bpmedia.net, 스카우트 뉴스, 스카우트 미디어, WOSM, APR, 한국스카우트연맹',
     latest: '최신 소식, 최신 스카우트 뉴스, BP미디어',
+    jamboree16: '제16회 한국잼버리, 한국잼버리, 16th Korea National Jamboree, 2026 한국잼버리, 세계잼버리수련장, 한국스카우트연맹, BP미디어',
     korea: 'Korea, 한국스카우트연맹, BP미디어',
     apr: 'APR, 아시아태평양 스카우트, BP미디어',
     wosm: 'WOSM, 세계스카우트연맹, BP미디어',

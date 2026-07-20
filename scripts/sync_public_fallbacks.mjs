@@ -12,6 +12,7 @@ const ROOT_DIR = path.resolve(__dirname, '..');
 const PUBLIC_HTML_FILES = [
   'index.html',
   'latest.html',
+  'jamboree16.html',
   'korea.html',
   'apr.html',
   'wosm.html',

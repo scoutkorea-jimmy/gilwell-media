@@ -8,6 +8,7 @@
     'nav.contributors': { ko: '도움을 주신 분들', en: 'Contributors' },
     'nav.home': { ko: '홈', en: 'Home' },
     'nav.latest': { ko: '최신 소식', en: 'Latest' },
+    'nav.jamboree16': { ko: '제16회 한국잼버리', en: '16th Korea Jamboree' },
     'nav.news_group': { ko: '스카우트 소식', en: 'Scout News' },
     'nav.korea': { ko: '한국스카우트 소식', en: 'Korea Scout News' },
     'nav.apr': { ko: '아시아-태평양 스카우트 소식', en: 'Asia-Pacific Scout News' },
@@ -83,6 +84,7 @@
     'nav.contributors': true,
     'nav.home': true,
     'nav.latest': true,
+    'nav.jamboree16': true,
     'nav.news_group': true,
     'nav.korea': true,
     'nav.apr': true,
@@ -112,6 +114,7 @@
     { href: '/contributors', key: 'nav.contributors' },
     { href: '/', key: 'nav.home' },
     { href: '/latest', key: 'nav.latest' },
+    { href: '/jamboree16', key: 'nav.jamboree16' },
     { href: '/korea', key: 'nav.korea' },
     { href: '/apr', key: 'nav.apr' },
     { href: '/wosm', key: 'nav.wosm' },
@@ -127,6 +130,7 @@
   GW.NAV_STRUCTURE = [
     { type: 'link',  href: '/',             key: 'nav.home' },
     { type: 'link',  href: '/latest',       key: 'nav.latest' },
+    { type: 'link',  href: '/jamboree16',   key: 'nav.jamboree16' },
     { type: 'group', key: 'nav.news_group', children: [
       { href: '/korea', key: 'nav.korea' },
       { href: '/apr',   key: 'nav.apr' },

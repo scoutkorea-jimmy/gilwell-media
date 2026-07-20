@@ -72,6 +72,7 @@ export async function onRequest(context) {
 function getCanonicalPath(pathname, pageKey) {
   if (pathname === '/index.html' || pathname === '/') return '/';
   if (pageKey === 'latest') return '/latest';
+  if (pageKey === 'jamboree16') return '/jamboree16';
   if (pageKey === 'korea') return '/korea';
   if (pageKey === 'apr') return '/apr';
   if (pageKey === 'wosm') return '/wosm';

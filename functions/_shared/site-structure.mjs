@@ -7,6 +7,7 @@ export const DEFAULT_NAV_LABELS = Object.freeze({
   'nav.contributors': { ko: '도움을 주신 분들', en: 'Contributors' },
   'nav.home': { ko: '홈', en: 'Home' },
   'nav.latest': { ko: '최신 소식', en: 'Latest' },
+  'nav.jamboree16': { ko: '제16회 한국잼버리', en: '16th Korea Jamboree' },
   'nav.news_group': { ko: '스카우트 소식', en: 'Scout News' },
   'nav.korea': { ko: '한국스카우트 소식', en: 'Korea Scout News' },
   'nav.apr': { ko: '아시아-태평양 스카우트 소식', en: 'Asia-Pacific Scout News' },
@@ -25,6 +26,7 @@ export const DEFAULT_NAV_LABELS = Object.freeze({
 export const NAV_STRUCTURE = Object.freeze([
   { type: 'link',  href: '/',             key: 'nav.home' },
   { type: 'link',  href: '/latest',       key: 'nav.latest' },
+  { type: 'link',  href: '/jamboree16',   key: 'nav.jamboree16' },
   { type: 'group',                        key: 'nav.news_group', children: [
     { href: '/korea',                     key: 'nav.korea' },
     { href: '/apr',                       key: 'nav.apr' },
@@ -45,6 +47,7 @@ export const NAV_ITEMS = Object.freeze([
   { href: '/contributors', key: 'nav.contributors' },
   { href: '/', key: 'nav.home' },
   { href: '/latest', key: 'nav.latest' },
+  { href: '/jamboree16', key: 'nav.jamboree16' },
   { href: '/korea', key: 'nav.korea' },
   { href: '/apr', key: 'nav.apr' },
   { href: '/wosm', key: 'nav.wosm' },
@@ -58,6 +61,7 @@ export const NAV_ITEMS = Object.freeze([
 export const SITE_PAGE_KEY_BY_PATH = Object.freeze({
   '/index.html': 'home',
   '/latest': 'latest',
+  '/jamboree16': 'jamboree16',
   '/korea': 'korea',
   '/apr': 'apr',
   '/wosm': 'wosm',
@@ -77,6 +81,8 @@ export const SITE_PATH_TITLE_FALLBACKS = Object.freeze({
   '/index.html': '홈',
   '/latest': DEFAULT_NAV_LABELS['nav.latest'].ko,
   '/latest.html': DEFAULT_NAV_LABELS['nav.latest'].ko,
+  '/jamboree16': DEFAULT_NAV_LABELS['nav.jamboree16'].ko,
+  '/jamboree16.html': DEFAULT_NAV_LABELS['nav.jamboree16'].ko,
   '/korea': DEFAULT_NAV_LABELS['nav.korea'].ko,
   '/korea.html': DEFAULT_NAV_LABELS['nav.korea'].ko,
   '/apr': DEFAULT_NAV_LABELS['nav.apr'].ko,
