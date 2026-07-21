@@ -65,7 +65,7 @@ body.wosm-members-page #main-content {
 .members-view-chip.active {
   background: var(--midnight-purple);
   border-color: var(--midnight-purple);
-  color: var(--white);
+  color: var(--on-accent);
   box-shadow: 0 8px 18px rgba(77, 0, 110, 0.18);
 }
 .members-summary-inline {
@@ -371,34 +371,34 @@ body.wosm-members-page #main-content {
 }
 .member-country-card {
   border: 1px solid var(--border);
-  background: var(--white);
+  background: var(--surface);
   padding: 18px;
   border-radius: var(--radius-lg);
   box-shadow: 0 6px 14px rgba(0,0,0,0.04);
 }
 .member-country-card.is-representative {
   border-color: rgba(98, 37, 153, 0.26);
-  background: linear-gradient(180deg, rgba(98, 37, 153, 0.08), var(--white) 28%);
+  background: linear-gradient(180deg, rgba(98, 37, 153, 0.08), var(--surface) 28%);
 }
 .member-country-card.is-representative.is-africa {
   border-color: rgba(36, 135, 55, 0.28);
-  background: linear-gradient(180deg, rgba(36, 135, 55, 0.10), var(--white) 28%);
+  background: linear-gradient(180deg, rgba(36, 135, 55, 0.10), var(--surface) 28%);
 }
 .member-country-card.is-representative.is-arab {
   border-color: rgba(255, 174, 128, 0.42);
-  background: linear-gradient(180deg, rgba(255, 174, 128, 0.16), var(--white) 28%);
+  background: linear-gradient(180deg, rgba(255, 174, 128, 0.16), var(--surface) 28%);
 }
 .member-country-card.is-representative.is-asia-pacific {
   border-color: rgba(255, 86, 85, 0.34);
-  background: linear-gradient(180deg, rgba(255, 86, 85, 0.14), var(--white) 28%);
+  background: linear-gradient(180deg, rgba(255, 86, 85, 0.14), var(--surface) 28%);
 }
 .member-country-card.is-representative.is-european {
   border-color: rgba(0, 148, 180, 0.34);
-  background: linear-gradient(180deg, rgba(0, 148, 180, 0.14), var(--white) 28%);
+  background: linear-gradient(180deg, rgba(0, 148, 180, 0.14), var(--surface) 28%);
 }
 .member-country-card.is-representative.is-interamerican {
   border-color: rgba(130, 230, 222, 0.56);
-  background: linear-gradient(180deg, rgba(130, 230, 222, 0.20), var(--white) 28%);
+  background: linear-gradient(180deg, rgba(130, 230, 222, 0.20), var(--surface) 28%);
 }
 .member-country-meta-grid {
   display: grid;

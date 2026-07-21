@@ -218,9 +218,9 @@
 }
 .tag-filter-btn.active,
 .tag-filter-btn:hover {
-  background:   var(--black);
-  color:        var(--white);
-  border-color: var(--black);
+  background:   var(--surface-inverse);
+  color:        var(--on-accent);
+  border-color: var(--border-strong);
 }
 @media (max-width: 900px) {
  .tag-filter-bar-inner { padding: 10px var(--gap-section); }
@@ -264,7 +264,7 @@
   transition: background 0.12s, color 0.12s;
 }
 .board-sort-btn + .board-sort-btn { border-left: 1px solid var(--border); }
-.board-sort-btn.active { background: var(--black); color: var(--white); }
+.board-sort-btn.active { background: var(--surface-inverse); color: var(--on-accent); }
 .board-sort-btn:hover:not(.active) { color: var(--ink); }
 .board-sort-btn:focus-visible { outline: 2px solid var(--scouting-purple, var(--gw-scouting-purple)); outline-offset: 2px; }
 .board-period-bar {
@@ -300,9 +300,9 @@
 }
 .board-period-btn.active,
 .board-period-btn:hover {
-  background: var(--black);
-  color: var(--white);
-  border-color: var(--black);
+  background: var(--surface-inverse);
+  color: var(--on-accent);
+  border-color: var(--border-strong);
 }
 .board-period-btn:focus-visible { outline: 2px solid var(--scouting-purple, var(--gw-scouting-purple)); outline-offset: 2px; }
 /* latest 전용 publish-date 필터 (전체/하루/일주일/30일). 정렬·인기 윈도우와 분리. */
@@ -338,9 +338,9 @@
 }
 .board-days-btn.active,
 .board-days-btn:hover {
-  background: var(--black);
-  color: var(--white);
-  border-color: var(--black);
+  background: var(--surface-inverse);
+  color: var(--on-accent);
+  border-color: var(--border-strong);
 }
 .board-days-btn:focus-visible { outline: 2px solid var(--scouting-purple, var(--gw-scouting-purple)); outline-offset: 2px; }
 @media (max-width: 900px) {
@@ -373,7 +373,7 @@
   font-size:   14px;
   outline:     none;
   color:       var(--ink);
-  background:  var(--white);
+  background:  var(--surface);
   transition:  border-color 0.15s;
 }
 .board-search-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--focus-ring-color); }

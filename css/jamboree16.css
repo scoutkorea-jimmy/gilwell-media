@@ -14,7 +14,7 @@
    ══════════════════════════════════════════════════════════════════ */
 .jam16-hero {
   background-image: linear-gradient(135deg, var(--midnight-purple) 0%, var(--shade-purple-3) 46%, var(--shade-purple-1) 100%);
-  color: var(--white);
+  color: var(--on-accent);
   padding: 54px 48px 48px;
   text-align: center;
 }
@@ -37,7 +37,7 @@
   letter-spacing: -0.01em;
   word-break: keep-all;
   margin: 0;
-  color: var(--white);
+  color: var(--on-accent);
 }
 .jam16-hero-en {
   font-size: 14px;
@@ -52,7 +52,7 @@
   line-height: 1.6;
   word-break: keep-all;
   margin: 22px 0 0;
-  color: var(--white);
+  color: var(--on-accent);
 }
 .jam16-theme span {
   display: inline-block;
@@ -215,7 +215,7 @@
   border-radius: var(--radius-md);
   border: 1px solid var(--scouting-purple);
   background: var(--scouting-purple);
-  color: var(--white);
+  color: var(--on-accent);
   font-size: 13px;
   font-weight: 500;
   letter-spacing: 0.01em;
@@ -224,7 +224,7 @@
 }
 .jam16-link-btn:hover { background: var(--midnight-purple); border-color: var(--midnight-purple); }
 .jam16-link-btn.secondary {
-  background: var(--white);
+  background: var(--surface);
   color: var(--midnight-purple);
   border-color: var(--gray-300);
 }

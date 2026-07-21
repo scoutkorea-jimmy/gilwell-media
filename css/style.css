@@ -374,7 +374,7 @@ body *:not(svg):not(path):not(circle):not(line):not(polyline):not(polygon):not(r
 }
 
 .logout-btn {
-  color: var(--white);
+  color: var(--on-accent);
   background: linear-gradient(135deg, rgba(98,37,153,0.96), rgba(139,66,210,0.92));
   border: 1px solid rgba(196,162,255,0.6);
   border-radius: var(--radius-md);    /* radius 통일 자동 주입 */
@@ -384,7 +384,7 @@ body *:not(svg):not(path):not(circle):not(line):not(polyline):not(polygon):not(r
 
 .logout-btn:hover {
   background: linear-gradient(135deg, rgba(112,50,173,1), rgba(152,83,219,0.96));
-  color: var(--white);
+  color: var(--on-accent);
 }
 
 .article-item h4 {
@@ -440,6 +440,31 @@ body *:not(svg):not(path):not(circle):not(line):not(polyline):not(polygon):not(r
   --black:      #030303;   /* 진검정 — 최대 대비 emphasis, pure black accents */
   --white:      #ffffff;
   --ink:        #1f1f1f;   /* 본문 텍스트용 soft black (eye-friendly near-black) */
+
+  /* ── 시맨틱 색 토큰 (다크모드 대응 축) ──────────────────────────────────
+     --white / --black 은 "색 이름" 이라 역할이 섞인다. background: var(--white)
+     는 다크에서 어두워져야 하지만, 보라 버튼 위 color: var(--white) 는 다크에서도
+     흰색이어야 한다. 같은 토큰이면 일괄 반전이 불가능하므로 역할별로 쪼갠다.
+
+     ★ 새 코드에서는 --white / --black 을 직접 쓰지 말고 아래 토큰을 쓸 것.
+       라이트 모드 값은 기존과 동일하므로 이 분리 자체로는 화면이 바뀌지 않는다.
+       다크 대응값은 파일 하단 `prefers-color-scheme: dark` 블록에서 재정의한다.
+
+       역할                                   토큰
+       ───────────────────────────────────────┼──────────────────────
+       카드·패널 등 밝은 표면 배경             │ --surface
+       브랜드/강조 배경 위에 얹는 글자·아이콘  │ --on-accent      (다크에서도 흰색)
+       강조 배경 위의 테두리                   │ --border-on-accent
+       의도적으로 어두운 표면 배경             │ --surface-inverse
+       최대 대비 강조 텍스트                   │ --text-strong
+       강한 테두리                             │ --border-strong
+     ──────────────────────────────────────────────────────────────────── */
+  --surface:           #ffffff;
+  --on-accent:         #ffffff;
+  --border-on-accent:  #ffffff;
+  --surface-inverse:   #030303;
+  --text-strong:       #030303;
+  --border-strong:     #030303;
 
   /* Grayscale (5단계, var(--black) 기반) — Canvas White 배경 APCA Lc (WCAG 3.0) */
   --gray-900:   #030303;   /* = --black, APCA Lc 107.7 · 모든 텍스트 OK */
@@ -608,8 +633,8 @@ body {
   left: 16px;
   z-index: 10000;
   padding: 10px 14px;
-  background: var(--black);
-  color: var(--white);
+  background: var(--surface-inverse);
+  color: var(--on-accent);
   text-decoration: none;
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size: 11px;
@@ -841,8 +866,8 @@ body[data-home-bootstrap] .lang-btn + .lang-btn {
 
 .lang-btn.active,
 .lang-btn:hover {
-  background: var(--black);
-  color:      var(--white);
+  background: var(--surface-inverse);
+  color:      var(--on-accent);
 }
 
 body[data-home-bootstrap] .lang-btn.active,
@@ -1116,8 +1141,8 @@ body[data-home-bootstrap] .lang-btn:hover {
    TICKER
    ════════════════════════════════════════════════════════════ */
 .ticker {
-  background:    var(--black);
-  color:         var(--white);
+  background:    var(--surface-inverse);
+  color:         var(--on-accent);
   padding:       var(--gap-tight) 0;
   padding-left:  10%;
   padding-right: 10%;
@@ -1154,7 +1179,7 @@ body[data-home-bootstrap] .lang-btn:hover {
   border: 1px solid rgba(255,255,255,0.28);
   border-radius: var(--radius-pill);
   background: rgba(255,255,255,0.08);
-  color: var(--white);
+  color: var(--on-accent);
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size: 11px;
   letter-spacing: 0.06em;
@@ -1227,7 +1252,7 @@ body[data-home-bootstrap] .lang-btn:hover {
   padding: 0 14px;
   border: 1px solid rgba(17,17,17,0.12);
   border-radius: var(--radius-md);    /* 버튼 통일 곡률 */
-  background: var(--white);
+  background: var(--surface);
   color: var(--ink);
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size: 11px;
@@ -1282,7 +1307,7 @@ body[data-home-bootstrap] .lang-btn:hover {
 }
 
 /* 카테고리 태그 — 채움 */
-.category-tag { color: var(--white); }
+.category-tag { color: var(--on-accent); }
 .tag-korea { background: var(--tag-korea); }
 .tag-apr   { background: var(--tag-apr);   }
 .tag-wosm  { background: var(--tag-wosm);  }
@@ -1296,7 +1321,7 @@ body[data-home-bootstrap] .lang-btn:hover {
 }
 .post-kicker-new {
   background:    var(--fire-red);
-  color:         var(--white);
+  color:         var(--on-accent);
   border-color:  var(--fire-red);
   font-weight:   700;
   letter-spacing: 0.18em;
@@ -1317,7 +1342,7 @@ body[data-home-bootstrap] .lang-btn:hover {
 .tag-apr-kicker     { color: var(--fire-red);        border-color: var(--fire-red); }
 .tag-wosm-kicker    { color: var(--forest-green);    border-color: var(--forest-green); }
 .tag-people-kicker  { color: var(--kicker-people);   border-color: var(--kicker-people); }
-.tag-latest-kicker  { color: var(--black);           border-color: var(--black); }
+.tag-latest-kicker  { color: var(--text-strong);           border-color: var(--border-strong); }
 .tag-glossary-kicker{ color: var(--kicker-glossary); border-color: var(--kicker-glossary); }
 
 /* ════════════════════════════════════════════════════════════
@@ -1327,7 +1352,7 @@ body[data-home-bootstrap] .lang-btn:hover {
   display:              grid;
   grid-template-columns: 1fr 340px;
   gap:                  0;
-  border-bottom:        2px solid var(--black);
+  border-bottom:        2px solid var(--border-strong);
   max-width:            1366px;
   margin:               0 auto;
 }
@@ -1346,7 +1371,7 @@ body[data-home-bootstrap] .lang-btn:hover {
   line-height:    1.28;
   letter-spacing: -0.02em;
   margin-bottom:  var(--gap-card);
-  color:          var(--black);
+  color:          var(--text-strong);
 }
 
 .hero-main .deck {
@@ -1384,7 +1409,7 @@ body[data-home-bootstrap] .lang-btn:hover {
   font-weight:   600;
   line-height:   1.4;
   margin-bottom: var(--gap-tight);
-  color:         var(--black);
+  color:         var(--text-strong);
 }
 
 .hero-side-item .meta {
@@ -1413,7 +1438,7 @@ body[data-home-bootstrap] .lang-btn:hover {
   align-items:   baseline;
   gap:           var(--gap-card);
   padding:       var(--gap-section-out) 48px 20px;
-  border-bottom: 2px solid var(--black);
+  border-bottom: 2px solid var(--border-strong);
 }
 
 .section-header h2 {
@@ -1459,9 +1484,9 @@ body[data-home-bootstrap] .lang-btn:hover {
 
 .filter-btn:hover,
 .filter-btn.active {
-  background:   var(--black);
-  color:        var(--white);
-  border-color: var(--black);
+  background:   var(--surface-inverse);
+  color:        var(--on-accent);
+  border-color: var(--border-strong);
 }
 
 /* ════════════════════════════════════════════════════════════
@@ -1493,7 +1518,7 @@ body[data-home-bootstrap] .lang-btn:hover {
   font-weight:   600;
   line-height:   1.4;
   margin-bottom: var(--gap-tight);
-  color:         var(--black);
+  color:         var(--text-strong);
 }
 
 .article-card .excerpt {
@@ -1527,7 +1552,7 @@ body[data-home-bootstrap] .lang-btn:hover {
   letter-spacing: 0.02em;
   margin-bottom:  20px;
   padding-bottom: 10px;
-  border-bottom:  2px solid var(--black);
+  border-bottom:  2px solid var(--border-strong);
 }
 
 .sidebar-item {
@@ -1543,7 +1568,7 @@ body[data-home-bootstrap] .lang-btn:hover {
   font-weight:   600;
   line-height:   1.4;
   margin-bottom: 6px;
-  color:         var(--black);
+  color:         var(--text-strong);
   display:       -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -1559,8 +1584,8 @@ body[data-home-bootstrap] .lang-btn:hover {
 
 /* ── About Box ── */
 .about-box {
-  background: var(--black);
-  color:      var(--white);
+  background: var(--surface-inverse);
+  color:      var(--on-accent);
   padding:    28px;
   margin:     28px;
 }
@@ -1654,7 +1679,7 @@ body[data-home-bootstrap] .lang-btn:hover {
   border: 1px solid rgba(255,255,255,0.26);
   border-radius: var(--radius-pill);
   background: rgba(0,0,0,0.26);
-  color: var(--white);
+  color: var(--on-accent);
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size: 12px;
   letter-spacing: 0.04em;
@@ -1682,7 +1707,7 @@ body[data-home-bootstrap] .lang-btn:hover {
   transition: background 0.2s;
 }
 .hero-dot.active {
-  background: var(--white);
+  background: var(--surface);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1701,7 +1726,7 @@ body[data-home-bootstrap] .lang-btn:hover {
 }
 
 .site-hero {
-  background:      var(--white);
+  background:      var(--surface);
   padding:         64px var(--gap-section);
   text-align:      center;
   position:        relative;
@@ -1835,7 +1860,7 @@ body[data-home-bootstrap] .lang-btn:hover {
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size:          clamp(28px, 5vw, 48px);
   font-weight:        700;
-  color:              var(--black);
+  color:              var(--text-strong);
   line-height:        1.2;
   max-width:          680px;
   margin:             0 auto var(--gap-card);
@@ -1844,7 +1869,7 @@ body[data-home-bootstrap] .lang-btn:hover {
   -webkit-box-orient: vertical;
   overflow:           hidden;
 }
-.site-hero.has-bg .site-hero-title { color: var(--white); }
+.site-hero.has-bg .site-hero-title { color: var(--on-accent); }
 
 .site-hero-sub {
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
@@ -1879,7 +1904,7 @@ body[data-home-bootstrap] .lang-btn:hover {
   border:         1px solid rgba(255,255,255,0.46);
   border-radius:  var(--radius-md);    /* 버튼 통일 곡률 */
   background:     rgba(255,255,255,0.10);
-  color:          var(--white);
+  color:          var(--on-accent);
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size:      13px;
   letter-spacing: .03em;
@@ -1891,7 +1916,7 @@ body[data-home-bootstrap] .lang-btn:hover {
 .site-hero-cta:hover,
 .site-hero-share-btn:hover {
   background:   rgba(255,255,255,0.18);
-  border-color: var(--white);
+  border-color: var(--border-on-accent);
   transform: translateY(-1px);
 }
 
@@ -1939,7 +1964,7 @@ body[data-home-bootstrap] .lang-btn:hover {
   gap: 0;
   border: none;
   border-radius: var(--radius-lg);    /* radius 통일 자동 주입 */
-  background: var(--white);
+  background: var(--surface);
   padding: 0;
   align-items: stretch;
   height: 100%;
@@ -2016,8 +2041,8 @@ body[data-home-bootstrap] .lang-btn:hover {
   display: inline-flex;
   align-items: center;
   padding: var(--gap-micro) 10px;
-  background: var(--black);
-  color: var(--white);
+  background: var(--surface-inverse);
+  color: var(--on-accent);
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size: 10px;
   letter-spacing: 0.12em;
@@ -2029,7 +2054,7 @@ body[data-home-bootstrap] .lang-btn:hover {
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size: clamp(24px, 2.4vw, 34px);
   line-height: 1.22;
-  color: var(--black);
+  color: var(--text-strong);
   margin-bottom: 10px;
   display: -webkit-box;
   -webkit-line-clamp: 3;
@@ -2191,10 +2216,10 @@ body[data-home-bootstrap] .lang-btn:hover {
   min-height: var(--btn-height-primary);
   min-width: 122px;
   padding: 10px 18px;
-  border: 1px solid var(--black);
+  border: 1px solid var(--border-strong);
   border-radius: var(--radius-md);    /* radius 통일 자동 주입 */
-  background: var(--black);
-  color: var(--white);
+  background: var(--surface-inverse);
+  color: var(--on-accent);
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size: 13px;
   letter-spacing: 0.03em;
@@ -2231,8 +2256,8 @@ body[data-home-bootstrap] .lang-btn:hover {
 }
 
 .pull-refresh-indicator.ready {
-  background: var(--black);
-  color: var(--white);
+  background: var(--surface-inverse);
+  color: var(--on-accent);
 }
 
 .pull-refresh-label {
@@ -2241,7 +2266,7 @@ body[data-home-bootstrap] .lang-btn:hover {
   justify-content: center;
   min-width: 156px;
   padding: 10px 18px;
-  border: 1px solid var(--black);
+  border: 1px solid var(--border-strong);
   background: rgba(255,255,255,0.96);
   box-shadow: 0 10px 28px rgba(0,0,0,0.12);
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
@@ -2266,7 +2291,7 @@ body[data-home-bootstrap] .lang-btn:hover {
   align-items:    center;
   gap:            var(--gap-element);
   box-shadow:     0 8px 20px rgba(0,0,0,0.05), inset 0 1px 0 rgba(255,255,255,0.16);
-  color:          var(--white);
+  color:          var(--on-accent);
 }
 
 .home-section-title .rule {
@@ -2305,7 +2330,7 @@ body[data-home-bootstrap] .lang-btn:hover {
   transition:     color 0.15s;
   margin-left:    auto;
 }
-.home-section-more:hover { color: var(--white); }
+.home-section-more:hover { color: var(--on-accent); }
 
 /* ── 2-column: popular + editor picks ── */
 .home-2col {
@@ -2414,7 +2439,7 @@ body[data-home-bootstrap] .lang-btn:hover {
   font-size:     16px;
   font-weight:   600;
   line-height:   1.4;
-  color:         var(--black);
+  color:         var(--text-strong);
   margin-bottom: var(--gap-micro);
   min-height: calc(16px * 1.4 * 2);
   display: flex;
@@ -2526,7 +2551,7 @@ body[data-home-bootstrap] .lang-btn:hover {
   font-size:   13px;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color:       var(--white);
+  color:       var(--on-accent);
 }
 
 .home-col-header-korea {
@@ -2550,7 +2575,7 @@ body[data-home-bootstrap] .lang-btn:hover {
 }
 
 .home-col-header .home-section-more:hover {
-  color: var(--white);
+  color: var(--on-accent);
 }
 
 /* Reuse mini-item inside 3-col */
@@ -2574,7 +2599,7 @@ body[data-home-bootstrap] .lang-btn:hover {
    BOARD PAGE BANNER (korea / apr / worm)
    ════════════════════════════════════════════════════════════ */
 .board-banner {
-  border-bottom: 2px solid var(--black);
+  border-bottom: 2px solid var(--border-strong);
   padding:       var(--gap-section-out) var(--pad-page-desktop);
   max-width:     1366px;
   margin:        0 auto;
@@ -2589,7 +2614,7 @@ body[data-home-bootstrap] .lang-btn:hover {
   font-size:      40px;
   font-weight:    700;
   letter-spacing: -0.02em;
-  color:          var(--black);
+  color:          var(--text-strong);
   line-height:    1.1;
   margin-bottom:  0;
 }
@@ -2682,7 +2707,7 @@ body[data-home-bootstrap] .lang-btn:hover {
   font-weight:   600;
   line-height:   1.4;
   margin-bottom: 10px;
-  color:         var(--black);
+  color:         var(--text-strong);
   display: -webkit-box;
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
@@ -2778,7 +2803,7 @@ body[data-home-bootstrap] .lang-btn:hover {
   padding: 0 var(--gap-element);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);    /* radius 통일 자동 주입 */
-  background: var(--white);
+  background: var(--surface);
   color: var(--muted);
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size: 11px;
@@ -2791,14 +2816,14 @@ body[data-home-bootstrap] .lang-btn:hover {
 }
 
 .board-page-btn:hover {
-  border-color: var(--black);
-  color: var(--black);
+  border-color: var(--border-strong);
+  color: var(--text-strong);
 }
 
 .board-page-btn.active {
-  background: var(--black);
-  border-color: var(--black);
-  color: var(--white);
+  background: var(--surface-inverse);
+  border-color: var(--border-strong);
+  color: var(--on-accent);
 }
 
 .board-page-btn.board-page-nav {
@@ -2825,7 +2850,7 @@ body[data-home-bootstrap] .lang-btn:hover {
   padding: 12px 24px;
   border: 1.5px solid var(--border);
   border-radius: var(--radius-md);    /* radius 통일 자동 주입 */
-  background: var(--white);
+  background: var(--surface);
   color: var(--muted);
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size: 12px;
@@ -2835,8 +2860,8 @@ body[data-home-bootstrap] .lang-btn:hover {
 }
 
 .board-more-btn:hover {
-  border-color: var(--black);
-  color: var(--black);
+  border-color: var(--border-strong);
+  color: var(--text-strong);
 }
 
 /* ════════════════════════════════════════════════════════════
@@ -2888,7 +2913,7 @@ body[data-home-bootstrap] .lang-btn:hover {
   font-size:      26px;
   font-weight:    700;
   line-height:    1.4;
-  color:          var(--black);
+  color:          var(--text-strong);
   margin-bottom:  var(--gap-element);
 }
 
@@ -3003,13 +3028,13 @@ body[data-home-bootstrap] .lang-btn:hover {
 }
 
 .content-gallery-dot.is-active {
-  background: var(--white);
+  background: var(--surface);
 }
 
 .content-gallery-pause {
   border: 1px solid rgba(255,255,255,0.18);
   background: rgba(255,255,255,0.08);
-  color: var(--white);
+  color: var(--on-accent);
   border-radius: var(--radius-pill);
   padding: 6px var(--gap-element);
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
@@ -3027,7 +3052,7 @@ body[data-home-bootstrap] .lang-btn:hover {
   border-radius: 50%;
   border: 1px solid rgba(255,255,255,0.25);
   background: rgba(17,17,17,0.72);
-  color: var(--white);
+  color: var(--on-accent);
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size: 24px;
   line-height: 1;
@@ -3092,7 +3117,7 @@ body[data-home-bootstrap] .lang-btn:hover {
   position: relative;
   width: 100%;
   padding-top: 56.25%;
-  background: var(--black);
+  background: var(--surface-inverse);
   margin-top: var(--gap-section);
   overflow: hidden;
 }
@@ -3130,7 +3155,7 @@ body[data-home-bootstrap] .lang-btn:hover {
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
 }
 
-.modal-close:hover { color: var(--black); }
+.modal-close:hover { color: var(--text-strong); }
 
 .loading-state {
   padding:    48px;
@@ -3166,8 +3191,8 @@ body[data-home-bootstrap] .lang-btn:hover {
   position:       fixed;
   bottom:         32px;
   right:          32px;
-  background:     var(--black);
-  color:          var(--white);
+  background:     var(--surface-inverse);
+  color:          var(--on-accent);
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size:      12px;
   letter-spacing: 0.08em;
@@ -3265,7 +3290,7 @@ body.share-modal-open {
   padding: 14px var(--gap-element);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);    /* radius 통일 자동 주입 */
-  background: var(--white);
+  background: var(--surface);
   color: var(--ink);
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   text-align: left;
@@ -3282,7 +3307,7 @@ body.share-modal-open {
 .share-modal-btn-kakao {
   background: var(--shade-amber-3);
   border-color: var(--shade-amber-2);
-  color: var(--black);
+  color: var(--text-strong);
 }
 
 .share-modal-btn-facebook {
@@ -3404,7 +3429,7 @@ footer h4 {
   font-size:      14px;
   font-weight:    700;
   margin:         0 0 var(--gap-tight);
-  color:          var(--white);
+  color:          var(--on-accent);
   letter-spacing: 0.05em;
 }
 
@@ -3439,7 +3464,7 @@ footer a {
 }
 
 .footer-admin > a:hover {
-  color: var(--white);
+  color: var(--on-accent);
   opacity: 0.9;
 }
 
@@ -3491,7 +3516,7 @@ footer a {
   text-align: center;
 }
 
-footer a:hover { color: var(--white); }
+footer a:hover { color: var(--on-accent); }
 
 /* Bottom disclaimer bar */
 .footer-bottom {
@@ -3532,7 +3557,7 @@ footer a:hover { color: var(--white); }
   cursor:         pointer;
   transition:     border-color .15s, color .15s;
 }
-.cover-upload-btn:hover { border-color: var(--black); color: var(--ink); }
+.cover-upload-btn:hover { border-color: var(--border-strong); color: var(--ink); }
 
 .cover-preview-img {
   display:    block;
@@ -3595,7 +3620,7 @@ footer a:hover { color: var(--white); }
   justify-content: center;
   padding: 6px 10px;
   border: 1px solid var(--border);
-  background: var(--white);
+  background: var(--surface);
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size: 10px;
   color: var(--muted);
@@ -4103,7 +4128,7 @@ footer a:hover { color: var(--white); }
   margin: 0;
   padding: 14px;
   border: 1px solid var(--border);
-  background: var(--black);
+  background: var(--surface-inverse);
   color: var(--shade-tint-7);
   overflow: auto;
 }
@@ -4201,8 +4226,8 @@ footer a:hover { color: var(--white); }
 }
 
 .admin-header {
-  background:      var(--black);
-  color:           var(--white);
+  background:      var(--surface-inverse);
+  color:           var(--on-accent);
   padding:         var(--gap-card) 40px;
   display:         flex;
   align-items:     center;
@@ -4246,7 +4271,7 @@ footer a:hover { color: var(--white); }
   transition:     color 0.15s;
 }
 
-.admin-header a:hover { color: var(--white); }
+.admin-header a:hover { color: var(--on-accent); }
 
 .logout-btn {
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
@@ -4262,7 +4287,7 @@ footer a:hover { color: var(--white); }
   transition:     all 0.15s;
 }
 
-.logout-btn:hover { background: var(--accent); color: var(--white); }
+.logout-btn:hover { background: var(--accent); color: var(--on-accent); }
 
 .admin-body {
   max-width:             1100px;
@@ -4279,7 +4304,7 @@ footer a:hover { color: var(--white); }
 
 .panel-header {
   padding:         20px 28px;
-  border-bottom:   2px solid var(--black);
+  border-bottom:   2px solid var(--border-strong);
   display:         flex;
   align-items:     center;
   justify-content: space-between;
@@ -4320,7 +4345,7 @@ footer a:hover { color: var(--white); }
   padding:     11px 14px;
   border:      1px solid var(--border);
   border-radius: var(--radius-md);    /* 폼 인풋 통일 */
-  background:  var(--white);
+  background:  var(--surface);
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size:   14px;
   font-weight: 500;
@@ -4332,7 +4357,7 @@ footer a:hover { color: var(--white); }
 
 .form-group input:focus,
 .form-group select:focus,
-.form-group textarea:focus { border-color: var(--black); }
+.form-group textarea:focus { border-color: var(--border-strong); }
 
 .form-group textarea { min-height: 200px; line-height: 1.7; }
 
@@ -4369,8 +4394,8 @@ footer a:hover { color: var(--white); }
   width:          100%;
   min-height:     var(--btn-height-primary);
   padding:        0 18px;
-  background:     var(--black);
-  color:          var(--white);
+  background:     var(--surface-inverse);
+  color:          var(--on-accent);
   border:         none;
   border-radius: var(--radius-md);    /* radius 통일 자동 주입 */
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
@@ -4449,7 +4474,7 @@ footer a:hover { color: var(--white); }
 
 .btn-delete-soft:hover {
   background: var(--danger);
-  color: var(--white);
+  color: var(--on-accent);
   border-color: var(--danger);
 }
 
@@ -4465,7 +4490,7 @@ footer a:hover { color: var(--white); }
   letter-spacing: 0.15em;
   text-transform: uppercase;
   padding:        3px var(--gap-tight);
-  color:          var(--white);
+  color:          var(--on-accent);
   margin-top:     6px;
 }
 
@@ -4489,7 +4514,7 @@ footer a:hover { color: var(--white); }
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size:    28px;
   font-weight:  700;
-  color:        var(--black);
+  color:        var(--text-strong);
   display:      block;
 }
 
@@ -4524,7 +4549,7 @@ footer a:hover { color: var(--white); }
   font-weight:    600;
   line-height:    1.4;
   margin-bottom:  6px;
-  color:          var(--black);
+  color:          var(--text-strong);
   white-space:    nowrap;
   overflow:       hidden;
   text-overflow:  ellipsis;
@@ -4564,7 +4589,7 @@ footer a:hover { color: var(--white); }
 .item-meta-chip strong {
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-weight: 500;
-  color: var(--black);
+  color: var(--text-strong);
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
@@ -4611,10 +4636,10 @@ footer a:hover { color: var(--white); }
 }
 
 .btn-edit  { border-color: var(--ink);    color: var(--ink); }
-.btn-edit:hover  { background: var(--ink);    color: var(--white); }
+.btn-edit:hover  { background: var(--ink);    color: var(--on-accent); }
 
 .btn-delete { border-color: var(--danger); color: var(--danger); }
-.btn-delete:hover { background: var(--danger); color: var(--white); }
+.btn-delete:hover { background: var(--danger); color: var(--on-accent); }
 
 .btn-icon {
   min-width: 36px;
@@ -4622,7 +4647,7 @@ footer a:hover { color: var(--white); }
   padding: 0 10px;
   border: 1px solid var(--border);
   border-radius: var(--radius-md);    /* radius 통일 자동 주입 */
-  background: var(--white);
+  background: var(--surface);
   cursor: pointer;
   font-size: 14px;
   line-height: 1;
@@ -4667,7 +4692,7 @@ footer a:hover { color: var(--white); }
   text-transform: uppercase;
   padding:        0 22px;
   background:     var(--accent);
-  color:          var(--white);
+  color:          var(--on-accent);
   border:         none;
   border-radius:  var(--radius-md);    /* 버튼 통일 곡률 */
   cursor:         pointer;
@@ -4705,7 +4730,7 @@ footer a:hover { color: var(--white); }
   font-size:     22px;
   font-weight:   700;
   margin-bottom: var(--gap-tight);
-  color:         var(--black);
+  color:         var(--text-strong);
 }
 
 .board-pw-desc {
@@ -4721,7 +4746,7 @@ footer a:hover { color: var(--white); }
   padding:          var(--gap-element) 42px var(--gap-element) 14px;
   border:           1px solid var(--border);
   border-radius:    var(--radius-md);    /* 비밀번호 인풋 통일 */
-  background:       var(--white);
+  background:       var(--surface);
   font-family:      system-ui, -apple-system, sans-serif !important;
   font-size:        14px;
   color:            var(--ink);
@@ -4732,7 +4757,7 @@ footer a:hover { color: var(--white); }
   display:          block;
 }
 .board-pw-box input[type="password"]:focus,
-.board-pw-box input[type="text"]:focus { border-color: var(--black); }
+.board-pw-box input[type="text"]:focus { border-color: var(--border-strong); }
 
 .board-pw-error {
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
@@ -4759,7 +4784,7 @@ footer a:hover { color: var(--white); }
   cursor:         pointer;
   transition:     all 0.15s;
 }
-.board-pw-actions button:first-child { background: var(--black); color: var(--white); }
+.board-pw-actions button:first-child { background: var(--surface-inverse); color: var(--on-accent); }
 .board-pw-actions button:first-child:hover { background: var(--accent); }
 .board-pw-actions button:last-child { background: none; border: 1px solid var(--border); color: var(--muted); }
 .board-pw-actions button:last-child:hover { border-color: var(--ink); color: var(--ink); }
@@ -4807,7 +4832,7 @@ footer a:hover { color: var(--white); }
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   transition:  color 0.15s;
 }
-.board-write-close:hover { color: var(--black); }
+.board-write-close:hover { color: var(--text-strong); }
 
 .board-write-cat {
   display:        inline-block;
@@ -4816,7 +4841,7 @@ footer a:hover { color: var(--white); }
   letter-spacing: 0.15em;
   text-transform: uppercase;
   padding:        3px var(--gap-tight);
-  color:          var(--white);
+  color:          var(--on-accent);
   margin-bottom:  var(--gap-section);
 }
 
@@ -4847,14 +4872,14 @@ footer a:hover { color: var(--white); }
 }
 
 .tag-pill:hover {
-  border-color: var(--black);
+  border-color: var(--border-strong);
   color:        var(--ink);
 }
 
 .tag-pill.active {
-  background:   var(--black);
-  color:        var(--white);
-  border-color: var(--black);
+  background:   var(--surface-inverse);
+  color:        var(--on-accent);
+  border-color: var(--border-strong);
 }
 
 .public-tag-add-tools {
@@ -4882,7 +4907,7 @@ footer a:hover { color: var(--white); }
 }
 
 .public-inline-tag-add:hover {
-  border-color: var(--black);
+  border-color: var(--border-strong);
 }
 
 /* ════════════════════════════════════════════════════════════
@@ -4909,7 +4934,7 @@ footer a:hover { color: var(--white); }
   .hero-side          { display: none; }
 
   .content-wrapper    { grid-template-columns: 1fr; }
-  .sidebar            { border-top: 2px solid var(--black); }
+  .sidebar            { border-top: 2px solid var(--border-strong); }
   .home-priority      { grid-template-columns: 1fr; gap: var(--home-section-gap, 18px); margin-bottom: max(28px, var(--home-block-bottom, 36px)); }
   .home-priority-main,
   .home-priority-side { height: auto; min-height: 0; }
@@ -5390,7 +5415,7 @@ footer a:hover { color: var(--white); }
   border:      1px solid var(--border);
   border-radius: var(--radius-md);    /* 에디터 영역 통일 곡률 */
   min-height:  260px;
-  background:  var(--white);
+  background:  var(--surface);
   position:    relative;
 }
 
@@ -5402,7 +5427,7 @@ footer a:hover { color: var(--white); }
 .ce-toolbar__plus:hover,
 .ce-toolbar__settings-btn:hover {
   background: var(--accent) !important;
-  color:       var(--white) !important;
+  color:       var(--on-accent) !important;
 }
 
 /* Editor.js popovers — must appear above the scrollable write box */
@@ -5433,7 +5458,7 @@ footer a:hover { color: var(--white); }
 }
 .ce-header {
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif!important;
-  color:       var(--black) !important;
+  color:       var(--text-strong) !important;
 }
 .cdx-quote__text,
 .cdx-list__item {
@@ -5448,8 +5473,8 @@ footer a:hover { color: var(--white); }
 .editorjs-image-tool { padding: var(--gap-tight) 0; }
 .editorjs-image-btn {
   padding:        10px 20px;
-  background:     var(--black);
-  color:          var(--white);
+  background:     var(--surface-inverse);
+  color:          var(--on-accent);
   border:         none;
   border-radius: var(--radius-md);    /* radius 통일 자동 주입 */
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
@@ -5951,7 +5976,7 @@ footer a:hover { color: var(--white); }
    GLOBAL SEARCH BAR
    ════════════════════════════════════════════════════════════ */
 .global-search-bar {
-  background:    var(--white);
+  background:    var(--surface);
   border-bottom: 1px solid var(--border);
   padding:       var(--gap-element) var(--gap-section);
 }
@@ -5977,7 +6002,7 @@ footer a:hover { color: var(--white); }
 .global-search-btn {
   padding:        9px 20px;
   background:     var(--accent);
-  color:          var(--white);
+  color:          var(--on-accent);
   border:         none;
   border-radius:  var(--radius-md);   /* 버튼 통일 곡률 */
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
@@ -5987,7 +6012,7 @@ footer a:hover { color: var(--white); }
   cursor:         pointer;
   transition:     background 0.15s;
 }
-.global-search-btn:hover { background: var(--black); }
+.global-search-btn:hover { background: var(--surface-inverse); }
 .global-search-close {
   padding:     var(--gap-tight) 14px;
   background:  none;
@@ -5998,7 +6023,7 @@ footer a:hover { color: var(--white); }
   cursor:      pointer;
 }
 .global-search-results-wrap {
-  background:    var(--white);
+  background:    var(--surface);
   border-bottom: 2px solid var(--border);
   padding:       var(--gap-section);
   max-width:     100%;
@@ -6089,13 +6114,13 @@ footer a:hover { color: var(--white); }
 .admin-group-btn.active {
   background: rgba(255,255,255,0.12);
   border-color: rgba(255,255,255,0.34);
-  color: var(--white);
+  color: var(--on-accent);
 }
 
 .admin-header {
   position: static;
   z-index: 220;
-  background: linear-gradient(180deg, var(--black) 0%, var(--shade-gray-1) 100%);
+  background: linear-gradient(180deg, var(--surface-inverse) 0%, var(--shade-gray-1) 100%);
 }
 
 .admin-header .logo {
@@ -6346,7 +6371,7 @@ footer a:hover { color: var(--white); }
   top: 16px;
   transform: translateX(-50%);
   width: min(92vw, 560px);
-  background: var(--white);
+  background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-xl);    /* radius 통일 자동 주입 */
   box-shadow: 0 20px 48px rgba(0, 0, 0, 0.18);
@@ -6393,7 +6418,7 @@ footer a:hover { color: var(--white); }
   box-sizing: border-box;
   border: 1px solid var(--border);
   border-radius: var(--radius-md);    /* radius 통일 자동 주입 R2 */
-  background: var(--white);
+  background: var(--surface);
   color: var(--ink);
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size: 15px;
@@ -6405,8 +6430,8 @@ footer a:hover { color: var(--white); }
   min-height: 44px;
   padding: 0 var(--gap-card);
   border: none;
-  background: var(--black);
-  color: var(--white);
+  background: var(--surface-inverse);
+  color: var(--on-accent);
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size: 11px;
   letter-spacing: 0.08em;
@@ -6471,7 +6496,7 @@ footer a:hover { color: var(--white); }
   font-size: 12px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--black);
+  color: var(--text-strong);
 }
 
 .version-history-date,
@@ -6594,7 +6619,7 @@ footer a:hover { color: var(--white); }
   width: min(680px, calc(100vw - 48px));
   max-height: calc(100vh - 48px);
   overflow: auto;
-  background: var(--white);
+  background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);    /* radius 통일 자동 주입 */
   box-shadow: 0 24px 64px rgba(0,0,0,0.2);
@@ -6610,7 +6635,7 @@ footer a:hover { color: var(--white); }
   gap: var(--gap-card);
   padding: 18px 20px;
   background: linear-gradient(135deg, rgba(98,37,153,0.96), rgba(67,20,106,0.94));
-  color: var(--white);
+  color: var(--on-accent);
 }
 
 .post-history-head h3 {
@@ -6629,7 +6654,7 @@ footer a:hover { color: var(--white); }
 .post-history-close {
   border: 1px solid rgba(255,255,255,0.22);
   background: rgba(255,255,255,0.08);
-  color: var(--white);
+  color: var(--on-accent);
   padding: var(--gap-tight) var(--gap-element);
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size: 10px;
@@ -6779,7 +6804,7 @@ footer a:hover { color: var(--white); }
   padding: var(--gap-element) 14px;
   border: 1px solid var(--border);
   border-radius: var(--radius-md);    /* radius 통일 자동 주입 R2 */
-  background: var(--white);
+  background: var(--surface);
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size: 14px;
   color: var(--ink);
@@ -6822,7 +6847,7 @@ footer a:hover { color: var(--white); }
   font-size: 11px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: var(--white);
+  color: var(--on-accent);
 }
 .glossary-table td {
   font-size: 15px;
@@ -7034,7 +7059,7 @@ footer a:hover { color: var(--white); }
 }
 .members-table th.members-col--organization,
 .members-table th.members-col--status {
-  color: var(--white);
+  color: var(--on-accent);
 }
 
 .global-scroll-top-btn {
@@ -7067,7 +7092,7 @@ footer a:hover { color: var(--white); }
 .global-scroll-top-btn:hover {
   background: var(--accent);
   border-color: var(--accent);
-  color: var(--white);
+  color: var(--on-accent);
 }
 .global-scroll-top-btn span {
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
@@ -7830,7 +7855,7 @@ footer a:hover { color: var(--white); }
   gap: 10px;
   max-width: min(420px, calc(100vw - 32px));
   padding: 12px 14px;
-  background: var(--white);
+  background: var(--surface);
   color: var(--ink);
   border: 1px solid var(--gray-300);
   border-left: 4px solid var(--scouting-purple);
@@ -7859,7 +7884,7 @@ footer a:hover { color: var(--white); }
   height: 22px;
   padding: 0 8px;
   background: var(--scouting-purple);
-  color: var(--white);
+  color: var(--on-accent);
   border-radius: var(--radius-tight);
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size: 10px;
@@ -7875,7 +7900,7 @@ footer a:hover { color: var(--white); }
   flex-shrink: 0;
   padding: 6px 12px;
   background: var(--scouting-purple);
-  color: var(--white);
+  color: var(--on-accent);
   border: 0;
   border-radius: var(--radius-sm);
   font: inherit;

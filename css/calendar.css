@@ -87,9 +87,9 @@
   width: 100%;
   min-height: 44px;
   padding: 0 18px;
-  background: var(--black);
-  color: var(--white);
-  border: 1px solid var(--black);
+  background: var(--surface-inverse);
+  color: var(--on-accent);
+  border: 1px solid var(--border-strong);
   border-radius: 0;
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size: 12px;
@@ -371,9 +371,9 @@
   align-items: center;
   min-height: 34px;
   padding: 0 14px;
-  border: 1px solid var(--black);
-  background: var(--black);
-  color: var(--white);
+  border: 1px solid var(--border-strong);
+  background: var(--surface-inverse);
+  color: var(--on-accent);
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size: 11px;
   letter-spacing: .12em;
@@ -955,7 +955,7 @@
   border-radius: var(--radius-pill);
   border: 2px solid rgba(255,255,255,0.95);
   box-shadow: 0 4px 10px rgba(0,0,0,0.14);
-  color: var(--white);
+  color: var(--on-accent);
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size: 11px;
   line-height: 1;
@@ -973,7 +973,7 @@
   font-size:     22px;
   font-weight:   700;
   margin-bottom: 10px;
-  color:         var(--black);
+  color:         var(--text-strong);
 }
 @media (max-width: 900px) {
   .calendar-layout {

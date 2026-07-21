@@ -79,9 +79,9 @@
   cursor: pointer;
 }
 .glossary-letter-btn.active {
-  background: var(--black);
-  color: var(--white);
-  border-color: var(--black);
+  background: var(--surface-inverse);
+  color: var(--on-accent);
+  border-color: var(--border-strong);
 }
 .glossary-section + .glossary-section { margin-top: 26px; }
 .glossary-section-title {
@@ -133,7 +133,7 @@
   padding: 10px var(--gap-element);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);    /* 인풋 통일 */
-  background: var(--white);
+  background: var(--surface);
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size: 13px;
   color: var(--ink);
@@ -149,7 +149,7 @@
 }
 .glossary-login-card {
   width: min(92vw, 360px);
-  background: var(--white);
+  background: var(--surface);
   padding: 28px;
   border-top: 3px solid var(--scouting-purple);
 }
@@ -259,7 +259,7 @@
   box-sizing: border-box;
   border: 1px solid rgba(98, 37, 153, 0.18);
   border-radius: var(--radius-md);    /* 인풋 통일 곡률 */
-  background: var(--white);
+  background: var(--surface);
   color: var(--ink);
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size: 13px;
@@ -293,7 +293,7 @@
   padding: 0 var(--gap-element);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);    /* 버튼 통일 곡률 */
-  background: var(--white);
+  background: var(--surface);
   color: var(--ink);
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size: 11px;
@@ -303,7 +303,7 @@
 .glossary-inline-save-btn {
   border-color: var(--midnight-purple);
   background: var(--midnight-purple);
-  color: var(--white);
+  color: var(--on-accent);
 }
 .glossary-inline-delete-btn {
   border-color: var(--danger);
@@ -311,7 +311,7 @@
 }
 .glossary-inline-delete-btn:hover {
   background: var(--danger);
-  color: var(--white);
+  color: var(--on-accent);
 }
 .glossary-inline-edit-link {
   flex-shrink: 0;
@@ -319,7 +319,7 @@
   min-height: 40px;
   padding: 0 14px;
   border: 1px solid var(--border);
-  background: var(--white);
+  background: var(--surface);
   color: var(--muted);
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size: 11px;
@@ -337,7 +337,7 @@
   padding: 0 14px;
   border: 1px solid var(--border);
   border-radius: var(--radius-md);    /* radius 통일 자동 주입 R2 */
-  background: var(--white);
+  background: var(--surface);
   color: var(--ink);
   font-size: 12px;
   line-height: 1.2;
@@ -420,7 +420,7 @@
   .glossary-term-row,
   .glossary-description-row {
     border: 1px solid var(--border);
-    background: var(--white);
+    background: var(--surface);
     box-shadow: 0 6px 14px rgba(0,0,0,0.04);
     border-radius: var(--radius-lg);
     overflow: hidden;

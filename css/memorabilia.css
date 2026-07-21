@@ -908,7 +908,7 @@
   padding: 4px 6px;
   font-size: 11px;
   font-family: inherit;
-  color: var(--gray-900, var(--black));
+  color: var(--gray-900, var(--text-strong));
   background: var(--gw-canvas-white);
   border: 1px solid var(--gray-300, var(--gray-300));
   border-radius: var(--radius-tight);
@@ -1460,7 +1460,7 @@
   overflow: hidden;
   text-decoration: none;
   color: var(--ink);
-  background: var(--white);
+  background: var(--surface);
   box-shadow: 0 1px 3px rgba(0,0,0,0.06);
   transition: border-color .15s, box-shadow .15s, transform .15s;
 }
@@ -1477,7 +1477,7 @@
   width: 100%;
   aspect-ratio: 16 / 9;   /* 이미지 더 작게(낮게) — 텍스트 공간 확보 */
   object-fit: cover;
-  background: var(--white);
+  background: var(--surface);
   display: block;
 }
 .memo-related-thumb-empty { background: var(--gray-100); }
@@ -1556,7 +1556,7 @@
   position: absolute;
   z-index: 30;
   left: 0; right: 0; top: calc(100% + 4px);
-  background: var(--white);
+  background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm, 8px);
   box-shadow: 0 6px 20px rgba(0,0,0,0.12);

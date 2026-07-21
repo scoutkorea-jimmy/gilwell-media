@@ -109,7 +109,7 @@
     letter-spacing: 0.08em;
     text-transform: uppercase;
     text-decoration: none;
-    color: var(--white);
+    color: var(--on-accent);
     background: var(--accent);
     overflow: hidden;
     text-overflow: ellipsis;
@@ -182,7 +182,7 @@
 }
 .pps-category {
   display:        inline-block;
-  color:          var(--white);
+  color:          var(--on-accent);
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size:      11px;
   letter-spacing: 0.12em;
@@ -223,7 +223,7 @@
   font-size:     clamp(22px, 3.5vw, 36px);
   font-weight:   700;
   line-height:   1.3;
-  color:         var(--black);
+  color:         var(--text-strong);
   margin-bottom: 14px;
 }
 .post-page-subtitle {
@@ -313,7 +313,7 @@
 .post-page-body h3,
 .post-page-body h4 {
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
-  color: var(--black);
+  color: var(--text-strong);
   line-height: 1.42;
   margin: 34px 0 14px;
   letter-spacing: -0.02em;
@@ -409,7 +409,7 @@
 .post-page-tag-btn:hover {
   border-color: var(--accent);
   color: var(--accent);
-  background: var(--white);
+  background: var(--surface);
   transform: translateY(-1px);
 }
 .post-related-surface {
@@ -498,7 +498,7 @@
 .post-edit-editor-holder {
   min-height: 260px;
   border: 1px solid var(--border);
-  background: var(--white);
+  background: var(--surface);
   padding: var(--gap-card);
 }
 .post-edit-note {
@@ -563,7 +563,7 @@
 .post-like-btn.liked {
   cursor: default;
   background: var(--shade-red-8);
-  color: var(--white);
+  color: var(--on-accent);
   box-shadow: none;
 }
 .post-like-btn.is-busy {
