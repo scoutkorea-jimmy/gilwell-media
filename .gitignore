@@ -20,3 +20,7 @@ playwright-report/
 playwright/.cache/
 test-results/
 playwright-report/
+
+# Offline tag-analysis artifacts (regenerable: node scripts/tag-analysis/04_run_all.mjs)
+# Contains a D1 post dump — must never be committed or deployed.
+output/

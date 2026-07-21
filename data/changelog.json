@@ -1,6 +1,27 @@
 {
   "items": [
   {
+    "version": "00.176.03",
+    "date": "2026-07-21",
+    "released_at": "2026-07-21 13:50:00 KST",
+    "summary": "홈페이지 서버에 함께 올라가 있던 내부 개발 파일이 주소만 알면 누구나 열람 가능한 상태였다. 전부 차단했다.",
+    "for_users": [
+      "개발 문서, 데이터베이스 설계도, 배포 절차서 같은 내부 파일이 홈페이지 주소로 직접 열리던 문제를 막았습니다. 방문자가 보는 화면과 기능에는 아무 변화가 없습니다.",
+      "특히 예전 분석 작업에서 남은 파일에 공개 기사 151건의 제목·작성자·조회수 목록이 통째로 들어 있었는데, 이 파일을 서버와 저장소 양쪽에서 삭제했습니다.",
+      "실제 비밀번호나 접속 열쇠가 새어나간 정황은 없습니다. 확인 결과 그런 파일은 애초에 서버에 올라가지 않았습니다."
+    ],
+    "for_developers": [
+      "원인: `wrangler pages deploy .` 가 저장소 루트를 통째로 업로드해 `rules/`·`docs/`·`db/schema.sql`·`scripts/`·`wrangler.toml`(D1 database_id)·`output/intermediate/posts_export.json`(posts 151행 덤프)이 200 으로 서빙됨.",
+      "1차 시도였던 `.assetsignore` 는 Pages 배포 경로에서 무시됨을 실측 확인(배포 후에도 전 경로 200). 게다가 `card-news-app`·`dist-homepage` 를 제외 목록에 넣어 두면 향후 wrangler 가 이 파일을 인식하는 순간 `/card-news/:id` 와 Dreampath 문서 템플릿 iframe 이 죽는 시한폭탄이었다. 파일 삭제.",
+      "확정안: `functions/_middleware.js` 에 `isBlockedInternalPath()` 추가 — `next()` 호출 전에 404 반환해 자산 서빙 자체를 차단. `BLOCKED_PREFIXES` 16개 + `BLOCKED_FILES` 13개 + `/wrangler*.toml` 패턴, 경로는 소문자 정규화 후 비교.",
+      "차단 제외(런타임 의존) 명문화: `/DREAMPATH.md`(js/dreampath.js `_renderRulesMarkdown()` fetch), `/card-news-app/*`(functions/card-news/[id].js 가 .jsx 직접 참조, @babel/standalone 브라우저 변환), `/dist-homepage/*`(js/dreampath.js iframe + `isDreampathTemplatePath()` CSP 예외), `/data/*`(js/kms.js changelog), `/VERSION` 계열.",
+      "`output/` 9개 파일(1.7MB) 삭제 + `.gitignore` 등재. `scripts/tag-analysis/04_run_all.mjs` 로 재생성 가능하며 런타임 참조는 없음(`functions/api/admin/tag-insights.js` 는 D1 을 직접 조회).",
+      "`functions/**` 는 정적 자산으로 업로드되지 않음을 실측 확인(`auth.js` → 404). `.dev.vars` 도 404 — 실제 시크릿 노출 없음.",
+      "한계: Cloudflare Pages 는 과거 배포를 해시 URL 로 영구 보존하므로 이전 배포본에서는 여전히 접근 가능. 신규 노출만 차단된다.",
+      "사이트 버전 00.176.02 → 00.176.03."
+    ]
+  },
+  {
     "version": "00.176.02",
     "date": "2026-07-21",
     "released_at": "2026-07-21 02:10:00 KST",

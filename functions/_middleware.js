@@ -21,6 +21,24 @@
 
 export async function onRequest(context) {
   const { request, next } = context;
+
+  // [내부 파일 차단] `wrangler pages deploy .` 는 저장소 루트를 통째로 업로드하므로
+  // 개발·운영 파일(규칙 문서, DB 스키마, 배포 스크립트, wrangler.toml 의 D1
+  // database_id, 오프라인 분석 산출물의 게시글 덤프)이 공개 URL 로 읽힌다.
+  // `.assetsignore` 는 Pages 배포 경로에서 무시되므로(2026-07-21 실측: 배포 후에도
+  // 전부 200) 여기서 차단하는 것이 유일하게 검증 가능한 방법이다. next() 보다
+  // 먼저 반환해 자산 서빙 자체를 막는다.
+  if (isBlockedInternalPath(getPathname(request))) {
+    return new Response('Not Found', {
+      status: 404,
+      headers: {
+        'Content-Type': 'text/plain; charset=utf-8',
+        'Cache-Control': 'no-store',
+        'X-Robots-Tag': 'noindex',
+      },
+    });
+  }
+
   const response = await next();
   const pathname = getPathname(request);
 
@@ -121,6 +139,63 @@ function isLegacyInlinePath(pathname) {
 
 function isDreampathTemplatePath(pathname) {
   return String(pathname || '').startsWith('/dist-homepage/');
+}
+
+// ── 내부 파일 차단 목록 ──────────────────────────────────────────────────
+// [!] 여기에 경로를 추가하기 전에 런타임이 그 파일을 fetch 하지 않는지 확인할 것.
+//     아래는 "브라우저가 읽어야 하므로 절대 차단하면 안 되는" 경로들이다:
+//       /DREAMPATH.md        js/dreampath.js `_renderRulesMarkdown()` 이 fetch
+//       /card-news-app/*     functions/card-news/[id].js 가 .jsx 를 직접 참조
+//                            (빌드 없음 — @babel/standalone 이 브라우저에서 변환)
+//       /dist-homepage/*     js/dreampath.js 가 문서 템플릿을 iframe 으로 로드
+//       /data/*              js/kms.js 가 changelog.json 을 fetch
+//       /VERSION, /ADMIN_VERSION, /ASSET_VERSION   배포 검증 · 외부 모니터링
+const BLOCKED_PREFIXES = [
+  '/rules/',
+  '/docs/',
+  '/db/',
+  '/scripts/',
+  '/migrations/',
+  '/workers/',
+  '/tests/',
+  '/test-results/',
+  '/playwright-report/',
+  '/output/',
+  '/.git/',
+  '/.github/',
+  '/.claude/',
+  '/.obsidian/',
+  '/.wrangler/',
+  '/node_modules/',
+];
+
+const BLOCKED_FILES = new Set([
+  '/claude.md',
+  '/agents.md',
+  '/readme.md',
+  '/dreampath-history.md',
+  '/package.json',
+  '/package-lock.json',
+  '/playwright.config.ts',
+  '/deploy.sh',
+  '/.gitignore',
+  '/.assetsignore',
+  '/.dev.vars',
+  '/.dev.vars.example',
+  '/.ds_store',
+]);
+
+function isBlockedInternalPath(pathname) {
+  // 대소문자 무시 — Pages 는 경로를 구분하지만, 차단은 넓게 거는 편이 안전하다.
+  const p = String(pathname || '').toLowerCase();
+  if (!p || p === '/') return false;
+  if (BLOCKED_FILES.has(p)) return true;
+  // wrangler.toml / wrangler.publish-due.toml 등 (D1 database_id 노출)
+  if (p.startsWith('/wrangler') && p.endsWith('.toml')) return true;
+  for (const prefix of BLOCKED_PREFIXES) {
+    if (p.startsWith(prefix)) return true;
+  }
+  return false;
 }
 
 function buildCsp(request, nonce) {
