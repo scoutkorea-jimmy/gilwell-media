@@ -384,26 +384,47 @@ async function loadHomeLead(env, origin) {
 
 async function loadHomePicks(env, origin, limit) {
   const safeLimit = Math.max(1, Math.min(10, parseInt(limit || 4, 10)));
-  const [postsRes, orderRow] = await Promise.all([
-    env.DB.prepare(
-      `SELECT ${POST_CARD_COLUMNS}
-         FROM posts
-        WHERE published = 1 AND featured = 1
-        ORDER BY ${PUBLIC_DATE_EXPR} DESC, id DESC`
-    ).all(),
-    env.DB.prepare(`SELECT value FROM settings WHERE key = 'picks_order'`).first(),
-  ]);
-  const posts = (postsRes.results || []).map((p) => serializeCardPost(p, origin));
-  const order = orderRow ? safeParsePickOrder(orderRow.value) : [];
-  if (!order.length) return posts.slice(0, safeLimit);
-  const orderIdx = new Map();
-  order.forEach((id, i) => { if (!orderIdx.has(id)) orderIdx.set(id, i); });
-  const sorted = posts.slice().sort((a, b) => {
-    const ai = orderIdx.has(a.id) ? orderIdx.get(a.id) : Number.POSITIVE_INFINITY;
-    const bi = orderIdx.has(b.id) ? orderIdx.get(b.id) : Number.POSITIVE_INFINITY;
-    return ai - bi;
-  });
-  return sorted.slice(0, safeLimit);
+
+  // [2026-07-22] 수동 지정(posts.featured + settings.picks_order) → 자동 선정으로 전환.
+  //
+  // 기준: 최근 30일 페이지뷰 상위. 집계는 post_views 를 쓴다 — site_visits 의
+  // '/post/%' 경로 집계보다 훨씬 완전하다(30일 기준 2,761행/367기사 vs 218행/73기사).
+  //
+  // 홈 '인기'(loadPopular) 와의 차이: 인기는 최근 72시간(지금 뜨는 것),
+  // 추천은 최근 30일(한 달간 많이 읽힌 것). 겹칠 수는 있으나 성격이 다르다.
+  //
+  // 조회 기록이 없을 때(신규 배포·데이터 유실)는 빈 화면 대신 최신 공개글로
+  // 대체해 섹션이 비지 않게 한다.
+  const { results } = await env.DB.prepare(
+    `SELECT ${POST_CARD_COLUMNS}, COUNT(v.post_id) AS views_30d
+       FROM posts
+       JOIN post_views v
+         ON v.post_id = posts.id
+        AND v.viewed_at >= datetime('now', '-30 day')
+      WHERE published = 1
+      GROUP BY posts.id
+      ORDER BY views_30d DESC, ${PUBLIC_DATE_EXPR} DESC, posts.id DESC
+      LIMIT ?`
+  ).bind(safeLimit).all();
+
+  const picks = (results || []).map((post) => serializeCardPost(post, origin));
+  if (picks.length >= safeLimit) return picks;
+
+  // 부족분은 최신 공개글로 채운다 (이미 뽑힌 글은 제외).
+  const seen = new Set(picks.map((p) => p.id));
+  const fallback = await env.DB.prepare(
+    `SELECT ${POST_CARD_COLUMNS}
+       FROM posts
+      WHERE published = 1
+      ORDER BY ${PUBLIC_DATE_EXPR} DESC, posts.id DESC
+      LIMIT ?`
+  ).bind(safeLimit * 3).all();
+  for (const row of fallback.results || []) {
+    if (picks.length >= safeLimit) break;
+    if (seen.has(row.id)) continue;
+    picks.push(serializeCardPost(row, origin));
+  }
+  return picks;
 }
 
 function safeParsePickOrder(raw) {

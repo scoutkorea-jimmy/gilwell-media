@@ -10,8 +10,8 @@
   <link rel="icon" type="image/svg+xml" href="/img/favicon.svg">
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png">
   <link rel="shortcut icon" href="/img/favicon-48.png">
-  <link rel="stylesheet" href="/css/admin-v3.css?v=20260721123831">
-  <link rel="stylesheet" href="/css/memorabilia.css?v=20260721123831">
+  <link rel="stylesheet" href="/css/admin-v3.css?v=20260721125113">
+  <link rel="stylesheet" href="/css/memorabilia.css?v=20260721125113">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H" crossorigin="anonymous" referrerpolicy="no-referrer">
   <style>
     #v3-login[style*="display: none"] { pointer-events: none !important; }
@@ -94,9 +94,9 @@
     <button class="v3-login-btn" id="v3-login-btn" type="button" onclick="window.__gwAdminFallbackLogin && window.__gwAdminFallbackLogin(event)">관리자 입장</button>
     <div class="v3-login-err" id="v3-login-err"></div>
     <div class="v3-login-ver">
-      Admin <span class="v3-ver-str v3-ver-admin admin-build-version">V03.150.01</span>
+      Admin <span class="v3-ver-str v3-ver-admin admin-build-version">V03.151.00</span>
       &nbsp;·&nbsp;
-      Site <span class="v3-ver-str v3-ver-site site-build-version">V00.178.00</span>
+      Site <span class="v3-ver-str v3-ver-site site-build-version">V00.178.01</span>
     </div>
   </div>
 </div>
@@ -109,8 +109,8 @@
   <!-- ── Sidebar ─────────────────────────────────────────── -->
   <aside id="v3-sidebar">
     <div id="v3-sidebar-logo">
-      <div class="v3-logo-mark">BP미디어 <span class="v3-logo-version v3-ver-str v3-ver-admin admin-build-version">V03.150.01</span></div>
-      <div class="v3-logo-sub">운영 콘솔 &nbsp;<span class="v3-logo-sub-site">Site <span class="v3-ver-site site-build-version">V00.178.00</span></span></div>
+      <div class="v3-logo-mark">BP미디어 <span class="v3-logo-version v3-ver-str v3-ver-admin admin-build-version">V03.151.00</span></div>
+      <div class="v3-logo-sub">운영 콘솔 &nbsp;<span class="v3-logo-sub-site">Site <span class="v3-ver-site site-build-version">V00.178.01</span></span></div>
     </div>
 
     <!-- ── 세션 타이머 ── -->
@@ -704,7 +704,7 @@
               <div class="v3-card-title v3-card-title-tight-md">게시 설정</div>
               <div class="v3-form-grid v3-form-grid-compact">
                 <label class="v3-check-row"><input type="checkbox" id="w-published" /><span>공개</span></label>
-                <label class="v3-check-row"><input type="checkbox" id="w-featured" /><span>특집 (홈 노출)</span></label>
+                <label class="v3-check-row"><input type="checkbox" id="w-featured" /><span>특집 표시 (홈 추천 레일과 무관)</span></label>
                 <label class="v3-check-row"><input type="checkbox" id="w-ai" /><span>AI 도움 사용</span></label>
               </div>
               <div class="v3-text-m v3-text-s v3-mt-8">기본값은 공개입니다. 체크를 해제하면 비공개로 저장됩니다.</div>
@@ -1414,7 +1414,7 @@
                 <div class="v3-card-head">
                   <div>
                     <h2 class="v3-card-title">에디터 추천</h2>
-                    <p class="v3-card-desc">홈의 에디터 추천 레일에 노출할 게시글을 선택합니다. 현재 구조에서는 선택한 게시글에 `featured` 플래그를 부여하며, 최대 4개까지만 유지합니다.</p>
+                    <p class="v3-card-desc"><strong>2026-07-22부터 자동 선정입니다.</strong> 홈의 에디터 추천 레일은 <strong>최근 30일 페이지뷰 상위 4건</strong>을 자동으로 보여줍니다. 아래에서 게시글을 선택해도 홈 노출에는 반영되지 않습니다. 순서·구성을 바꾸려면 기준 자체를 변경해야 합니다 (<code>functions/api/home.js</code> <code>loadHomePicks</code>).</p>
                   </div>
                   <button class="v3-btn v3-btn-primary v3-btn-sm" id="picks-refresh-btn">새로고침</button>
                 </div>
@@ -3429,14 +3429,14 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" integrity="sha384-vtjasyidUo0kW94K5MXDXntzOJpQgBKXmE7e2Ga4LG0skTTLeBi97eFAXsqewJjw" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha384-cxOPjt7s7Iz04uaHJceBmS+qpjv2JkIHNVcuOrM+YHwZOmJGBXI00mdUXEq65HTH" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.4/dist/purify.min.js" integrity="sha384-eEu5CTj3qGvu9PdJuS+YlkNi7d2XxQROAFYOr59zgObtlcux1ae1Il3u7jvdCSWu" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-<script src="/js/main.js?v=20260721123831"></script>
-<script src="/js/shared-country-name-ko.js?v=20260721123831"></script>
-<script src="/js/memorabilia-shared.js?v=20260721123831"></script>
-<script src="/js/admin-v3.js?v=20260721123831"></script>
-<script src="/js/admin-account.js?v=20260721123831"></script>
-<script src="/js/admin-memorabilia.js?v=20260721123831"></script>
-<script src="/js/admin-cardnews.js?v=20260721123831"></script>
-<script src="/js/admin-memorabilia-comments.js?v=20260721123831"></script>
+<script src="/js/main.js?v=20260721125113"></script>
+<script src="/js/shared-country-name-ko.js?v=20260721125113"></script>
+<script src="/js/memorabilia-shared.js?v=20260721125113"></script>
+<script src="/js/admin-v3.js?v=20260721125113"></script>
+<script src="/js/admin-account.js?v=20260721125113"></script>
+<script src="/js/admin-memorabilia.js?v=20260721125113"></script>
+<script src="/js/admin-cardnews.js?v=20260721125113"></script>
+<script src="/js/admin-memorabilia-comments.js?v=20260721125113"></script>
 <script>
   (function () {
     function toggleReveal(visible) {

@@ -301,7 +301,7 @@ async function loadHomeSsrContent(env, origin, navLabelsPromise) {
       loadHomeLead(env, origin).catch(() => ({ post: null })),
       loadLatestPosts(env, origin, 4).catch(() => []),
       loadPopularPosts(env, origin, 4).catch(() => []),
-      loadPostList(env, origin, { featured: true, limit: 4 }).catch(() => []),
+      loadTopViewedPosts(env, origin, 4).catch(() => []),
       loadPostList(env, origin, { category: 'korea', limit: 4 }).catch(() => []),
       loadPostList(env, origin, { category: 'apr', limit: 4 }).catch(() => []),
       loadPostList(env, origin, { category: 'wosm', limit: 4 }).catch(() => []),
@@ -480,6 +480,43 @@ async function loadPopularPosts(env, origin, limit) {
      LIMIT ?
   `).bind(safeLimit).all();
   return (results || []).map((post) => serializePostImage(post, origin));
+}
+
+/**
+ * 에디터 추천 — 최근 30일 페이지뷰 상위 (2026-07-22 수동 지정에서 전환).
+ *
+ * functions/api/home.js 의 loadHomePicks 와 같은 기준을 쓴다. SSR 폴백과
+ * 클라이언트 렌더가 서로 다른 목록을 보여주면 초기 페인트 후 내용이 바뀌므로
+ * 반드시 같은 정렬을 유지할 것.
+ *
+ * 조회 기록이 없으면 최신 공개글로 채워 섹션이 비지 않게 한다.
+ */
+async function loadTopViewedPosts(env, origin, limit) {
+  const safeLimit = Math.max(1, Math.min(10, parseInt(limit || 4, 10)));
+  const { results } = await env.DB.prepare(
+    `SELECT id, category, title, subtitle, content, image_url, created_at, publish_at, tag, author,
+            COUNT(v.post_id) AS views_30d
+       FROM posts
+       JOIN post_views v
+         ON v.post_id = posts.id
+        AND v.viewed_at >= datetime('now', '-30 day')
+      WHERE published = 1
+      GROUP BY posts.id
+      ORDER BY views_30d DESC, ${PUBLIC_DATE_EXPR} DESC, posts.id DESC
+      LIMIT ?`
+  ).bind(safeLimit).all();
+
+  const picks = (results || []).map((post) => serializePostImage(post, origin));
+  if (picks.length >= safeLimit) return picks;
+
+  const seen = new Set(picks.map((p) => p.id));
+  const fallback = await loadPostList(env, origin, { limit: safeLimit * 3 });
+  for (const post of fallback) {
+    if (picks.length >= safeLimit) break;
+    if (seen.has(post.id)) continue;
+    picks.push(post);
+  }
+  return picks;
 }
 
 async function loadPostList(env, origin, opts = {}) {
