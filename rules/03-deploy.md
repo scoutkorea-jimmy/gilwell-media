@@ -43,6 +43,20 @@ scope: project
 > [!warning] wrangler 배너가 `deploy.sh` JSON 파싱을 깨뜨림
 > wrangler 4.97 이후 skills 안내 배너가 stdout에 섞여 `deploy.sh` 파싱이 실패한다. 배포 명령은 `CI=1` 을 앞에 붙여 실행한다.
 
+> [!danger] 배포 직후 자산 URL 을 성급히 조회하지 말 것 (2026-07-21 사고)
+> `_headers` 가 자산에 `public, max-age=31536000, immutable` 을 준다. 배포 전파가
+> 끝나기 전에 새 `?v=<ASSET_VERSION>` URL 을 조회하면, 그 엣지가 **새 URL 아래 이전
+> 파일을 캐시**해 버린다. immutable 이라 1년간 만료되지 않는다.
+> - 증상: 같은 URL 을 반복 조회하면 POP 에 따라 신·구 버전이 번갈아 나온다.
+>   방문자는 HTML 과 `main.js` 버전이 어긋나 "새 버전 있음" 배너를 보게 되고,
+>   **새로고침해도 같은 캐시를 받아 배너가 사라지지 않는다.**
+> - 확인: `for i in $(seq 1 10); do curl -s ".../js/main.js?v=$(cat ASSET_VERSION)" | grep -o "APP_VERSION = '[^']*'"; done | sort | uniq -c`
+>   → 두 종류가 나오면 오염된 것이다.
+> - 해소: **캐시 무효화가 아니라 캐시 키 재발급** — `./scripts/sync_versions.sh` 로
+>   `ASSET_VERSION` 을 새로 뽑아 재배포한다. 오염된 항목은 아무도 참조하지 않게 된다.
+>   (`VERSION`/changelog 는 그대로 두어도 preflight 를 통과한다.)
+> - 예방: 배포 후 검증은 **최소 60~90초 기다렸다가** 수행한다.
+
 > [!warning] Cloudflare 커밋 메시지 제한
 > `./deploy.sh` 가 `Invalid commit message` 로 실패하면 커밋 메시지를 **ASCII 전용 · 약 1.2KB 미만**으로 amend 한 뒤 재시도한다.
 
