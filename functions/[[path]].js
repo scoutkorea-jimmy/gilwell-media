@@ -1,4 +1,5 @@
 import { buildShareMetaBlock, getResolvedShareImage, getSitePageKey, loadSiteMeta } from './_shared/site-meta.js';
+import { selectHomeRailIds, hydrateByIds } from './_shared/home-rails.js';
 import { serializePostImage } from './_shared/images.js';
 import { loadNavLabels, getNavLabel } from './_shared/nav-labels.js';
 import { ensureDuePostsPublished } from './_shared/publish-due-posts.js';
@@ -300,8 +301,9 @@ async function loadHomeSsrContent(env, origin, navLabelsPromise) {
       navLabelsPromise,
       loadHomeLead(env, origin).catch(() => ({ post: null })),
       loadLatestPosts(env, origin, 4).catch(() => []),
-      loadPopularPosts(env, origin, 4).catch(() => []),
-      loadTopViewedPosts(env, origin, 4).catch(() => []),
+      // 추천·인기는 /api/home 과 같은 기준을 써야 초기 페인트 후 목록이 바뀌지 않는다.
+      loadSsrRails(env, origin).then((r) => r.popular).catch(() => []),
+      loadSsrRails(env, origin).then((r) => r.picks).catch(() => []),
       loadPostList(env, origin, { category: 'korea', limit: 4 }).catch(() => []),
       loadPostList(env, origin, { category: 'apr', limit: 4 }).catch(() => []),
       loadPostList(env, origin, { category: 'wosm', limit: 4 }).catch(() => []),
@@ -450,75 +452,25 @@ async function loadLatestPosts(env, origin, limit) {
   return (results || []).map((post) => serializePostImage(post, origin));
 }
 
-async function loadPopularPosts(env, origin, limit) {
-  const safeLimit = Math.max(1, Math.min(10, parseInt(limit || 4, 10)));
-  const { results } = await env.DB.prepare(`
-    WITH recent_views AS (
-      SELECT CAST(SUBSTR(path, 7) AS INTEGER) AS post_id,
-             COUNT(*) AS recent_views
-        FROM site_visits
-       WHERE path LIKE '/post/%'
-         AND datetime(visited_at, '+9 hours') >= datetime('now', '+9 hours', '-72 hours')
-       GROUP BY CAST(SUBSTR(path, 7) AS INTEGER)
-    ),
-    recent_totals AS (
-      SELECT COALESCE(SUM(recent_views), 0) AS total_recent_views
-        FROM recent_views
-    )
-    SELECT p.id, p.category, p.title, p.subtitle, p.content, p.image_url, p.created_at, p.publish_at, p.tag, p.author,
-           COALESCE(rv.recent_views, 0) AS recent_views
-      FROM posts p
-      LEFT JOIN recent_views rv ON rv.post_id = p.id
-      CROSS JOIN recent_totals rt
-     WHERE p.published = 1
-     ORDER BY
-       CASE WHEN rt.total_recent_views > 0 THEN 0 ELSE 1 END ASC,
-       CASE WHEN rt.total_recent_views > 0 THEN COALESCE(rv.recent_views, 0) END DESC,
-       CASE WHEN rt.total_recent_views > 0 THEN ${PUBLIC_DATE_EXPR} END DESC,
-       CASE WHEN rt.total_recent_views = 0 THEN ${PUBLIC_DATE_EXPR} END DESC,
-       p.id DESC
-     LIMIT ?
-  `).bind(safeLimit).all();
-  return (results || []).map((post) => serializePostImage(post, origin));
-}
-
 /**
- * 에디터 추천 — 최근 30일 페이지뷰 상위 (2026-07-22 수동 지정에서 전환).
- *
- * functions/api/home.js 의 loadHomePicks 와 같은 기준을 쓴다. SSR 폴백과
- * 클라이언트 렌더가 서로 다른 목록을 보여주면 초기 페인트 후 내용이 바뀌므로
- * 반드시 같은 정렬을 유지할 것.
- *
- * 조회 기록이 없으면 최신 공개글로 채워 섹션이 비지 않게 한다.
+ * SSR 폴백용 추천·인기 레일. functions/_shared/home-rails.js 의 기준을 그대로 쓴다.
+ * 요청 안에서 한 번만 계산해 두 섹션이 나눠 쓴다.
  */
-async function loadTopViewedPosts(env, origin, limit) {
-  const safeLimit = Math.max(1, Math.min(10, parseInt(limit || 4, 10)));
-  const { results } = await env.DB.prepare(
-    `SELECT id, category, title, subtitle, content, image_url, created_at, publish_at, tag, author,
-            COUNT(v.post_id) AS views_30d
-       FROM posts
-       JOIN post_views v
-         ON v.post_id = posts.id
-        AND v.viewed_at >= datetime('now', '-30 day')
-      WHERE published = 1
-      GROUP BY posts.id
-      ORDER BY views_30d DESC, ${PUBLIC_DATE_EXPR} DESC, posts.id DESC
-      LIMIT ?`
-  ).bind(safeLimit).all();
-
-  const picks = (results || []).map((post) => serializePostImage(post, origin));
-  if (picks.length >= safeLimit) return picks;
-
-  const seen = new Set(picks.map((p) => p.id));
-  const fallback = await loadPostList(env, origin, { limit: safeLimit * 3 });
-  for (const post of fallback) {
-    if (picks.length >= safeLimit) break;
-    if (seen.has(post.id)) continue;
-    picks.push(post);
+function loadSsrRails(env, origin) {
+  if (!env.__ssrRailsPromise) {
+    env.__ssrRailsPromise = (async () => {
+      const { pickIds, popularIds } = await selectHomeRailIds(env, 4);
+      const ids = [...new Set([...pickIds, ...popularIds])];
+      const cards = await hydrateByIds(env, ids, `id, category, title, subtitle, content, image_url, created_at, publish_at, tag, author`, (row) => serializePostImage(row, origin));
+      const byId = new Map(cards.map((c) => [c.id, c]));
+      return {
+        picks: pickIds.map((id) => byId.get(id)).filter(Boolean),
+        popular: popularIds.map((id) => byId.get(id)).filter(Boolean),
+      };
+    })();
   }
-  return picks;
+  return env.__ssrRailsPromise;
 }
-
 async function loadPostList(env, origin, opts = {}) {
   const conditions = ['published = 1'];
   const bindings = [];

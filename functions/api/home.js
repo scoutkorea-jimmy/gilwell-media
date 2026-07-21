@@ -1,4 +1,5 @@
 import { loadSiteMeta, normalizeSiteMeta } from '../_shared/site-meta.js';
+import { selectHomeRailIds, hydrateByIds } from '../_shared/home-rails.js';
 import { serializePostImage } from '../_shared/images.js';
 import { logApiError } from '../_shared/ops-log.js';
 import { ensureDuePostsPublished } from '../_shared/publish-due-posts.js';
@@ -148,8 +149,9 @@ export async function onRequestGet(context) {
       resolveSection('hero', () => loadHero(env, origin), { posts: [], interval_ms: 3000 }),
       resolveSection('lead', () => loadHomeLead(env, origin), { post: null, media: DEFAULT_HOME_LEAD_MEDIA }),
       resolveSection('latest', () => loadLatestPosts(env, origin, 4), []),
-      resolveSection('popular', () => loadPopular(env, origin, 4), []),
-      resolveSection('picks', () => loadHomePicks(env, origin, 4), []),
+      // 추천·인기는 서로를 알아야 하므로(인기가 추천과 중복 제거) 함께 계산한다.
+      resolveSection('popular', () => loadRails(env, origin).then((r) => r.popular), []),
+      resolveSection('picks', () => loadRails(env, origin).then((r) => r.picks), []),
       resolveSection('banners', () => loadActiveHomeBanners(env), []),
       resolveSection('korea', () => loadPostList(env, origin, { category: 'korea', limit: 4 }), []),
       resolveSection('apr', () => loadPostList(env, origin, { category: 'apr', limit: 4 }), []),
@@ -387,51 +389,6 @@ async function loadHomeLead(env, origin) {
   return { post: post ? serializeCardPost(post, origin) : null, media };
 }
 
-async function loadHomePicks(env, origin, limit) {
-  const safeLimit = Math.max(1, Math.min(10, parseInt(limit || 4, 10)));
-
-  // [2026-07-22] 수동 지정(posts.featured + settings.picks_order) → 자동 선정으로 전환.
-  //
-  // 기준: 최근 30일 페이지뷰 상위. 집계는 post_views 를 쓴다 — site_visits 의
-  // '/post/%' 경로 집계보다 훨씬 완전하다(30일 기준 2,761행/367기사 vs 218행/73기사).
-  //
-  // 홈 '인기'(loadPopular) 와의 차이: 인기는 최근 72시간(지금 뜨는 것),
-  // 추천은 최근 30일(한 달간 많이 읽힌 것). 겹칠 수는 있으나 성격이 다르다.
-  //
-  // 조회 기록이 없을 때(신규 배포·데이터 유실)는 빈 화면 대신 최신 공개글로
-  // 대체해 섹션이 비지 않게 한다.
-  const { results } = await env.DB.prepare(
-    `SELECT ${POST_CARD_COLUMNS}, COUNT(v.post_id) AS views_30d
-       FROM posts
-       JOIN post_views v
-         ON v.post_id = posts.id
-        AND v.viewed_at >= datetime('now', '-30 day')
-      WHERE published = 1
-      GROUP BY posts.id
-      ORDER BY views_30d DESC, ${PUBLIC_DATE_EXPR} DESC, posts.id DESC
-      LIMIT ?`
-  ).bind(safeLimit).all();
-
-  const picks = (results || []).map((post) => serializeCardPost(post, origin));
-  if (picks.length >= safeLimit) return picks;
-
-  // 부족분은 최신 공개글로 채운다 (이미 뽑힌 글은 제외).
-  const seen = new Set(picks.map((p) => p.id));
-  const fallback = await env.DB.prepare(
-    `SELECT ${POST_CARD_COLUMNS}
-       FROM posts
-      WHERE published = 1
-      ORDER BY ${PUBLIC_DATE_EXPR} DESC, posts.id DESC
-      LIMIT ?`
-  ).bind(safeLimit * 3).all();
-  for (const row of fallback.results || []) {
-    if (picks.length >= safeLimit) break;
-    if (seen.has(row.id)) continue;
-    picks.push(serializeCardPost(row, origin));
-  }
-  return picks;
-}
-
 function safeParsePickOrder(raw) {
   try {
     const parsed = JSON.parse(raw);
@@ -475,56 +432,25 @@ async function loadLatestPosts(env, origin, limit) {
   return (results || []).map((post) => serializeCardPost(post, origin));
 }
 
-async function loadPopular(env, origin, limit) {
-  const { results } = await env.DB.prepare(`
-    WITH recent_views AS (
-      SELECT CAST(SUBSTR(path, 7) AS INTEGER) AS post_id,
-             COUNT(*) AS recent_views
-        FROM site_visits
-       WHERE path LIKE '/post/%'
-         AND datetime(visited_at, '+9 hours') >= datetime('now', '+9 hours', '-72 hours')
-       GROUP BY CAST(SUBSTR(path, 7) AS INTEGER)
-    ),
-    recent_totals AS (
-      SELECT COALESCE(SUM(recent_views), 0) AS total_recent_views
-        FROM recent_views
-    ),
-    likes_by_post AS (
-      SELECT post_id, COUNT(*) AS likes
-        FROM post_likes
-       GROUP BY post_id
-    )
-    SELECT p.id,
-           p.category,
-           p.title,
-           p.subtitle,
-           p.image_url,
-           p.image_caption,
-           p.image_frame,
-           p.created_at,
-           p.publish_at,
-           p.tag,
-           p.views,
-           p.author,
-           p.youtube_url,
-           COALESCE(l.likes, 0) AS likes,
-           COALESCE(rv.recent_views, 0) AS recent_views
-      FROM posts p
-      LEFT JOIN likes_by_post l ON l.post_id = p.id
-      LEFT JOIN recent_views rv ON rv.post_id = p.id
-      CROSS JOIN recent_totals rt
-     WHERE p.published = 1
-     ORDER BY
-       CASE WHEN rt.total_recent_views > 0 THEN 0 ELSE 1 END ASC,
-       CASE WHEN rt.total_recent_views > 0 THEN COALESCE(rv.recent_views, 0) END DESC,
-       CASE WHEN rt.total_recent_views > 0 THEN ${PUBLIC_DATE_EXPR} END DESC,
-       CASE WHEN rt.total_recent_views = 0 THEN ${PUBLIC_DATE_EXPR} END DESC,
-       p.id DESC
-     LIMIT ?
-  `).bind(limit).all();
-  return (results || []).map((post) => serializeCardPost(post, origin));
+/**
+ * 홈 추천·인기 레일 — 한 번만 계산해 요청 안에서 재사용한다.
+ * resolveSection 이 두 번 호출하므로 메모이즈하지 않으면 집계 쿼리가 두 번 나간다.
+ */
+function loadRails(env, origin) {
+  if (!env.__homeRailsPromise) {
+    env.__homeRailsPromise = (async () => {
+      const { pickIds, popularIds } = await selectHomeRailIds(env, 4);
+      const ids = [...new Set([...pickIds, ...popularIds])];
+      const cards = await hydrateByIds(env, ids, POST_CARD_COLUMNS, (row) => serializeCardPost(row, origin));
+      const byId = new Map(cards.map((c) => [c.id, c]));
+      return {
+        picks: pickIds.map((id) => byId.get(id)).filter(Boolean),
+        popular: popularIds.map((id) => byId.get(id)).filter(Boolean),
+      };
+    })();
+  }
+  return env.__homeRailsPromise;
 }
-
 async function scalar(env, sql) {
   const row = await env.DB.prepare(sql).first();
   return row?.count || 0;
