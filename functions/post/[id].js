@@ -241,10 +241,10 @@ export async function onRequestGet({ params, env, request }) {
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png"/>
   <link rel="apple-touch-icon" href="/img/logo.png"/>
   <link rel="shortcut icon" href="/img/favicon-48.png"/>
-  <link rel="stylesheet" href="/css/style.css?v=20260721065440">
-  <link rel="stylesheet" href="/css/post.css?v=20260721065440">
-  <link rel="stylesheet" href="/css/chatbot.css?v=20260721065440">
-  <link rel="stylesheet" href="/css/dark-mode.css?v=20260721064509">
+  <link rel="stylesheet" href="/css/style.css?v=20260721065530">
+  <link rel="stylesheet" href="/css/post.css?v=20260721065530">
+  <link rel="stylesheet" href="/css/chatbot.css?v=20260721065530">
+  <link rel="stylesheet" href="/css/dark-mode.css?v=20260721065530">
 </head>
 <body class="post-page">
   <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
@@ -630,10 +630,10 @@ export async function onRequestGet({ params, env, request }) {
 
   <script>window.GW_BOOT_RUNTIME=${serializeForScript(publicRuntime)};window.GW_KAKAO_JS_KEY=${serializeForScript(String(publicRuntime.kakao_js_key || ''))};window.GW_POST_BOOT=${serializeForScript({ editPostId: id, sharePostUrl: postUrl, sharePostTitle: titleText, sharePostSubtitle: subtitleText, editSeed: JSON.parse(editSeed), visibleTags })};</script>
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.4/dist/purify.min.js" integrity="sha384-eEu5CTj3qGvu9PdJuS+YlkNi7d2XxQROAFYOr59zgObtlcux1ae1Il3u7jvdCSWu" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-  <script src="/js/main.js?v=20260721065440"></script>
-  <script src="/js/site-chrome.js?v=20260721065440"></script>
-  <script src="/js/chatbot.js?v=20260721065440" defer></script>
-  <script src="/js/post-page.js?v=20260721065440"></script>
+  <script src="/js/main.js?v=20260721065530"></script>
+  <script src="/js/site-chrome.js?v=20260721065530"></script>
+  <script src="/js/chatbot.js?v=20260721065530" defer></script>
+  <script src="/js/post-page.js?v=20260721065530"></script>
   <script async type="text/javascript" charset="utf-8" src="https://t1.kakaocdn.net/kas/static/ba.min.js"></script>
 </body>
 </html>`;
