@@ -7973,3 +7973,87 @@ footer a:hover { color: var(--white); }
 
 @media (max-width: 480px) {
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   인터랙션·타이포 마감 (00.176.05)
+
+   Taste redesign-skill 감사에서 빈 곳으로 나온 3건. 브랜드 토큰·레이아웃
+   구조는 건드리지 않고, 이미 있는 규칙 위에 덧씌우기만 한다 (되돌리려면 이
+   블록만 지우면 됨).
+
+   1) text-wrap: balance — 제목 마지막 줄에 한 단어만 남는 고아 현상 교정.
+      한국어 제목은 word-break: keep-all 이라 어절 단위로 끊겨 고아가 더 자주
+      난다. 미지원 브라우저는 이 선언을 무시하므로 안전.
+   2) 100vh → 100dvh — 모바일 주소창이 접히고 펴질 때 뷰포트가 튀는 문제.
+      vh 선언을 남겨 두고 뒤에 dvh 를 덧대 미지원 브라우저 폴백을 유지한다.
+   3) :active 눌림 피드백 — hover 73건 대비 active 가 3건뿐이었다.
+      hover 가 없는 터치 기기에서 눌림 확인이 안 되던 문제.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* 1) 제목 줄바꿈 균형 */
+.post-card-title-link,
+.post-card-subtitle,
+.post-page-title,
+.post-page-subtitle,
+.section-head h2,
+.hero-slide h2 {
+  text-wrap: balance;
+}
+
+/* 본문성 텍스트는 balance 가 아니라 pretty (마지막 줄 고아만 교정) */
+.post-card-excerpt,
+.post-page-lead {
+  text-wrap: pretty;
+}
+
+/* 2) 동적 뷰포트 단위 — 모바일 주소창 대응 */
+body {
+  min-height: 100dvh;
+}
+
+body.wosm-members-page #main-content {
+  min-height: calc(100dvh - 280px);
+}
+
+/* 3) 눌림 피드백 — 터치 기기에서 탭 확인
+      transform 만 쓰고 레이아웃 속성은 건드리지 않아 리플로우가 없다. */
+@media (hover: none) and (pointer: coarse) {
+  .post-card:active,
+  .card:active {
+    transform: scale(0.985);
+  }
+}
+
+.post-card-share-btn:active,
+.board-more-btn:active,
+.board-page-btn:active,
+.bw-btn:active,
+.category-tag:active,
+.post-page-tag:active {
+  transform: translateY(1px);
+}
+
+.post-card,
+.card,
+.post-card-share-btn,
+.board-more-btn,
+.board-page-btn,
+.bw-btn {
+  transition-property: transform, background-color, border-color, box-shadow, color;
+  transition-duration: 180ms;
+  transition-timing-function: cubic-bezier(0.2, 0, 0.2, 1);
+}
+
+/* 움직임 최소화 설정을 켠 사용자에게는 눌림 변형을 적용하지 않는다. */
+@media (prefers-reduced-motion: reduce) {
+  .post-card:active,
+  .card:active,
+  .post-card-share-btn:active,
+  .board-more-btn:active,
+  .board-page-btn:active,
+  .bw-btn:active,
+  .category-tag:active,
+  .post-page-tag:active {
+    transform: none;
+  }
+}
