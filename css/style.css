@@ -448,7 +448,7 @@ body *:not(svg):not(path):not(circle):not(line):not(polyline):not(polygon):not(r
 
      ★ 새 코드에서는 --white / --black 을 직접 쓰지 말고 아래 토큰을 쓸 것.
        라이트 모드 값은 기존과 동일하므로 이 분리 자체로는 화면이 바뀌지 않는다.
-       다크 대응값은 파일 하단 `prefers-color-scheme: dark` 블록에서 재정의한다.
+       다크 대응값은 `css/dark-mode.css` 에서 재정의한다 (아직 미링크 · 미완성).
 
        역할                                   토큰
        ───────────────────────────────────────┼──────────────────────
@@ -465,6 +465,30 @@ body *:not(svg):not(path):not(circle):not(line):not(polyline):not(polygon):not(r
   --surface-inverse:   #030303;
   --text-strong:       #030303;
   --border-strong:     #030303;
+
+  /* 브랜드 강조색도 같은 이유로 역할 분리한다.
+     다크 배경(#191320)에서 딥퍼플은 전경으로 소멸한다 — Midnight Purple Lc 0.0,
+     Scouting Purple Lc 10.7. 따라서 `-text` 는 다크에서 밝은 대응값으로 바뀌고,
+     `-surface` 는 어두운 보라를 유지해야 그 위 --on-accent(흰 글씨)가 살아남는다.
+     라이트 모드 값은 전부 원래 색과 동일하므로 분리 자체는 화면을 바꾸지 않는다. */
+  --accent-surface:            #622599;
+  --accent-text:               #622599;
+  --accent-border:             #622599;
+  --scouting-purple-surface:   #622599;
+  --scouting-purple-text:      #622599;
+  --scouting-purple-border:    #622599;
+  --midnight-purple-surface:   #4d006e;
+  --midnight-purple-text:      #4d006e;
+  --midnight-purple-border:    #4d006e;
+  --forest-green-surface:      #248737;
+  --forest-green-text:         #248737;
+  --forest-green-border:       #248737;
+  --ocean-blue-surface:        #0094b4;
+  --ocean-blue-text:           #0094b4;
+  --ocean-blue-border:         #0094b4;
+  --fire-red-surface:          #ff5655;
+  --fire-red-text:             #ff5655;
+  --fire-red-border:           #ff5655;
 
   /* Grayscale (5단계, var(--black) 기반) — Canvas White 배경 APCA Lc (WCAG 3.0) */
   --gray-900:   #030303;   /* = --black, APCA Lc 107.7 · 모든 텍스트 OK */
@@ -500,8 +524,8 @@ body *:not(svg):not(path):not(circle):not(line):not(polyline):not(polygon):not(r
   /* 카테고리 칩(글머리 태그) 아웃라인 색 — 각 카테고리 브랜드색과 일치시켜 채움 태그(.tag-*)와 통일.
      White APCA Lc 45+ (UI 라벨 기준). people/glossary 가 과거 오프팔레트(갈색/올리브)였던 것을 교정. */
   --kicker-default:  var(--gray-700);
-  --kicker-people:   var(--scouting-purple);
-  --kicker-glossary: var(--midnight-purple);
+  --kicker-people:   var(--scouting-purple-text);
+  --kicker-glossary: var(--midnight-purple-text);
   /* 확장 음영/스팟 색 팔레트 — 그라데이션 stop·1회성 강조색을 재사용 가능한 토큰으로 등록.
      값은 기존과 동일(value-identical). 새 음영 필요 시 여기서 고르거나 추가한다. (2026-05-30) */
   --shade-purple-1: #2e0047;
@@ -651,7 +675,7 @@ p { margin-bottom: 6px; }
    MASTHEAD
    ════════════════════════════════════════════════════════════ */
 .masthead {
-  border-bottom: 3px solid var(--accent);
+  border-bottom: 3px solid var(--accent-border);
   /* 상단 고정(2026-04-21, 운영자 재요청). 포스트 상세 페이지에서 hero
      이미지 상단이 sticky masthead에 가려질 수 있으나, 네비 접근성을 우선.
      필요 시 추후 shrink-on-scroll 도입 검토. */
@@ -720,7 +744,7 @@ body[data-home-bootstrap] .masthead {
   font-size:      var(--fs-display);
   font-weight:    700;
   letter-spacing: -0.02em;
-  color:          var(--accent);
+  color:          var(--accent-text);
   line-height:    1;
 }
 
@@ -753,8 +777,8 @@ body[data-home-bootstrap] .masthead {
 }
 
 .masthead-type-btn.active {
-  border-color: var(--accent);
-  color: var(--accent);
+  border-color: var(--accent-border);
+  color: var(--accent-text);
 }
 
 .masthead-type-value {
@@ -766,7 +790,7 @@ body[data-home-bootstrap] .masthead {
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size:   20px;
   font-weight: 500;
-  color:       var(--accent);
+  color:       var(--accent-text);
   margin-top:  2px;
   letter-spacing: 0.04em;
 }
@@ -942,7 +966,7 @@ body[data-home-bootstrap] .lang-btn:hover {
 .nav a:hover,
 .nav a.active {
   background: none;
-  color:      var(--accent);
+  color:      var(--accent-text);
 }
 
 /* ── 1차/2차 nav 드롭다운 (2026-05-27) ──
@@ -990,7 +1014,7 @@ body[data-home-bootstrap] .lang-btn:hover {
 .nav-group-trigger:hover,
 .nav-group-trigger.active,
 .nav-group.is-open > .nav-group-trigger {
-  color: var(--accent);
+  color: var(--accent-text);
 }
 /* WCAG 3.0 APCA 키보드 포커스 인디케이터 — |Lc| 30+ 필수 (CLAUDE.md §2) */
 .nav a:focus-visible,
@@ -1163,7 +1187,7 @@ body[data-home-bootstrap] .lang-btn:hover {
   line-height:    1;
 }
 
-.ticker-diamond { color: var(--accent); }
+.ticker-diamond { color: var(--accent-text); }
 
 .ticker.is-paused .ticker-inner {
   animation-play-state: paused;
@@ -1320,9 +1344,9 @@ body[data-home-bootstrap] .lang-btn:hover {
   background:     transparent;
 }
 .post-kicker-new {
-  background:    var(--fire-red);
+  background:    var(--fire-red-surface);
   color:         var(--on-accent);
-  border-color:  var(--fire-red);
+  border-color:  var(--fire-red-border);
   font-weight:   700;
   letter-spacing: 0.18em;
   box-shadow:    0 1px 4px rgba(255, 86, 85, 0.35);
@@ -1338,9 +1362,9 @@ body[data-home-bootstrap] .lang-btn:hover {
 
 /* 모든 카테고리 kicker: border-color = text color 통일 (KMS 기준 kicker는 UI 라벨로 Lc 45+ 적용).
    1~2자짜리 장식 라벨은 본문 읽기 텍스트가 아니라 UI 식별자이므로 브랜드색 그대로 사용. */
-.tag-korea-kicker   { color: var(--ocean-blue);      border-color: var(--ocean-blue); }
-.tag-apr-kicker     { color: var(--fire-red);        border-color: var(--fire-red); }
-.tag-wosm-kicker    { color: var(--forest-green);    border-color: var(--forest-green); }
+.tag-korea-kicker   { color: var(--ocean-blue-text);      border-color: var(--ocean-blue-border); }
+.tag-apr-kicker     { color: var(--fire-red-text);        border-color: var(--fire-red-border); }
+.tag-wosm-kicker    { color: var(--forest-green-text);    border-color: var(--forest-green-border); }
 .tag-people-kicker  { color: var(--kicker-people);   border-color: var(--kicker-people); }
 .tag-latest-kicker  { color: var(--text-strong);           border-color: var(--border-strong); }
 .tag-glossary-kicker{ color: var(--kicker-glossary); border-color: var(--kicker-glossary); }
@@ -1613,7 +1637,7 @@ body[data-home-bootstrap] .lang-btn:hover {
 .about-box .domain {
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size:      11px;
-  color:          var(--accent);
+  color:          var(--accent-text);
   letter-spacing: 0.1em;
 }
 
@@ -1833,7 +1857,7 @@ body[data-home-bootstrap] .lang-btn:hover {
   font-size:      10px;
   letter-spacing: 0.25em;
   text-transform: uppercase;
-  color:          var(--accent);
+  color:          var(--accent-text);
   margin-bottom:  14px;
 }
 .site-hero.has-bg .site-hero-eyebrow { color: rgba(255,255,255,0.7); }
@@ -2068,7 +2092,7 @@ body[data-home-bootstrap] .lang-btn:hover {
 }
 
 .home-lead-link:hover {
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 .home-lead-subtitle {
@@ -2456,7 +2480,7 @@ body[data-home-bootstrap] .lang-btn:hover {
 }
 
 .mini-item-link:hover {
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 .mini-item .mini-meta {
@@ -2492,7 +2516,7 @@ body[data-home-bootstrap] .lang-btn:hover {
 }
 
 .mini-share-link:hover {
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 /* Thumbnail layout for mini-items */
@@ -2777,7 +2801,7 @@ body[data-home-bootstrap] .lang-btn:hover {
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size: 10px;
   letter-spacing: 0.08em;
-  color: var(--accent);
+  color: var(--accent-text);
   padding-top: 6px;
 }
 
@@ -3754,7 +3778,7 @@ footer a:hover { color: var(--on-accent); }
 .calendar-map-result-card.is-afr { border-top: 3px solid var(--region-afr); }
 .calendar-map-result-card.is-arb { border-top: 3px solid var(--region-arb); }
 .calendar-map-result-card.is-iar { border-top: 3px solid var(--region-iar); }
-.calendar-map-result-card.is-wosm { border-top: 3px solid var(--forest-green); }
+.calendar-map-result-card.is-wosm { border-top: 3px solid var(--forest-green-border); }
 
 /* Target group chips */
 .calendar-target-chip {
@@ -3763,9 +3787,9 @@ footer a:hover { color: var(--on-accent); }
   justify-content: center;
   min-height: var(--chip-height);
   padding: 0 var(--gap-tight);
-  border: 1px solid var(--ocean-blue);
+  border: 1px solid var(--ocean-blue-border);
   border-radius: var(--radius-pill);    /* radius 통일 자동 주입 */
-  color: var(--ocean-blue);
+  color: var(--ocean-blue-text);
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size: 10px;
   letter-spacing: 0.06em;
@@ -3780,7 +3804,7 @@ footer a:hover { color: var(--on-accent); }
 .calendar-filter-select.is-afr { color: var(--region-afr); border-color: rgba(182, 118, 27, 0.35); background-color: rgba(182, 118, 27, 0.06); }
 .calendar-filter-select.is-arb { color: var(--region-arb); border-color: rgba(123, 92, 255, 0.35); background-color: rgba(123, 92, 255, 0.06); }
 .calendar-filter-select.is-iar { color: var(--region-iar); border-color: rgba(212, 79, 148, 0.35); background-color: rgba(212, 79, 148, 0.06); }
-.calendar-filter-select.is-wosm { color: var(--forest-green); border-color: rgba(36, 135, 55, 0.35); background-color: rgba(36, 135, 55, 0.06); }
+.calendar-filter-select.is-wosm { color: var(--forest-green-text); border-color: rgba(36, 135, 55, 0.35); background-color: rgba(36, 135, 55, 0.06); }
 
 .calendar-filter-chip.is-active.is-kor { color: var(--region-kor); border-color: rgba(15, 141, 179, 0.35); background-color: rgba(15, 141, 179, 0.06); }
 .calendar-filter-chip.is-active.is-apr { color: var(--region-apr); border-color: rgba(255, 91, 91, 0.35); background-color: rgba(255, 91, 91, 0.06); }
@@ -3788,7 +3812,7 @@ footer a:hover { color: var(--on-accent); }
 .calendar-filter-chip.is-active.is-afr { color: var(--region-afr); border-color: rgba(182, 118, 27, 0.35); background-color: rgba(182, 118, 27, 0.06); }
 .calendar-filter-chip.is-active.is-arb { color: var(--region-arb); border-color: rgba(123, 92, 255, 0.35); background-color: rgba(123, 92, 255, 0.06); }
 .calendar-filter-chip.is-active.is-iar { color: var(--region-iar); border-color: rgba(212, 79, 148, 0.35); background-color: rgba(212, 79, 148, 0.06); }
-.calendar-filter-chip.is-active.is-wosm { color: var(--forest-green); border-color: rgba(36, 135, 55, 0.35); background-color: rgba(36, 135, 55, 0.06); }
+.calendar-filter-chip.is-active.is-wosm { color: var(--forest-green-text); border-color: rgba(36, 135, 55, 0.35); background-color: rgba(36, 135, 55, 0.06); }
 
 .calendar-side-head-secondary {
   margin-top: var(--gap-section);
@@ -3805,7 +3829,7 @@ footer a:hover { color: var(--on-accent); }
 .calendar-week-bar.is-cat-afr { background: rgba(182, 118, 27, 0.14); color: var(--region-afr); }
 .calendar-week-bar.is-cat-arb { background: rgba(123, 92, 255, 0.14); color: var(--region-arb); }
 .calendar-week-bar.is-cat-iar { background: rgba(212, 79, 148, 0.14); color: var(--region-iar); }
-.calendar-week-bar.is-cat-wosm { background: rgba(36, 135, 55, 0.14); color: var(--forest-green); }
+.calendar-week-bar.is-cat-wosm { background: rgba(36, 135, 55, 0.14); color: var(--forest-green-text); }
 }
 
 .calendar-region-group-head.is-kor { color: var(--region-kor); }
@@ -3814,7 +3838,7 @@ footer a:hover { color: var(--on-accent); }
 .calendar-region-group-head.is-afr { color: var(--region-afr); }
 .calendar-region-group-head.is-arb { color: var(--region-arb); }
 .calendar-region-group-head.is-iar { color: var(--region-iar); }
-.calendar-region-group-head.is-wosm { color: var(--forest-green); }
+.calendar-region-group-head.is-wosm { color: var(--forest-green-text); }
 
 #calendar-ongoing-events,
 #calendar-upcoming-events,
@@ -3834,7 +3858,7 @@ footer a:hover { color: var(--on-accent); }
 .calendar-event-card.is-category-afr { border-top: 3px solid var(--region-afr); }
 .calendar-event-card.is-category-arb { border-top: 3px solid var(--region-arb); }
 .calendar-event-card.is-category-iar { border-top: 3px solid var(--region-iar); }
-.calendar-event-card.is-category-wosm { border-top: 3px solid var(--forest-green); }
+.calendar-event-card.is-category-wosm { border-top: 3px solid var(--forest-green-border); }
 
 .calendar-category-badge,
 .calendar-status-badge {
@@ -3857,10 +3881,10 @@ footer a:hover { color: var(--on-accent); }
 .calendar-category-badge.is-afr { color: var(--region-afr); }
 .calendar-category-badge.is-arb { color: var(--region-arb); }
 .calendar-category-badge.is-iar { color: var(--region-iar); }
-.calendar-category-badge.is-wosm { color: var(--forest-green); }
+.calendar-category-badge.is-wosm { color: var(--forest-green-text); }
 
 .calendar-status-badge.is-upcoming {
-  color: var(--scouting-purple);
+  color: var(--scouting-purple-text);
 }
 
 .calendar-event-inline-detail {
@@ -4039,7 +4063,7 @@ footer a:hover { color: var(--on-accent); }
 .calendar-map-badge.is-afr { background: var(--region-afr); }
 .calendar-map-badge.is-arb { background: var(--region-arb); }
 .calendar-map-badge.is-iar { background: var(--region-iar); }
-.calendar-map-badge.is-wosm { background: var(--forest-green); }
+.calendar-map-badge.is-wosm { background: var(--forest-green-surface); }
 
 .feature-definition-editor {
   display: grid;
@@ -4191,7 +4215,7 @@ footer a:hover { color: var(--on-accent); }
   transition: border-color .15s, box-shadow .15s;
 }
 .dash-action-btn:hover {
-  border-color: var(--scouting-purple);
+  border-color: var(--scouting-purple-border);
   box-shadow: 0 2px 8px rgba(98,37,153,0.12);
 }
 .dash-action-icon { font-size: 22px; }
@@ -4210,12 +4234,12 @@ footer a:hover { color: var(--on-accent); }
 }
 .drag-handle:active { cursor: grabbing; }
 .article-item.drag-over {
-  border-color: var(--scouting-purple) !important;
+  border-color: var(--scouting-purple-border) !important;
   box-shadow: 0 0 0 2px rgba(98,37,153,0.2);
 }
 .hero-slot-item.drag-over,
 .contributors-admin-item.drag-over {
-  border-color: var(--scouting-purple) !important;
+  border-color: var(--scouting-purple-border) !important;
   box-shadow: 0 0 0 2px rgba(98,37,153,0.2);
 }
 .article-item.is-pointer-sorting,
@@ -4247,7 +4271,7 @@ footer a:hover { color: var(--on-accent); }
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size:      10px;
   letter-spacing: 0.15em;
-  background:     var(--accent);
+  background:     var(--accent-surface);
   padding:        3px 10px;
   margin-left:    var(--gap-element);
   text-transform: uppercase;
@@ -4277,9 +4301,9 @@ footer a:hover { color: var(--on-accent); }
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size:      11px;
   letter-spacing: 0.1em;
-  color:          var(--accent);
+  color:          var(--accent-text);
   background:     none;
-  border:         1px solid var(--accent);
+  border:         1px solid var(--accent-border);
   border-radius: var(--radius-md);    /* radius 통일 자동 주입 */
   padding:        5px 14px;
   cursor:         pointer;
@@ -4287,7 +4311,7 @@ footer a:hover { color: var(--on-accent); }
   transition:     all 0.15s;
 }
 
-.logout-btn:hover { background: var(--accent); color: var(--on-accent); }
+.logout-btn:hover { background: var(--accent-surface); color: var(--on-accent); }
 
 .admin-body {
   max-width:             1100px;
@@ -4407,7 +4431,7 @@ footer a:hover { color: var(--on-accent); }
   margin-top:     var(--gap-micro);
 }
 
-.submit-btn:hover    { background: var(--accent); }
+.submit-btn:hover    { background: var(--accent-surface); }
 .submit-btn.editing  { background: var(--tag-apr); }
 
 .admin-inline-save .submit-btn {
@@ -4656,7 +4680,7 @@ footer a:hover { color: var(--on-accent); }
 
 .btn-icon:hover { transform: translateY(-1px); }
 
-.btn-icon-success { color: var(--forest-green); border-color: rgba(36, 135, 55, 0.3); }
+.btn-icon-success { color: var(--forest-green-text); border-color: rgba(36, 135, 55, 0.3); }
 .btn-icon-danger { color: var(--danger); border-color: rgba(204, 68, 68, 0.3); }
 .btn-icon-star { color: var(--muted); }
 .btn-icon-star.active {
@@ -4691,7 +4715,7 @@ footer a:hover { color: var(--on-accent); }
   letter-spacing: 0.12em;
   text-transform: uppercase;
   padding:        0 22px;
-  background:     var(--accent);
+  background:     var(--accent-surface);
   color:          var(--on-accent);
   border:         none;
   border-radius:  var(--radius-md);    /* 버튼 통일 곡률 */
@@ -4699,7 +4723,7 @@ footer a:hover { color: var(--on-accent); }
   transition:     background 0.15s, transform 0.1s;
   box-shadow:     0 2px 8px rgba(77,0,110,0.25);
 }
-.write-btn:hover  { background: var(--scouting-purple); }
+.write-btn:hover  { background: var(--scouting-purple-surface); }
 .write-btn:active { transform: translateY(1px); }
 
 /* Password modal */
@@ -4785,7 +4809,7 @@ footer a:hover { color: var(--on-accent); }
   transition:     all 0.15s;
 }
 .board-pw-actions button:first-child { background: var(--surface-inverse); color: var(--on-accent); }
-.board-pw-actions button:first-child:hover { background: var(--accent); }
+.board-pw-actions button:first-child:hover { background: var(--accent-surface); }
 .board-pw-actions button:last-child { background: none; border: 1px solid var(--border); color: var(--muted); }
 .board-pw-actions button:last-child:hover { border-color: var(--ink); color: var(--ink); }
 
@@ -5426,7 +5450,7 @@ footer a:hover { color: var(--on-accent); }
 }
 .ce-toolbar__plus:hover,
 .ce-toolbar__settings-btn:hover {
-  background: var(--accent) !important;
+  background: var(--accent-surface) !important;
   color:       var(--on-accent) !important;
 }
 
@@ -5466,7 +5490,7 @@ footer a:hover { color: var(--on-accent); }
   font-size:   14px !important;
 }
 .cdx-quote {
-  border-left: 3px solid var(--accent) !important;
+  border-left: 3px solid var(--accent-border) !important;
 }
 
 /* Inline image tool */
@@ -5483,7 +5507,7 @@ footer a:hover { color: var(--on-accent); }
   cursor:         pointer;
   transition:     background 0.15s;
 }
-.editorjs-image-btn:hover { background: var(--accent); }
+.editorjs-image-btn:hover { background: var(--accent-surface); }
 .editorjs-image-caption {
   width:       100%;
   padding:     6px 10px;
@@ -5575,7 +5599,7 @@ footer a:hover { color: var(--on-accent); }
   margin: 14px 0;
   padding: 14px 18px;
   background: var(--gray-100);
-  border-left: 4px solid var(--scouting-purple);
+  border-left: 4px solid var(--scouting-purple-border);
   border-radius: var(--radius-tight);
   color: var(--ink);           /* ink on gray-100 → APCA |Lc| 90+ (본문 가독) */
   font-size: 15px;
@@ -5667,7 +5691,7 @@ footer a:hover { color: var(--on-accent); }
 .about-summary-row dt {
   flex: 0 0 96px;
   font-weight: 700;
-  color: var(--scouting-purple);
+  color: var(--scouting-purple-text);
   font-size: 15px;
 }
 .about-summary-row dd {
@@ -5730,7 +5754,7 @@ footer a:hover { color: var(--on-accent); }
 }
 
 .post-related-list a:hover {
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 .post-edit-check {
@@ -5792,8 +5816,8 @@ footer a:hover { color: var(--on-accent); }
 
 .post-action-btn:hover,
 .post-share-btn:hover {
-  border-color: var(--accent);
-  color: var(--accent);
+  border-color: var(--accent-border);
+  color: var(--accent-text);
 }
 
 @media (min-width: 769px) {
@@ -5864,7 +5888,7 @@ footer a:hover { color: var(--on-accent); }
     align-items: center;
     justify-content: center;
     gap: var(--gap-tight);
-    color: var(--accent);
+    color: var(--accent-text);
     text-decoration: none;
   }
   .mobile-compact-brand-mark {
@@ -5931,7 +5955,7 @@ footer a:hover { color: var(--on-accent); }
     border-bottom: 1px solid rgba(0, 0, 0, 0.06);
   }
   .mobile-compact-nav a.active {
-    color: var(--accent);
+    color: var(--accent-text);
   }
   body.mobile-compact-drawer-open {
     overflow: hidden;
@@ -5970,7 +5994,7 @@ footer a:hover { color: var(--on-accent); }
   transition:     color 0.15s;
   vertical-align: middle;
 }
-.post-permalink:hover { color: var(--accent); }
+.post-permalink:hover { color: var(--accent-text); }
 
 /* ════════════════════════════════════════════════════════════
    GLOBAL SEARCH BAR
@@ -5998,10 +6022,10 @@ footer a:hover { color: var(--on-accent); }
   color:       var(--ink);
   transition:  border-color 0.15s;
 }
-.global-search-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--focus-ring-color); }
+.global-search-input:focus { border-color: var(--accent-border); box-shadow: 0 0 0 3px var(--focus-ring-color); }
 .global-search-btn {
   padding:        9px 20px;
-  background:     var(--accent);
+  background:     var(--accent-surface);
   color:          var(--on-accent);
   border:         none;
   border-radius:  var(--radius-md);   /* 버튼 통일 곡률 */
@@ -6043,7 +6067,7 @@ footer a:hover { color: var(--on-accent); }
   color:          var(--ink);
   transition:     border-color 0.15s, box-shadow 0.15s;
 }
-.global-search-item:hover { border-color: var(--accent); box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+.global-search-item:hover { border-color: var(--accent-border); box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
 .global-search-item strong { display:block; font-size:16px; line-height:1.4; margin: 6px 0 var(--gap-micro); }
 .global-search-item p { font-size:13px; color:var(--muted); margin:0 0 6px; line-height:1.6; }
 .global-search-date { font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif; font-size:var(--fs-micro); color:var(--muted); }
@@ -6306,8 +6330,8 @@ footer a:hover { color: var(--on-accent); }
 }
 
 .admin-subnav-btn:hover {
-  border-color: var(--accent);
-  color: var(--accent);
+  border-color: var(--accent-border);
+  color: var(--accent-text);
 }
 .admin-tab-panel { display: none; }
 .admin-tab-panel.active { display: block; }
@@ -6346,7 +6370,7 @@ footer a:hover { color: var(--on-accent); }
   display: flex; align-items: center; justify-content: center;
   transition: color 0.15s;
 }
-.mh-search-btn:hover { color: var(--accent); background: none; }
+.mh-search-btn:hover { color: var(--accent-text); background: none; }
 
 .mobile-search-modal {
   position: fixed;
@@ -6443,7 +6467,7 @@ footer a:hover { color: var(--on-accent); }
 .ai-disclaimer {
   margin-top:  28px;
   padding:     var(--gap-element) var(--gap-card);
-  border-left: 3px solid var(--scouting-purple);
+  border-left: 3px solid var(--scouting-purple-border);
   background:  rgba(98, 37, 153, 0.05);
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size:   11px;
@@ -6470,7 +6494,7 @@ footer a:hover { color: var(--on-accent); }
   text-decoration: underline;
 }
 .post-byline-report a:hover {
-  color: var(--scouting-purple);
+  color: var(--scouting-purple-text);
 }
 
 .version-history-item {
@@ -6810,7 +6834,7 @@ footer a:hover { color: var(--on-accent); }
   color: var(--ink);
   outline: none;
 }
-.glossary-search-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--focus-ring-color); }
+.glossary-search-input:focus { border-color: var(--accent-border); box-shadow: 0 0 0 3px var(--focus-ring-color); }
 .glossary-search-help {
   margin: 10px 0 0;
   font-size: 12px;
@@ -6842,7 +6866,7 @@ footer a:hover { color: var(--on-accent); }
   text-align: left;
 }
 .glossary-table th {
-  background: var(--midnight-purple);
+  background: var(--midnight-purple-surface);
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size: 11px;
   letter-spacing: 0.1em;
@@ -7090,8 +7114,8 @@ footer a:hover { color: var(--on-accent); }
   transform: translateY(0);
 }
 .global-scroll-top-btn:hover {
-  background: var(--accent);
-  border-color: var(--accent);
+  background: var(--accent-surface);
+  border-color: var(--accent-border);
   color: var(--on-accent);
 }
 .global-scroll-top-btn span {
@@ -7858,7 +7882,7 @@ footer a:hover { color: var(--on-accent); }
   background: var(--surface);
   color: var(--ink);
   border: 1px solid var(--gray-300);
-  border-left: 4px solid var(--scouting-purple);
+  border-left: 4px solid var(--scouting-purple-border);
   border-radius: var(--radius-lg);
   box-shadow: 0 8px 24px rgba(15, 23, 42, 0.18);
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
@@ -7883,7 +7907,7 @@ footer a:hover { color: var(--on-accent); }
   min-width: 38px;
   height: 22px;
   padding: 0 8px;
-  background: var(--scouting-purple);
+  background: var(--scouting-purple-surface);
   color: var(--on-accent);
   border-radius: var(--radius-tight);
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
@@ -7894,12 +7918,12 @@ footer a:hover { color: var(--on-accent); }
   line-height: 1;
 }
 .gw-update-banner-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
-.gw-update-banner-title { font-weight: 700; color: var(--midnight-purple); }
+.gw-update-banner-title { font-weight: 700; color: var(--midnight-purple-text); }
 .gw-update-banner-version { font-size: 12px; color: var(--gray-700); font-feature-settings: 'tnum'; }
 .gw-update-banner-refresh {
   flex-shrink: 0;
   padding: 6px 12px;
-  background: var(--scouting-purple);
+  background: var(--scouting-purple-surface);
   color: var(--on-accent);
   border: 0;
   border-radius: var(--radius-sm);
@@ -7907,7 +7931,7 @@ footer a:hover { color: var(--on-accent); }
   font-weight: 600;
   cursor: pointer;
 }
-.gw-update-banner-refresh:hover { background: var(--midnight-purple); }
+.gw-update-banner-refresh:hover { background: var(--midnight-purple-surface); }
 .gw-update-banner-refresh:focus-visible { outline: 2px solid var(--fire-red); outline-offset: 2px; }
 .gw-update-banner-close {
   flex-shrink: 0;
@@ -8082,3 +8106,13 @@ body.wosm-members-page #main-content {
     transform: none;
   }
 }
+
+/* 고대비 모드 — rules/11-site-design.md 가 함께 요구하는 대응.
+   본문·보조 텍스트를 최대 대비로 끌어올리고 테두리를 또렷하게 만든다. */
+@media (prefers-contrast: more) {
+  :root {
+    --muted:   var(--gray-700);
+    --border:  var(--gray-500);
+  }
+}
+

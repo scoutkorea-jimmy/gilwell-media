@@ -1,6 +1,27 @@
 {
   "items": [
   {
+    "version": "00.176.06",
+    "date": "2026-07-21",
+    "released_at": "2026-07-21 16:40:00 KST",
+    "summary": "다크 모드를 만들기 위한 색 구조 정리를 끝냈다. 화면은 지금과 똑같고, 고대비 설정을 쓰는 분에게는 글자가 더 또렷해진다.",
+    "for_users": [
+      "휴대폰·컴퓨터의 '고대비' 접근성 설정을 켜신 분에게 본문 글자와 구분선이 더 진하게 보입니다.",
+      "다크 모드 준비 작업을 진행했습니다. 아직 켜지지 않았고, 지금 화면은 이전과 완전히 동일합니다.",
+      "다크 모드를 절반만 켜면 어두운 배경에 흰 카드가 남는 등 오히려 보기 어려워지기 때문에, 남은 정리가 끝난 뒤에 한 번에 켜기로 했습니다."
+    ],
+    "for_developers": [
+      "다크모드 선행 리팩터 2차 — 브랜드 강조색 123곳을 역할별로 분리(--accent/--scouting-purple/--midnight-purple/--forest-green/--ocean-blue/--fire-red 각각 -surface/-text/-border). 1차(--white/--black 189곳)와 합쳐 312곳.",
+      "라이트 모드 무변화 증명: 새 토큰의 라이트 값을 기존과 동일하게 정의하고, 치환 결과를 원래 토큰명으로 되돌려 원본과 diff 0줄임을 확인. 두 웨이브 모두 8개 공개 CSS 전부에서 검증.",
+      "scripts/migrate_semantic_color_tokens.mjs — 드라이런 기본. 주석을 길이 보존 마스킹하고, 값 소유 속성을 역방향 탐색으로 판정한다. --wave2 로 강조색 웨이브 실행.",
+      "tests/darkmode-contrast.spec.ts 신설 — 배포된 페이지의 CSS 요청만 route 로 가로채 로컬 파일로 바꿔치기하고, colorScheme 을 light/dark 로 에뮬레이션해 실제 계산된 color/background 쌍의 APCA Lc 를 측정한다. 배포 전에 실렌더 검증이 가능하다.",
+      "그 검증이 잡아낸 미완 영역: (1) --gw-* 팔레트 네임스페이스가 color: 로 98곳 사용 중 — .post-date.is-relative 가 다크에서 Lc 9.8, (2) --bw-* 작성 모달 토큰군이 다크에서 흰색 유지, (3) memorabilia.css 13건·chatbot.css 3건 리터럴 HEX, (4) .bw-label-opt 는 라이트에서도 Lc 50.2 로 기준 미달(기존 결함).",
+      "따라서 다크 블록은 css/dark-mode.css 로 분리하고 어느 HTML 에도 링크하지 않았다. 남은 작업 목록을 파일 상단에 명시. 완료 후 link 한 줄로 활성화된다. playwright.config.ts 의 testIgnore 로 해당 스펙을 기본 실행에서 제외.",
+      "이번에 실제로 켜진 것은 prefers-contrast: more 대응뿐 — --muted 를 --gray-700(Lc 94.5), --border 를 --gray-500 으로 승격.",
+      "사이트 버전 00.176.05 → 00.176.06."
+    ]
+  },
+  {
     "version": "00.176.05",
     "date": "2026-07-21",
     "released_at": "2026-07-21 15:30:00 KST",

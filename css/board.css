@@ -376,7 +376,7 @@
   background:  var(--surface);
   transition:  border-color 0.15s;
 }
-.board-search-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--focus-ring-color); }
+.board-search-input:focus { border-color: var(--accent-border); box-shadow: 0 0 0 3px var(--focus-ring-color); }
 .board-search-clear {
   position:   absolute;
   right:      10px;
@@ -389,7 +389,7 @@
   cursor:     pointer;
   padding:    var(--gap-micro);
 }
-.board-search-clear:hover { color: var(--accent); }
+.board-search-clear:hover { color: var(--accent-text); }
 .post-byline-author {
   color: var(--ink);
 }

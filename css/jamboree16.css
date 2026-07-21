@@ -71,7 +71,7 @@
   padding: 10px 22px;
   border-radius: 999px;
   background: var(--leaf-green);
-  color: var(--midnight-purple);
+  color: var(--midnight-purple-text);
 }
 .jam16-countdown.is-live { background: var(--ember-orange); }
 .jam16-countdown.is-finished { background: var(--gray-300); }
@@ -137,7 +137,7 @@
   font-size: 13px;
   font-weight: 700;
   letter-spacing: 0.02em;
-  color: var(--scouting-purple);
+  color: var(--scouting-purple-text);
 }
 .jam16-fact dd {
   margin: 0;
@@ -164,7 +164,7 @@
 }
 .jam16-program li {
   border: 1px solid var(--border);
-  border-left: 3px solid var(--forest-green);
+  border-left: 3px solid var(--forest-green-border);
   border-radius: var(--radius-md);
   background: var(--card-bg);
   padding: 14px 16px;
@@ -213,8 +213,8 @@
   height: 38px;
   padding: 0 16px;
   border-radius: var(--radius-md);
-  border: 1px solid var(--scouting-purple);
-  background: var(--scouting-purple);
+  border: 1px solid var(--scouting-purple-border);
+  background: var(--scouting-purple-surface);
   color: var(--on-accent);
   font-size: 13px;
   font-weight: 500;
@@ -222,13 +222,13 @@
   text-decoration: none;
   word-break: keep-all;
 }
-.jam16-link-btn:hover { background: var(--midnight-purple); border-color: var(--midnight-purple); }
+.jam16-link-btn:hover { background: var(--midnight-purple-surface); border-color: var(--midnight-purple-border); }
 .jam16-link-btn.secondary {
   background: var(--surface);
-  color: var(--midnight-purple);
+  color: var(--midnight-purple-text);
   border-color: var(--gray-300);
 }
-.jam16-link-btn.secondary:hover { border-color: var(--scouting-purple); background: var(--gray-100); }
+.jam16-link-btn.secondary:hover { border-color: var(--scouting-purple-border); background: var(--gray-100); }
 .jam16-link-btn:focus-visible {
   outline: 2px solid var(--focus-ring-color);
   outline-offset: 2px;
@@ -241,7 +241,7 @@
   color: var(--gray-700);
   margin: 18px 0 0;
 }
-.jam16-disclaimer a { color: var(--scouting-purple); }
+.jam16-disclaimer a { color: var(--scouting-purple-text); }
 @media (max-width: 900px) {
   .jam16-hero { padding: 40px 20px 36px; }
   .jam16-hero h1 { font-size: 30px; }

@@ -47,7 +47,7 @@ body.wosm-members-page #main-content {
   appearance: none;
   border: 1px solid rgba(77, 0, 110, 0.16);
   background: rgba(77, 0, 110, 0.04);
-  color: var(--midnight-purple);
+  color: var(--midnight-purple-text);
   min-height: 38px;
   padding: var(--gap-tight) var(--gap-element);
   border-radius: var(--radius-pill);
@@ -63,8 +63,8 @@ body.wosm-members-page #main-content {
   background: rgba(77, 0, 110, 0.08);
 }
 .members-view-chip.active {
-  background: var(--midnight-purple);
-  border-color: var(--midnight-purple);
+  background: var(--midnight-purple-surface);
+  border-color: var(--midnight-purple-border);
   color: var(--on-accent);
   box-shadow: 0 8px 18px rgba(77, 0, 110, 0.18);
 }
@@ -152,7 +152,7 @@ body.wosm-members-page #main-content {
   cursor: pointer;
 }
 .members-section-heading-btn:hover {
-  color: var(--accent);
+  color: var(--accent-text);
 }
 .members-section-eyebrow {
   font-style: normal;
@@ -274,7 +274,7 @@ body.wosm-members-page #main-content {
   padding: 6px 11px;
   border: 1px solid rgba(77, 0, 110, 0.16);
   background: rgba(77, 0, 110, 0.04);
-  color: var(--midnight-purple);
+  color: var(--midnight-purple-text);
   border-radius: var(--radius-pill);
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size: 10px;

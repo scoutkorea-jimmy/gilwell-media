@@ -50,7 +50,7 @@
   border: 1px solid rgba(77, 0, 110, 0.18);
   border-radius: var(--radius-md);    /* radius 통일 자동 주입 R2 */
   background: rgba(77, 0, 110, 0.04);
-  color: var(--midnight-purple);
+  color: var(--midnight-purple-text);
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size: 10px;
   letter-spacing: 0.08em;
@@ -99,7 +99,7 @@
   color: var(--muted);
 }
 .glossary-unmatched-note a {
-  color: var(--midnight-purple);
+  color: var(--midnight-purple-text);
   text-decoration: underline;
 }
 .glossary-unmatched-label {
@@ -151,7 +151,7 @@
   width: min(92vw, 360px);
   background: var(--surface);
   padding: 28px;
-  border-top: 3px solid var(--scouting-purple);
+  border-top: 3px solid var(--scouting-purple-border);
 }
 .glossary-editor-modal-card {
   width: min(92vw, 860px);
@@ -277,7 +277,7 @@
 .glossary-inline-input:focus,
 .glossary-inline-textarea:focus {
   outline: none;
-  border-color: var(--midnight-purple);
+  border-color: var(--midnight-purple-border);
   box-shadow: 0 0 0 2px rgba(98, 37, 153, 0.1);
 }
 .glossary-inline-actions {
@@ -301,8 +301,8 @@
   cursor: pointer;
 }
 .glossary-inline-save-btn {
-  border-color: var(--midnight-purple);
-  background: var(--midnight-purple);
+  border-color: var(--midnight-purple-border);
+  background: var(--midnight-purple-surface);
   color: var(--on-accent);
 }
 .glossary-inline-delete-btn {
@@ -356,8 +356,8 @@
   color: inherit;
 }
 .glossary-description-toggle:hover {
-  color: var(--midnight-purple);
-  border-color: var(--midnight-purple);
+  color: var(--midnight-purple-text);
+  border-color: var(--midnight-purple-border);
   background: rgba(98, 37, 153, 0.06);
 }
 .glossary-description-toggle.open .glossary-chevron {
@@ -380,8 +380,8 @@
   height: 16px;
 }
 .glossary-inline-edit-link:hover {
-  color: var(--midnight-purple);
-  border-color: var(--midnight-purple);
+  color: var(--midnight-purple-text);
+  border-color: var(--midnight-purple-border);
   background: rgba(98, 37, 153, 0.05);
 }
 @media (max-width: 900px) {

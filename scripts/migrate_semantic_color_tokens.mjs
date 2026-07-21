@@ -28,8 +28,23 @@ const FILES = [
   'css/wosm-members.css',
 ];
 
+/**
+ * 2차 웨이브 — 브랜드 강조색도 같은 문제를 갖는다.
+ * background: var(--accent) 는 다크에서 어두운 보라를 유지해야 그 위 흰 글씨가 살고,
+ * color: var(--accent) 는 다크에서 밝은 보라가 되어야 읽힌다 (딥퍼플은 Lc 10.7 로 소멸).
+ * `--apply --wave2` 로 실행한다.
+ */
+const WAVE2 = ['accent', 'scouting-purple', 'midnight-purple', 'forest-green', 'ocean-blue', 'fire-red'];
+const WAVE2_MAP = Object.fromEntries(WAVE2.map((t) => [t, {
+  background: `${t}-surface`, 'background-color': `${t}-surface`,
+  color: `${t}-text`,
+  border: `${t}-border`, 'border-color': `${t}-border`,
+  'border-top': `${t}-border`, 'border-bottom': `${t}-border`,
+  'border-left': `${t}-border`, 'border-right': `${t}-border`,
+}]));
+
 /** 속성 → 새 토큰 매핑. 여기에 없는 속성은 건드리지 않는다. */
-const MAP = {
+const MAP = process.argv.includes('--wave2') ? WAVE2_MAP : {
   white: {
     background: 'surface', 'background-color': 'surface',
     color: 'on-accent',
@@ -81,7 +96,7 @@ for (const rel of FILES) {
   const src = fs.readFileSync(abs, 'utf8');
   const scan = maskComments(src); // 주석 안의 var(--white) 는 매치되지 않는다
   let out = '', cursor = 0, changed = 0;
-  const re = /var\(--(white|black)\)/g;
+  const re = new RegExp("var\\(--(" + Object.keys(MAP).join("|") + ")\\)", "g");
   let m;
   while ((m = re.exec(scan)) !== null) {
     const tok = m[1];

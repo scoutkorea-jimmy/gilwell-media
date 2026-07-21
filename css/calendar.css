@@ -48,9 +48,9 @@
   cursor: pointer;
 }
 .calendar-view-btn.is-active {
-  border-color: var(--scouting-purple);
+  border-color: var(--scouting-purple-border);
   background: rgba(92, 42, 157, 0.1);
-  color: var(--scouting-purple);
+  color: var(--scouting-purple-text);
 }
 .calendar-page-head h2 {
   margin: 14px 0 10px;
@@ -254,7 +254,7 @@
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size: 10px;
   letter-spacing: .08em;
-  color: var(--scouting-purple);
+  color: var(--scouting-purple-text);
 }
 .calendar-map-result-place::before {
   content: "PLACE";
@@ -338,8 +338,8 @@
 .calendar-filter-select.is-all { color: var(--muted); }
 .calendar-filter-chip.is-active,
 .calendar-tag-preset.is-active {
-  border-color: var(--scouting-purple);
-  color: var(--scouting-purple);
+  border-color: var(--scouting-purple-border);
+  color: var(--scouting-purple-text);
   background: rgba(92, 42, 157, 0.08);
 }
 .calendar-filter-selected-list {
@@ -514,11 +514,11 @@
   border-right: 0;
 }
 .calendar-day.is-active {
-  border-color: var(--scouting-purple);
+  border-color: var(--scouting-purple-border);
   background: rgba(92, 42, 157, 0.06);
 }
 .calendar-day.is-today .calendar-day-num {
-  color: var(--scouting-purple);
+  color: var(--scouting-purple-text);
 }
 .calendar-day-num {
   font-size: 18px;
@@ -537,7 +537,7 @@
   margin: 0 var(--gap-micro);
   border: 0;
   background: rgba(92, 42, 157, 0.12);
-  color: var(--scouting-purple);
+  color: var(--scouting-purple-text);
   text-align: left;
   cursor: pointer;
   overflow: hidden;
@@ -687,7 +687,7 @@
   background: rgba(30, 155, 96, 0.08);
 }
 .calendar-status-head.is-upcoming {
-  color: var(--scouting-purple);
+  color: var(--scouting-purple-text);
   border-color: rgba(92, 42, 157, 0.35);
   background: rgba(92, 42, 157, 0.08);
 }
@@ -762,7 +762,7 @@
   cursor: pointer;
 }
 .calendar-event-title-btn:hover {
-  color: var(--scouting-purple);
+  color: var(--scouting-purple-text);
 }
 .calendar-event-original,
 .calendar-admin-item-origin {
@@ -807,7 +807,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: var(--scouting-purple);
+  color: var(--scouting-purple-text);
   text-decoration: none;
   font-size: 13px;
   border: 1px solid var(--border);
@@ -959,7 +959,7 @@
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size: 11px;
   line-height: 1;
-  background: var(--forest-green);
+  background: var(--forest-green-surface);
 }
 .calendar-map-badge.is-single {
   min-width: 22px;
