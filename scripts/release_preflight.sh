@@ -15,6 +15,15 @@ if [[ -f "$ROOT_DIR/scripts/audit_frontend_refs.mjs" ]]; then
   node "$ROOT_DIR/scripts/audit_frontend_refs.mjs" --strict
 fi
 
+# 공개 노출 경계 게이트 — `wrangler pages deploy .` 가 저장소 루트를 통째로 올리므로
+# 새 내부 디렉토리(문서·스크립트·덤프)를 추가하면 기본적으로 공개된다. 차단 목록
+# (functions/_middleware.js `isBlockedInternalPath()`) 과 실제 저장소 구성이
+# 어긋나면 배포를 막는다. 반대로 런타임이 fetch 하는 자산을 차단 목록에 넣은
+# 경우(card-news-app / dist-homepage 시한폭탄 유형)도 여기서 잡는다.
+if [[ -f "$ROOT_DIR/scripts/audit_public_exposure.mjs" ]]; then
+  node "$ROOT_DIR/scripts/audit_public_exposure.mjs"
+fi
+
 # KMS 스냅샷 드리프트 게이트 — D1(운영 원본) ↔ docs/feature-definition.md / default.js 정합성.
 # md 를 직접 편집·커밋한 뒤 sync 를 누락(13.1.7 유형)하거나, 반대로 D1 만 바뀌고 스냅샷이
 # 뒤처진 채 배포되는 것을 차단한다. 해소법: `node scripts/sync_kms_snapshot.mjs` 실행 후 커밋.

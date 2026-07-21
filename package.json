@@ -7,9 +7,11 @@
     "test": "playwright test",
     "test:headed": "playwright test --headed",
     "test:ui": "playwright test --ui",
-    "test:install": "playwright install chromium"
+    "test:install": "playwright install chromium",
+    "audit:exposure": "node scripts/audit_public_exposure.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.49.0"
-  }
+  },
+  "type": "module"
 }

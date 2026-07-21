@@ -1,6 +1,27 @@
 {
   "items": [
   {
+    "version": "00.176.04",
+    "date": "2026-07-21",
+    "released_at": "2026-07-21 14:40:00 KST",
+    "summary": "내부 파일 노출 차단이 앞으로도 저절로 지켜지도록 자동 점검을 붙이고, 두 곳으로 나뉘어 있던 데이터베이스 작업 파일을 한 곳으로 합쳤다.",
+    "for_users": [
+      "어제 막은 내부 파일 공개 문제가 앞으로 다시 생기지 않도록, 배포할 때마다 자동으로 검사하는 장치를 넣었습니다. 검사에 걸리면 배포 자체가 중단됩니다.",
+      "반대로 홈페이지가 실제로 사용하는 파일을 실수로 막아버리는 것도 함께 검사합니다. 카드뉴스와 내부 앱 문서 기능이 조용히 죽는 사고를 예방합니다.",
+      "정리 과정에서 기사·이미지·설정은 전혀 건드리지 않았습니다. 방문자가 보는 화면도 그대로입니다."
+    ],
+    "for_developers": [
+      "`scripts/audit_public_exposure.mjs` 신설 — `functions/_middleware.js` 의 `isBlockedInternalPath()` 를 직접 import 해 (1) git 추적 최상위 항목 중 PUBLIC_ENTRIES 에 없는 것이 전부 차단되는지, (2) MUST_STAY_PUBLIC 15경로가 차단되지 않았는지 양방향 검증. 네트워크 불필요.",
+      "`scripts/release_preflight.sh` 에 게이트로 연결 — 실패 시 배포 차단. 실제 실패 재현으로 양방향 검증 완료(미등록 디렉토리 추가 → exit 1, card-news-app 차단 → exit 1).",
+      "`tests/smoke-internal-exposure.spec.ts` 신설 — 차단 20경로 404 + 런타임 의존 12경로 200 을 라이브로 확인. `.assetsignore` 처럼 설정이 조용히 무시되는 경우를 잡는다. 전체 스모크 28 → 60 케이스.",
+      "`functions/_middleware.js` 의 `isBlockedInternalPath` 를 export (Pages 는 `onRequest*` 만 참조하므로 런타임 영향 없음). 차단 목록 단일 원본 유지.",
+      "루트 `migrations/` 7개 SQL 을 `db/` 로 통합하고 디렉토리 제거 — 마이그레이션 위치 이원화 해소. `DREAMPATH.md`·`DREAMPATH-HISTORY.md` 참조 3곳 갱신. `db/migration_NNN.sql` 74개는 문서·changelog 에 경로가 박혀 있어 그대로 둠.",
+      "`package.json` 에 `\"type\": \"module\"` 추가 (Node 실행 대상은 전부 .mjs, `require()` 0건 확인) + `npm run audit:exposure` 스크립트.",
+      "`rules/01-common-infra.md` 에 공개/내부 경계표 명문화 — `css/`·`js/`·`img/`·`*.html`·`card-news-app/`·`dist-homepage/`·`DREAMPATH.md` 는 이름이 곧 URL 이라 이동 금지.",
+      "사이트 버전 00.176.03 → 00.176.04."
+    ]
+  },
+  {
     "version": "00.176.03",
     "date": "2026-07-21",
     "released_at": "2026-07-21 13:50:00 KST",

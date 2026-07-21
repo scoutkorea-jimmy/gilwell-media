@@ -54,6 +54,26 @@ scope: project
 `functions/_middleware.js`, `functions/_shared/**`, `_headers` 는 **Site / Admin / KMS / Dreampath 전부**에 영향을 준다.
 이 파일들을 수정할 때는 [40-dreampath.md](40-dreampath.md) 와 `DREAMPATH.md` Section 10 (CSP 레거시 경로) · Section 15.2 (공용 인프라 예외) 를 반드시 함께 확인한다.
 
+## 저장소 구조 — 공개 / 내부 경계
+
+> [!important] 저장소 루트 = 사이트 루트
+> Pages 는 저장소 루트를 그대로 서빙한다. **아래 "공개" 항목은 이름이 곧 URL 이므로 이동·개명 금지** —
+> 옮기는 순간 캐시 토큰(`?v=`)·canonical·sitemap·외부 링크·`sync_versions.sh` 정규식이 전부 깨진다.
+
+| 구분 | 항목 | 비고 |
+|---|---|---|
+| **공개 (이동 금지)** | `*.html`, `css/`, `js/`, `img/`, `data/`, `functions/` | 이름 = URL |
+| | `card-news-app/` | `functions/card-news/[id].js` 가 `.jsx` 를 브라우저 Babel 로 변환 |
+| | `dist-homepage/` | `js/dreampath.js` 가 문서 템플릿을 iframe 으로 로드 |
+| | `DREAMPATH.md` | `js/dreampath.js` 규칙 뷰어가 fetch |
+| | `_headers`, `_redirects`, `VERSION` 계열 | |
+| **내부 (차단 대상)** | `rules/`, `docs/`, `db/`, `scripts/`, `workers/`, `tests/` | 미들웨어가 404 |
+| | `CLAUDE.md`, `README.md`, `wrangler*.toml`, `package.json` 등 | |
+
+- **DB 마이그레이션은 `db/` 한 곳** — 과거 루트 `migrations/` 와 이원화돼 있던 것을 2026-07-21 통합.
+- **분석 산출물(`output/` 등)은 커밋 금지** — `.gitignore` 에 두고 재생성 스크립트만 남긴다.
+- `scripts/`(190곳)·`docs/`(146곳)는 KMS 본문에까지 경로가 박혀 있어 **이동 비용이 이득을 압도한다**. 건드리지 말 것.
+
 ## 배포 노출 경계 (2026-07-21 확립)
 
 > [!danger] `wrangler pages deploy .` 는 저장소 루트를 통째로 업로드한다

@@ -177,7 +177,7 @@ versions, keep a personal memo, and comment on the page. Entry point: sidebar
 
 **구현 / Implementation**
 - 백엔드: `functions/api/dreampath/wiki.js` (페이지/버전/팔로업), `functions/api/dreampath/wiki-comments.js` (댓글, `comments.js` 미러). 권한 스코프 `view:wiki` / `write:wiki` (admin 자동 통과). 응답은 JSON + `Cache-Control: no-store`.
-- DB: `dp_wiki_pages` / `dp_wiki_versions` / `dp_wiki_followups` / `dp_wiki_comments` 신규 (모두 `dp_` 접두사, additive only). 마이그레이션 `migrations/dp_wiki_2026-06-04.sql` + 각 API에 `CREATE TABLE IF NOT EXISTS` 자가치유 가드.
+- DB: `dp_wiki_pages` / `dp_wiki_versions` / `dp_wiki_followups` / `dp_wiki_comments` 신규 (모두 `dp_` 접두사, additive only). 마이그레이션 `db/dp_wiki_2026-06-04.sql` + 각 API에 `CREATE TABLE IF NOT EXISTS` 자가치유 가드.
 - 정체성: 페이지는 `slug`(제목 정규화) 유니크. 같은 slug 재업로드 = `version_no = current_version + 1` 새 버전 + `pages.current_version` 갱신.
 - 프론트: `js/dreampath.js` IIFE 내부에 위키 모듈 추가 — nav(Overview), 라우트, 목록/상세/업로드/diff/팔로업/댓글, 단어 LCS diff 헬퍼(`_wordDiff`). 모든 인라인 핸들러 `DP.*` 유지.
 - diff: 외부 라이브러리 없이 단어 단위 LCS(`_wordDiff`)로 `<ins>`/`<del>` 시맨틱 마킹(색+밑줄/취소선+＋/－ 기호 3중 표기, 색각이상 대응). 3M 토큰곱 초과 시 좌우 비교 fallback.

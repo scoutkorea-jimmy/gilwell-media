@@ -185,7 +185,9 @@ const BLOCKED_FILES = new Set([
   '/.ds_store',
 ]);
 
-function isBlockedInternalPath(pathname) {
+// `scripts/audit_public_exposure.mjs` 가 preflight 에서 이 함수를 직접 import 해
+// 검증한다 (Pages 는 onRequest* 만 보므로 추가 export 는 런타임에 영향 없음).
+export function isBlockedInternalPath(pathname) {
   // 대소문자 무시 — Pages 는 경로를 구분하지만, 차단은 넓게 거는 편이 안전하다.
   const p = String(pathname || '').toLowerCase();
   if (!p || p === '/') return false;
