@@ -10,7 +10,7 @@
 .read-more {
   display:        inline-block;
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
-  font-size:      10px;
+  font-size:      var(--fs-micro);
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color:          var(--accent-text);
@@ -56,7 +56,7 @@
     display: grid;
     grid-template-columns: auto minmax(0, 1fr) auto;
     align-items: center;
-    gap: 10px;
+    gap: var(--gap-element);
     padding: 10px var(--gap-element) var(--gap-tight);
   }
   body.post-page .post-mobile-back,
@@ -71,7 +71,7 @@
     text-decoration: none;
     background: rgba(255, 255, 255, 0.88);
     font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
-    font-size: 18px;
+    font-size: var(--fs-title);
     line-height: 1;
   }
   body.post-page .post-mobile-brand {
@@ -90,7 +90,7 @@
   }
   body.post-page .post-mobile-brand-text {
     font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
-    font-size: 22px;
+    font-size: var(--fs-chapter);
     font-weight: 700;
     line-height: 1;
     letter-spacing: -0.02em;
@@ -104,7 +104,7 @@
     max-width: 124px;
     padding: 7px 10px 6px;
     font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
-    font-size: 10px;
+    font-size: var(--fs-micro);
     line-height: 1.1;
     letter-spacing: 0.08em;
     text-transform: uppercase;
@@ -129,7 +129,7 @@
     flex: 0 0 auto;
     padding: var(--gap-tight) 10px;
     font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
-    font-size: 10px;
+    font-size: var(--fs-micro);
     letter-spacing: 0.1em;
     text-transform: uppercase;
     color: var(--muted);
@@ -154,7 +154,7 @@
      꽉 차도록(좌우 20px 여유) 좁혔음(2026-04-21 운영자 요청). 기존 280px에서는
      광고가 사이드바 중앙에 작게 놓여 빈 공간이 양쪽으로 60px씩 남아 어색. */
   grid-template-columns: 1fr 200px;
-  gap:                   48px;
+  gap:                   var(--gap-page);
   align-items:           start;
 }
 .post-page-main  { min-width: 0; }
@@ -174,7 +174,7 @@
 .pps-section:last-child  { border-bottom: none; }
 .pps-label {
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
-  font-size:      10px;
+  font-size:      var(--fs-micro);
   letter-spacing: 0.15em;
   text-transform: uppercase;
   color:          var(--muted);
@@ -184,7 +184,7 @@
   display:        inline-block;
   color:          var(--on-accent);
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
-  font-size:      11px;
+  font-size:      var(--fs-meta);
   letter-spacing: 0.12em;
   text-transform: uppercase;
   padding:        5px 14px;
@@ -197,7 +197,7 @@
   display:       flex;
   gap:           var(--gap-tight);
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
-  font-size:     11px;
+  font-size:     var(--fs-meta);
   margin-bottom: var(--gap-tight);
   align-items:   baseline;
 }
@@ -210,7 +210,7 @@
 .post-page-back { margin-bottom: 28px; }
 .post-page-back-link {
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
-  font-size:      11px;
+  font-size:      var(--fs-meta);
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color:          var(--muted);
@@ -235,7 +235,7 @@
 }
 .post-page-meta {
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
-  font-size:      11px;
+  font-size:      var(--fs-meta);
   color:          var(--muted);
   letter-spacing: 0.05em;
   margin-bottom:  0;
@@ -275,7 +275,7 @@
 .post-page-body li,
 .post-page-body blockquote {
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
-  font-size: 16px;
+  font-size: var(--fs-lead);
   font-weight: 500;                /* Medium — APCA 본문 |Lc| 75+ 요구를 실제 stroke로 보장 */
   line-height: 1.85;
   color: var(--ink);
@@ -294,7 +294,7 @@
   padding: 12px 16px;
   border-left: 3px solid var(--gray-300, var(--gray-300));
   background: var(--gray-100, var(--gray-100));
-  font-size: 14px;
+  font-size: var(--fs-body);
   line-height: 1.7;
   color: var(--gray-700, var(--gray-700));
   border-radius: var(--radius-tight);
@@ -383,7 +383,7 @@
 }
 .post-page-tags-label {
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
-  font-size: 10px;
+  font-size: var(--fs-micro);
   color: var(--muted);
   text-transform: uppercase;
   letter-spacing: 0.1em;
@@ -392,7 +392,7 @@
   display:        inline-flex;
   align-items:    center;
   font-family:    'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
-  font-size:      10px;
+  font-size:      var(--fs-micro);
   letter-spacing: 0.1em;
   background:     var(--bg);
   color:          var(--ink);
@@ -437,7 +437,7 @@
 .post-special-feature-name {
   margin: -8px 0 0;
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
-  font-size: 14px;
+  font-size: var(--fs-body);
   color: var(--ink);
 }
 .post-special-feature-page-link,
@@ -452,7 +452,7 @@
   color: var(--muted);
   text-decoration: none;
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
-  font-size: 10px;
+  font-size: var(--fs-micro);
   letter-spacing: 0.08em;
   cursor: pointer;
 }
@@ -476,12 +476,12 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 13px;
+  font-size: var(--fs-small);
   line-height: 1.5;
 }
 .post-related-date {
   flex: 0 0 auto;
-  font-size: 11px;
+  font-size: var(--fs-meta);
   line-height: 1.3;
   letter-spacing: 0.04em;
   color: rgba(17,17,17,0.58);
@@ -503,14 +503,14 @@
 }
 .post-edit-note {
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
-  font-size: 11px;
+  font-size: var(--fs-meta);
   line-height: 1.6;
   color: var(--muted);
 }
 .post-like-wrap {
   display: inline-flex;
   align-items: flex-start;
-  gap: 10px;
+  gap: var(--gap-element);
   flex-wrap: wrap;
   min-width: 0;
   padding: var(--gap-element) 14px;
@@ -535,21 +535,21 @@
   }
   .post-like-help {
     flex: 0 1 auto;
-    font-size: 11px;
+    font-size: var(--fs-meta);
     line-height: 1.45;
   }
 }
 .post-like-btn {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--gap-tight);
   padding: 7px 14px;
   border: 1px solid rgba(217, 74, 58, 0.3);
   border-radius: var(--radius-md);    /* radius 통일 자동 주입 */
   background: var(--shade-tint-9);
   color: var(--shade-red-4);
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
-  font-size: 11px;
+  font-size: var(--fs-meta);
   letter-spacing: 0.08em;
   cursor: pointer;
   transition: transform 0.12s, box-shadow 0.15s, background 0.15s;
@@ -572,7 +572,7 @@
 }
 .post-like-help {
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
-  font-size: 10px;
+  font-size: var(--fs-micro);
   color: var(--muted);
   line-height: 1.55;
   flex: 1 1 180px;
@@ -591,7 +591,7 @@
   .post-page-layout {
     display: flex;
     flex-direction: column;
-    gap: 28px;
+    gap: var(--gap-section-out);
   }
   .post-page-main {
     order: 1;
@@ -609,7 +609,7 @@
   .post-page-body p,
   .post-page-body li,
   .post-page-body blockquote {
-    font-size: 17px;
+    font-size: var(--fs-title);
     line-height: 2;
   }
   .post-page-body ul,
@@ -654,7 +654,7 @@
   .post-like-wrap {
     width: 100%;
     justify-content: flex-start;
-    gap: 10px var(--gap-element);
+    gap: var(--gap-element) var(--gap-element);
     padding: 14px;
   }
   .post-like-btn {
@@ -672,7 +672,7 @@
   .post-page-body p,
   .post-page-body li,
   .post-page-body blockquote {
-    font-size: 17px;
+    font-size: var(--fs-title);
     line-height: 2.02;
   }
   .post-page-body ul,
@@ -702,13 +702,13 @@
 
 /* 헤더 meta — 읽기/작성자 사이드로 빼고 카테고리·NEW·날짜만 */
 .post-page-meta {
-  gap: 12px;
+  gap: var(--gap-element);
   line-height: 1.5;
 }
 .post-page-date {
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   color: var(--muted);
-  font-size: 13px;
+  font-size: var(--fs-small);
   letter-spacing: 0.02em;
 }
 /* Post Edit Modal — .bw-box와 동일한 V3 카드 레이아웃 사용 (2026-04-19 통일).
@@ -720,8 +720,8 @@
   min-height: 280px;
 }
 @media (max-width: 760px) {
-  .post-page-meta { gap: 8px; font-size: 12px; }
-  .post-page-date { font-size: 12px; }
+  .post-page-meta { gap: var(--gap-tight); font-size: var(--fs-caption); }
+  .post-page-date { font-size: var(--fs-caption); }
   .post-edit-box {
     padding: 22px 18px;
     max-height: 100vh;
@@ -734,8 +734,8 @@
     flex-direction: row;
     flex-wrap: wrap;
   }
-  .post-page-share { gap: 8px; }
-  .post-action-btn { font-size: 11px; padding: 8px 14px; }
+  .post-page-share { gap: var(--gap-tight); }
+  .post-action-btn { font-size: var(--fs-meta); padding: 8px 14px; }
 }
 .kakao-adfit-vertical {
   /* 세로 광고: 사이드바(200px) 안에서 좌우 auto 마진으로 정확히 중앙 정렬.

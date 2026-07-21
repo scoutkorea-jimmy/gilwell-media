@@ -18,12 +18,12 @@
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
-  gap: 20px;
+  gap: var(--gap-wide);
 }
 .calendar-page-head-actions {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--gap-element);
   flex-wrap: wrap;
 }
 .calendar-view-toggle {
@@ -43,7 +43,7 @@
   background: transparent;
   color: var(--muted);
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
-  font-size: 11px;
+  font-size: var(--fs-meta);
   letter-spacing: .08em;
   cursor: pointer;
 }
@@ -60,7 +60,7 @@
 .calendar-page-head p {
   margin: 0;
   color: var(--muted);
-  font-size: 16px;
+  font-size: var(--fs-lead);
 }
 .calendar-layout {
   display: grid;
@@ -92,7 +92,7 @@
   border: 1px solid var(--border-strong);
   border-radius: 0;
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
-  font-size: 12px;
+  font-size: var(--fs-caption);
   letter-spacing: 0.08em;
   cursor: pointer;
 }
@@ -133,13 +133,13 @@
   border: 1px solid var(--border);
   border-radius: 0;
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
-  font-size: 12px;
+  font-size: var(--fs-caption);
   background: var(--bg);
   color: var(--ink);
   background-image: none;
 }
 .calendar-date-range-sep {
-  font-size: 11px;
+  font-size: var(--fs-meta);
   color: var(--muted);
 }
 /* Map results list */
@@ -157,23 +157,23 @@
   padding: 0;
   border-bottom: 0;
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
-  font-size: 12px;
+  font-size: var(--fs-caption);
   color: var(--muted);
 }
 .calendar-map-results-head strong {
-  font-size: 26px;
+  font-size: var(--fs-headline);
   line-height: 1;
   color: var(--ink);
   letter-spacing: -0.02em;
 }
 .calendar-map-results-head span {
-  font-size: 12px;
+  font-size: var(--fs-caption);
   color: var(--muted);
 }
 .calendar-map-results-empty {
   padding: 20px 0;
   color: var(--muted);
-  font-size: 14px;
+  font-size: var(--fs-body);
 }
 .calendar-map-result-item {
   display: block;
@@ -184,7 +184,7 @@
   cursor: pointer;
   text-align: left;
   font-family: inherit;
-  font-size: 14px;
+  font-size: var(--fs-body);
 }
 .calendar-map-result-card {
   border: 1px solid var(--border);
@@ -210,7 +210,7 @@
 .calendar-map-result-title {
   display: block;
   flex: 1 1 auto;
-  font-size: 28px;
+  font-size: var(--fs-headline);
   line-height: 1.28;
   font-weight: 700;
   color: var(--ink);
@@ -225,48 +225,48 @@
   border: 1px solid rgba(15, 141, 179, 0.26);
   color: var(--region-kor);
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
-  font-size: 11px;
+  font-size: var(--fs-meta);
   letter-spacing: .08em;
   white-space: nowrap;
 }
 .calendar-map-result-meta {
   display: flex;
   align-items: center;
-  gap: 18px;
+  gap: var(--gap-wide);
   flex-wrap: wrap;
   color: var(--muted);
-  font-size: 14px;
+  font-size: var(--fs-body);
 }
 .calendar-map-result-date {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--gap-tight);
   color: var(--muted);
 }
 .calendar-map-result-place {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--gap-tight);
   color: var(--muted);
 }
 .calendar-map-result-date::before {
   content: "DATE";
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
-  font-size: 10px;
+  font-size: var(--fs-micro);
   letter-spacing: .08em;
   color: var(--scouting-purple-text);
 }
 .calendar-map-result-place::before {
   content: "PLACE";
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
-  font-size: 10px;
+  font-size: var(--fs-micro);
   letter-spacing: .08em;
   color: rgba(17, 17, 17, 0.42);
 }
 .calendar-map-filters {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 18px;
+  gap: var(--gap-wide);
   margin-bottom: 0;
   padding: var(--gap-section);
   border: 1px solid var(--border);
@@ -285,7 +285,7 @@
 }
 .calendar-date-range-sep {
   color: var(--muted);
-  font-size: 11px;
+  font-size: var(--fs-meta);
   flex-shrink: 0;
   padding: 0 2px;
 }
@@ -296,7 +296,7 @@
   display: block;
   margin-bottom: 10px;
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
-  font-size: 12px;
+  font-size: var(--fs-caption);
   letter-spacing: .08em;
   color: var(--ink);
 }
@@ -317,7 +317,7 @@
   background: var(--bg);
   color: var(--muted);
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
-  font-size: 12px;
+  font-size: var(--fs-caption);
   border-radius: var(--radius-pill);   /* 칩 통일 곡률 */
   cursor: pointer;
 }
@@ -361,7 +361,7 @@
   background: var(--bg);
   color: var(--ink);
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
-  font-size: 11px;
+  font-size: var(--fs-meta);
   letter-spacing: .1em;
   text-transform: uppercase;
   cursor: pointer;
@@ -375,7 +375,7 @@
   background: var(--surface-inverse);
   color: var(--on-accent);
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
-  font-size: 11px;
+  font-size: var(--fs-meta);
   letter-spacing: .12em;
   text-transform: uppercase;
 }
@@ -390,12 +390,12 @@
 .calendar-map-help {
   margin: 0;
   color: var(--muted);
-  font-size: 12px;
+  font-size: var(--fs-caption);
 }
 .calendar-toolbar h3,
 .calendar-side-head h3 {
   margin: 0;
-  font-size: 20px;
+  font-size: var(--fs-section);
 }
 .calendar-toolbar-center {
   display: flex;
@@ -403,7 +403,7 @@
   flex-wrap: wrap;
   align-items: center;
   justify-content: center;
-  gap: 10px;
+  gap: var(--gap-element);
 }
 .calendar-current-month-btn {
   display: inline-flex;
@@ -423,7 +423,7 @@
   background: var(--bg);
   color: var(--muted);
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
-  font-size: 11px;
+  font-size: var(--fs-meta);
   letter-spacing: .08em;
   text-transform: uppercase;
   cursor: pointer;
@@ -438,7 +438,7 @@
 .calendar-view-summary {
   margin: -2px 0 14px;
   color: var(--muted);
-  font-size: 12px;
+  font-size: var(--fs-caption);
   line-height: 1.5;
 }
 .calendar-nav-btn {
@@ -449,7 +449,7 @@
   background: var(--bg);
   color: var(--ink);
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
-  font-size: 20px;
+  font-size: var(--fs-section);
   cursor: pointer;
 }
 .calendar-weekdays,
@@ -464,7 +464,7 @@
 .calendar-weekdays span {
   text-align: center;
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
-  font-size: 11px;
+  font-size: var(--fs-meta);
   letter-spacing: .08em;
   text-transform: uppercase;
   color: var(--muted);
@@ -494,7 +494,7 @@
   min-height: 26px;
   padding: 0 10px;
   color: var(--muted);
-  font-size: 11px;
+  font-size: var(--fs-meta);
 }
 .calendar-day {
   min-height: 84px;
@@ -505,7 +505,7 @@
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 6px;
+  gap: var(--gap-tight);
   cursor: pointer;
   text-align: left;
   overflow: hidden;
@@ -521,12 +521,12 @@
   color: var(--scouting-purple-text);
 }
 .calendar-day-num {
-  font-size: 18px;
+  font-size: var(--fs-title);
   font-weight: 700;
 }
 .calendar-day-count {
   min-height: 16px;
-  font-size: 11px;
+  font-size: var(--fs-meta);
   color: var(--muted);
 }
 .calendar-week-bar {
@@ -546,7 +546,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 11px;
+  font-size: var(--fs-meta);
   line-height: 1.2;
 }
 .calendar-week-bar.is-finished { opacity: .62; }
@@ -579,16 +579,16 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
+  gap: var(--gap-element);
   padding: var(--gap-element) 14px;
   border-bottom: 1px solid var(--border);
 }
 .calendar-year-month-head strong {
-  font-size: 16px;
+  font-size: var(--fs-lead);
 }
 .calendar-year-month-head span {
   color: var(--muted);
-  font-size: 11px;
+  font-size: var(--fs-meta);
 }
 .calendar-year-month-body {
   display: flex;
@@ -611,10 +611,10 @@
 }
 .calendar-year-event-date {
   color: var(--muted);
-  font-size: 11px;
+  font-size: var(--fs-meta);
 }
 .calendar-year-event-title {
-  font-size: 13px;
+  font-size: var(--fs-small);
   line-height: 1.35;
 }
 .calendar-year-event.is-finished {
@@ -641,7 +641,7 @@
   background: transparent;
   text-align: left;
   cursor: pointer;
-  font-size: 11px;
+  font-size: var(--fs-meta);
   color: var(--muted);
   list-style: none;
 }
@@ -649,7 +649,7 @@
   display: none;
 }
 .calendar-region-group-head strong {
-  font-size: 12px;
+  font-size: var(--fs-caption);
   color: var(--ink);
 }
 .calendar-region-group-head span:last-child {
@@ -662,7 +662,7 @@
   background: currentColor;
 }
 .calendar-region-group-arrow {
-  font-size: 14px;
+  font-size: var(--fs-body);
   line-height: 1;
 }
 .calendar-region-group-list {
@@ -675,7 +675,7 @@
   margin-bottom: 10px;
   padding: var(--gap-tight) var(--gap-element);
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
-  font-size: 11px;
+  font-size: var(--fs-meta);
   letter-spacing: .12em;
   text-transform: uppercase;
   border: 1px solid var(--border);
@@ -713,7 +713,7 @@
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 14px;
+  gap: var(--gap-card);
 }
 .calendar-event-card.is-finished {
   border-color: var(--shade-tint-2);
@@ -735,7 +735,7 @@
   color: var(--shade-gray-7);
 }
 .calendar-event-time {
-  font-size: 11px;
+  font-size: var(--fs-meta);
   letter-spacing: .08em;
   text-transform: uppercase;
   color: var(--muted);
@@ -744,11 +744,11 @@
 .calendar-event-card h4,
 .calendar-admin-item h3 {
   margin: 0 0 10px;
-  font-size: 19px;
+  font-size: var(--fs-section);
   line-height: 1.25;
 }
 .calendar-event-card h4 {
-  font-size: 16px;
+  font-size: var(--fs-lead);
 }
 .calendar-event-title-btn {
   display: inline;
@@ -767,7 +767,7 @@
 .calendar-event-original,
 .calendar-admin-item-origin {
   margin: -2px 0 var(--gap-tight);
-  font-size: 12px;
+  font-size: var(--fs-caption);
   line-height: 1.6;
   color: var(--muted);
 }
@@ -775,12 +775,12 @@
 .calendar-admin-item-meta {
   margin: 0 0 var(--gap-tight);
   color: var(--muted);
-  font-size: 13px;
+  font-size: var(--fs-small);
 }
 .calendar-event-address {
   margin: -4px 0 var(--gap-tight);
   color: var(--muted);
-  font-size: 12px;
+  font-size: var(--fs-caption);
   line-height: 1.5;
 }
 .calendar-detail-map-frame {
@@ -800,7 +800,7 @@
   margin: 0;
   color: var(--ink);
   line-height: 1.6;
-  font-size: 14px;
+  font-size: var(--fs-body);
 }
 .calendar-event-link,
 .calendar-admin-item-link {
@@ -809,7 +809,7 @@
   justify-content: center;
   color: var(--scouting-purple-text);
   text-decoration: none;
-  font-size: 13px;
+  font-size: var(--fs-small);
   border: 1px solid var(--border);
   background: rgba(92, 42, 157, 0.04);
   padding: var(--gap-tight) var(--gap-element);
@@ -829,7 +829,7 @@
 .calendar-modal-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
+  gap: var(--gap-card);
   margin-top: 18px;
 }
 .calendar-form-span-full {
@@ -844,7 +844,7 @@
 .calendar-form-actions {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--gap-element);
   flex-wrap: wrap;
   grid-column: 1 / -1;
 }
@@ -853,18 +853,18 @@
   align-items: center;
   gap: var(--gap-tight);
   min-height: 20px;
-  font-size: 11px;
+  font-size: var(--fs-meta);
   color: var(--muted);
 }
 .calendar-tags-controls {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  gap: 10px;
+  gap: var(--gap-element);
 }
 .calendar-geo-search {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  gap: 10px;
+  gap: var(--gap-element);
 }
 .calendar-inline-map {
   width: 100%;
@@ -898,7 +898,7 @@
 .calendar-detail-actions {
   display: flex;
   justify-content: flex-end;
-  gap: 10px;
+  gap: var(--gap-element);
   flex-wrap: wrap;
   margin-top: 18px;
   padding-top: var(--gap-card);
@@ -921,7 +921,7 @@
 }
 .calendar-map-popup {
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
-  font-size: 12px;
+  font-size: var(--fs-caption);
   line-height: 1.5;
 }
 .calendar-map-popup strong {
@@ -957,7 +957,7 @@
   box-shadow: 0 4px 10px rgba(0,0,0,0.14);
   color: var(--on-accent);
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
-  font-size: 11px;
+  font-size: var(--fs-meta);
   line-height: 1;
   background: var(--forest-green-surface);
 }
@@ -966,11 +966,11 @@
   width: 22px;
   height: 22px;
   padding: 0;
-  font-size: 10px;
+  font-size: var(--fs-micro);
 }
 .board-write-header {
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
-  font-size:     22px;
+  font-size:     var(--fs-chapter);
   font-weight:   700;
   margin-bottom: 10px;
   color:         var(--text-strong);
@@ -1013,7 +1013,7 @@
     margin: 0 2px;
   }
   .calendar-week-bar-copy {
-    font-size: 10px;
+    font-size: var(--fs-micro);
   }
   .calendar-admin-form,
   .calendar-modal-grid,

@@ -23,7 +23,7 @@
   margin: 0 auto;
 }
 .jam16-kicker {
-  font-size: 12px;
+  font-size: var(--fs-caption);
   font-weight: 700;
   letter-spacing: 0.16em;
   text-transform: uppercase;
@@ -31,7 +31,7 @@
   margin: 0 0 14px;
 }
 .jam16-hero h1 {
-  font-size: 40px;
+  font-size: var(--fs-display-lg);
   font-weight: 700;
   line-height: 1.2;
   letter-spacing: -0.01em;
@@ -40,14 +40,14 @@
   color: var(--on-accent);
 }
 .jam16-hero-en {
-  font-size: 14px;
+  font-size: var(--fs-body);
   font-weight: 300;
   letter-spacing: 0.08em;
   color: rgba(255, 255, 255, 0.78);
   margin: 8px 0 0;
 }
 .jam16-theme {
-  font-size: 17px;
+  font-size: var(--fs-title);
   font-weight: 500;
   line-height: 1.6;
   word-break: keep-all;
@@ -57,7 +57,7 @@
 .jam16-theme span {
   display: inline-block;
   margin-top: 4px;
-  font-size: 13px;
+  font-size: var(--fs-small);
   font-weight: 300;
   color: rgba(255, 255, 255, 0.72);
 }
@@ -66,27 +66,27 @@
 .jam16-countdown {
   display: inline-flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--gap-element);
   margin: 26px 0 0;
   padding: 10px 22px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--leaf-green);
   color: var(--midnight-purple-text);
 }
 .jam16-countdown.is-live { background: var(--ember-orange); }
 .jam16-countdown.is-finished { background: var(--gray-300); }
 .jam16-countdown-label {
-  font-size: 12px;
+  font-size: var(--fs-caption);
   font-weight: 500;
   letter-spacing: 0.06em;
 }
 .jam16-countdown-value {
-  font-size: 20px;
+  font-size: var(--fs-section);
   font-weight: 700;
   letter-spacing: 0.02em;
 }
 .jam16-hero-dates {
-  font-size: 14px;
+  font-size: var(--fs-body);
   font-weight: 500;
   line-height: 1.7;
   word-break: keep-all;
@@ -104,14 +104,14 @@
 }
 .jam16-count {
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
-  font-size: 12px;
+  font-size: var(--fs-caption);
   font-weight: 500;
   letter-spacing: 0.04em;
   text-transform: none;
   color: rgba(255, 255, 255, 0.82);
 }
 .jam16-section-desc {
-  font-size: 13.5px;
+  font-size: var(--fs-small);
   line-height: 1.7;
   word-break: keep-all;
   color: var(--gray-700);
@@ -128,20 +128,20 @@
 .jam16-fact {
   display: grid;
   grid-template-columns: 160px 1fr;
-  gap: 16px;
+  gap: var(--gap-card);
   padding: 14px 20px;
   border-bottom: 1px solid var(--border);
 }
 .jam16-fact:last-child { border-bottom: none; }
 .jam16-fact dt {
-  font-size: 13px;
+  font-size: var(--fs-small);
   font-weight: 700;
   letter-spacing: 0.02em;
   color: var(--scouting-purple-text);
 }
 .jam16-fact dd {
   margin: 0;
-  font-size: 14px;
+  font-size: var(--fs-body);
   font-weight: 500;
   line-height: 1.6;
   word-break: keep-all;
@@ -150,7 +150,7 @@
 .jam16-fact-sub {
   display: block;
   margin-top: 3px;
-  font-size: 12.5px;
+  font-size: var(--fs-caption);
   font-weight: 300;
   color: var(--gray-700);
 }
@@ -160,7 +160,7 @@
   padding: 0;
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
-  gap: 10px;
+  gap: var(--gap-element);
 }
 .jam16-program li {
   border: 1px solid var(--border);
@@ -171,7 +171,7 @@
 }
 .jam16-program strong {
   display: block;
-  font-size: 14px;
+  font-size: var(--fs-body);
   font-weight: 700;
   color: var(--ink);
   word-break: keep-all;
@@ -179,14 +179,14 @@
 .jam16-program span {
   display: block;
   margin-top: 5px;
-  font-size: 12.5px;
+  font-size: var(--fs-caption);
   font-weight: 300;
   line-height: 1.6;
   color: var(--gray-700);
   word-break: keep-all;
 }
 .jam16-note {
-  font-size: 12.5px;
+  font-size: var(--fs-caption);
   font-weight: 300;
   line-height: 1.7;
   word-break: keep-all;
@@ -198,14 +198,14 @@
   grid-column: 1 / -1;
   padding: 28px 16px;
   text-align: center;
-  font-size: 13.5px;
+  font-size: var(--fs-small);
   color: var(--gray-700);
   word-break: keep-all;
 }
 .jam16-link-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: var(--gap-tight);
 }
 .jam16-link-btn {
   display: inline-flex;
@@ -216,7 +216,7 @@
   border: 1px solid var(--scouting-purple-border);
   background: var(--scouting-purple-surface);
   color: var(--on-accent);
-  font-size: 13px;
+  font-size: var(--fs-small);
   font-weight: 500;
   letter-spacing: 0.01em;
   text-decoration: none;
@@ -234,7 +234,7 @@
   outline-offset: 2px;
 }
 .jam16-disclaimer {
-  font-size: 12.5px;
+  font-size: var(--fs-caption);
   font-weight: 300;
   line-height: 1.7;
   word-break: keep-all;
@@ -244,14 +244,14 @@
 .jam16-disclaimer a { color: var(--scouting-purple-text); }
 @media (max-width: 900px) {
   .jam16-hero { padding: 40px 20px 36px; }
-  .jam16-hero h1 { font-size: 30px; }
-  .jam16-theme { font-size: 15px; }
+  .jam16-hero h1 { font-size: var(--fs-display); }
+  .jam16-theme { font-size: var(--fs-reading); }
   .jam16-wrapper { padding: 24px 16px 44px; }
-  .jam16-fact { grid-template-columns: 1fr; gap: 4px; }
-  .jam16-fact dt { font-size: 12px; }
+  .jam16-fact { grid-template-columns: 1fr; gap: var(--gap-micro); }
+  .jam16-fact dt { font-size: var(--fs-caption); }
 }
 @media (max-width: 480px) {
-  .jam16-hero h1 { font-size: 25px; }
-  .jam16-countdown { padding: 9px 18px; gap: 9px; }
-  .jam16-countdown-value { font-size: 18px; }
+  .jam16-hero h1 { font-size: var(--fs-document); }
+  .jam16-countdown { padding: 9px 18px; gap: var(--gap-tight); }
+  .jam16-countdown-value { font-size: var(--fs-title); }
 }

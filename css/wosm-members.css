@@ -28,7 +28,7 @@ body.wosm-members-page #main-content {
 .members-search-card {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: var(--gap-element);
 }
 .members-view-picker {
   display: flex;
@@ -52,7 +52,7 @@ body.wosm-members-page #main-content {
   padding: var(--gap-tight) var(--gap-element);
   border-radius: var(--radius-pill);
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
-  font-size: 11px;
+  font-size: var(--fs-meta);
   line-height: 1.2;
   letter-spacing: 0.06em;
   cursor: pointer;
@@ -71,7 +71,7 @@ body.wosm-members-page #main-content {
 .members-summary-inline {
   margin-top: var(--gap-card);
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
-  font-size: 12px;
+  font-size: var(--fs-caption);
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--muted);
@@ -134,7 +134,7 @@ body.wosm-members-page #main-content {
 .members-section-heading {
   margin: 0;
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
-  font-size: 24px;
+  font-size: var(--fs-document);
   line-height: 1.15;
   color: var(--ink);
 }
@@ -157,7 +157,7 @@ body.wosm-members-page #main-content {
 .members-section-eyebrow {
   font-style: normal;
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
-  font-size: 10px;
+  font-size: var(--fs-micro);
   line-height: 1.1;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -165,12 +165,12 @@ body.wosm-members-page #main-content {
 }
 .members-section-bar strong {
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
-  font-size: 14px;
+  font-size: var(--fs-body);
   color: var(--ink);
 }
 .members-section-bar span {
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
-  font-size: 11px;
+  font-size: var(--fs-meta);
   color: var(--muted);
 }
 .members-section-meta-wrap {
@@ -247,7 +247,7 @@ body.wosm-members-page #main-content {
 .member-country-cell {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: var(--gap-element);
   align-items: flex-start;
 }
 .member-country-names {
@@ -257,12 +257,12 @@ body.wosm-members-page #main-content {
   align-items: flex-start;
 }
 .member-country-names strong {
-  font-size: 18px;
+  font-size: var(--fs-title);
   line-height: 1.4;
   color: var(--ink);
 }
 .member-country-names span {
-  font-size: 13px;
+  font-size: var(--fs-small);
   line-height: 1.55;
   color: var(--muted);
 }
@@ -277,7 +277,7 @@ body.wosm-members-page #main-content {
   color: var(--midnight-purple-text);
   border-radius: var(--radius-pill);
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
-  font-size: 10px;
+  font-size: var(--fs-micro);
   line-height: 1.2;
   letter-spacing: 0.06em;
   cursor: pointer;
@@ -290,21 +290,21 @@ body.wosm-members-page #main-content {
   color: rgba(77, 0, 110, 0.72);
 }
 .member-country-toggle-icon {
-  font-size: 12px;
+  font-size: var(--fs-caption);
   line-height: 1;
 }
 .member-country-subline {
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: var(--gap-micro);
 }
 .member-country-subline strong {
-  font-size: 14px;
+  font-size: var(--fs-body);
   line-height: 1.45;
   color: var(--ink);
 }
 .member-country-subline span {
-  font-size: 11px;
+  font-size: var(--fs-meta);
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--muted);
@@ -333,12 +333,12 @@ body.wosm-members-page #main-content {
 }
 .members-card-section-head strong {
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
-  font-size: 14px;
+  font-size: var(--fs-body);
   color: var(--ink);
 }
 .members-card-section-head span {
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
-  font-size: 11px;
+  font-size: var(--fs-meta);
   color: var(--muted);
 }
 .members-section-bar.is-africa,
@@ -408,13 +408,13 @@ body.wosm-members-page #main-content {
 }
 .member-country-meta-grid > div strong {
   display: block;
-  font-size: 14px;
+  font-size: var(--fs-body);
   line-height: 1.65;
   color: var(--ink);
 }
 .member-country-children {
   display: grid;
-  gap: 10px;
+  gap: var(--gap-element);
   margin-top: var(--gap-card);
   padding-top: 14px;
   border-top: 1px dashed rgba(0, 0, 0, 0.12);
@@ -428,7 +428,7 @@ body.wosm-members-page #main-content {
 .member-country-child-card strong {
   display: block;
   margin-top: 6px;
-  font-size: 14px;
+  font-size: var(--fs-body);
   line-height: 1.6;
   color: var(--ink);
 }
@@ -442,7 +442,7 @@ body.wosm-members-page #main-content {
   border: 1px solid rgba(31,31,31,0.12);
   background: rgba(31,31,31,0.04);
   color: var(--ink);
-  font-size: 12px;
+  font-size: var(--fs-caption);
   line-height: 1.2;
   white-space: nowrap;
 }
@@ -455,14 +455,14 @@ body.wosm-members-page #main-content {
   display: block;
   margin-bottom: var(--gap-micro);
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
-  font-size: 10px;
+  font-size: var(--fs-micro);
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--muted);
 }
 .members-empty {
   padding: 28px 0;
-  font-size: 14px;
+  font-size: var(--fs-body);
   text-align: center;
   color: var(--muted);
 }
@@ -491,19 +491,19 @@ body.wosm-members-page #main-content {
     padding: var(--gap-section);
   }
   .members-view-chips {
-    gap: 6px;
+    gap: var(--gap-tight);
   }
   .members-view-chip {
     min-height: 36px;
     padding: var(--gap-tight) 10px;
-    font-size: 10px;
+    font-size: var(--fs-micro);
   }
   .member-country-names strong {
-    font-size: 16px;
+    font-size: var(--fs-lead);
   }
   .member-country-names span,
   .member-country-status {
-    font-size: 13px;
+    font-size: var(--fs-small);
   }
 }
 
