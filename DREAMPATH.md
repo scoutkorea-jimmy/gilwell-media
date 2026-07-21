@@ -9,8 +9,8 @@ sibling: DREAMPATH-HISTORY.md
 
 > [!important] 이 파일은 Dreampath **개발 규칙**의 단일 원본입니다
 > Dreampath 관련 **모든** 작업 — 기능 추가, 버그 수정, API 변경, CSS 조정,
-> 접근성 개선, 배포 — 은 이 문서를 정식 원본으로 삼습니다. `CLAUDE.md`는
-> Site / Admin / KMS 전용이며 Dreampath 작업 시 "section 5"에서 여기로
+> 접근성 개선, 배포 — 은 이 문서를 정식 원본으로 삼습니다. `rules/` 디렉토리는
+> Site / Admin / KMS 전용이며 Dreampath 작업 시 `rules/40-dreampath.md` 에서 여기로
 > 리다이렉트됩니다.
 >
 > **과거 이력 / 케이스 스터디는 [DREAMPATH-HISTORY.md](DREAMPATH-HISTORY.md)** 에
@@ -40,7 +40,7 @@ Dreampath 범위인지 먼저 확인합니다.
 | `_headers`, `wrangler.toml` | 공용 인프라 |
 
 **원칙**: Dreampath 기능이 영향을 받더라도 파일 자체가 공용 인프라에 있으면
-`CLAUDE.md` 공통 인프라 규칙 (`VERSION` bump + changelog) 을 따릅니다.
+`rules/01-common-infra.md` 공통 인프라 규칙 (`VERSION` bump + changelog) 을 따릅니다.
 `dp_versions` 가 아니라 `VERSION` 에 기록됩니다. 이 경계를 놓치면 2026-04-24
 CSP 회귀가 재발합니다 (DREAMPATH-HISTORY.md 2026-04-24 A 참조).
 
@@ -393,8 +393,8 @@ Dreampath 가 새 루트 경로를 노출하면 **그 경로도** `isLegacyInlin
 ### 10.3 공용 인프라 변경은 Site 배포
 
 `functions/_middleware.js` 수정은 `./deploy.sh` 가 아니라 `scripts/deploy_production.sh`
-경로로 배포됩니다. `VERSION` bump + changelog 필요. 절차는 `CLAUDE.md` Release &
-Deploy Flow.
+경로로 배포됩니다. `VERSION` bump + changelog 필요. 절차는 `rules/03-deploy.md`
+(Release & Deploy Flow).
 
 ---
 
@@ -608,7 +608,7 @@ DreamPath Design System 원본.
 `scripts/*` 변경은 Dreampath 가 영향을 받더라도 **사이트 배포 경로** 를 씁니다:
 
 ```bash
-# CLAUDE.md Release & Deploy Flow 전체 따름
+# rules/03-deploy.md Release & Deploy Flow 전체 따름
 VERSION bump → data/changelog.json prepend → scripts/sync_versions.sh
 → git add/commit/push → scripts/deploy_production.sh
 ```
@@ -957,5 +957,5 @@ grep -nE "#fff\b|#FFFFFF\b|color:\s*var\(--navy\)|background:\s*#" dreampath-v2.
 
 관련 문서:
 - [[docs/dreampath/README|Dreampath Hub]] — 기능 / API / DB 레퍼런스 (공용 문서)
-- `CLAUDE.md` Section 0 — Target Confirmation Protocol (공통 최상위 규칙)
-- `CLAUDE.md` Section 1 — Common Infrastructure (공용 인프라 배포)
+- `rules/00-target-protocol.md` — Target Confirmation Protocol (공통 최상위 규칙)
+- `rules/01-common-infra.md` — Common Infrastructure (공용 인프라 배포)
