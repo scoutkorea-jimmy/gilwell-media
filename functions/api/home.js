@@ -3,6 +3,7 @@ import { serializePostImage } from '../_shared/images.js';
 import { logApiError } from '../_shared/ops-log.js';
 import { ensureDuePostsPublished } from '../_shared/publish-due-posts.js';
 import { loadNavLabels } from '../_shared/nav-labels.js';
+import { loadActiveHomeBanners } from '../_shared/home-banners.js';
 import { PUBLIC_DATE_EXPR } from '../_shared/post-public-date.js';
 import { recordHomepageIssue } from '../_shared/homepage-issues.js';
 import { DEFAULT_TICKER_ITEMS } from '../_shared/site-copy.mjs';
@@ -66,6 +67,7 @@ const HOME_SECTION_ISSUE_DEFS = {
   lead: { title: '홈 메인 스토리 로드 실패', severity: 'high', area: 'homepage', source_path: '/api/home' },
   latest: { title: '홈 최신 소식 로드 실패', severity: 'high', area: 'homepage', source_path: '/api/home' },
   popular: { title: '홈 인기 소식 로드 실패', severity: 'medium', area: 'homepage', source_path: '/api/home' },
+  banners: { title: '홈 배너 로드 실패', severity: 'low', area: 'homepage', source_path: '/api/home' },
   picks: { title: '홈 에디터 추천 로드 실패', severity: 'medium', area: 'homepage', source_path: '/api/home' },
   korea: { title: '홈 Korea 섹션 로드 실패', severity: 'medium', area: 'homepage', source_path: '/api/home' },
   apr: { title: '홈 APR 섹션 로드 실패', severity: 'medium', area: 'homepage', source_path: '/api/home' },
@@ -115,6 +117,7 @@ export async function onRequestGet(context) {
       latest,
       popular,
       picks,
+      banners,
       korea,
       apr,
       wosm,
@@ -147,6 +150,7 @@ export async function onRequestGet(context) {
       resolveSection('latest', () => loadLatestPosts(env, origin, 4), []),
       resolveSection('popular', () => loadPopular(env, origin, 4), []),
       resolveSection('picks', () => loadHomePicks(env, origin, 4), []),
+      resolveSection('banners', () => loadActiveHomeBanners(env), []),
       resolveSection('korea', () => loadPostList(env, origin, { category: 'korea', limit: 4 }), []),
       resolveSection('apr', () => loadPostList(env, origin, { category: 'apr', limit: 4 }), []),
       resolveSection('wosm', () => loadPostList(env, origin, { category: 'wosm', limit: 4 }), []),
@@ -165,6 +169,7 @@ export async function onRequestGet(context) {
       latest: { posts: latest },
       popular: { posts: popular },
       picks: { posts: picks },
+      banners,
       columns: {
         korea: { posts: korea },
         apr: { posts: apr },

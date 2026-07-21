@@ -1,0 +1,169 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   홈 팝업 배너 (2026-07-22)
+
+   최대 2개. 화면 정중앙.
+     · 데스크톱 — 2개면 좌우로 나란히
+     · 모바일   — 한 번에 하나, 좌우 스와이프 (track translateX)
+
+   색은 전부 토큰 참조 (리터럴 HEX 금지 규칙). 다크 대응은 토큰이 알아서 한다.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.gw-banner-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--gap-card);
+  background: rgba(3, 3, 3, 0.62);
+  -webkit-backdrop-filter: blur(3px);
+          backdrop-filter: blur(3px);
+  animation: gwBannerIn 180ms ease-out;
+}
+
+@keyframes gwBannerIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* 배너가 떠 있는 동안 뒤 배경 스크롤 방지 */
+body.gw-banner-open {
+  overflow: hidden;
+}
+
+.gw-banner-shell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--gap-element);
+  max-width: min(920px, 100%);
+  max-height: 100%;
+}
+
+.gw-banner-track {
+  display: flex;
+  gap: var(--gap-card);
+  align-items: stretch;
+  justify-content: center;
+  transition: transform 260ms cubic-bezier(0.2, 0, 0.2, 1);
+}
+
+.gw-banner-card {
+  flex: 0 0 auto;
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  background: var(--surface);
+  box-shadow: 0 18px 48px rgba(3, 3, 3, 0.34);
+}
+
+.gw-banner-link {
+  display: block;
+  line-height: 0;              /* 이미지 아래 여백 제거 */
+}
+
+.gw-banner-img {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 72vh;
+  object-fit: contain;
+}
+
+/* ── 액션 (닫기 / 오늘 하루) ─────────────────────────────── */
+.gw-banner-actions {
+  display: flex;
+  gap: var(--gap-tight);
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.gw-banner-today,
+.gw-banner-close {
+  min-height: 44px;             /* 터치 타겟 기준 */
+  padding: 0 var(--gap-card);
+  border-radius: var(--radius-pill);
+  border: 1px solid rgba(255, 255, 255, 0.34);
+  background: rgba(3, 3, 3, 0.42);
+  color: var(--on-accent);
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
+  font-size: var(--fs-caption);
+  cursor: pointer;
+  transition: background 160ms ease, border-color 160ms ease;
+}
+
+.gw-banner-today:hover,
+.gw-banner-close:hover {
+  background: rgba(3, 3, 3, 0.62);
+  border-color: rgba(255, 255, 255, 0.58);
+}
+
+.gw-banner-today:focus-visible,
+.gw-banner-close:focus-visible {
+  outline: 2px solid var(--on-accent);
+  outline-offset: 2px;
+}
+
+/* ── 인디케이터 점 (2개일 때, 모바일에서만 의미) ───────────── */
+.gw-banner-dots {
+  display: none;
+  gap: var(--gap-tight);
+  justify-content: center;
+}
+
+.gw-banner-dot {
+  width: 24px;                  /* 히트 영역 — 보이는 점은 8px */
+  height: 24px;
+  padding: 8px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.42);
+  background-clip: content-box;
+  cursor: pointer;
+}
+
+.gw-banner-dot.is-active {
+  background: var(--on-accent);
+  background-clip: content-box;
+}
+
+/* ── 데스크톱: 2개면 좌우 나란히 (기본 track 이 이미 flex) ─── */
+.gw-banner-shell.is-multi .gw-banner-card {
+  flex: 0 1 440px;
+}
+
+/* ── 모바일: 한 번에 하나 + 스와이프 ────────────────────────── */
+@media (max-width: 760px) {
+  .gw-banner-shell {
+    width: 100%;
+    overflow: hidden;
+  }
+
+  .gw-banner-track {
+    width: 100%;
+  }
+
+  .gw-banner-card,
+  .gw-banner-shell.is-multi .gw-banner-card {
+    flex: 0 0 100%;
+  }
+
+  .gw-banner-track {
+    gap: 0;                     /* translateX(-100%) 계산이 어긋나지 않게 */
+  }
+
+  .gw-banner-shell.is-multi .gw-banner-dots {
+    display: flex;
+  }
+
+  .gw-banner-img {
+    max-height: 62vh;
+  }
+}
+
+/* ── 움직임 최소화 설정 존중 ────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .gw-banner-overlay { animation: none; }
+  .gw-banner-track   { transition: none; }
+}

@@ -52,6 +52,7 @@ export const ADMIN_MENUS = Object.freeze([
     { slug: 'hero',       label: '히어로 기사',   actions: ['view', 'write'] },
     { slug: 'home-lead',  label: '메인 스토리',   actions: ['view', 'write'] },
     { slug: 'picks',      label: '에디터 추천',   actions: ['view', 'write'] },
+    { slug: 'home-banners', label: '홈 배너',    actions: ['view', 'write'] },
     { slug: 'board-copy', label: '게시판 설명',   actions: ['view', 'write'] },
     { slug: 'banner',     label: '게시판 배너',   actions: ['view', 'write'] },
     { slug: 'ticker',     label: '티커',         actions: ['view', 'write'] },

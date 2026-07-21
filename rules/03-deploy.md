@@ -57,6 +57,18 @@ scope: project
 >   (`VERSION`/changelog 는 그대로 두어도 preflight 를 통과한다.)
 > - 예방: 배포 후 검증은 **최소 60~90초 기다렸다가** 수행한다.
 
+> [!danger] 캐시 오염은 POP 단위로 발생한다 — "일부만 구버전" 증상 (2026-07-22)
+> 같은 `?v=` URL 이 엣지마다 다른 내용을 반환할 수 있다. 실측: NRT·KIX 는 신버전,
+> HKG 는 구버전. 접속 POP 이 매번 달라 **될 때도 있고 안 될 때도 있는** 것처럼 보인다.
+> - **하드 리로드(Cmd+Shift+R)로 못 고친다.** 낡은 사본은 브라우저가 아니라 CDN 엣지에
+>   있고, CDN 은 클라이언트의 `no-cache` 요청을 무시한다.
+> - 진단: `curl -sD- .../js/main.js?v=$(cat public/ASSET_VERSION)` 을 여러 번 돌려
+>   `cf-ray` 의 colo 와 `APP_VERSION` 을 대조한다. 값이 갈리면 오염이다.
+> - **자산 캐시는 `max-age=3600`** 으로 유지할 것. 예전처럼 `immutable, max-age=1년` 으로
+>   되돌리면 오염이 1년간 남는다 (`public/_headers`).
+> - 즉시 해소: `ASSET_VERSION` 재발급 후 재배포. 다만 전파 중 그 URL 이 조회되면
+>   재오염되므로, 배포 후 최소 45초는 아무도 새 토큰 URL 을 건드리지 않게 한다.
+
 > [!warning] Cloudflare 커밋 메시지 제한
 > `./deploy.sh` 가 `Invalid commit message` 로 실패하면 커밋 메시지를 **ASCII 전용 · 약 1.2KB 미만**으로 amend 한 뒤 재시도한다.
 
