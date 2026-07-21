@@ -359,7 +359,7 @@
 .post-page-body li > ol li > ol { list-style-type: lower-roman; }
 /* 마커: Scouting Purple로 시각 강조 (APCA Lc 92.4 대비 Canvas White) */
 .post-page-body li::marker {
-  color: var(--scouting-purple, var(--gw-scouting-purple));
+  color: var(--scouting-purple, var(--scouting-purple-text));
   font-weight: 700;
 }
 /* 한 li 안에 <br>/inline 포맷이 섞여도 hanging indent 유지 */

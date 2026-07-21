@@ -22,11 +22,48 @@ import { fileURLToPath } from 'node:url';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const APPLY = process.argv.includes('--apply');
 
+const WAVE3 = process.argv.includes('--wave3');
+
 const FILES = [
   'css/style.css', 'css/board.css', 'css/post.css', 'css/calendar.css',
   'css/glossary.css', 'css/jamboree16.css', 'css/memorabilia.css',
   'css/wosm-members.css',
+  // 3차에서만 추가 — 공개 사이트가 로드하는 챗봇 시트.
+  // admin-v3.css / admin.css 는 admin.html 전용(style.css 를 로드하지 않음)이라
+  // 자체 --gw-* 를 별도 정의한다. 공개 다크모드 범위 밖이므로 건드리지 않는다.
+  ...(WAVE3 ? ['css/chatbot.css'] : []),
 ];
+
+/**
+ * 3차 웨이브 — `--gw-*` 는 브랜드 팔레트의 두 번째 네임스페이스다.
+ * `var(--color-scouting-purple, var(--gw-scouting-purple))` 형태로 쓰이는데
+ * `--color-*` 는 어디에도 정의돼 있지 않아 항상 gw 폴백이 적용된다.
+ * 값이 1·2차 토큰과 완전히 같으므로 새 토큰 없이 기존 시맨틱 토큰으로 흡수한다.
+ * `--gw-chart-*` 는 색이 아니라 크기값이라 대상에서 제외된다(아래 목록에 없음).
+ * 파스텔 4색은 공개 CSS 에서 포커스 링·밝은 배경으로만 쓰여 다크에서도 유효하다.
+ */
+const WAVE3_MAP = {
+  'gw-canvas-white': {
+    background: 'surface', 'background-color': 'surface',
+    color: 'on-accent',
+    border: 'border-on-accent', 'border-color': 'border-on-accent',
+    'border-top': 'border-on-accent', 'border-bottom': 'border-on-accent',
+    'border-left': 'border-on-accent', 'border-right': 'border-on-accent',
+  },
+  ...Object.fromEntries(
+    ['scouting-purple', 'midnight-purple', 'fire-red', 'forest-green', 'ocean-blue']
+      .map((t) => [`gw-${t}`, {
+        background: `${t}-surface`, 'background-color': `${t}-surface`,
+        color: `${t}-text`,
+        border: `${t}-border`, 'border-color': `${t}-border`,
+        'border-top': `${t}-border`, 'border-bottom': `${t}-border`,
+        'border-left': `${t}-border`, 'border-right': `${t}-border`,
+        // 포커스 링도 '테두리' 역할이다. 다크에서 밝혀야 |Lc| 30+ 를 만족한다.
+        outline: `${t}-border`, 'outline-color': `${t}-border`,
+        'accent-color': `${t}-border`,
+      }])
+  ),
+};
 
 /**
  * 2차 웨이브 — 브랜드 강조색도 같은 문제를 갖는다.
@@ -41,10 +78,12 @@ const WAVE2_MAP = Object.fromEntries(WAVE2.map((t) => [t, {
   border: `${t}-border`, 'border-color': `${t}-border`,
   'border-top': `${t}-border`, 'border-bottom': `${t}-border`,
   'border-left': `${t}-border`, 'border-right': `${t}-border`,
+  outline: `${t}-border`, 'outline-color': `${t}-border`,
+  'accent-color': `${t}-border`,
 }]));
 
 /** 속성 → 새 토큰 매핑. 여기에 없는 속성은 건드리지 않는다. */
-const MAP = process.argv.includes('--wave2') ? WAVE2_MAP : {
+const MAP = WAVE3 ? WAVE3_MAP : process.argv.includes('--wave2') ? WAVE2_MAP : {
   white: {
     background: 'surface', 'background-color': 'surface',
     color: 'on-accent',
@@ -96,7 +135,8 @@ for (const rel of FILES) {
   const src = fs.readFileSync(abs, 'utf8');
   const scan = maskComments(src); // 주석 안의 var(--white) 는 매치되지 않는다
   let out = '', cursor = 0, changed = 0;
-  const re = new RegExp("var\\(--(" + Object.keys(MAP).join("|") + ")\\)", "g");
+  const keys = Object.keys(MAP).sort((a, b) => b.length - a.length);
+  const re = new RegExp("var\\(--(" + keys.join("|") + ")\\)", "g");
   let m;
   while ((m = re.exec(scan)) !== null) {
     const tok = m[1];

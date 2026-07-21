@@ -27,8 +27,8 @@
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
-      background:      #ffffff;
-      color:           #1a1a1a;
+      background:      var(--surface);
+      color:           var(--ink);
       font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
       font-weight:     300;
       min-height:      100vh;
@@ -51,7 +51,7 @@
       font-size:      11px;
       letter-spacing: 0.2em;
       text-transform: uppercase;
-      color:          #4D006E;
+      color:          var(--midnight-purple-text);
       margin-bottom:  20px;
     }
 
@@ -60,7 +60,7 @@
       font-size:     clamp(17px, 2.2vw, 22px);
       font-weight:   400;
       line-height:   1.75;
-      color:         #1a1a1a;
+      color:         var(--ink);
       max-width:     580px;
       margin-bottom: 14px;
     }
@@ -68,7 +68,7 @@
     .msg-en {
       font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
       font-size:      clamp(10px, 1.3vw, 12px);
-      color:          #888080;
+      color:          var(--muted);
       letter-spacing: 0.03em;
       line-height:    1.7;
       max-width:      520px;
@@ -81,9 +81,9 @@
       font-size:      11px;
       letter-spacing: 0.14em;
       text-transform: uppercase;
-      color:          #4D006E;
+      color:          var(--midnight-purple-text);
       text-decoration: none;
-      border-bottom:  1px solid #4D006E;
+      border-bottom:  1px solid var(--midnight-purple-border);
       padding-bottom: 2px;
       transition:     opacity 0.15s;
     }
@@ -95,10 +95,10 @@
       font-size: 10px;
       letter-spacing: 0.12em;
       text-transform: uppercase;
-      color: #8f8f8f;
+      color: var(--gray-500);
     }
   </style>
-  <link rel="stylesheet" href="/css/chatbot.css?v=20260721061653">
+  <link rel="stylesheet" href="/css/chatbot.css?v=20260721064103">
 </head>
 <body>
 
@@ -128,7 +128,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.4/dist/purify.min.js" integrity="sha384-eEu5CTj3qGvu9PdJuS+YlkNi7d2XxQROAFYOr59zgObtlcux1ae1Il3u7jvdCSWu" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
   <script src="/js/main.js?v=20260417161927"></script>
-  <script src="/js/chatbot.js?v=20260721061653" defer></script>
+  <script src="/js/chatbot.js?v=20260721064103" defer></script>
   <script>
     if (window.GW && typeof GW.syncBuildVersion === 'function') GW.syncBuildVersion();
   </script>

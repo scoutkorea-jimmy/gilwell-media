@@ -1023,7 +1023,7 @@ body[data-home-bootstrap] .lang-btn:hover {
 .mobile-nav-sublink:focus-visible,
 .mobile-nav-link:focus-visible,
 .mobile-nav-group-summary:focus-visible {
-  outline: 2px solid var(--color-scouting-purple, var(--gw-scouting-purple));
+  outline: 2px solid var(--color-scouting-purple, var(--scouting-purple-border));
   outline-offset: 2px;
   border-radius: var(--radius-tight);
 }
@@ -1041,7 +1041,7 @@ body[data-home-bootstrap] .lang-btn:hover {
   left: 50%;
   transform: translateX(-50%) translateY(2px);
   min-width: 220px;
-  background: var(--white, var(--gw-canvas-white));
+  background: var(--white, var(--surface));
   border: 1px solid var(--border, var(--gray-300));
   border-radius: var(--radius-md);
   box-shadow: 0 8px 28px rgba(0, 0, 0, 0.12);
@@ -1075,7 +1075,7 @@ body[data-home-bootstrap] .lang-btn:hover {
 .nav-sublink:hover,
 .nav-sublink.active {
   background: rgba(98, 37, 153, 0.08);
-  color: var(--accent, var(--gw-scouting-purple));
+  color: var(--accent, var(--scouting-purple-text));
 }
 
 /* nav-link 는 .nav a 스타일을 그대로 상속 */
@@ -1144,11 +1144,11 @@ body[data-home-bootstrap] .lang-btn:hover {
 }
 .mobile-nav-sublink.active,
 .mobile-nav-link.active {
-  color: var(--color-scouting-purple, var(--gw-scouting-purple));
+  color: var(--color-scouting-purple, var(--scouting-purple-text));
   font-weight: 700;
 }
 .mobile-nav-sublink.active::before {
-  background: var(--color-scouting-purple, var(--gw-scouting-purple));
+  background: var(--color-scouting-purple, var(--scouting-purple-surface));
 }
 .mobile-nav-link {
   /* 1차 단독 링크: 그룹 summary 와 동일한 톤 */
@@ -1336,6 +1336,10 @@ body[data-home-bootstrap] .lang-btn:hover {
 .tag-apr   { background: var(--tag-apr);   }
 .tag-wosm  { background: var(--tag-wosm);  }
 .tag-people{ background: var(--tag-people);}
+/* 2026-07-21: .tag-glossary 만 배경 규칙이 빠져 있었다. .category-tag 는
+   color: var(--on-accent)(흰색)이므로 배경 없이는 흰 바탕에 흰 글씨가 되어
+   용어집 배너의 '스카우트 용어집' 배지가 보이지 않았다. (라이브 실측 확인) */
+.tag-glossary{ background: var(--tag-glossary);}
 
 /* 글머리 태그 (Kicker) — 아웃라인 */
 .post-kicker {
@@ -7221,7 +7225,7 @@ footer a:hover { color: var(--on-accent); }
   --bw-text:       #0f172a;
   --bw-text-s:     #475569;
   --bw-text-m:     #64748b;
-  --bw-text-l:     #94a3b8;
+  --bw-text-l:     #7f8a99;   /* 2026-07-21: #94a3b8 은 APCA Lc 50.2 로 기준(60) 미달이었다 → 62.6 */
   --bw-primary:    #622599;
   --bw-primary-h:  #4d006e;
   --bw-primary-lt: rgba(255,189,255,0.30);
@@ -7262,7 +7266,7 @@ footer a:hover { color: var(--on-accent); }
 .bw-header {
   position: relative;
   padding: var(--bw-gap-xl) 36px var(--bw-gap-lg);
-  background: linear-gradient(135deg, var(--gw-canvas-white) 0%, var(--shade-tint-14) 100%);
+  background: linear-gradient(135deg, var(--surface) 0%, var(--shade-tint-14) 100%);
   border-bottom: 1px solid var(--bw-border);
 }
 .bw-header-meta {
@@ -7277,7 +7281,7 @@ footer a:hover { color: var(--on-accent); }
   align-items: center;
   padding: 3px 12px;
   border-radius: var(--radius-pill);
-  color: var(--gw-canvas-white);
+  color: var(--on-accent);
   font-size: 10px;
   letter-spacing: 0.14em;
   text-transform: uppercase;
@@ -7306,7 +7310,7 @@ footer a:hover { color: var(--on-accent); }
   align-items: center;
   justify-content: center;
   border: 1px solid var(--bw-border);
-  background: var(--gw-canvas-white);
+  background: var(--surface);
   border-radius: 50%;
   color: var(--bw-text-m);
   cursor: pointer;
@@ -7394,7 +7398,7 @@ footer a:hover { color: var(--on-accent); }
   padding: 10px 12px;
   border: 1.5px solid var(--bw-border);
   border-radius: var(--bw-radius-s);
-  background: var(--gw-canvas-white);
+  background: var(--surface);
   color: var(--bw-text);
   font-family: var(--bw-font);
   font-size: 13px;
@@ -7445,7 +7449,7 @@ footer a:hover { color: var(--on-accent); }
 .bw-btn:disabled { opacity: 0.55; cursor: not-allowed; }
 .bw-btn-primary {
   background: var(--bw-primary);
-  color: var(--gw-canvas-white);
+  color: var(--on-accent);
   border-color: var(--bw-primary);
 }
 .bw-btn-primary:hover:not(:disabled) {
@@ -7453,7 +7457,7 @@ footer a:hover { color: var(--on-accent); }
   border-color: var(--bw-primary-h);
 }
 .bw-btn-outline {
-  background: var(--gw-canvas-white);
+  background: var(--surface);
   color: var(--bw-text-s);
   border-color: var(--bw-border);
 }
@@ -7506,7 +7510,7 @@ footer a:hover { color: var(--on-accent); }
 .bw-tag-pills .tag-pill.active,
 .bw-tag-pills .v3-tag-pill.active {
   background: var(--bw-primary);
-  color: var(--gw-canvas-white);
+  color: var(--on-accent);
   border-color: var(--bw-primary);
 }
 .bw-tag-pills .tag-pill:hover:not(.active) {
@@ -7552,7 +7556,7 @@ footer a:hover { color: var(--on-accent); }
 .bw-gallery-preview:has(.gallery-upload-item) {
   border-style: solid;
   border-color: var(--bw-border);
-  background: var(--gw-canvas-white);
+  background: var(--surface);
 }
 .bw-gallery-preview .gallery-upload-empty {
   margin: 0;
@@ -7591,7 +7595,7 @@ footer a:hover { color: var(--on-accent); }
 .bw-card-editor .board-editorjs-wrap {
   border: 1.5px solid var(--bw-border);
   border-radius: var(--bw-radius-s);
-  background: var(--gw-canvas-white);
+  background: var(--surface);
   min-height: 280px;
   transition: border-color 0.15s;
 }
@@ -7736,7 +7740,7 @@ footer a:hover { color: var(--on-accent); }
 }
 .home-memorabilia-rail-title > span:first-child {
   text-transform: uppercase;
-  color: var(--color-scouting-purple, var(--gw-scouting-purple));
+  color: var(--color-scouting-purple, var(--scouting-purple-text));
 }
 .home-memorabilia-rail-title > span:last-child {
   color: var(--ink, var(--ink));
@@ -7764,13 +7768,13 @@ footer a:hover { color: var(--on-accent); }
   border: 1px solid var(--gray-100, var(--gray-100));
   border-radius: var(--radius-sm);
   overflow: hidden;
-  background: var(--gw-canvas-white);
+  background: var(--surface);
   transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
 }
 .home-memo-card:hover {
   transform: translateY(-2px);
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
-  border-color: var(--color-scouting-purple, var(--gw-scouting-purple));
+  border-color: var(--color-scouting-purple, var(--scouting-purple-border));
 }
 .home-memo-card-thumb {
   aspect-ratio: 1 / 1;
@@ -7965,7 +7969,7 @@ footer a:hover { color: var(--on-accent); }
 .post-date { font: inherit; color: inherit; cursor: default; }
 .post-date.is-relative {
   font-weight: 600;
-  color: var(--color-scouting-purple, var(--gw-scouting-purple));
+  color: var(--color-scouting-purple, var(--scouting-purple-text));
 }
 
 /* ── Home freshness bar ─────────────────────────────────────────────
@@ -7989,7 +7993,7 @@ footer a:hover { color: var(--on-accent); }
   width: 5px;
   height: 5px;
   border-radius: 50%;
-  background: var(--color-forest-green, var(--gw-forest-green));
+  background: var(--color-forest-green, var(--forest-green-surface));
   box-shadow: 0 0 0 0 rgba(36, 135, 55, 0.5);
   animation: gwFreshnessPulse 2.4s ease-out infinite;
   flex: 0 0 auto;
@@ -8006,7 +8010,7 @@ footer a:hover { color: var(--on-accent); }
   color: var(--gray-300, var(--gray-300));
 }
 .home-freshness-bar .home-freshness-since {
-  color: var(--color-scouting-purple, var(--gw-scouting-purple));
+  color: var(--color-scouting-purple, var(--scouting-purple-text));
   font-weight: 600;
 }
 .home-freshness-bar .home-freshness-since[hidden] { display: none; }

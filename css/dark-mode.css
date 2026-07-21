@@ -79,12 +79,12 @@
     --focus-ring-color: rgba(199, 169, 238, 0.60);
 
     /* ── 강조색: 텍스트 변형만 밝게 (배경 변형은 위 원칙대로 유지) ── */
-    --accent-text:            #c7a9ee;   /* |Lc| 62.0 */
-    --scouting-purple-text:   #c7a9ee;   /* |Lc| 62.0 */
+    --accent-text:            #d3baf4;   /* |Lc| 70.4 (호버 표면에서도 60+ 확보) */
+    --scouting-purple-text:   #d3baf4;   /* |Lc| 70.4 */
     --midnight-purple-text:   #d3baf4;   /* |Lc| 70.4 */
     --forest-green-text:      #9fed8f;   /* |Lc| 83.3 — Leaf Green */
     --ocean-blue-text:        #82e6de;   /* |Lc| 80.5 — River Blue */
-    --fire-red-text:          #ff9e9d;   /* |Lc| 63.6 */
+    --fire-red-text:          #ffb3b2;   /* |Lc| 71.6 */
 
     /* 테두리 변형도 밝혀야 어두운 표면에서 보인다 (UI 기준 |Lc| 30+) */
     --accent-border:          #8b5fc4;
@@ -137,4 +137,110 @@
 @media (prefers-color-scheme: dark) {
   .members-section-eyebrow,
   .member-country-toggle-count { color: rgba(211, 186, 244, 0.88); }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   3차 — 게시판 작성 모달(--bw-*) · 잔여 리터럴 색
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    /* BW 토큰군은 이미 역할별로 나뉘어 있어 값만 뒤집으면 된다.
+       텍스트 값은 --bw-surface(#211a2a) 기준으로 APCA 검증했다. */
+    --bw-surface:      #211a2a;
+    --bw-canvas:       #191320;
+    --bw-border:       rgba(236, 234, 239, 0.16);
+    --bw-border-m:     rgba(236, 234, 239, 0.30);
+    --bw-text:         #eceaef;   /* |Lc| 93.0 */
+    --bw-text-s:       #c3bdcb;   /* |Lc| 66.5 */
+    --bw-text-m:       #cac3d5;   /* |Lc| 70.0 */
+    --bw-text-l:       #c6bfd1;   /* |Lc| 67.4 */
+    --bw-primary-tint: #2c2436;
+    /* --bw-primary / --bw-primary-h 는 배경 역할이라 어두운 보라를 유지한다
+       (그 위 글자가 흰색이므로 밝히면 깨진다). */
+    --bw-shadow:       0 1px 3px rgba(0, 0, 0, .5), 0 1px 2px rgba(0, 0, 0, .4);
+    --bw-shadow-lg:    0 10px 40px rgba(0, 0, 0, .6), 0 4px 12px rgba(0, 0, 0, .45);
+  }
+
+  /* 토큰을 거치지 않은 밝은 표면 — 다크에서 흰 판으로 남는다 */
+  .memo-modal-body     { background: #241d2e; }
+  .gw-ep-create-form   { background: #241d2e; }
+  .gw-chatbot-thread   { background: #1f1929; }
+
+  /* 위험(삭제) 버튼의 짙은 빨강(#c33)은 다크 배경에서 |Lc| 가 부족하다 */
+  .memo-btn-danger        { color: #ff9e9d; }
+  .memo-btn-danger:hover  { background: #a32b2b; border-color: #ff9e9d; }
+}
+
+/* ── 반투명 흰 배경 중 '사실상 흰 판'인 것 (alpha ≥ 0.8) ────────────────────
+   alpha 0.03~0.36 짜리는 어두운 표면·사진 위에 얹는 흰 베일이라 다크에서도
+   그대로 두어야 한다. 아래 것들만 표면 역할이므로 다크 표면색으로 뒤집는다.
+   (알파는 원래 값을 그대로 유지해 블러·겹침 효과를 보존한다) */
+@media (prefers-color-scheme: dark) {
+  .home-rail-card              { background: rgba(33, 26, 42, 0.98); }
+  .pull-refresh-label          { background: rgba(33, 26, 42, 0.96); }
+  .item-meta-chip              { background: rgba(33, 26, 42, 0.98); }
+  .post-history-entry          { background: rgba(33, 26, 42, 0.98); }
+  .bw-footer                   { background: rgba(33, 26, 42, 0.98); }
+  .share-modal-close           { background: rgba(33, 26, 42, 0.90); }
+  .mobile-compact-drawer-close { background: rgba(33, 26, 42, 0.88); }
+  .admin-sidebar-group         { background: rgba(33, 26, 42, 0.96); }
+  .admin-selected-post         { background: rgba(33, 26, 42, 0.80); }
+}
+
+/* ── 지역(region) 팔레트 — 캘린더·회원국 현황에서 텍스트로 쓰인다 ──────────
+   원래 값은 흰 배경 기준으로 고른 짙은 색이라 다크에서 |Lc| 15~45 로 떨어진다.
+   같은 색상 계열을 유지하면서 밝기만 올려 |Lc| 60+ 를 확보한다. */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --region-kor:  #6fd3ef;
+    --region-apr:  #ff9e9d;
+    --region-eur:  #6fd0dd;
+    --region-afr:  #e5b264;
+    --region-arb:  #bcb0ff;
+    --region-iar:  #f39ac4;
+    --region-wosm: var(--forest-green-text);
+  }
+}
+
+/* ── 별칭 토큰 · 브라우저 기본색 ────────────────────────────────────────────
+   --success / --danger 는 raw 브랜드 토큰을 가리키는 별칭이라 역할 분리 대상에서
+   빠져 있었다. 텍스트로 21곳 쓰이므로 다크 대응값이 필요하다.
+   또 `color-scheme: dark` 를 선언하면 스타일이 없는 <a> 가 브라우저 기본
+   다크 링크색(#9E9EFF, |Lc| 52.9)을 쓰는데 기준(60)에 못 미친다. */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --success: var(--forest-green-text);   /* #9fed8f · |Lc| 83.3 */
+    --danger:  var(--fire-red-text);       /* #ffb3b2 · |Lc| 71.6 */
+  }
+  a:not([class]) { color: var(--accent-text); }
+}
+
+/* ── shade 팔레트 — color: 로 16개 토큰이 쓰인다 ────────────────────────────
+   흰 배경 기준으로 고른 짙은 색이라 다크에서 |Lc| 15~45 로 떨어진다.
+   색상 계열을 유지하며 밝기만 올려 전부 |Lc| 60+ 를 확보했다. */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --shade-amber-1:  #e8bc4d;   /* 68.8 */
+    --shade-blue-2:   #6fd0dd;   /* 68.9 */
+    --shade-gray-2:   #cfc9d8;   /* 74.4 */
+    --shade-gray-3:   #c8c2d1;   /* 70.3 */
+    --shade-gray-4:   #cbc3b9;   /* 70.1 */
+    --shade-gray-5:   #c5bfce;   /* 68.6 */
+    --shade-gray-6:   #bfb9c9;   /* 65.1 */
+    --shade-gray-7:   #bbb5c4;   /* 62.8 */
+    --shade-gray-8:   #b6b0c0;   /* 60.1 */
+    --shade-green-3:  #9fed8f;   /* 83.3 */
+    --shade-purple-9: #d3baf4;   /* 70.4 */
+    --shade-red-1:    #ff9eb4;   /* 64.4 */
+    --shade-red-2:    #ffb0ad;   /* 70.3 */
+    --shade-red-4:    #ffb3a3;   /* 71.1 */
+    --shade-red-5:    #e0b45c;   /* 64.6 */
+    --shade-tint-7:   #2c2436;   /* 배경 역할 */
+  }
+
+  /* 스타일이 없는 링크가 브라우저 기본 다크 링크색(#9E9EFF, |Lc| 52.9)을 쓰는 것을
+     막는다. 요소 선택자(특정도 0,0,1)라 클래스 규칙이 있으면 그쪽이 이긴다 —
+     의도적으로 색을 지정한 링크는 그대로 유지된다. */
+  a { color: var(--accent-text); }
 }
