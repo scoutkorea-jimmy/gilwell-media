@@ -7,9 +7,6 @@ export default defineConfig({
   testDir: './tests',
   // 다크모드 대비 검증은 css/dark-mode.css 가 완성될 때까지 기본 실행에서 제외한다.
   // 수동 실행: npx playwright test tests/darkmode-contrast.spec.ts
-  // 다크모드 대비 검증은 css/dark-mode.css 가 링크되기 전까지 기본 실행에서 제외한다.
-  // 수동 실행: DARK_MODE_TEST=1 npx playwright test tests/darkmode-contrast.spec.ts
-  testIgnore: process.env.DARK_MODE_TEST ? [] : ["**/darkmode-contrast.spec.ts"],
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,

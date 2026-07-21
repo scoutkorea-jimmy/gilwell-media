@@ -68,16 +68,6 @@ async function useLocalCss(page: Page) {
  * 로드돼 동일 특정도 싸움에서 이겨 버린다. 실제 배포에서도 이 파일은 마지막에
  * 링크되므로, 주입 시점을 맞춰야 검증이 실제 배포 상태와 일치한다.
  */
-async function injectDarkCss(page: Page) {
-  // 전환을 먼저 끈다. 다크 CSS 를 주입하면 `transition: color .15s` 같은 규칙이
-  // 발동해, 측정 시점에 보간 중인 중간색(예: rgba(122,119,126,0.757))이 잡힌다.
-  // 실제 사용자는 처음부터 다크로 렌더된 페이지를 보므로 전환은 검증 대상이 아니다.
-  await page.addStyleTag({
-    content: '*,*::before,*::after{transition:none !important;animation:none !important}',
-  });
-  await page.addStyleTag({ content: fs.readFileSync(path.join(CSS_DIR, 'dark-mode.css'), 'utf8') });
-}
-
 /** 화면에 보이는 텍스트 노드의 실제 색 쌍을 수집 */
 async function sampleTextColors(page: Page) {
   return page.evaluate(() => {
@@ -164,8 +154,22 @@ for (const scheme of ['light', 'dark'] as const) {
         await page.goto(p, { waitUntil: 'domcontentloaded' });
         await page.waitForLoadState('load').catch(() => {});
         await page.waitForTimeout(2500);
-        await injectDarkCss(page);   // 반드시 페이지 전용 시트 뒤에 온다
+        // dark-mode.css 는 이제 페이지가 직접 링크한다(00.176.08~). 주입은 하지 않고,
+        // 전환 애니메이션만 꺼서 보간 중간색이 측정되는 것을 막는다.
+        await page.addStyleTag({ content: '*,*::before,*::after{transition:none !important;animation:none !important}' });
         await page.waitForTimeout(400);
+
+        // 테마가 실제로 적용됐는지 먼저 확인한다. 이 단언이 없으면 dark-mode.css 가
+        // 빠져도 '라이트 색끼리 대비 만족'으로 조용히 통과해 버린다.
+        const bodyLum = await page.evaluate(() => {
+          const m = getComputedStyle(document.body).backgroundColor.match(/\d+/g)!;
+          return (+m[0] + +m[1] + +m[2]) / 3;
+        });
+        if (scheme === 'dark') {
+          expect(bodyLum, 'dark 모드인데 배경이 어둡지 않다 — dark-mode.css 가 로드되지 않았을 수 있다').toBeLessThan(90);
+        } else {
+          expect(bodyLum, 'light 모드인데 배경이 밝지 않다').toBeGreaterThan(200);
+        }
 
         const samples = await sampleTextColors(page);
         expect(samples.length, '표본이 수집되어야 한다').toBeGreaterThan(5);
