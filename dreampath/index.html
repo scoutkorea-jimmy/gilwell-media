@@ -9,9 +9,9 @@
 
 <!-- Favicon = full project mark (swapped from the 32×32 tab glyph to the canonical
      logo SVG per user 2026-04-24 spec). Apple touch icon stays on app-icon. -->
-<link rel="icon" type="image/svg+xml" href="/img/dreampath/logo-mark.svg">
-<link rel="alternate icon" href="/img/dreampath/favicon.svg">
-<link rel="apple-touch-icon" href="/img/dreampath/logo-dreampath-app-icon.svg">
+<link rel="icon" type="image/svg+xml" href="/dreampath/img/logo-mark.svg">
+<link rel="alternate icon" href="/dreampath/img/favicon.svg">
+<link rel="apple-touch-icon" href="/dreampath/img/logo-dreampath-app-icon.svg">
 
 <!-- English-only UI. Google Sans Flex is the sole webfont; monospace needs use
      the OS-native ui-monospace stack so they never fall back to a Korean
@@ -376,8 +376,8 @@ button { cursor: pointer; }
   content: ""; position: absolute; left: 9px; top: 50%; transform: translateY(-50%);
   width: 14px; height: 14px;
   background-color: var(--text-3);
-  -webkit-mask: url('/img/dreampath/icons/search.svg') center/14px 14px no-repeat;
-          mask: url('/img/dreampath/icons/search.svg') center/14px 14px no-repeat;
+  -webkit-mask: url('/dreampath/img/icons/search.svg') center/14px 14px no-repeat;
+          mask: url('/dreampath/img/icons/search.svg') center/14px 14px no-repeat;
   pointer-events: none;
 }
 .dp-search kbd {
@@ -597,8 +597,8 @@ html[data-theme="system"] .dp-btn-danger { border-color: rgba(242,104,104,0.45);
 .dp-pin {
   display: inline-block; width: 12px; height: 12px; flex-shrink: 0;
   background-color: var(--warn);
-  -webkit-mask: url('/img/dreampath/icons/scroll.svg') center/12px 12px no-repeat;
-          mask: url('/img/dreampath/icons/scroll.svg') center/12px 12px no-repeat;
+  -webkit-mask: url('/dreampath/img/icons/scroll.svg') center/12px 12px no-repeat;
+          mask: url('/dreampath/img/icons/scroll.svg') center/12px 12px no-repeat;
 }
 .dp-unread-dot {
   width: 6px; height: 6px; border-radius: 50%;
@@ -849,8 +849,8 @@ html[data-theme="system"] .dp-btn-danger { border-color: rgba(242,104,104,0.45);
 .dp-badge-notice::before {
   content: ""; width: 8px; height: 8px; display: inline-block;
   background-color: currentColor;
-  -webkit-mask: url('/img/dreampath/icons/scroll.svg') center/8px 8px no-repeat;
-          mask: url('/img/dreampath/icons/scroll.svg') center/8px 8px no-repeat;
+  -webkit-mask: url('/dreampath/img/icons/scroll.svg') center/8px 8px no-repeat;
+          mask: url('/dreampath/img/icons/scroll.svg') center/8px 8px no-repeat;
 }
 
 /* Tab strip — Dev Rules (MD | Design Guide) */
@@ -1430,8 +1430,8 @@ html[data-theme="system"] .dp-btn-danger { border-color: rgba(242,104,104,0.45);
 .dp-file-item .rm .ico {
   width: 12px; height: 12px;
   background-color: currentColor;
-  -webkit-mask: url('/img/dreampath/icons/x.svg') center/12px 12px no-repeat;
-          mask: url('/img/dreampath/icons/x.svg') center/12px 12px no-repeat;
+  -webkit-mask: url('/dreampath/img/icons/x.svg') center/12px 12px no-repeat;
+          mask: url('/dreampath/img/icons/x.svg') center/12px 12px no-repeat;
 }
 
 /* Board picker in the post editor. The select remains in the DOM as the state
@@ -1482,8 +1482,8 @@ html[data-theme="system"] .dp-btn-danger { border-color: rgba(242,104,104,0.45);
   border: 1px dashed var(--g-300); border-radius: 50%;
   display: grid; place-items: center; color: var(--alert);
   background-color: currentColor;
-  -webkit-mask: url('/img/dreampath/icons/x.svg') center/14px 14px no-repeat;
-          mask: url('/img/dreampath/icons/x.svg') center/14px 14px no-repeat;
+  -webkit-mask: url('/dreampath/img/icons/x.svg') center/14px 14px no-repeat;
+          mask: url('/dreampath/img/icons/x.svg') center/14px 14px no-repeat;
 }
 
 /* Toast */
@@ -2167,12 +2167,12 @@ del.dp-wiki-del {
   // The site CSP has no worker-src directive, so it falls back to
   // default-src 'self'. A worker fetched from a CDN (cdnjs/jsdelivr) is
   // therefore BLOCKED and PDF extraction dies silently. We self-host the
-  // worker at /js/vendor/pdf.worker.min.js (same-origin = 'self'). Its version
+  // worker at /dreampath/vendor/pdf.worker.min.js (same-origin = 'self'). Its version
   // MUST match the pdf.min.js above (3.11.174). cMaps still load from jsdelivr
   // because connect-src allows it — needed so Korean PDFs extract correctly.
   // Ref: DREAMPATH.md Section 10, DREAMPATH-HISTORY.md 2026-06-04.
   if (window.pdfjsLib && window.pdfjsLib.GlobalWorkerOptions) {
-    window.pdfjsLib.GlobalWorkerOptions.workerSrc = '/js/vendor/pdf.worker.min.js';
+    window.pdfjsLib.GlobalWorkerOptions.workerSrc = '/dreampath/vendor/pdf.worker.min.js';
   }
 </script>
 
@@ -2247,7 +2247,7 @@ del.dp-wiki-del {
   to the SAME value and the browser never refetches. To ship v2 edits quickly,
   prefer ./deploy.sh fix (bumps cc). Ref: DREAMPATH-HISTORY.md 2026-04-24 · G.
 -->
-<script src="/js/dreampath.js?v=20260721120047"></script>
+<script src="/dreampath/app.js?v=20260721121535"></script>
 
 </body>
 </html>

@@ -26,7 +26,7 @@ scope: project
 | **Site (디자인)** — 색·서체·대비 | `css/style.css`, 팔레트·APCA | + [11-site-design.md](rules/11-site-design.md) |
 | **Admin** — 관리자 페이지 | `admin.html`, `js/admin-v3.js`, `js/admin-*.js`, `css/admin.css` | [20-admin.md](rules/20-admin.md) |
 | **KMS** — 운영 기준 원본 | 관리자 KMS 메뉴, `kms.html`, `js/kms.js`, `docs/feature-definition.md` | [30-kms.md](rules/30-kms.md) |
-| **Dreampath** — CUFS 내부 앱 | `dreampath.html`, `js/dreampath.js`, `functions/api/dreampath/**` | [40-dreampath.md](rules/40-dreampath.md) → **[DREAMPATH.md](DREAMPATH.md)** |
+| **Dreampath** — CUFS 내부 앱 | `dreampath/index.html`, `dreampath/app.js`, `functions/api/dreampath/**` | [40-dreampath.md](rules/40-dreampath.md) → **[dreampath/DREAMPATH.md](dreampath/DREAMPATH.md)** |
 | **공용 인프라** | `functions/_middleware.js`, `functions/_shared/**`, `_headers` | [01](rules/01-common-infra.md) + [40](rules/40-dreampath.md) (Dreampath 영향 확인) |
 | **배포·버전** | `VERSION`, `ADMIN_VERSION`, `data/changelog.json`, `scripts/*` | [02-versioning.md](rules/02-versioning.md) + [03-deploy.md](rules/03-deploy.md) |
 
@@ -36,7 +36,7 @@ scope: project
 
 > [!danger] 절대 금지 (전문: [rules/01-common-infra.md](rules/01-common-infra.md))
 > `functions/_shared/auth.js` 무단 수정 · DOMPurify 없는 `innerHTML` · 토큰 `localStorage` 저장 ·
-> 기존 DB 컬럼 삭제/타입 변경 · 배포 스크립트 우회 · `js/dreampath.js` 모듈화 · 시크릿 커밋
+> 기존 DB 컬럼 삭제/타입 변경 · 배포 스크립트 우회 · `dreampath/app.js` 모듈화 · 시크릿 커밋
 
 - **타겟 규칙 혼용 금지** — Site/Admin 에 Dreampath 규칙(IIFE, `DP.`, `dp_`, Tiptap)을 섞지 않는다. 반대도 금지.
 - **배포 = 버전 bump + changelog 엔트리** 한 세트. 하나라도 빠지면 preflight 가 차단한다.

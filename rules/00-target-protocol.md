@@ -78,7 +78,7 @@ git log --oneline HEAD..origin/main   # 원격에만 있는 커밋 (behind)
 | **Site** | 공개 홈페이지 (방문자용) | `index.html`, `korea.html`, `apr.html`, `wosm.html`, `people.html`, `js/main.js`, `js/board.js`, `js/post-page.js`, `css/style.css`, `functions/api/*` (dreampath 제외) |
 | **Admin** | 관리자 페이지 (운영 도구) | `admin.html`, `js/admin-v3.js`, 관리자 전용 API |
 | **KMS** | 운영 기준 원본 (Knowledge Management) | `admin.html` → KMS 메뉴, `kms.html`, `docs/feature-definition.md` |
-| **Dreampath** | CUFS 내부 앱 (별도 도메인) | `dreampath.html`, `js/dreampath.js`, `functions/api/dreampath/*` |
+| **Dreampath** | CUFS 내부 앱 (별도 도메인) | `dreampath/**`, `functions/api/dreampath/*` |
 
 ## Step 3 — Target 확인 응답
 
@@ -107,7 +107,7 @@ git log --oneline HEAD..origin/main   # 원격에만 있는 커밋 (behind)
 | Site | [01-common-infra.md](01-common-infra.md) + [10-site.md](10-site.md) (+ 디자인이면 [11-site-design.md](11-site-design.md)) | [[docs/features/README\|Homepage Features Hub]], [[docs/modules/README\|Homepage Modules Hub]] |
 | Admin | [01-common-infra.md](01-common-infra.md) + [20-admin.md](20-admin.md) | [[docs/homepage-module-inventory\|Module Inventory]] |
 | KMS | [01-common-infra.md](01-common-infra.md) + [30-kms.md](30-kms.md) | 관리자 페이지 KMS 메뉴 (정식 원본), [[docs/feature-definition\|Feature Definition]] (스냅샷) |
-| **Dreampath** | **[DREAMPATH.md](../DREAMPATH.md)** (Dev Rules) + **[DREAMPATH-HISTORY.md](../DREAMPATH-HISTORY.md)** (이력 / 케이스 스터디) | [[docs/dreampath/README\|Dreampath Hub]], `/dreampath` Dev Rules |
+| **Dreampath** | **[dreampath/DREAMPATH.md](../dreampath/DREAMPATH.md)** (Dev Rules) + **[dreampath/DREAMPATH-HISTORY.md](../dreampath/DREAMPATH-HISTORY.md)** (이력 / 케이스 스터디) | [[docs/dreampath/README\|Dreampath Hub]], `/dreampath` Dev Rules |
 
 ## Step 5 — 경계 검증
 
@@ -117,7 +117,7 @@ git log --oneline HEAD..origin/main   # 원격에만 있는 커밋 (behind)
 > - KMS는 **운영 기준**이지 코드가 아님 — 코드 변경으로 KMS 기준을 역으로 바꾸려 하지 말 것 (관리자 KMS가 1순위 원본)
 
 **경로로 타겟 판별:**
-- `functions/api/dreampath/**`, `dreampath.html`, `js/dreampath.js` → **Dreampath**
+- `dreampath/**`, `functions/api/dreampath/**` → **Dreampath**
 - `admin.html`, `js/admin-v3.js` → **Admin**
 - `kms.html`, KMS 관련 → **KMS**
 - 그 외 `*.html`, `js/main.js`, `css/style.css`, `functions/api/*` → **Site**
@@ -136,8 +136,8 @@ git log --oneline HEAD..origin/main   # 원격에만 있는 커밋 (behind)
 ## 예시
 
 **Case 1 — 명확:**
-> "`dreampath.html`의 툴바에 이탤릭 버튼 추가"
-> → "**Dreampath** 타겟으로 이해했습니다. `DREAMPATH.md`의 Tiptap 4곳 수정 규칙을 따르겠습니다."
+> "`dreampath/index.html`의 툴바에 이탤릭 버튼 추가"
+> → "**Dreampath** 타겟으로 이해했습니다. `dreampath/DREAMPATH.md`의 Tiptap 4곳 수정 규칙을 따르겠습니다."
 
 **Case 2 — 모호:**
 > "게시판 UI 고쳐줘"

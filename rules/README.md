@@ -26,7 +26,7 @@ scope: project
 | `css/style.css`, 색상·서체·간격·대비 변경 | **Site** | 위 + [11-site-design.md](11-site-design.md) |
 | `admin.html`, `js/admin-v3.js`, `js/admin-*.js`, `css/admin.css`, 관리자 전용 API | **Admin** | `00` + `01` + [20-admin.md](20-admin.md) |
 | 관리자 KMS 메뉴, `kms.html`, `js/kms.js`, `docs/feature-definition.md` | **KMS** | `00` + `01` + [30-kms.md](30-kms.md) |
-| `dreampath.html`, `js/dreampath.js`, `functions/api/dreampath/**`, `img/dreampath/**` | **Dreampath** | [40-dreampath.md](40-dreampath.md) → **[DREAMPATH.md](../DREAMPATH.md)** |
+| `dreampath/**`, `functions/api/dreampath/**` | **Dreampath** | [40-dreampath.md](40-dreampath.md) → **[dreampath/DREAMPATH.md](../dreampath/DREAMPATH.md)** |
 | `functions/_middleware.js`, `functions/_shared/**`, `_headers` | **공용 인프라** | `01` + [40-dreampath.md](40-dreampath.md) (Dreampath 영향 확인 필수) |
 | `VERSION`, `ADMIN_VERSION`, `data/changelog.json`, `scripts/*` | **배포** | [02-versioning.md](02-versioning.md) + [03-deploy.md](03-deploy.md) |
 
@@ -50,4 +50,4 @@ scope: project
 - **규칙 본문은 반드시 이 디렉토리 안에서만** 늘린다. `CLAUDE.md` 에 규칙을 다시 적지 않는다 (100줄 상한).
 - 새 규칙 파일을 추가하면 이 README 의 **파일 목록 + 라우팅 표**를 함께 갱신한다.
 - KMS 기준과 충돌하면 **관리자 KMS 가 1순위 원본** — 자세한 건 [30-kms.md](30-kms.md).
-- Dreampath 규칙은 여기가 아니라 `DREAMPATH.md` 에 적는다 (별도 저장소 분리 예정).
+- Dreampath 규칙은 여기가 아니라 `dreampath/DREAMPATH.md` 에 적는다 (별도 저장소 분리 예정).

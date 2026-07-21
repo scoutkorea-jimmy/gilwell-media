@@ -31,7 +31,6 @@ const BLOCKED = [
   '/CLAUDE.md',
   '/AGENTS.md',
   '/README.md',
-  '/DREAMPATH-HISTORY.md',
   '/.dev.vars.example',
   '/.gitignore',
 ];
@@ -41,12 +40,13 @@ const BLOCKED = [
  * 각 항목 옆에 "누가 쓰는지"를 남겨 둔다. 차단 목록을 넓힐 때 이 테스트가 막는다.
  */
 const MUST_STAY_LIVE: Array<[string, string]> = [
-  ['/DREAMPATH.md', 'js/dreampath.js _renderRulesMarkdown() 이 fetch'],
+  ['/dreampath/DREAMPATH.md', 'dreampath/app.js _renderRulesMarkdown() 이 fetch'],
+  ['/dreampath/app.js', 'Dreampath 앱 런타임'],
   ['/card-news-app/app.jsx', 'functions/card-news/[id].js 가 브라우저 Babel 로 변환'],
   ['/card-news-app/cards.jsx', 'functions/card-news/[id].js'],
   ['/card-news-app/styles.css', 'functions/card-news/[id].js'],
-  ['/dist-homepage/templates-app.js', 'js/dreampath.js 문서 템플릿 iframe'],
-  ['/dist-homepage/templates.css', 'js/dreampath.js 문서 템플릿 iframe'],
+  ['/dreampath/templates/templates-app.js', 'dreampath/app.js 문서 템플릿 iframe'],
+  ['/dreampath/templates/templates.css', 'dreampath/app.js 문서 템플릿 iframe'],
   ['/data/changelog.json', 'js/kms.js renderChangelog()'],
   ['/VERSION', '배포 검증 · 외부 모니터링'],
   ['/css/style.css', '공개 페이지 공용 스타일'],

@@ -1,6 +1,27 @@
 {
   "items": [
   {
+    "version": "00.177.01",
+    "date": "2026-07-21",
+    "released_at": "2026-07-22 00:20:00 KST",
+    "summary": "저장소를 정리해 CUFS 내부 앱(Dreampath) 파일을 한 폴더로 모았다. 이 저장소는 BP미디어를 위한 것임을 구조로 드러냈다.",
+    "for_users": [
+      "방문자가 보는 화면과 주소는 전혀 바뀌지 않았습니다.",
+      "내부 정리 작업입니다. 여기저기 흩어져 있던 CUFS 내부 앱 파일을 한 폴더로 모아, 앞으로 그 앱을 별도 사이트로 떼어낼 때 폴더만 옮기면 되도록 했습니다."
+    ],
+    "for_developers": [
+      "Dreampath 자산 83개를 dreampath/ 로 통합: dreampath.html→dreampath/index.html, js/dreampath.js→dreampath/app.js, img/dreampath/→dreampath/img/, dist-homepage/→dreampath/templates/, js/vendor/pdf.worker.min.js→dreampath/vendor/, DREAMPATH.md·DREAMPATH-HISTORY.md·deploy.sh 도 함께 이동.",
+      "functions/api/dreampath/ 는 그대로 둔다 — Pages 가 functions/ 를 루트에서만 인식하고, 그 경로가 곧 /api/dreampath/* 라우트다.",
+      "[중요] functions/_middleware.js 의 isLegacyInlinePath 를 접두사 매칭으로 바꿨다. 디렉토리 인덱스라 URL 이 /dreampath 와 /dreampath/ 둘 다 가능해졌는데, 접두사로 받지 않으면 인라인 onclick 이 CSP 에 막혀 2026-04-24 P0 회귀(사이드바 전체 마비)가 그대로 재발한다.",
+      "isDreampathTemplatePath 를 /dreampath/templates/ 로 갱신(X-Frame-Options SAMEORIGIN 예외).",
+      "공개 디렉토리 안에 들어간 내부 문서는 개별 차단 — /dreampath/DREAMPATH-HISTORY.md, /dreampath/deploy.sh. DREAMPATH.md 는 앱의 규칙 뷰어가 fetch 하므로 차단 대상이 아니다.",
+      "갱신한 참조: js/search.js(공개 검색 결과 링크), site-structure.mjs·marketing.js·analytics.js(경로 제목·분석 매핑에 /dreampath/ 추가), sync_versions.sh·verify_release_metadata.sh(자산 토큰 경로), audit_public_exposure.mjs·tests/smoke-internal-exposure.spec.ts, CLAUDE.md·rules/ 6개 문서.",
+      "dreampath/deploy.sh 는 저장소 루트로 cd 한 뒤 실행되도록 보정했다(wrangler·git 이 루트 기준이라).",
+      "URL 영향 없음 — /dreampath 는 디렉토리 인덱스로 그대로 서빙되고, /dreampath.html 301 규칙도 유지된다. 나머지(app.js·img·templates·문서)는 전부 내부 참조라 외부 노출 URL 이 아니었다.",
+      "사이트 버전 00.177.00 → 00.177.01."
+    ]
+  },
+  {
     "version": "00.177.00",
     "date": "2026-07-21",
     "released_at": "2026-07-21 23:30:00 KST",

@@ -10,6 +10,10 @@
 # ──────────────────────────────────────────────────────────────────────────────
 set -e
 
+# [2026-07-21] 이 스크립트는 dreampath/ 안으로 옮겨졌지만, wrangler 배포와
+# git 조작은 저장소 루트를 기준으로 해야 하므로 루트로 이동한 뒤 실행한다.
+cd "$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+
 DB="gilwell-posts"
 PROJECT="gilwell-media"
 
@@ -107,8 +111,8 @@ echo "🔄 Cache-busting: updating ?v= to ${VERSION}..."
 # Site/Admin HTML files use the main release flow and must not receive a
 # Dreampath semver token during this Pages deploy.
 HTML_FILES=(
-  "./dreampath.html"
-  "./dist-homepage/DreamPath - Document Templates.html"
+  "./dreampath/index.html"
+  "./dreampath/templates/DreamPath - Document Templates.html"
 )
 declare -a PREV_TOKENS
 for f in "${HTML_FILES[@]}"; do
@@ -147,11 +151,11 @@ fi
 COMMIT_RANGE="origin/main..HEAD"
 COMMIT_BULLETS=$(git log "$COMMIT_RANGE" --reverse --no-merges \
   --format='%s' -- \
-  dreampath.html js/dreampath.js dist-homepage functions/api/dreampath DREAMPATH.md DREAMPATH-HISTORY.md docs/dreampath db/migration_*.sql deploy.sh \
+  dreampath functions/api/dreampath functions/_shared/dreampath-perm.js docs/dreampath db/migration_*.sql \
   2>/dev/null | grep -Ei 'dreampath|dp_|calendar|version|session|pmo|risk|decision|comment|task|note|board|event|deploy' | head -12 || true)
 if [[ -z "$COMMIT_BULLETS" ]]; then
   COMMIT_BULLETS=$(git log -1 --no-merges --format='%s' -- \
-    dreampath.html js/dreampath.js dist-homepage functions/api/dreampath DREAMPATH.md DREAMPATH-HISTORY.md docs/dreampath db/migration_*.sql deploy.sh \
+    dreampath functions/api/dreampath functions/_shared/dreampath-perm.js docs/dreampath db/migration_*.sql \
     2>/dev/null | grep -Ei 'dreampath|dp_|calendar|version|session|pmo|risk|decision|comment|task|note|board|event|deploy' || true)
 fi
 

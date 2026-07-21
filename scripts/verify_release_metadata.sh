@@ -144,8 +144,8 @@ grep -F "/js/calendar.js?v=${ASSET_VERSION_FILE}" calendar.html >/dev/null || {
   echo "Missing calendar.js asset version in calendar.html"
   exit 1
 }
-grep -F "/js/dreampath.js?v=${ASSET_VERSION_FILE}" dreampath.html >/dev/null || {
-  echo "Missing dreampath.js asset version in dreampath.html"
+grep -F "/dreampath/app.js?v=${ASSET_VERSION_FILE}" dreampath/index.html >/dev/null || {
+  echo "Missing app.js asset version in dreampath/index.html"
   exit 1
 }
 

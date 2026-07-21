@@ -37,8 +37,8 @@ scope: project
 
 ## Dreampath
 
-- **[DREAMPATH.md](../DREAMPATH.md)** — AI 작업 규칙 (단일 원본)
-- **[DREAMPATH-HISTORY.md](../DREAMPATH-HISTORY.md)** — 버전 히스토리 / 케이스 스터디 (국·영 병기)
+- **[dreampath/DREAMPATH.md](../dreampath/DREAMPATH.md)** — AI 작업 규칙 (단일 원본)
+- **[dreampath/DREAMPATH-HISTORY.md](../dreampath/DREAMPATH-HISTORY.md)** — 버전 히스토리 / 케이스 스터디 (국·영 병기)
 - [[docs/dreampath/README|Dreampath Hub]] — 기능/API/DB 레퍼런스 (공용 문서)
 
 ## 운영 (공통)

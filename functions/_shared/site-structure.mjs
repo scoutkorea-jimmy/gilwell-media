@@ -105,6 +105,7 @@ export const SITE_PATH_TITLE_FALLBACKS = Object.freeze({
   '/about.html': '운영 주체',
   '/dreampath': 'Dreampath',
   '/dreampath.html': 'Dreampath',
+  '/dreampath/': 'Dreampath',
   '/search': '검색',
   '/search.html': '검색',
   '/admin': SITE_BRAND_NAME + ' 관리자',

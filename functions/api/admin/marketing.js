@@ -359,7 +359,7 @@ function classifyJourneyStage(path) {
     value === '/wosm-members' ||
     value === '/wosm-members.html'
   ) return 'awareness';
-  if (value === '/dreampath' || value === '/dreampath.html') return 'interest';
+  if (value === '/dreampath' || value === '/dreampath/' || value === '/dreampath.html') return 'interest';
   return 'interest';
 }
 

@@ -199,7 +199,7 @@ async function getInternalMetrics(env, range, tagRange, heatmapRange) {
           GROUP BY path
        )
        SELECT sv.path AS path,
-              COALESCE(p.title, CASE WHEN sv.path IN ('/dreampath', '/dreampath.html') THEN 'Dreampath' ELSE '' END) AS title,
+              COALESCE(p.title, CASE WHEN sv.path IN ('/dreampath', '/dreampath/', '/dreampath.html') THEN 'Dreampath' ELSE '' END) AS title,
               COUNT(*) AS pageviews,
               COUNT(DISTINCT sv.viewer_key) AS visits,
               COALESCE(pe.avg_dwell_seconds, pd.avg_dwell_seconds, 0) AS avg_dwell_seconds

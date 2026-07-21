@@ -13,7 +13,7 @@
  *      → 조용히 공개된다. (2026-07-21 사고: rules/, db/, output/ 노출)
  *
  *   2) 런타임이 fetch 하는 자산을 차단 목록에 넣은 경우
- *      → 기능이 죽는다. (`.assetsignore` 에 card-news-app / dist-homepage 를
+ *      → 기능이 죽는다. (`.assetsignore` 에 card-news-app / dreampath 를
  *        넣었던 시한폭탄 — Pages 가 그 파일을 무시한 덕에 우연히 살았다.)
  *
  * 네트워크 없이 동작한다. 라이브 확인은 tests/smoke-internal-exposure.spec.ts.
@@ -38,11 +38,13 @@ const PUBLIC_ENTRIES = new Set([
   'functions',
   // 런타임이 직접 참조하는 앱 소스
   'card-news-app',   // functions/card-news/[id].js 가 .jsx 를 브라우저로 내려보냄
-  'dist-homepage',   // js/dreampath.js 가 문서 템플릿을 iframe 으로 로드
+  // Dreampath 앱 일체 (2026-07-21 dreampath/ 로 통합). index.html·app.js·img·
+  // templates·vendor 는 브라우저가 받아야 하고, DREAMPATH.md 는 앱의 규칙 뷰어가
+  // fetch 한다. 이 디렉토리를 차단 목록에 넣으면 앱이 통째로 죽는다.
+  'dreampath',
   // 루트 파일
   '_headers', '_redirects',
   'VERSION', 'ADMIN_VERSION', 'ASSET_VERSION',
-  'DREAMPATH.md',    // js/dreampath.js `_renderRulesMarkdown()` 이 fetch
   'robots.txt', 'sitemap.xml',
 ]);
 
@@ -51,18 +53,18 @@ const PUBLIC_ENTRIES = new Set([
  * 위 PUBLIC_ENTRIES 와 중복이지만, 실제 경로 문자열로 한 번 더 확인한다.
  */
 const MUST_STAY_PUBLIC = [
-  '/DREAMPATH.md',
+  '/dreampath/DREAMPATH.md',
+  '/dreampath/app.js',
   '/card-news-app/app.jsx',
   '/card-news-app/cards.jsx',
   '/card-news-app/styles.css',
-  '/dist-homepage/templates-app.js',
-  '/dist-homepage/templates.css',
+  '/dreampath/templates/templates-app.js',
+  '/dreampath/templates/templates.css',
   '/data/changelog.json',
   '/VERSION',
   '/ADMIN_VERSION',
   '/css/style.css',
   '/js/main.js',
-  '/js/dreampath.js',
   '/img/og-default.png',
   '/index.html',
   '/',

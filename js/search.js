@@ -26,7 +26,7 @@
         '<div class="search-results-grid">' +
         posts.map(function (item) {
           return (
-            '<a class="search-result-card" href="/dreampath.html">' +
+            '<a class="search-result-card" href="/dreampath">' +
               '<span class="category-tag cat-wosm">' + GW.escapeHtml(String(item.kind || 'item').toUpperCase()) + '</span>' +
               '<h3>' + GW.escapeHtml(item.title || '') + '</h3>' +
               (item.subtitle ? '<p class="result-sub">' + GW.escapeHtml(item.subtitle) + '</p>' : '') +

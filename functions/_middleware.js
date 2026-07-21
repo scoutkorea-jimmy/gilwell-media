@@ -125,7 +125,12 @@ function isLegacyInlinePath(pathname) {
   // required + X-Frame-Options DENY + no external inline-injection vector).
   if (pathname === '/admin' || pathname === '/admin.html') return true;
   if (pathname === '/kms' || pathname === '/kms.html') return true;
-  if (pathname === '/dreampath' || pathname === '/dreampath.html') return true;
+  // [2026-07-21] Dreampath 앱이 dreampath/ 디렉토리로 이동하면서 실제 문서 URL 이
+  //   /dreampath  ·  /dreampath/  둘 다 가능해졌다(Pages 디렉토리 인덱스).
+  //   접두사로 받지 않으면 인라인 onclick 이 CSP 에 막혀 2026-04-24 P0 회귀가
+  //   그대로 재발한다. 반드시 접두사 매칭을 유지할 것.
+  if (pathname === '/dreampath' || pathname.startsWith('/dreampath/')) return true;
+  if (pathname === '/dreampath.html') return true;   // 구 URL (301 이지만 방어적으로 유지)
   // [CASE STUDY 2026-04-24 — /dreampath-v2 staging route RETIRED]
   // The /dreampath-v2 alias was the staging home of the new design system
   // while /dreampath still served the legacy UI. After cutover + a
@@ -138,16 +143,15 @@ function isLegacyInlinePath(pathname) {
 }
 
 function isDreampathTemplatePath(pathname) {
-  return String(pathname || '').startsWith('/dist-homepage/');
+  return String(pathname || '').startsWith('/dreampath/templates/');
 }
 
 // ── 내부 파일 차단 목록 ──────────────────────────────────────────────────
 // [!] 여기에 경로를 추가하기 전에 런타임이 그 파일을 fetch 하지 않는지 확인할 것.
 //     아래는 "브라우저가 읽어야 하므로 절대 차단하면 안 되는" 경로들이다:
-//       /DREAMPATH.md        js/dreampath.js `_renderRulesMarkdown()` 이 fetch
+//       /dreampath/*         Dreampath 앱 일체 (index.html·app.js·img·templates·DREAMPATH.md)
 //       /card-news-app/*     functions/card-news/[id].js 가 .jsx 를 직접 참조
 //                            (빌드 없음 — @babel/standalone 이 브라우저에서 변환)
-//       /dist-homepage/*     js/dreampath.js 가 문서 템플릿을 iframe 으로 로드
 //       /data/*              js/kms.js 가 changelog.json 을 fetch
 //       /VERSION, /ADMIN_VERSION, /ASSET_VERSION   배포 검증 · 외부 모니터링
 const BLOCKED_PREFIXES = [
@@ -170,6 +174,10 @@ const BLOCKED_PREFIXES = [
 ];
 
 const BLOCKED_FILES = new Set([
+  // dreampath/ 는 앱 자산이라 공개해야 하지만, 그 안의 개발 이력 문서는 내부용이다.
+  // (DREAMPATH.md 는 앱의 규칙 뷰어가 fetch 하므로 차단하지 않는다)
+  '/dreampath/dreampath-history.md',
+  '/dreampath/deploy.sh',
   '/claude.md',
   '/agents.md',
   '/readme.md',

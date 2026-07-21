@@ -10,7 +10,7 @@ scope: dreampath
 
 > [!abstract] Purpose & Scope
 > **목적**: Dreampath 내부 협업 앱의 **기능, API, DB 구조**를 한눈에 파악하는 레퍼런스 허브
-> **범위**: Dreampath 전용 (`dreampath.html`, `js/dreampath.js`, `functions/api/dreampath/*`)
+> **범위**: Dreampath 전용 (`dreampath/**`, `functions/api/dreampath/*`)
 > **제외**: 메인 홈페이지 (`index.html`, `js/main.js` 등) → [[CLAUDE]] §2 Site 참조
 >
 > 정식 Dev Rules는 `/dreampath` → 사이드바 "Dev Rules"에서 확인하십시오.

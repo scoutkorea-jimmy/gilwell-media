@@ -19,7 +19,7 @@ fi
 # 새 내부 디렉토리(문서·스크립트·덤프)를 추가하면 기본적으로 공개된다. 차단 목록
 # (functions/_middleware.js `isBlockedInternalPath()`) 과 실제 저장소 구성이
 # 어긋나면 배포를 막는다. 반대로 런타임이 fetch 하는 자산을 차단 목록에 넣은
-# 경우(card-news-app / dist-homepage 시한폭탄 유형)도 여기서 잡는다.
+# 경우(card-news-app / dreampath 시한폭탄 유형)도 여기서 잡는다.
 if [[ -f "$ROOT_DIR/scripts/audit_public_exposure.mjs" ]]; then
   node "$ROOT_DIR/scripts/audit_public_exposure.mjs"
 fi

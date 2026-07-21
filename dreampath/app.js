@@ -197,7 +197,7 @@ const DP = (() => {
     // a script tag from the textContent we just extracted (defense-in-depth).
     return text.replace(/[&<>"']/g, m => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[m]));
   };
-  const icon = (name) => `<span class="ico" aria-hidden="true" style="--dp-icon:url('/img/dreampath/icons/${name}.svg')"></span>`;
+  const icon = (name) => `<span class="ico" aria-hidden="true" style="--dp-icon:url('/dreampath/img/icons/${name}.svg')"></span>`;
 
   // -------------------------- Tiptap --------------------------
   // Port of production /dreampath editor, retuned to the ERP tokens.
@@ -421,7 +421,7 @@ const DP = (() => {
     return _TIPTAP_TOOLBAR.map(b => {
       if (b.sep) return '<span class="dp-te-sep" aria-hidden="true"></span>';
       const inner = b.icon
-        ? `<span class="ico" style="--dp-icon:url('/img/dreampath/icons/${esc(b.icon)}.svg')"></span>`
+        ? `<span class="ico" style="--dp-icon:url('/dreampath/img/icons/${esc(b.icon)}.svg')"></span>`
         : `<span>${esc(b.label)}</span>`;
       return `<button type="button" class="dp-te-btn" data-cmd="${esc(b.cmd)}" title="${esc(b.title || b.cmd)}"
                        onmousedown="event.preventDefault();DP._execTiptapCmd('${esc(b.cmd)}')">${inner}</button>`;
@@ -985,7 +985,7 @@ const DP = (() => {
     const overlay = h('div', { className: 'dp-login' }, [
       h('div', { className: 'dp-login-card' }, [
         h('div', { className: 'dp-login-brand' }, [
-          h('img', { src: '/img/dreampath/logo-mark.svg', alt: 'DreamPath' }),
+          h('img', { src: '/dreampath/img/logo-mark.svg', alt: 'DreamPath' }),
           h('div', {}, [
             h('h1', {}, 'Dreampath PMO'),
             h('span', {}, 'Project Management Office'),
@@ -1112,7 +1112,7 @@ const DP = (() => {
     `).join('');
     side.innerHTML = `
       <div class="dp-side-brand">
-        <img src="/img/dreampath/logo-mark.svg" alt="" aria-hidden="true">
+        <img src="/dreampath/img/logo-mark.svg" alt="" aria-hidden="true">
         <div class="wm">
           <strong>Dreampath</strong>
           <span>PMO Portal</span>
@@ -1153,7 +1153,7 @@ const DP = (() => {
     const bar = h('header', { className: 'dp-topbar' });
     bar.innerHTML = `
       <button type="button" class="dp-iconbtn dp-mob-menu" aria-label="Open menu" onclick="DP.toggleSide()">
-        <span class="ico" style="--dp-icon:url('/img/dreampath/icons/list-ul.svg')"></span>
+        <span class="ico" style="--dp-icon:url('/dreampath/img/icons/list-ul.svg')"></span>
       </button>
       <div class="dp-crumbs" id="dp-crumbs">
         <span>Dreampath PMO</span>
@@ -1178,12 +1178,12 @@ const DP = (() => {
         <kbd>⌘K</kbd>
       </label>
       <button type="button" class="dp-iconbtn" id="dp-notif-btn" aria-label="Notifications" onclick="DP.openNotifs()">
-        <span class="ico" style="--dp-icon:url('/img/dreampath/icons/bell.svg')"></span>
+        <span class="ico" style="--dp-icon:url('/dreampath/img/icons/bell.svg')"></span>
         <span class="dot" id="dp-notif-dot" aria-hidden="true" style="display:none"></span>
         <span class="dp-notif-count" id="dp-notif-count" aria-hidden="true" style="display:none"></span>
       </button>
       <button type="button" class="dp-btn dp-btn-primary" onclick="DP.openCreate()">
-        <span class="dp-btn-ico" style="--dp-icon:url('/img/dreampath/icons/plus.svg')"></span>
+        <span class="dp-btn-ico" style="--dp-icon:url('/dreampath/img/icons/plus.svg')"></span>
         <span>New</span>
       </button>
     `;
@@ -1832,7 +1832,7 @@ const DP = (() => {
   }
 
   function _renderDocumentTemplates(root) {
-    const docUrl = '/dist-homepage/DreamPath%20-%20Document%20Templates';
+    const docUrl = '/dreampath/templates/DreamPath%20-%20Document%20Templates';
     // [CASE STUDY 2026-06-09 — Document Templates iframe cache-bust]
     // The iframe HTML document itself carries no ?v=, so a browser can serve a
     // stale copy (and stale templates-app.js with it) after a deploy. deploy.sh
@@ -1854,7 +1854,7 @@ const DP = (() => {
           id: 'dp-template-save-btn',
           onclick: () => _templateSaveDocument(),
         }, [
-          h('span', { className: 'dp-btn-ico', style: { '--dp-icon': "url('/img/dreampath/icons/check.svg')" } }),
+          h('span', { className: 'dp-btn-ico', style: { '--dp-icon': "url('/dreampath/img/icons/check.svg')" } }),
           h('span', {}, 'Save to Documents'),
         ]),
         h('a', {
@@ -1863,7 +1863,7 @@ const DP = (() => {
           target: '_blank',
           rel: 'noopener',
         }, [
-          h('span', { className: 'dp-btn-ico', style: { '--dp-icon': "url('/img/dreampath/icons/file-text.svg')" } }),
+          h('span', { className: 'dp-btn-ico', style: { '--dp-icon': "url('/dreampath/img/icons/file-text.svg')" } }),
           h('span', {}, 'Open full screen'),
         ]),
       ]),
@@ -3096,7 +3096,7 @@ const DP = (() => {
       h('h1', {}, label),
       h('div', {}, [
         h('button', { className: 'dp-btn dp-btn-primary', onclick: () => _openPostEditor(key, activeTab) }, [
-          h('span', { className: 'dp-btn-ico', style: { '--dp-icon': "url('/img/dreampath/icons/plus.svg')" } }),
+          h('span', { className: 'dp-btn-ico', style: { '--dp-icon': "url('/dreampath/img/icons/plus.svg')" } }),
           h('span', {}, ' New post'),
         ]),
       ]),
@@ -3255,7 +3255,7 @@ const DP = (() => {
     if (res.status === 403) {
       const denied = h('div', { className: 'dp-empty' });
       denied.innerHTML = `
-        <div class="mark"><span class="ico" style="--dp-icon:url('/img/dreampath/icons/x.svg')"></span></div>
+        <div class="mark"><span class="ico" style="--dp-icon:url('/dreampath/img/icons/x.svg')"></span></div>
         <h4>Access denied</h4>
         <p>You do not have permission to view this board.</p>
       `;
@@ -3265,7 +3265,7 @@ const DP = (() => {
     if (!res.ok) {
       const err = h('div', { className: 'dp-empty' });
       err.innerHTML = `
-        <div class="mark"><span class="ico" style="--dp-icon:url('/img/dreampath/icons/x.svg')"></span></div>
+        <div class="mark"><span class="ico" style="--dp-icon:url('/dreampath/img/icons/x.svg')"></span></div>
         <h4>Could not load board</h4>
         <p>${esc(res.error || 'HTTP ' + res.status)}</p>
       `;
@@ -3277,7 +3277,7 @@ const DP = (() => {
     if (!posts.length) {
       const empty = h('div', { className: 'dp-empty' });
       empty.innerHTML = `
-        <div class="mark"><span class="ico" style="--dp-icon:url('/img/dreampath/icons/file-text.svg')"></span></div>
+        <div class="mark"><span class="ico" style="--dp-icon:url('/dreampath/img/icons/file-text.svg')"></span></div>
         <h4>No posts yet</h4>
         <p>Create the first one for ${esc(label)}.</p>
         <button class="dp-btn dp-btn-primary dp-btn-sm" onclick="DP._openPostEditor('${esc(key)}')">+ New post</button>
@@ -3993,7 +3993,7 @@ const DP = (() => {
           h('button', { type: 'button', className: view === 'gantt' ? 'on' : '', onclick: () => { state.tasksView = 'gantt'; navigate('tasks'); } }, 'Gantt'),
         ]),
         h('button', { className: 'dp-btn dp-btn-primary', onclick: () => _openTaskEditor() }, [
-          h('span', { className: 'dp-btn-ico', style: { '--dp-icon': "url('/img/dreampath/icons/plus.svg')" } }),
+          h('span', { className: 'dp-btn-ico', style: { '--dp-icon': "url('/dreampath/img/icons/plus.svg')" } }),
           h('span', {}, ' New task'),
         ]),
       ]),
@@ -4010,7 +4010,7 @@ const DP = (() => {
     if (!tasks.length) {
       const empty = h('div', { className: 'dp-empty' });
       empty.innerHTML = `
-        <div class="mark"><span class="ico" style="--dp-icon:url('/img/dreampath/icons/check.svg')"></span></div>
+        <div class="mark"><span class="ico" style="--dp-icon:url('/dreampath/img/icons/check.svg')"></span></div>
         <h4>No tasks yet</h4>
         <p>Create the first task to track project work.</p>
         <button class="dp-btn dp-btn-primary dp-btn-sm" onclick="DP._openTaskEditor()">+ New task</button>
@@ -4327,7 +4327,7 @@ const DP = (() => {
       h('h1', {}, 'Notes / Issues'),
       h('div', {}, [
         h('button', { className: 'dp-btn dp-btn-primary', onclick: () => _openNoteEditor() }, [
-          h('span', { className: 'dp-btn-ico', style: { '--dp-icon': "url('/img/dreampath/icons/plus.svg')" } }),
+          h('span', { className: 'dp-btn-ico', style: { '--dp-icon': "url('/dreampath/img/icons/plus.svg')" } }),
           h('span', {}, ' New note'),
         ]),
       ]),
@@ -4343,7 +4343,7 @@ const DP = (() => {
     if (!notes.length) {
       const empty = h('div', { className: 'dp-empty' });
       empty.innerHTML = `
-        <div class="mark"><span class="ico" style="--dp-icon:url('/img/dreampath/icons/clipboard.svg')"></span></div>
+        <div class="mark"><span class="ico" style="--dp-icon:url('/dreampath/img/icons/clipboard.svg')"></span></div>
         <h4>No notes or issues</h4>
         <p>Capture decisions, open issues, or quick context here.</p>
         <button class="dp-btn dp-btn-primary dp-btn-sm" onclick="DP._openNoteEditor()">+ New note</button>
@@ -4469,7 +4469,7 @@ const DP = (() => {
       ]),
       h('div', {}, [
         h('button', { className: 'dp-btn dp-btn-primary', onclick: () => _openDecisionEditor() }, [
-          h('span', { className: 'dp-btn-ico', style: { '--dp-icon': "url('/img/dreampath/icons/plus.svg')" } }),
+          h('span', { className: 'dp-btn-ico', style: { '--dp-icon': "url('/dreampath/img/icons/plus.svg')" } }),
           h('span', {}, ' New decision'),
         ]),
       ]),
@@ -4486,7 +4486,7 @@ const DP = (() => {
     if (!decisions.length) {
       const empty = h('div', { className: 'dp-empty' });
       empty.innerHTML = `
-        <div class="mark"><span class="ico" style="--dp-icon:url('/img/dreampath/icons/target.svg')"></span></div>
+        <div class="mark"><span class="ico" style="--dp-icon:url('/dreampath/img/icons/target.svg')"></span></div>
         <h4>No decisions logged</h4>
         <p>Capture the first PMO decision so the reason and follow-up stay visible.</p>
         <button class="dp-btn dp-btn-primary dp-btn-sm" onclick="DP._openDecisionEditor()">+ New decision</button>
@@ -4653,7 +4653,7 @@ const DP = (() => {
       ]),
       h('div', {}, [
         h('button', { className: 'dp-btn dp-btn-primary', onclick: () => _openRiskEditor() }, [
-          h('span', { className: 'dp-btn-ico', style: { '--dp-icon': "url('/img/dreampath/icons/plus.svg')" } }),
+          h('span', { className: 'dp-btn-ico', style: { '--dp-icon': "url('/dreampath/img/icons/plus.svg')" } }),
           h('span', {}, ' New risk'),
         ]),
       ]),
@@ -4667,7 +4667,7 @@ const DP = (() => {
     if (!risks.length) {
       const empty = h('div', { className: 'dp-empty' });
       empty.innerHTML = `
-        <div class="mark"><span class="ico" style="--dp-icon:url('/img/dreampath/icons/target.svg')"></span></div>
+        <div class="mark"><span class="ico" style="--dp-icon:url('/dreampath/img/icons/target.svg')"></span></div>
         <h4>No risks registered</h4>
         <p>Add the first risk, issue, dependency, or blocker before it hides inside a thread.</p>
         <button class="dp-btn dp-btn-primary dp-btn-sm" onclick="DP._openRiskEditor()">+ New risk</button>
@@ -4808,7 +4808,7 @@ const DP = (() => {
     root.appendChild(h('div', { className: 'dp-page-head' }, [h('h1', {}, title)]));
     const e = h('div', { className: 'dp-empty' });
     e.innerHTML = `
-      <div class="mark"><span class="ico" style="--dp-icon:url('/img/dreampath/icons/layers.svg')"></span></div>
+      <div class="mark"><span class="ico" style="--dp-icon:url('/dreampath/img/icons/layers.svg')"></span></div>
       <h4>${esc(title)} — Phase 3 wiring pending</h4>
       <p>${esc(note)}</p>
     `;
@@ -5158,7 +5158,7 @@ const DP = (() => {
     if (!contacts.length) {
       const empty = h('div', { className: 'dp-empty' });
       empty.innerHTML = `
-        <div class="mark"><span class="ico" style="--dp-icon:url('/img/dreampath/icons/phone.svg')"></span></div>
+        <div class="mark"><span class="ico" style="--dp-icon:url('/dreampath/img/icons/phone.svg')"></span></div>
         <h4>No contacts</h4>
         <p>Partner, vendor, and advisor contacts show up here once added.</p>
       `;
@@ -5484,9 +5484,9 @@ const DP = (() => {
     // — these are fetched from the same origin via the normal asset server,
     // same thing the browser downloaded for the current page.
     const sources = [
-      { label: 'dreampath.js',            url: '/js/dreampath.js' },
-      { label: 'dreampath.html',          url: '/dreampath.html' },
-      { label: 'DREAMPATH.md',            url: '/DREAMPATH.md' },
+      { label: 'app.js',                  url: '/dreampath/app.js' },
+      { label: 'index.html',              url: '/dreampath' },
+      { label: 'DREAMPATH.md',            url: '/dreampath/DREAMPATH.md' },
     ];
 
     // Regex catches //-style comment blocks that begin with `[CASE STUDY` and
@@ -5583,7 +5583,7 @@ const DP = (() => {
 
     let md;
     try {
-      const res = await fetch('/DREAMPATH.md', { credentials: 'same-origin' });
+      const res = await fetch('/dreampath/DREAMPATH.md', { credentials: 'same-origin' });
       md = await res.text();
     } catch (err) {
       body.innerHTML = `<div class="dp-panel-body pad" style="color:var(--alert)">Failed to load: ${esc(String(err))}</div>`;
@@ -5808,7 +5808,7 @@ const DP = (() => {
         <h2>Source of truth</h2>
         <p>These values mirror the PMO Style Tokens v2 (ERP) reference + <code>css/style.css</code>
         on the BP Media public site so Dreampath and the marketing site stay aligned. When a token changes in
-        <code>dreampath.html</code> <code>:root</code>, the swatches below update automatically.</p>
+        <code>dreampath/index.html</code> <code>:root</code>, the swatches below update automatically.</p>
       </section>
 
       <section class="dp-rules-card">
@@ -5912,7 +5912,7 @@ const DP = (() => {
 
       <section class="dp-rules-card">
         <h2>Iconography</h2>
-        <p>24×24 viewBox, <code>stroke="currentColor"</code> at <code>stroke-width: 1.75</code>, round linecap/linejoin. Rendered via CSS <code>mask-image</code> so any element inherits the parent color. All icons live in <code>img/dreampath/icons/</code>.</p>
+        <p>24×24 viewBox, <code>stroke="currentColor"</code> at <code>stroke-width: 1.75</code>, round linecap/linejoin. Rendered via CSS <code>mask-image</code> so any element inherits the parent color. All icons live in <code>dreampath/img/icons/</code>.</p>
       </section>
     `;
   }
@@ -5996,7 +5996,7 @@ const DP = (() => {
       });
       tile.innerHTML = `
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
-          <span class="ico" style="width:16px;height:16px;background-color:var(--accent);-webkit-mask:url('/img/dreampath/icons/${esc(t.icon)}.svg') center/16px 16px no-repeat;mask:url('/img/dreampath/icons/${esc(t.icon)}.svg') center/16px 16px no-repeat"></span>
+          <span class="ico" style="width:16px;height:16px;background-color:var(--accent);-webkit-mask:url('/dreampath/img/icons/${esc(t.icon)}.svg') center/16px 16px no-repeat;mask:url('/dreampath/img/icons/${esc(t.icon)}.svg') center/16px 16px no-repeat"></span>
           <strong style="font-size:var(--fs-13);color:var(--text)">${esc(t.title)}</strong>
           ${t.count !== '' ? `<span style="margin-left:auto;font-variant-numeric:tabular-nums;color:var(--text);font-size:var(--fs-14);font-weight:600">${t.count}</span>` : ''}
         </div>
@@ -6201,7 +6201,7 @@ const DP = (() => {
       h('h1', {}, 'User management'),
       h('div', {}, [
         h('button', { className: 'dp-btn dp-btn-primary', onclick: () => _openUserEditor() }, [
-          h('span', { className: 'dp-btn-ico', style: { '--dp-icon': "url('/img/dreampath/icons/plus.svg')" } }),
+          h('span', { className: 'dp-btn-ico', style: { '--dp-icon': "url('/dreampath/img/icons/plus.svg')" } }),
           h('span', {}, ' New user'),
         ]),
       ]),
@@ -6217,7 +6217,7 @@ const DP = (() => {
     if (!users.length) {
       const empty = h('div', { className: 'dp-empty' });
       empty.innerHTML = `
-        <div class="mark"><span class="ico" style="--dp-icon:url('/img/dreampath/icons/users-admin.svg')"></span></div>
+        <div class="mark"><span class="ico" style="--dp-icon:url('/dreampath/img/icons/users-admin.svg')"></span></div>
         <h4>No users</h4>
       `;
       root.appendChild(empty);
@@ -6299,7 +6299,7 @@ const DP = (() => {
       ]),
       h('div', {}, [
         h('button', { className: 'dp-btn dp-btn-primary', onclick: () => _openPresetEditor() }, [
-          h('span', { className: 'dp-btn-ico', style: { '--dp-icon': "url('/img/dreampath/icons/plus.svg')" } }),
+          h('span', { className: 'dp-btn-ico', style: { '--dp-icon': "url('/dreampath/img/icons/plus.svg')" } }),
           h('span', {}, ' New preset'),
         ]),
       ]),
@@ -7118,7 +7118,7 @@ const DP = (() => {
       h('h1', {}, 'Versions'),
       h('div', {}, isAdmin ? [
         h('button', { className: 'dp-btn dp-btn-primary', onclick: () => _openVersionEditor() }, [
-          h('span', { className: 'dp-btn-ico', style: { '--dp-icon': "url('/img/dreampath/icons/plus.svg')" } }),
+          h('span', { className: 'dp-btn-ico', style: { '--dp-icon': "url('/dreampath/img/icons/plus.svg')" } }),
           h('span', {}, ' Log version'),
         ]),
       ] : []),
@@ -7134,7 +7134,7 @@ const DP = (() => {
     if (!versions.length) {
       const empty = h('div', { className: 'dp-empty' });
       empty.innerHTML = `
-        <div class="mark"><span class="ico" style="--dp-icon:url('/img/dreampath/icons/file-text.svg')"></span></div>
+        <div class="mark"><span class="ico" style="--dp-icon:url('/dreampath/img/icons/file-text.svg')"></span></div>
         <h4>No versions logged</h4>
         <p>./deploy.sh registers a version on each production push.</p>
       `;
@@ -7430,7 +7430,7 @@ const DP = (() => {
       <div class="dp-modal-head">
         <h2>${esc(title)}</h2>
         <button type="button" class="dp-iconbtn" aria-label="Close" onclick="DP._requestCloseModal()">
-          <span class="ico" style="--dp-icon:url('/img/dreampath/icons/x.svg')"></span>
+          <span class="ico" style="--dp-icon:url('/dreampath/img/icons/x.svg')"></span>
         </button>
       </div>
       <div class="dp-modal-body${bodyClass}">${bodyHtml}</div>
@@ -7875,7 +7875,7 @@ const DP = (() => {
         <div class="dp-file-picker">
           <input type="file" id="dp-edit-files" multiple style="display:none" onchange="DP._handlePickerChange(this)">
           <button type="button" class="dp-btn dp-btn-secondary dp-btn-sm" onclick="document.getElementById('dp-edit-files').click()">
-            <span class="dp-btn-ico" style="--dp-icon:url('/img/dreampath/icons/plus.svg')"></span>
+            <span class="dp-btn-ico" style="--dp-icon:url('/dreampath/img/icons/plus.svg')"></span>
             <span>Add file</span>
           </button>
         </div>
@@ -7970,7 +7970,7 @@ const DP = (() => {
     const box = h('div', { className: 'dp-cmd' });
     box.innerHTML = `
       <div class="dp-cmd-in">
-        <span class="ico" aria-hidden="true" style="width:14px;height:14px;background-color:var(--text-3);-webkit-mask:url('/img/dreampath/icons/compass.svg') center/14px 14px no-repeat;mask:url('/img/dreampath/icons/compass.svg') center/14px 14px no-repeat"></span>
+        <span class="ico" aria-hidden="true" style="width:14px;height:14px;background-color:var(--text-3);-webkit-mask:url('/dreampath/img/icons/compass.svg') center/14px 14px no-repeat;mask:url('/dreampath/img/icons/compass.svg') center/14px 14px no-repeat"></span>
         <input type="text" id="dp-cmd-input" placeholder="Jump to a page or action…" autocomplete="off">
         <kbd>ESC</kbd>
       </div>
@@ -8029,7 +8029,7 @@ const DP = (() => {
   function openSearch() {
     _openModal('', `
       <div class="dp-search-input-row">
-        <span class="ico" aria-hidden="true" style="width:14px;height:14px;background-color:var(--text-3);-webkit-mask:url('/img/dreampath/icons/search.svg') center/14px no-repeat;mask:url('/img/dreampath/icons/search.svg') center/14px no-repeat"></span>
+        <span class="ico" aria-hidden="true" style="width:14px;height:14px;background-color:var(--text-3);-webkit-mask:url('/dreampath/img/icons/search.svg') center/14px no-repeat;mask:url('/dreampath/img/icons/search.svg') center/14px no-repeat"></span>
         <input type="text" id="dp-search-box" placeholder="Type to search — posts, tasks, notes, events, contacts…" autocomplete="off">
         <kbd style="font-family:var(--font-mono);font-size:10px;border:var(--bd);padding:1px 5px;border-radius:var(--r-sm);background:var(--g-100);color:var(--text-3)">ESC</kbd>
       </div>
@@ -8316,7 +8316,7 @@ const DP = (() => {
                  onchange="DP._handlePickerChange(this)">
           <button type="button" class="dp-btn dp-btn-secondary dp-btn-sm"
                   onclick="document.getElementById('dp-new-files').click()">
-            <span class="dp-btn-ico" style="--dp-icon:url('/img/dreampath/icons/plus.svg')"></span>
+            <span class="dp-btn-ico" style="--dp-icon:url('/dreampath/img/icons/plus.svg')"></span>
             <span>Add file</span>
           </button>
           <span class="hint">Up to ${MAX_FILES} files, 100MB total. No .exe/.sh/.bat/.dll.</span>
@@ -8608,7 +8608,7 @@ const DP = (() => {
           h('span', {}, '신구대조표 비교'),
         ]),
         canWrite && h('button', { className: 'dp-btn dp-btn-primary', onclick: () => openWikiUpload('') }, [
-          h('span', { className: 'dp-btn-ico', style: { '--dp-icon': "url('/img/dreampath/icons/plus.svg')" } }),
+          h('span', { className: 'dp-btn-ico', style: { '--dp-icon': "url('/dreampath/img/icons/plus.svg')" } }),
           h('span', {}, ' 새 문서 / 버전'),
         ]),
       ]),
@@ -8731,7 +8731,7 @@ const DP = (() => {
                  accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                  style="display:none" onchange="DP._wikiExtractFile(this)">
           <button type="button" class="dp-btn dp-btn-secondary dp-btn-sm" onclick="document.getElementById('dp-wiki-file').click()">
-            <span class="dp-btn-ico" style="--dp-icon:url('/img/dreampath/icons/plus.svg')"></span><span>파일 선택</span>
+            <span class="dp-btn-ico" style="--dp-icon:url('/dreampath/img/icons/plus.svg')"></span><span>파일 선택</span>
           </button>
           <span class="dp-wiki-drop-hint" aria-hidden="true">또는 여기로 드래그</span>
           <span id="dp-wiki-extract-status" aria-live="polite" style="color:var(--text-3);font-size:12px"></span>
@@ -8827,7 +8827,7 @@ const DP = (() => {
   }
 
   // [CASE STUDY 2026-06-04 — pdf.js cMap from jsdelivr, worker from same-origin]
-  // workerSrc is set in dreampath.html to /js/vendor/pdf.worker.min.js (CSP
+  // workerSrc is set in dreampath/index.html to /dreampath/vendor/pdf.worker.min.js (CSP
   // worker-src falls back to 'self'). cMapUrl points at jsdelivr because
   // connect-src allows it — without packed cMaps, Korean glyphs extract as
   // garbage. Keep the version (3.11.174) in lock-step with the worker + lib.
@@ -8911,7 +8911,7 @@ const DP = (() => {
                  accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                  style="display:none" onchange="DP._wikiCompareExtract(this)">
           <button type="button" class="dp-btn dp-btn-secondary dp-btn-sm" onclick="document.getElementById('dp-wiki-cmp-file').click()">
-            <span class="dp-btn-ico" style="--dp-icon:url('/img/dreampath/icons/plus.svg')"></span><span>신구대조표 파일 선택</span>
+            <span class="dp-btn-ico" style="--dp-icon:url('/dreampath/img/icons/plus.svg')"></span><span>신구대조표 파일 선택</span>
           </button>
           <span id="dp-wiki-cmp-status" aria-live="polite" style="margin-left:10px;color:var(--text-3);font-size:12px"></span>
         </div>
