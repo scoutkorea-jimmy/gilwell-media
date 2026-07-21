@@ -1,0 +1,47 @@
+# 죽은 CSS 클래스 목록 (2026-07-21 검증)
+#
+# 판정 절차:
+#  1. scripts/audit_css_usage.mjs 가 'unmatched + 런타임 힌트 없음' 으로 분류한 88규칙
+#  2. CSS 를 제외한 전 소스(html/js/mjs/ts/json, functions·workers 포함, 29MB)를
+#     문자열 검색해 어디에도 등장하지 않는 것만 남김
+#  3. 접두사 동적 조합 가능성 확인 — 아래 접두사들은 전부 **id** 로만 쓰여 무관함이 확인됨:
+#       post-history-  (functions/api/admin/site-history.js: id 생성)
+#       dash-stat-     (admin.html: id="dash-stat-visits" 등)
+#       post-edit-     (js/post-page.js: getElementById)
+#       bw-form-       (bw-form-grid/group 은 사용, 3col 만 미사용)
+#
+# ⚠ 제외한 것 — Editor.js 가 런타임에 자기 마크업을 생성하므로 소스 검색으로 잡히지 않는다.
+#   삭제하면 에디터 UI 스타일이 깨진다:
+#     ce-toolbar__settings-btn ce-popover ce-inline-toolbar ce-conversion-toolbar
+#     ce-block__content ce-paragraph ce-header cdx-quote__text cdx-list__item cdx-quote
+
+dash-stats-row
+dash-stat-card
+dash-stat-label
+dash-action-btn
+dash-action-icon
+dash-action-label
+main-feed
+cat-preview
+btn-edit
+btn-icon
+btn-icon-success
+btn-icon-danger
+btn-icon-star
+post-read-time
+tag-admin-grid
+item-meta-grid
+item-meta-chip-date
+post-edit-check
+post-edit-actions
+post-history-modal
+post-history-backdrop
+post-history-card
+post-history-head
+post-history-summary
+post-history-close
+post-history-list
+post-history-entry
+post-history-entry-top
+post-history-entry-meta
+bw-form-3col

@@ -303,20 +303,6 @@ body *:not(svg):not(path):not(circle):not(line):not(polyline):not(polygon):not(r
   font-family: inherit !important;
 }
 
-.dash-stats-row {
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-}
-
-.dash-stat-card {
-  min-width: 0;
-}
-
-.dash-stat-label {
-  font-size: 12px;
-  letter-spacing: 0.02em;
-  text-transform: none;
-}
-
 .admin-header-top {
   grid-template-columns: minmax(0, 0.9fr) minmax(420px, 1.1fr);
 }
@@ -1165,6 +1151,11 @@ body[data-home-bootstrap] .lang-btn:hover {
    TICKER
    ════════════════════════════════════════════════════════════ */
 .ticker {
+  /* [CLS 2026-07-21] 티커는 초기에 비어 있다가 문구가 채워지면서 16px → 27px 로
+     커졌고, 그 11px 이 아래 전체(히어로 포함)를 밀어 데스크톱 CLS 0.217 을 만들었다
+     (Google 기준 '개선 필요'). 최종 높이를 미리 예약해 이동을 없앤다.
+     값은 실측치 — 패딩(8+8) + 문구 줄높이(11). 480px 미만은 아래 미디어쿼리에서 재지정. */
+  min-height:    27px;
   background:    var(--surface-inverse);
   color:         var(--on-accent);
   padding:       var(--gap-tight) 0;
@@ -1458,8 +1449,6 @@ body[data-home-bootstrap] .lang-btn:hover {
   gap:                   0;
 }
 
-.main-feed { border-right: 1px solid var(--border); }
-
 /* ── Section Header ── */
 .section-header {
   display:       flex;
@@ -1536,7 +1525,6 @@ body[data-home-bootstrap] .lang-btn:hover {
 .article-card:nth-child(3) { animation-delay: 0.15s; }
 .article-card:nth-child(4) { animation-delay: 0.20s; }
 .article-card:nth-child(5) { animation-delay: 0.25s; }
-
 
 .article-card .category-tag { margin-bottom: 10px; }
 
@@ -4191,9 +4179,7 @@ footer a:hover { color: var(--on-accent); }
   .tag-admin-toolbar {
     grid-template-columns: 1fr;
   }
-  .tag-admin-grid {
-    grid-template-columns: 1fr;
-  }
+
   .share-meta-grid {
     grid-template-columns: 1fr;
   }
@@ -4206,26 +4192,6 @@ footer a:hover { color: var(--on-accent); }
     align-items: stretch;
   }
 }
-.dash-action-btn {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--gap-tight);
-  padding: 20px var(--gap-element);
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);    /* radius 통일 자동 주입 */
-  cursor: pointer;
-  text-decoration: none;
-  color: var(--ink);
-  transition: border-color .15s, box-shadow .15s;
-}
-.dash-action-btn:hover {
-  border-color: var(--scouting-purple-border);
-  box-shadow: 0 2px 8px rgba(98,37,153,0.12);
-}
-.dash-action-icon { font-size: 22px; }
-.dash-action-label { font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif; font-size: 11px; letter-spacing: .08em; color: var(--muted); }
 
 /* ── Drag-and-drop ────────────────────────────────────────── */
 .drag-handle {
@@ -4512,18 +4478,6 @@ footer a:hover { color: var(--on-accent); }
   display: inline-flex;
 }
 
-/* Category preview tag */
-.cat-preview {
-  display:        inline-block;
-  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
-  font-size:      10px;
-  letter-spacing: 0.15em;
-  text-transform: uppercase;
-  padding:        3px var(--gap-tight);
-  color:          var(--on-accent);
-  margin-top:     6px;
-}
-
 /* Stats row */
 .stats-row {
   display:               grid;
@@ -4592,12 +4546,6 @@ footer a:hover { color: var(--on-accent); }
   letter-spacing: 0.05em;
 }
 
-.item-meta-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: var(--gap-tight);
-}
-
 .item-meta-chip {
   display: flex;
   flex-direction: column;
@@ -4627,11 +4575,6 @@ footer a:hover { color: var(--on-accent); }
 .item-meta-chip span {
   color: var(--shade-gray-4);
   word-break: keep-all;
-}
-
-.item-meta-chip-date {
-  border-color: rgba(98,37,153,0.18);
-  background: linear-gradient(180deg, rgba(252,249,255,0.98), rgba(242,235,248,0.98));
 }
 
 .article-list-toolbar {
@@ -4665,30 +4608,9 @@ footer a:hover { color: var(--on-accent); }
   transition:     all 0.15s;
 }
 
-.btn-edit  { border-color: var(--ink);    color: var(--ink); }
-.btn-edit:hover  { background: var(--ink);    color: var(--on-accent); }
-
 .btn-delete { border-color: var(--danger); color: var(--danger); }
 .btn-delete:hover { background: var(--danger); color: var(--on-accent); }
 
-.btn-icon {
-  min-width: 36px;
-  height: 30px;
-  padding: 0 10px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);    /* radius 통일 자동 주입 */
-  background: var(--surface);
-  cursor: pointer;
-  font-size: 14px;
-  line-height: 1;
-  transition: transform 0.12s, border-color 0.15s, background 0.15s;
-}
-
-.btn-icon:hover { transform: translateY(-1px); }
-
-.btn-icon-success { color: var(--forest-green-text); border-color: rgba(36, 135, 55, 0.3); }
-.btn-icon-danger { color: var(--danger); border-color: rgba(204, 68, 68, 0.3); }
-.btn-icon-star { color: var(--muted); }
 .btn-icon-star.active {
   color: var(--shade-amber-1);
   border-color: rgba(193, 138, 0, 0.35);
@@ -5053,7 +4975,7 @@ footer a:hover { color: var(--on-accent); }
   .form-row           { grid-template-columns: 1fr; }
   .stats-row          { grid-template-columns: 1fr; }
   .editor-action-row  { flex-direction: column; }
-  .dash-stats-row     { grid-template-columns: 1fr; }
+
   .analytics-stats-row { grid-template-columns: 1fr; }
   .marketing-stats-row { grid-template-columns: 1fr; }
   .marketing-grid { grid-template-columns: 1fr; }
@@ -5063,7 +4985,7 @@ footer a:hover { color: var(--on-accent); }
   }
   .admin-inline-save  { grid-template-columns: 1fr; }
   .admin-inline-save .submit-btn { width: 100%; }
-  .tag-admin-grid     { grid-template-columns: 1fr; }
+
   .glossary-admin-toolbar { grid-template-columns: 1fr; }
   .glossary-admin-row { grid-template-columns: 1fr; }
 
@@ -5365,7 +5287,7 @@ footer a:hover { color: var(--on-accent); }
   .board-banner p     { font-size: var(--mobile-fs-body); line-height: var(--mobile-lh-copy); }
 
   /* Ticker on phone */
-  .ticker             { font-size: 8px; padding: var(--gap-micro) 0; }
+  .ticker             { font-size: 8px; padding: var(--gap-micro) 0; min-height: 18px; }   /* 패딩(4+4) + 문구(10) — CLS 예약 */
   .ticker-inner       { font-size: 8px; letter-spacing: 0.03em; line-height: 1.25; }
 
   .mobile-search-modal-card {
@@ -5551,10 +5473,6 @@ footer a:hover { color: var(--on-accent); }
 }
 
 .post-page-inner { position: relative; }
-.post-read-time {
-  opacity: 0.7;
-  font-size: 10px;
-}
 
 /* Editorial policy and other static-page-layout content pages. */
 .static-page {
@@ -5761,36 +5679,6 @@ footer a:hover { color: var(--on-accent); }
 
 .post-related-list a:hover {
   color: var(--accent-text);
-}
-
-.post-edit-check {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-top: var(--gap-tight);
-}
-
-.post-edit-check input[type="checkbox"] {
-  width: auto;
-  margin: 0;
-}
-
-.post-edit-check label {
-  margin: 0;
-  cursor: pointer;
-  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
-  font-size: 11px;
-  line-height: 1.4;
-  color: var(--muted);
-  letter-spacing: 0.04em;
-  text-transform: none;
-}
-
-.post-edit-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-top: 20px;
 }
 
 .post-edit-actions .submit-btn,
@@ -6625,107 +6513,8 @@ footer a:hover { color: var(--on-accent); }
   color: var(--muted);
 }
 
-.post-history-modal {
-  position: fixed;
-  inset: 0;
-  z-index: 5000;
-  display: none;
-}
-
 .post-history-modal.open {
   display: block;
-}
-
-.post-history-backdrop {
-  position: absolute;
-  inset: 0;
-  background: rgba(0,0,0,0.42);
-}
-
-.post-history-card {
-  position: absolute;
-  right: 24px;
-  top: 24px;
-  width: min(680px, calc(100vw - 48px));
-  max-height: calc(100vh - 48px);
-  overflow: auto;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);    /* radius 통일 자동 주입 */
-  box-shadow: 0 24px 64px rgba(0,0,0,0.2);
-}
-
-.post-history-head {
-  position: sticky;
-  top: 0;
-  z-index: 2;
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: var(--gap-card);
-  padding: 18px 20px;
-  background: linear-gradient(135deg, rgba(98,37,153,0.96), rgba(67,20,106,0.94));
-  color: var(--on-accent);
-}
-
-.post-history-head h3 {
-  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
-  font-size: 22px;
-}
-
-.post-history-summary {
-  margin-top: 6px;
-  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
-  font-size: 10px;
-  letter-spacing: 0.06em;
-  color: rgba(255,255,255,0.78);
-}
-
-.post-history-close {
-  border: 1px solid rgba(255,255,255,0.22);
-  background: rgba(255,255,255,0.08);
-  color: var(--on-accent);
-  padding: var(--gap-tight) var(--gap-element);
-  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
-  font-size: 10px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  cursor: pointer;
-}
-
-.post-history-list {
-  padding: var(--gap-card) 20px 20px;
-  display: flex;
-  flex-direction: column;
-  gap: var(--gap-element);
-}
-
-.post-history-entry {
-  border: 1px solid var(--border);
-  background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(247,244,239,0.96));
-  padding: 14px var(--gap-card);
-}
-
-.post-history-entry-top,
-.post-history-entry-meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--gap-tight) var(--gap-element);
-  justify-content: space-between;
-}
-
-.post-history-entry-top strong {
-  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
-  font-size: 15px;
-  color: var(--ink);
-}
-
-.post-history-entry-top span,
-.post-history-entry-meta span {
-  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
-  font-size: 10px;
-  color: var(--muted);
-  letter-spacing: 0.04em;
 }
 
 /* ── Contributors page ────────────────────────────────────── */
@@ -7387,7 +7176,7 @@ footer a:hover { color: var(--on-accent); }
 /* ── Form Grid · Groups ── */
 .bw-form-grid { display: grid; gap: var(--bw-gap-md); }
 .bw-form-2col { grid-template-columns: 1fr 1fr; }
-.bw-form-3col { grid-template-columns: 1fr 1fr 1fr; }
+
 .bw-form-group { display: flex; flex-direction: column; min-width: 0; }
 .bw-inline-row { display: flex; gap: 8px; align-items: stretch; }
 .bw-inline-row-compact { margin-top: 8px; gap: 6px; }
@@ -8121,7 +7910,6 @@ body.wosm-members-page #main-content {
     --border:  var(--gray-500);
   }
 }
-
 
 /* ═══════════════════════════════════════════════════════════════════════════
    터치 타겟 확보 (00.176.10)
