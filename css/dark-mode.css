@@ -1,5 +1,7 @@
 /* ═══════════════════════════════════════════════════════════════════════════
-   다크 모드 — 활성 (00.176.08부터). OS 설정을 따르며 별도 토글은 없다.
+   다크 모드 — 옵트인 (00.176.09부터).
+   `<html data-theme="dark">` 일 때만 적용된다. 기본값은 라이트이며,
+   OS 가 다크여도 사용자가 직접 선택하지 않으면 밝은 화면 그대로다.
 
    이 파일은 공개 HTML 과 SSR 템플릿에서 **가장 마지막**에 링크된다.
    페이지 전용 시트(post.css, calendar.css …)보다 뒤에 와야 우선순위가 맞는다.
@@ -25,7 +27,7 @@
 /* ═══════════════════════════════════════════════════════════════════════════
    다크 모드 (00.176.06)
 
-   rules/11-site-design.md 가 요구하던 `prefers-color-scheme: dark` 대응.
+   기본은 라이트다. OS 설정을 따라가지 않는다.
    OS 설정을 따르며 별도 토글은 두지 않는다.
 
    설계 원칙 — 단순 반전이 아니다:
@@ -39,8 +41,7 @@
      대해 검증했다. 본문 |Lc| 75+, 콘텐츠 60+ 통과.
    ═══════════════════════════════════════════════════════════════════════════ */
 
-@media (prefers-color-scheme: dark) {
-  :root {
+  :root[data-theme="dark"] {
     /* 폼 컨트롤·스크롤바·기본 UI 가 다크를 따르도록 브라우저에 알린다 */
     color-scheme: dark;
 
@@ -92,51 +93,48 @@
 
   /* 토큰을 거치지 않고 하드코딩된 반투명 어두운 글자색 — 다크에서 뒤집는다.
      (라이트 모드 값을 건드리지 않으려고 토큰화 대신 여기서만 덮어쓴다) */
-  body[data-home-bootstrap] .lang-btn { color: rgba(236, 234, 239, 0.55); }
-  .share-modal-btn-help                { color: rgba(236, 234, 239, 0.72); }
-  .admin-login-build                   { color: rgba(236, 234, 239, 0.66); }
+  [data-theme="dark"] body[data-home-bootstrap] .lang-btn { color: rgba(236, 234, 239, 0.55); }
+  [data-theme="dark"] .share-modal-btn-help { color: rgba(236, 234, 239, 0.72); }
+  [data-theme="dark"] .admin-login-build { color: rgba(236, 234, 239, 0.66); }
 
   /* 사진·썸네일이 어두운 배경에서 과하게 튀지 않도록 아주 살짝 눌러 준다.
      본문 가독성용 조정이며, 사진 자체의 색을 왜곡하지 않는 수준으로 유지한다. */
-  .post-card-thumb img,
-  .hero-slide img {
+  [data-theme="dark"] .post-card-thumb img,
+  [data-theme="dark"] .hero-slide img {
     filter: brightness(0.94);
   }
-}
 
 
-@media (prefers-color-scheme: dark) and (prefers-contrast: more) {
-  :root {
+
+@media (prefers-contrast: more) {
+
+  :root[data-theme="dark"] {
     --ink:     #ffffff;
     --muted:   #e4e1e8;
     --border:  rgba(236, 234, 239, 0.42);
   }
 }
 
+
 /* 다크 모드 — 하드코딩된 반투명 어두운 글자색 보정 (style.css 다크 블록의 연장).
    이 시트가 style.css 보다 나중에 로드되므로 여기서 덮어써야 우선순위가 맞는다. */
-@media (prefers-color-scheme: dark) {
-  .post-related-date { color: rgba(236, 234, 239, 0.68); }
-}
+  [data-theme="dark"] .post-related-date { color: rgba(236, 234, 239, 0.68); }
+
 
 /* 다크 모드 — style.css 다크 블록의 연장 (로드 순서상 여기서 덮어쓴다) */
-@media (prefers-color-scheme: dark) {
-  .calendar-map-result-place::before { color: rgba(236, 234, 239, 0.55); }
-}
+  [data-theme="dark"] .calendar-map-result-place::before { color: rgba(236, 234, 239, 0.55); }
+
 
 /* 다크 모드 — 딥퍼플 텍스트는 다크 배경에서 소멸하므로 밝은 대응값으로 교체.
    (rgba(77,0,110,0.72) = Midnight Purple 계열 → APCA Lc 0 수준) */
-@media (prefers-color-scheme: dark) {
-  .members-section-eyebrow,
-  .member-country-toggle-count { color: rgba(211, 186, 244, 0.88); }
-}
+  [data-theme="dark"] .members-section-eyebrow, [data-theme="dark"] .member-country-toggle-count { color: rgba(211, 186, 244, 0.88); }
+
 
 /* ═══════════════════════════════════════════════════════════════════════════
    3차 — 게시판 작성 모달(--bw-*) · 잔여 리터럴 색
    ═══════════════════════════════════════════════════════════════════════════ */
 
-@media (prefers-color-scheme: dark) {
-  :root {
+  :root[data-theme="dark"] {
     /* BW 토큰군은 이미 역할별로 나뉘어 있어 값만 뒤집으면 된다.
        텍스트 값은 --bw-surface(#211a2a) 기준으로 APCA 검증했다. */
     --bw-surface:      #211a2a;
@@ -154,37 +152,35 @@
     --bw-shadow-lg:    0 10px 40px rgba(0, 0, 0, .6), 0 4px 12px rgba(0, 0, 0, .45);
   }
 
-  /* 토큰을 거치지 않은 밝은 표면 — 다크에서 흰 판으로 남는다 */
-  .memo-modal-body     { background: #241d2e; }
-  .gw-ep-create-form   { background: #241d2e; }
-  .gw-chatbot-thread   { background: #1f1929; }
+  [data-theme="dark"] /* 토큰을 거치지 않은 밝은 표면 — 다크에서 흰 판으로 남는다 */
+  .memo-modal-body { background: #241d2e; }
+  [data-theme="dark"] .gw-ep-create-form { background: #241d2e; }
+  [data-theme="dark"] .gw-chatbot-thread { background: #1f1929; }
 
-  /* 위험(삭제) 버튼의 짙은 빨강(#c33)은 다크 배경에서 |Lc| 가 부족하다 */
-  .memo-btn-danger        { color: #ff9e9d; }
-  .memo-btn-danger:hover  { background: #a32b2b; border-color: #ff9e9d; }
-}
+  [data-theme="dark"] /* 위험(삭제) 버튼의 짙은 빨강(#c33)은 다크 배경에서 |Lc| 가 부족하다 */
+  .memo-btn-danger { color: #ff9e9d; }
+  [data-theme="dark"] .memo-btn-danger:hover { background: #a32b2b; border-color: #ff9e9d; }
+
 
 /* ── 반투명 흰 배경 중 '사실상 흰 판'인 것 (alpha ≥ 0.8) ────────────────────
    alpha 0.03~0.36 짜리는 어두운 표면·사진 위에 얹는 흰 베일이라 다크에서도
    그대로 두어야 한다. 아래 것들만 표면 역할이므로 다크 표면색으로 뒤집는다.
    (알파는 원래 값을 그대로 유지해 블러·겹침 효과를 보존한다) */
-@media (prefers-color-scheme: dark) {
-  .home-rail-card              { background: rgba(33, 26, 42, 0.98); }
-  .pull-refresh-label          { background: rgba(33, 26, 42, 0.96); }
-  .item-meta-chip              { background: rgba(33, 26, 42, 0.98); }
-  .post-history-entry          { background: rgba(33, 26, 42, 0.98); }
-  .bw-footer                   { background: rgba(33, 26, 42, 0.98); }
-  .share-modal-close           { background: rgba(33, 26, 42, 0.90); }
-  .mobile-compact-drawer-close { background: rgba(33, 26, 42, 0.88); }
-  .admin-sidebar-group         { background: rgba(33, 26, 42, 0.96); }
-  .admin-selected-post         { background: rgba(33, 26, 42, 0.80); }
-}
+  [data-theme="dark"] .home-rail-card { background: rgba(33, 26, 42, 0.98); }
+  [data-theme="dark"] .pull-refresh-label { background: rgba(33, 26, 42, 0.96); }
+  [data-theme="dark"] .item-meta-chip { background: rgba(33, 26, 42, 0.98); }
+  [data-theme="dark"] .post-history-entry { background: rgba(33, 26, 42, 0.98); }
+  [data-theme="dark"] .bw-footer { background: rgba(33, 26, 42, 0.98); }
+  [data-theme="dark"] .share-modal-close { background: rgba(33, 26, 42, 0.90); }
+  [data-theme="dark"] .mobile-compact-drawer-close { background: rgba(33, 26, 42, 0.88); }
+  [data-theme="dark"] .admin-sidebar-group { background: rgba(33, 26, 42, 0.96); }
+  [data-theme="dark"] .admin-selected-post { background: rgba(33, 26, 42, 0.80); }
+
 
 /* ── 지역(region) 팔레트 — 캘린더·회원국 현황에서 텍스트로 쓰인다 ──────────
    원래 값은 흰 배경 기준으로 고른 짙은 색이라 다크에서 |Lc| 15~45 로 떨어진다.
    같은 색상 계열을 유지하면서 밝기만 올려 |Lc| 60+ 를 확보한다. */
-@media (prefers-color-scheme: dark) {
-  :root {
+  :root[data-theme="dark"] {
     --region-kor:  #6fd3ef;
     --region-apr:  #ff9e9d;
     --region-eur:  #6fd0dd;
@@ -193,26 +189,24 @@
     --region-iar:  #f39ac4;
     --region-wosm: var(--forest-green-text);
   }
-}
+
 
 /* ── 별칭 토큰 · 브라우저 기본색 ────────────────────────────────────────────
    --success / --danger 는 raw 브랜드 토큰을 가리키는 별칭이라 역할 분리 대상에서
    빠져 있었다. 텍스트로 21곳 쓰이므로 다크 대응값이 필요하다.
    또 `color-scheme: dark` 를 선언하면 스타일이 없는 <a> 가 브라우저 기본
    다크 링크색(#9E9EFF, |Lc| 52.9)을 쓰는데 기준(60)에 못 미친다. */
-@media (prefers-color-scheme: dark) {
-  :root {
+  :root[data-theme="dark"] {
     --success: var(--forest-green-text);   /* #9fed8f · |Lc| 83.3 */
     --danger:  var(--fire-red-text);       /* #ffb3b2 · |Lc| 71.6 */
   }
-  a:not([class]) { color: var(--accent-text); }
-}
+  [data-theme="dark"] a:not([class]) { color: var(--accent-text); }
+
 
 /* ── shade 팔레트 — color: 로 16개 토큰이 쓰인다 ────────────────────────────
    흰 배경 기준으로 고른 짙은 색이라 다크에서 |Lc| 15~45 로 떨어진다.
    색상 계열을 유지하며 밝기만 올려 전부 |Lc| 60+ 를 확보했다. */
-@media (prefers-color-scheme: dark) {
-  :root {
+  :root[data-theme="dark"] {
     --shade-amber-1:  #e8bc4d;   /* 68.8 */
     --shade-blue-2:   #6fd0dd;   /* 68.9 */
     --shade-gray-2:   #cfc9d8;   /* 74.4 */
@@ -231,8 +225,8 @@
     --shade-tint-7:   #2c2436;   /* 배경 역할 */
   }
 
-  /* 스타일이 없는 링크가 브라우저 기본 다크 링크색(#9E9EFF, |Lc| 52.9)을 쓰는 것을
-     막는다. 요소 선택자(특정도 0,0,1)라 클래스 규칙이 있으면 그쪽이 이긴다 —
+  [data-theme="dark"] /* 스타일이 없는 링크가 브라우저 기본 다크 링크색(#9E9EFF, [data-theme="dark"] |Lc| 52.9)을 쓰는 것을
+     막는다. 요소 선택자(특정도 0, [data-theme="dark"] 0, [data-theme="dark"] 1)라 클래스 규칙이 있으면 그쪽이 이긴다 —
      의도적으로 색을 지정한 링크는 그대로 유지된다. */
   a { color: var(--accent-text); }
-}
+

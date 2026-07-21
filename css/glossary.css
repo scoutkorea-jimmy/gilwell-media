@@ -491,6 +491,4 @@
 
 /* 다크 모드 — 반투명 흰 배경(alpha 0.9)은 사실상 흰 판이라 다크에서 뒤집는다.
    (style.css 의 다크 블록보다 이 시트가 나중에 로드되므로 여기서 덮어쓴다) */
-@media (prefers-color-scheme: dark) {
-  .glossary-search-check { background: rgba(33, 26, 42, 0.9); }
-}
+  [data-theme="dark"] .glossary-search-check { background: rgba(33, 26, 42, 0.9); }
