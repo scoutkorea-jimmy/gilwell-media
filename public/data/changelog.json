@@ -1,6 +1,44 @@
 {
   "items": [
   {
+    "version": "00.179.00",
+    "date": "2026-07-22",
+    "released_at": "2026-07-22 23:50:00 KST",
+    "summary": "홈에 팝업 배너 기능을 추가했다. 최대 2개까지 화면 정중앙에 띄울 수 있다.",
+    "for_users": [
+      "홈에 처음 들어오면 화면 정중앙에 안내 배너를 띄울 수 있습니다. 공지나 행사 안내에 쓰시면 됩니다.",
+      "최대 2개까지 등록되며, 2개일 때는 컴퓨터에서 좌우로 나란히, 휴대폰에서는 좌우로 넘겨 보는 방식으로 나옵니다.",
+      "방문자는 '닫기'로 이번 방문만 숨기거나 '오늘 하루 보지 않기'로 그날 하루 숨길 수 있습니다.",
+      "배너 구성이 바뀌면 숨김 상태와 관계없이 다시 보입니다."
+    ],
+    "for_developers": [
+      "D1 home_banners 테이블 신설 (image_url, link_url, title=대체텍스트, sort_order, active, starts_at, ends_at). db/home_banners_2026-07-22.sql.",
+      "functions/_shared/home-banners.js — 노출 조건(활성 + 기간) 조회를 공유. /api/home 과 SSR 폴백이 같은 목록을 써야 초기 페인트 후 배너가 바뀌지 않는다. 테이블 부재 시 빈 배열을 반환해 홈이 죽지 않게 했다.",
+      "functions/api/settings/home-banners.js — 관리자 GET/PUT. PUT 은 전체 교체 방식이라 삭제·순서변경을 한 번에 처리하고 개수 제한(2개)을 한 곳에서 강제한다. 이미지는 data URL 로 받아 storeDataImage 로 R2 저장. 대체 텍스트가 비면 400 으로 거부한다(스크린리더 사용자에게 무의미해지므로).",
+      "public/js/home-banner.js + public/css/home-banner.css — 팝업 렌더링. 데스크톱 2개 좌우, 모바일은 track translateX 스와이프 + 인디케이터. 접근성: role=dialog/aria-modal, ESC 닫기, Tab 포커스 트랩, 닫을 때 이전 포커스 복원, prefers-reduced-motion 시 애니메이션 제거. 터치 타겟 44px(인디케이터 점은 24px 히트영역).",
+      "숨김 상태는 배너 구성 서명(id:image_url 조합)과 함께 저장한다. 구성이 바뀌면 다시 노출된다.",
+      "권한: admin-users.js ADMIN_MENUS 에 home-banners 슬러그 추가. 관리자 사이드바·설정 탭에 '홈 배너' 신설(기존 '게시판 배너'와는 다른 기능).",
+      "사이트 버전 00.178.02 -> 00.179.00."
+    ]
+  },
+  {
+    "version": "03.152.00",
+    "date": "2026-07-22",
+    "released_at": "2026-07-22 23:50:00 KST",
+    "summary": "관리자에 '홈 배너' 메뉴를 추가했다.",
+    "for_users": [
+      "설정 > 홈 배너에서 이미지·링크·노출 기간을 지정해 최대 2개까지 등록할 수 있습니다.",
+      "설명(대체 텍스트)은 필수입니다. 화면을 읽어주는 보조기기 사용자에게 배너 내용을 전달하기 위해서입니다.",
+      "기존 '게시판 배너'(카테고리별 행사 표시)와는 다른 메뉴입니다."
+    ],
+    "for_developers": [
+      "admin.html 사이드바·설정 탭·섹션 마크업 추가, admin-v3.js 에 _loadHomeBannersUI/_renderHomeBanners/_collectHomeBanners/_saveHomeBanners 추가.",
+      "이미지는 FileReader 로 data URL 변환 후 PUT. 서버가 R2 저장 경로로 치환해 돌려준다.",
+      "2개 도달 시 '배너 추가' 버튼 비활성화 — 서버 제한과 이중.",
+      "관리자 버전 03.151.00 -> 03.152.00."
+    ]
+  },
+  {
     "version": "00.178.02",
     "date": "2026-07-22",
     "released_at": "2026-07-22 23:10:00 KST",

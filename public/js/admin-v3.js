@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.151.00
+ * Version: 03.152.00
  *
  * Versioning:
  *   V3.aaa.bb
@@ -774,6 +774,12 @@
     _bindEl('home-lead-save-btn', 'click', _saveHomeLead);
     _bindEl('home-lead-clear-btn', 'click', _clearHomeLeadSelection);
     _bindEl('picks-refresh-btn', 'click', _loadPicksUI);
+    _bindEl('banner-save-btn', 'click', _saveHomeBanners);
+    _bindEl('banner-add-btn', 'click', function () {
+      if (_homeBanners.length >= HOME_BANNER_MAX) return;
+      _homeBanners.push({ image_url: '', title: '', link_url: '', starts_at: '', ends_at: '', active: 1, sort_order: _homeBanners.length });
+      _renderHomeBanners();
+    });
     _bindEl('wosm-members-import-btn', 'click', function () {
       var input = _el('wosm-members-file');
       if (input) input.click();
@@ -1413,6 +1419,7 @@
     else if (section === 'board-copy') _loadBoardCopy();
     else if (section === 'author')  _loadAuthorUI();
     else if (section === 'banner')  _loadBannerUI();
+    else if (section === 'home-banners') _loadHomeBannersUI();
     else if (section === 'ticker')  _loadTickerUI();
     else if (section === 'contributors') _loadContributorsUI();
     else if (section === 'editors') _loadEditorsUI();
@@ -10428,6 +10435,91 @@
   /* ══════════════════════════════════════════════════════════
      SETTINGS – BANNER
   ══════════════════════════════════════════════════════════ */
+  // ── 홈 팝업 배너 (2026-07-22) ─────────────────────────────────────────────
+  // 게시판 배너(_loadBannerUI)와는 다른 기능이다. 이쪽은 홈 첫 진입 시 화면
+  // 중앙에 뜨는 이미지 팝업이며, 최대 2개까지만 등록된다(서버에서도 강제).
+  var _homeBanners = [];
+  var HOME_BANNER_MAX = 2;
+
+  function _loadHomeBannersUI() {
+    _apiFetch('/api/settings/home-banners').then(function (data) {
+      _homeBanners = (data && data.banners) || [];
+      _renderHomeBanners();
+    }).catch(function () { _homeBanners = []; _renderHomeBanners(); });
+  }
+
+  function _renderHomeBanners() {
+    var wrap = document.getElementById('banner-editor-list');
+    if (!wrap) return;
+    var E = GW.escapeHtml;
+    wrap.innerHTML = _homeBanners.map(function (b, i) {
+      return '' +
+        '<div class="v3-card v3-mt-16" data-banner-index="' + i + '">' +
+          '<div class="v3-form-row"><label class="v3-label">이미지</label>' +
+            '<input type="file" accept="image/*" class="hb-file" />' +
+            (b.image_url ? '<img src="' + E(b.image_url) + '" alt="" style="max-width:220px;display:block;margin-top:8px;border-radius:8px" />' : '<span class="v3-hint">아직 이미지가 없습니다</span>') +
+          '</div>' +
+          '<div class="v3-form-row"><label class="v3-label">설명 (대체 텍스트, 필수)</label>' +
+            '<input type="text" class="v3-input hb-title" value="' + E(b.title || '') + '" placeholder="예: 제16회 한국잼버리 운영요원 모집 안내" /></div>' +
+          '<div class="v3-form-row"><label class="v3-label">링크 (선택)</label>' +
+            '<input type="text" class="v3-input hb-link" value="' + E(b.link_url || '') + '" placeholder="https://..." /></div>' +
+          '<div class="v3-form-row"><label class="v3-label">노출 시작 (선택)</label>' +
+            '<input type="date" class="v3-input hb-start" value="' + E((b.starts_at || '').slice(0, 10)) + '" /></div>' +
+          '<div class="v3-form-row"><label class="v3-label">노출 종료 (선택)</label>' +
+            '<input type="date" class="v3-input hb-end" value="' + E((b.ends_at || '').slice(0, 10)) + '" /></div>' +
+          '<div class="v3-form-row"><label class="v3-check-row"><input type="checkbox" class="hb-active"' + (b.active ? ' checked' : '') + ' /><span>노출</span></label></div>' +
+          '<button class="v3-btn v3-btn-sm hb-remove" type="button">이 배너 삭제</button>' +
+        '</div>';
+    }).join('');
+
+    Array.prototype.forEach.call(wrap.querySelectorAll('[data-banner-index]'), function (card) {
+      var i = parseInt(card.getAttribute('data-banner-index'), 10);
+      card.querySelector('.hb-remove').addEventListener('click', function () {
+        _homeBanners.splice(i, 1); _renderHomeBanners();
+      });
+      card.querySelector('.hb-file').addEventListener('change', function (e) {
+        var f = e.target.files && e.target.files[0];
+        if (!f) return;
+        var fr = new FileReader();
+        fr.onload = function () { _homeBanners[i].image_url = String(fr.result); _renderHomeBanners(); };
+        fr.readAsDataURL(f);
+      });
+    });
+
+    var hint = document.getElementById('banner-count-hint');
+    if (hint) hint.textContent = _homeBanners.length + ' / ' + HOME_BANNER_MAX + '개';
+    var addBtn = document.getElementById('banner-add-btn');
+    if (addBtn) addBtn.disabled = _homeBanners.length >= HOME_BANNER_MAX;
+  }
+
+  function _collectHomeBanners() {
+    var wrap = document.getElementById('banner-editor-list');
+    if (!wrap) return [];
+    return Array.prototype.map.call(wrap.querySelectorAll('[data-banner-index]'), function (card, i) {
+      return {
+        image_url: _homeBanners[i] ? _homeBanners[i].image_url : '',
+        title: card.querySelector('.hb-title').value.trim(),
+        link_url: card.querySelector('.hb-link').value.trim(),
+        starts_at: card.querySelector('.hb-start').value || '',
+        ends_at: card.querySelector('.hb-end').value || '',
+        active: card.querySelector('.hb-active').checked ? 1 : 0,
+        sort_order: i
+      };
+    });
+  }
+
+  function _saveHomeBanners() {
+    _apiFetch('/api/settings/home-banners', {
+      method: 'PUT',
+      body: JSON.stringify({ banners: _collectHomeBanners() })
+    }).then(function (data) {
+      if (data && data.error) { GW.showToast(data.error, 'error'); return; }
+      _homeBanners = (data && data.banners) || [];
+      _renderHomeBanners();
+      GW.showToast('홈 배너를 저장했습니다.');
+    }).catch(function (e) { GW.showToast((e && e.message) || '저장에 실패했습니다.', 'error'); });
+  }
+
   function _loadBannerUI() {
     _apiFetch('/api/settings/board-banner').then(function (data) {
       _boardBanner = (data && data.items) || {};
