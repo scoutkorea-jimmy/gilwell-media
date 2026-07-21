@@ -10,7 +10,25 @@ EXPECTED_ASSET_VERSION="$(cat ASSET_VERSION)"
 
 echo "Checking ${BASE_URL} for V${EXPECTED_APP_VERSION}"
 
-MAIN_JS="$(curl -fsSL "${BASE_URL}/js/main.js?v=${EXPECTED_ASSET_VERSION}")"
+# [2026-07-21] 전파 대기 — 이 지연이 없으면 아래 검증 요청 자체가 캐시를 오염시킨다.
+#
+# `_headers` 가 자산에 `public, max-age=31536000, immutable` 을 준다. 배포 직후
+# 전파가 끝나기 전에 새 `?v=<ASSET_VERSION>` URL 을 조회하면, 그 엣지가 새 URL
+# 아래 **이전 파일**을 캐시해 버리고 immutable 이라 1년간 만료되지 않는다.
+# 그러면 방문자는 HTML 과 main.js 버전이 어긋나 "새 버전 있음" 배너를 보게 되고,
+# 새로고침해도 같은 캐시를 받아 배너가 사라지지 않는다.
+POST_DEPLOY_WAIT="${POST_DEPLOY_WAIT:-45}"
+if [[ "${POST_DEPLOY_WAIT}" -gt 0 ]]; then
+  echo "Waiting ${POST_DEPLOY_WAIT}s for edge propagation before verifying..."
+  sleep "${POST_DEPLOY_WAIT}"
+fi
+
+# 캐시를 건드리지 않고 원본을 확인한다. 실제 사용자 URL(`?v=...`)을 그대로 조회하면
+# 위 오염이 재발하므로, 검증 전용 논스를 덧붙이고 no-cache 를 요청한다.
+NONCE="verify$(date +%s)$$"
+CURL_NC=(curl -fsSL -H 'Cache-Control: no-cache' -H 'Pragma: no-cache')
+
+MAIN_JS="$("${CURL_NC[@]}" "${BASE_URL}/js/main.js?v=${EXPECTED_ASSET_VERSION}&_=${NONCE}")"
 HOME_PAGE="$(curl -fsSL "${BASE_URL}/")"
 SEARCH_PAGE="$(curl -fsSL "${BASE_URL}/search?q=test")"
 BOARD_PAGE="$(curl -fsSL "${BASE_URL}/wosm")"
