@@ -506,3 +506,10 @@ body.wosm-members-page #main-content {
     font-size: 13px;
   }
 }
+
+/* 터치 타겟 확보 (00.176.10) — 실측 44px 미만 요소 보정.
+   기준·근거는 css/style.css 의 '터치 타겟 확보' 블록 주석 참조. */
+@media (pointer: coarse) {
+  .members-view-chip,
+  .member-country-toggle { min-height: 44px; }
+}

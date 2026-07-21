@@ -272,7 +272,7 @@
 .gw-chatbot-card-arrow {
   width: 14px;
   height: 14px;
-  color: var(--gray-500, var(--gray-500));
+  color: var(--gray-700);
   transition: transform 0.2s, color 0.15s;
   flex-shrink: 0;
 }
@@ -331,7 +331,7 @@
   box-shadow: 0 0 0 3px rgba(98, 37, 153, 0.12);
 }
 .gw-chatbot-input::placeholder {
-  color: var(--gray-500, var(--gray-500));
+  color: var(--gray-700);
   font-weight: 400;
 }
 .gw-chatbot-send {

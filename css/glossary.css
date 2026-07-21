@@ -492,3 +492,11 @@
 /* 다크 모드 — 반투명 흰 배경(alpha 0.9)은 사실상 흰 판이라 다크에서 뒤집는다.
    (style.css 의 다크 블록보다 이 시트가 나중에 로드되므로 여기서 덮어쓴다) */
   [data-theme="dark"] .glossary-search-check { background: rgba(33, 26, 42, 0.9); }
+
+/* 터치 타겟 확보 (00.176.10) — 실측 44px 미만 요소 보정.
+   기준·근거는 css/style.css 의 '터치 타겟 확보' 블록 주석 참조. */
+@media (pointer: coarse) {
+  .glossary-letter-btn,
+  .glossary-admin-toggle-btn { min-width: 44px; min-height: 44px; }
+  .glossary-description-toggle { min-height: 44px; }
+}

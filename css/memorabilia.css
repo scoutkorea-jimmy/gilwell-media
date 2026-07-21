@@ -1592,3 +1592,9 @@
 }
 .memo-login-field:focus { outline: none; border-color: var(--scouting-purple-border); box-shadow: 0 0 0 3px rgba(98, 37, 153, 0.18); }
 .memo-login-error { margin-top: 6px; font-size: 13px; color: var(--fire-red-text); }
+
+/* 터치 타겟 확보 (00.176.10) — 실측 44px 미만 요소 보정.
+   기준·근거는 css/style.css 의 '터치 타겟 확보' 블록 주석 참조. */
+@media (pointer: coarse) {
+  .memo-filter-issuer { min-height: 44px; }
+}

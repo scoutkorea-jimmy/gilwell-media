@@ -1032,3 +1032,17 @@
     justify-content: stretch;
   }
 }
+
+/* 터치 타겟 확보 (00.176.10) — 실측 44px 미만 요소 보정.
+   기준·근거는 css/style.css 의 '터치 타겟 확보' 블록 주석 참조. */
+@media (pointer: coarse) {
+  .calendar-view-btn,
+  .calendar-current-month-btn,
+  .calendar-today-btn,
+  .calendar-event-link {
+    min-height: 44px;
+  }
+  /* .calendar-week-bar / .calendar-event-title-btn 은 월 그리드 안에 촘촘히
+     쌓이는 막대라 44px 로 키우면 달력 레이아웃이 무너진다. WCAG 2.5.8 의
+     '레이아웃상 필수(essential)' 예외로 두고 현행 크기를 유지한다. */
+}

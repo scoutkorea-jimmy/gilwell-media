@@ -87,7 +87,7 @@
 .board-banner-note {
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size: 12px;
-  color: var(--gray-500);
+  color: var(--gray-700);
   line-height: 1.7;
   margin-top: 10px;
   max-width: 760px;
@@ -451,7 +451,7 @@
 }
 .board-write-seo-url {
   font-size: 11px;
-  color: var(--ocean-blue-text);
+  color: var(--shade-blue-2);   /* Lc 60+ 확보 (ocean-blue 는 tint 배경에서 미달) */
   word-break: break-all;
   margin-bottom: 3px;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
@@ -845,4 +845,20 @@
   .bw-card-collapsible .bw-card-head-summary { padding: var(--bw-gap-md); }
   .bw-card-body { padding: 0 var(--bw-gap-md) var(--bw-gap-md); }
   .bw-stats-grid { grid-template-columns: 1fr 1fr; }
+}
+
+/* 터치 타겟 확보 (00.176.10) — 실측 44px 미만 요소 보정.
+   기준·근거는 css/style.css 의 '터치 타겟 확보' 블록 주석 참조. */
+@media (pointer: coarse) {
+  .board-sort-btn,
+  .tag-filter-btn,
+  .bw-btn {
+    min-height: 44px;
+  }
+  .board-search-input,
+  .bw-input,
+  .bw-select {
+    min-height: 44px;
+  }
+  .bw-close { min-width: 44px; min-height: 44px; }
 }

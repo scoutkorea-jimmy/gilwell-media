@@ -514,7 +514,7 @@ body *:not(svg):not(path):not(circle):not(line):not(polyline):not(polygon):not(r
 
   /* Region colours (calendar + region tags; WOSM 회원국 지역 구분) */
   --region-kor:  #0f8db3;
-  --region-apr:  #ff5b5b;
+  --region-apr:  #f24a4a;   /* 2026-07-21: #ff5b5b 은 APCA Lc 56.2 로 기준(60) 미달 → 62.2 */
   --region-eur:  #0c7a8a;
   --region-afr:  #b6761b;
   --region-arb:  #7b5cff;
@@ -3834,7 +3834,6 @@ footer a:hover { color: var(--on-accent); }
 .calendar-week-bar.is-cat-arb { background: rgba(123, 92, 255, 0.14); color: var(--region-arb); }
 .calendar-week-bar.is-cat-iar { background: rgba(212, 79, 148, 0.14); color: var(--region-iar); }
 .calendar-week-bar.is-cat-wosm { background: rgba(36, 135, 55, 0.14); color: var(--forest-green-text); }
-}
 
 .calendar-region-group-head.is-kor { color: var(--region-kor); }
 .calendar-region-group-head.is-apr { color: var(--region-apr); }
@@ -4161,8 +4160,11 @@ footer a:hover { color: var(--on-accent); }
   overflow: auto;
 }
 
-    grid-template-columns: 1fr;
-  }
+/* [복구 2026-07-21] 이 아래 모바일 접힘 규칙들은 @media 래퍼를 잃은 채
+   전 뷰포트로 새고 있었다. 파일에서 가장 많이 쓰이는 900px 로 복원한다.
+   (대상 셀렉터는 현재 마크업이 없어 시각적 영향은 없으나, 여분의 닫는
+    중괄호가 이후 규칙을 조용히 삼킬 위험이 있었다) */
+@media (max-width: 900px) {
   .marketing-panel-actions {
     justify-content: flex-start;
   }
@@ -8120,3 +8122,120 @@ body.wosm-members-page #main-content {
   }
 }
 
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   터치 타겟 확보 (00.176.10)
+
+   실측(390px 뷰포트): 페이지당 22~57개 요소가 44px 미만이었다.
+   .nav-link 31px · .masthead-type-btn 25px · .mh-search-input 25px ·
+   .hero-dot 8×8px — 마지막 것은 손가락으로 누르기 사실상 불가능했다.
+
+   기준을 둘로 나눈 이유:
+   · 실제 컨트롤(내비게이션·버튼·입력)  → 44px  (WCAG 2.5.5 AAA)
+   · 한 줄에 촘촘히 놓인 인디케이터 점  → 24px  (WCAG 2.2 AA 2.5.8)
+     점을 44px 로 키우면 히트 영역이 서로 겹쳐 옆 슬라이드가 눌린다.
+     시각 크기는 그대로 두고 padding + background-clip 으로 히트 영역만 넓힌다.
+
+   `pointer: coarse` 로 한정해 마우스 환경의 레이아웃은 건드리지 않는다.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@media (pointer: coarse) {
+  /* ── 내비게이션 ─────────────────────────────────────── */
+  .nav-link,
+  .nav-group-trigger {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+  }
+
+  /* ── 마스트헤드 컨트롤 ──────────────────────────────── */
+  .masthead-type-btn {
+    min-height: 44px;
+    min-width: 44px;
+    justify-content: center;
+  }
+
+  .mh-search-input {
+    min-height: 44px;
+  }
+
+  /* 포커스 시에만 보이는 요소지만, 보일 때는 기준을 지켜야 한다 */
+  .skip-link {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+  }
+
+  /* ── 인디케이터 점 — 시각 크기 유지, 히트 영역만 확장 ── */
+  .hero-dot,
+  .content-gallery-dot {
+    width: 24px;
+    height: 24px;
+    padding: 8px;          /* 24 − 8×2 = 8px 가 실제로 보이는 점 */
+    background-clip: content-box;
+  }
+
+  /* ── 게시판 페이지네이션 ────────────────────────────── */
+  .board-page-btn,
+  .board-more-btn {
+    min-height: 44px;
+  }
+}
+
+/* 터치 타겟 확보 (00.176.10) — 실측 44px 미만 요소 보정.
+   기준·근거는 css/style.css 의 '터치 타겟 확보' 블록 주석 참조. */
+@media (pointer: coarse) {
+  .nav-link { min-width: 44px; justify-content: center; }
+  .hero-pause-btn,
+  .home-section-more,
+  .mini-share-link,
+  .post-share-btn,
+  .post-action-btn {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+  }
+  .mobile-compact-toggle,
+  .mobile-compact-search,
+  .modal-close {
+    min-width: 44px;
+    min-height: 44px;
+  }
+  .mobile-compact-brand {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+  }
+}
+
+/* 터치 타겟 — 2차 보정 (00.176.10)
+   1차 후 남은 것: 높이는 확보됐으나 라벨이 짧아 폭이 부족한 버튼들과,
+   style.css 안에 정의돼 있어 board.css 규칙이 닿지 않던 작성 모달(--bw-*). */
+@media (pointer: coarse) {
+  .home-section-more,
+  .mini-share-link,
+  .post-page-tag,
+  .board-page-btn,
+  .nav-link {
+    min-width: 44px;
+  }
+
+  .bw-input,
+  .bw-select,
+  .bw-btn {
+    min-height: 44px;
+  }
+  .bw-close,
+  .board-write-close {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  /* leaflet 지도 줌 컨트롤(서드파티, 30×30) */
+  .leaflet-control-zoom-in,
+  .leaflet-control-zoom-out {
+    width: 44px;
+    height: 44px;
+    line-height: 44px;
+  }
+}

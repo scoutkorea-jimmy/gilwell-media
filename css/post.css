@@ -32,7 +32,7 @@
   border:     none;
   cursor:     pointer;
   padding:    4px;
-  color:      var(--gray-500);
+  color:      var(--gray-700);
   line-height: 0;
   transition: color 0.15s;
 }
@@ -750,4 +750,30 @@
 @media (max-width: 900px) {
   /* 세로 광고는 모바일에서 사이드바 공간 자체가 없으므로 전체 숨김 */
   .kakao-adfit-vertical { display: none; }
+}
+
+/* 터치 타겟 확보 (00.176.10) — 기사 상단 모바일 바.
+   실측 34×34px / 높이 24px 였다. 자세한 기준은 style.css 의 동명 블록 참조. */
+@media (pointer: coarse) {
+  .post-mobile-back,
+  .post-mobile-search {
+    min-width: 44px;
+    min-height: 44px;
+  }
+  .post-mobile-brand,
+  .post-mobile-section-chip {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+  }
+}
+
+/* 터치 타겟 확보 (00.176.10) — 실측 44px 미만 요소 보정.
+   기준·근거는 css/style.css 의 '터치 타겟 확보' 블록 주석 참조. */
+@media (pointer: coarse) {
+  .post-page-tag,
+  .post-like-btn,
+  .pps-category { min-height: 44px; display: inline-flex; align-items: center; }
+  .board-pw-eye,
+  .board-write-close { min-width: 44px; min-height: 44px; }
 }
