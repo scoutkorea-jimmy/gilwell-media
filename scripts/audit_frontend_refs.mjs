@@ -41,9 +41,10 @@ function walk(dir, exts, skipDirs = new Set(['node_modules', '.git', '.wrangler'
   return out;
 }
 
-const HTML_FILES = walk(ROOT, ['.html']);
-const JS_FILES = walk(join(ROOT, 'js'), ['.js']);
-const CSS_FILES = walk(join(ROOT, 'css'), ['.css']);
+const PUB = join(ROOT, 'public');   // [2026-07-22] 정적 자산은 public/ 아래
+const HTML_FILES = walk(PUB, ['.html']);
+const JS_FILES = walk(join(PUB, 'js'), ['.js']);
+const CSS_FILES = walk(join(PUB, 'css'), ['.css']);
 
 const read = (p) => readFileSync(p, 'utf8');
 const rel = (p) => relative(ROOT, p);

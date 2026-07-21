@@ -5,8 +5,8 @@ ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT_DIR"
 
 BASE_URL="${1:-https://bpmedia.net}"
-EXPECTED_APP_VERSION="$(sed -n "s/.*GW.APP_VERSION = '\\([^']*\\)'.*/\\1/p" js/main.js | head -n 1)"
-EXPECTED_ASSET_VERSION="$(cat ASSET_VERSION)"
+EXPECTED_APP_VERSION="$(sed -n "s/.*GW.APP_VERSION = '\\([^']*\\)'.*/\\1/p" public/js/main.js | head -n 1)"
+EXPECTED_ASSET_VERSION="$(cat public/ASSET_VERSION)"
 
 echo "Checking ${BASE_URL} for V${EXPECTED_APP_VERSION}"
 

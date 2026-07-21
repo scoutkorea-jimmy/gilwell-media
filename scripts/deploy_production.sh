@@ -9,8 +9,8 @@ chmod +x "$ROOT_DIR/scripts/verify_release_metadata.sh"
 chmod +x "$ROOT_DIR/scripts/release_preflight.sh"
 "$ROOT_DIR/scripts/release_preflight.sh"
 
-VERSION="$(cat VERSION)"
-ASSET_VERSION="$(cat ASSET_VERSION)"
+VERSION="$(cat public/VERSION)"
+ASSET_VERSION="$(cat public/ASSET_VERSION)"
 COMMIT_SHA="$(git rev-parse --short HEAD)"
 COMMIT_MESSAGE="$(git log -1 --pretty=%s)"
 
@@ -24,7 +24,7 @@ if [[ -x "$ROOT_DIR/scripts/ensure_site_visits_geo_columns.sh" || -f "$ROOT_DIR/
   "$ROOT_DIR/scripts/ensure_site_visits_geo_columns.sh" gilwell-posts --remote
 fi
 
-wrangler pages deploy . \
+wrangler pages deploy public \
   --project-name gilwell-media \
   --branch main \
   --commit-hash "${COMMIT_SHA}" \

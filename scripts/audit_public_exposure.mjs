@@ -2,132 +2,100 @@
 /**
  * 공개 노출 경계 감사 — release preflight 게이트
  *
- * `wrangler pages deploy .` 는 저장소 루트를 통째로 업로드하므로, 저장소에
- * 파일을 추가하면 기본적으로 공개 URL 로 읽힌다. 실제 차단은
- * `functions/_middleware.js` 의 `isBlockedInternalPath()` 가 수행한다.
+ * [2026-07-22 모델 변경] 이전에는 `wrangler pages deploy .` 가 저장소를 통째로
+ * 올려서, 내부 파일이 일단 업로드된 뒤 미들웨어가 404 로 가려주는 구조였다.
+ * 이제는 `wrangler pages deploy public` 이라 **public/ 안에 있는 것만 업로드된다.**
+ * 따라서 진짜 불변식은 하나다: "내부용 파일이 public/ 안에 들어가지 않는다".
  *
- * 이 스크립트는 그 차단 목록이 저장소 실제 구성과 어긋나지 않는지 검증한다.
- * 두 방향 모두 막는다:
- *
- *   1) 새 내부 디렉토리·파일을 추가했는데 차단 목록에 안 넣은 경우
- *      → 조용히 공개된다. (2026-07-21 사고: rules/, db/, output/ 노출)
- *
- *   2) 런타임이 fetch 하는 자산을 차단 목록에 넣은 경우
- *      → 기능이 죽는다. (`.assetsignore` 에 card-news-app / dreampath 를
- *        넣었던 시한폭탄 — Pages 가 그 파일을 무시한 덕에 우연히 살았다.)
+ * 두 방향을 검사한다:
+ *   1) public/ 안에 내부용 파일(문서·스크립트·설정)이 섞여 있지 않은가
+ *      → 섞이면 배포와 함께 공개된다.
+ *   2) 런타임이 fetch 하는 자산이 미들웨어 차단 목록에 걸리지 않는가
+ *      → 걸리면 기능이 죽는다 (이중 안전장치가 오히려 앱을 깨는 경우).
  *
  * 네트워크 없이 동작한다. 라이브 확인은 tests/smoke-internal-exposure.spec.ts.
  */
 
-import { execFileSync } from 'node:child_process';
+import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { isBlockedInternalPath } from '../functions/_middleware.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const PUB = path.join(ROOT, 'public');
 
-/**
- * 브라우저에 서빙되어야 하는 최상위 항목.
- * `*.html` 은 자동으로 공개로 간주한다 (사이트 페이지 = URL).
- * 여기에 없는 최상위 항목은 전부 "내부"로 간주해 차단을 요구한다.
- */
-const PUBLIC_ENTRIES = new Set([
-  // 정적 자산 디렉토리
-  'css', 'js', 'img', 'data', 'fonts',
-  // Pages Functions (정적 자산으로 업로드되지 않지만 URL 을 소유)
-  'functions',
-  // 런타임이 직접 참조하는 앱 소스
-  'card-news-app',   // functions/card-news/[id].js 가 .jsx 를 브라우저로 내려보냄
-  // Dreampath 앱 일체 (2026-07-21 dreampath/ 로 통합). index.html·app.js·img·
-  // templates·vendor 는 브라우저가 받아야 하고, DREAMPATH.md 는 앱의 규칙 뷰어가
-  // fetch 한다. 이 디렉토리를 차단 목록에 넣으면 앱이 통째로 죽는다.
-  'dreampath',
-  // 루트 파일
-  '_headers', '_redirects',
-  'VERSION', 'ADMIN_VERSION', 'ASSET_VERSION',
-  'robots.txt', 'sitemap.xml',
-]);
-
-/**
- * 절대 차단되면 안 되는 구체 경로 — 차단 시 즉시 기능이 죽는다.
- * 위 PUBLIC_ENTRIES 와 중복이지만, 실제 경로 문자열로 한 번 더 확인한다.
- */
-const MUST_STAY_PUBLIC = [
-  '/dreampath/DREAMPATH.md',
-  '/dreampath/app.js',
-  '/card-news-app/app.jsx',
-  '/card-news-app/cards.jsx',
-  '/card-news-app/styles.css',
-  '/dreampath/templates/templates-app.js',
-  '/dreampath/templates/templates.css',
-  '/data/changelog.json',
-  '/VERSION',
-  '/ADMIN_VERSION',
-  '/css/style.css',
-  '/js/main.js',
-  '/img/og-default.png',
-  '/index.html',
-  '/',
+/** public/ 안에 있으면 안 되는 것 — 있으면 배포와 함께 공개된다 */
+const FORBIDDEN_IN_PUBLIC = [
+  { test: (f) => f.endsWith('.sh'), why: '셸 스크립트' },
+  { test: (f) => f.endsWith('.toml'), why: '배포 설정' },
+  { test: (f) => /(^|\/)package(-lock)?\.json$/.test(f), why: 'npm 설정' },
+  { test: (f) => /(^|\/)\.dev\.vars/.test(f), why: '환경변수 예시' },
+  { test: (f) => /(^|\/)(CLAUDE|AGENTS|README)\.md$/i.test(f), why: '개발 문서' },
+  { test: (f) => /HISTORY\.md$/i.test(f), why: '개발 이력 문서' },
+  { test: (f) => f.endsWith('.sql'), why: 'DB 스키마' },
 ];
 
-function trackedTopLevelEntries() {
-  const out = execFileSync('git', ['ls-files'], { cwd: ROOT, encoding: 'utf8' });
-  const entries = new Set();
-  for (const line of out.split('\n')) {
-    if (!line.trim()) continue;
-    entries.add(line.split('/')[0]);
+/**
+ * 런타임이 실제로 fetch 하는 경로 — 미들웨어가 차단하면 기능이 죽는다.
+ * (미들웨어 차단은 이제 이중 안전장치지만, 잘못 넓히면 앱을 깬다)
+ */
+const MUST_STAY_PUBLIC = [
+  '/', '/index.html',
+  '/css/style.css', '/js/main.js', '/data/changelog.json',
+  '/VERSION', '/ADMIN_VERSION',
+  '/dreampath/app.js', '/dreampath/DREAMPATH.md',
+  '/dreampath/templates/templates-app.js',
+  '/card-news-app/app.jsx', '/card-news-app/cards.jsx',
+];
+
+function walk(dir, base = '') {
+  const out = [];
+  for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+    const rel = base ? `${base}/${e.name}` : e.name;
+    if (e.isDirectory()) out.push(...walk(path.join(dir, e.name), rel));
+    else out.push(rel);
   }
-  return [...entries].sort();
+  return out;
 }
 
-function main() {
-  const errors = [];
-  const warnings = [];
+const errors = [];
 
-  // ── 1) 내부 항목이 전부 차단되는가 ────────────────────────────────
-  const internalUnblocked = [];
-  for (const entry of trackedTopLevelEntries()) {
-    if (PUBLIC_ENTRIES.has(entry)) continue;
-    if (entry.endsWith('.html')) continue;      // 사이트 페이지
-    // 디렉토리/파일 양쪽 형태로 확인
-    const asFile = `/${entry}`;
-    const asDir = `/${entry}/probe`;
-    if (!isBlockedInternalPath(asFile) && !isBlockedInternalPath(asDir)) {
-      internalUnblocked.push(entry);
+// ── 1) public/ 안에 내부용 파일이 섞였는가 ────────────────────────────
+if (!fs.existsSync(PUB)) {
+  errors.push('public/ 디렉토리가 없습니다. 배포 대상 디렉토리입니다.');
+} else {
+  const leaked = [];
+  for (const f of walk(PUB)) {
+    // DREAMPATH.md 는 앱의 규칙 뷰어가 런타임에 fetch 하므로 예외
+    if (f === 'dreampath/DREAMPATH.md') continue;
+    for (const rule of FORBIDDEN_IN_PUBLIC) {
+      if (rule.test(f)) { leaked.push(`${f}  (${rule.why})`); break; }
     }
   }
-  if (internalUnblocked.length) {
+  if (leaked.length) {
     errors.push(
-      `공개 노출 위험 — 아래 최상위 항목이 차단 목록에 없습니다:\n` +
-      internalUnblocked.map((e) => `    • ${e}`).join('\n') +
-      `\n  해소법: functions/_middleware.js 의 BLOCKED_PREFIXES / BLOCKED_FILES 에 추가하거나,\n` +
-      `         정말 공개해야 한다면 scripts/audit_public_exposure.mjs 의 PUBLIC_ENTRIES 에 추가하세요.`
+      `내부용 파일이 public/ 안에 있습니다 — 배포되면 그대로 공개됩니다:\n` +
+      leaked.map((l) => `    • public/${l}`).join('\n') +
+      `\n  해소법: public/ 밖(scripts/, docs/, rules/, db/ 등)으로 옮기세요.`
     );
   }
+}
 
-  // ── 2) 살아야 하는 경로가 차단되지 않았는가 ──────────────────────
-  const wronglyBlocked = MUST_STAY_PUBLIC.filter((p) => isBlockedInternalPath(p));
-  if (wronglyBlocked.length) {
-    errors.push(
-      `기능 파괴 위험 — 런타임이 fetch 하는 경로가 차단되었습니다:\n` +
-      wronglyBlocked.map((p) => `    • ${p}`).join('\n') +
-      `\n  해소법: functions/_middleware.js 의 차단 목록에서 제거하세요.`
-    );
-  }
-
-  // ── 3) 차단 목록이 실제로 존재하지 않는 경로를 가리키는가 (정보) ──
-  //     저장소에서 사라진 디렉토리를 계속 차단하는 것 자체는 무해하므로 경고만.
-  if (warnings.length) warnings.forEach((w) => console.warn(`  ! ${w}`));
-
-  if (errors.length) {
-    console.error('공개 노출 경계 감사 실패:\n');
-    errors.forEach((e) => console.error(`  ${e}\n`));
-    process.exit(1);
-  }
-
-  console.log(
-    `공개 노출 경계 OK — 내부 항목 전부 차단됨, 런타임 의존 경로 ${MUST_STAY_PUBLIC.length}개 정상.`
+// ── 2) 런타임 의존 경로가 차단되지 않았는가 ──────────────────────────
+const wronglyBlocked = MUST_STAY_PUBLIC.filter((p) => isBlockedInternalPath(p));
+if (wronglyBlocked.length) {
+  errors.push(
+    `기능 파괴 위험 — 런타임이 fetch 하는 경로가 미들웨어에 차단됐습니다:\n` +
+    wronglyBlocked.map((p) => `    • ${p}`).join('\n') +
+    `\n  해소법: functions/_middleware.js 의 차단 목록에서 제거하세요.`
   );
 }
 
-main();
+if (errors.length) {
+  console.error('공개 노출 경계 감사 실패:\n');
+  errors.forEach((e) => console.error(`  ${e}\n`));
+  process.exit(1);
+}
+
+const n = fs.existsSync(PUB) ? walk(PUB).length : 0;
+console.log(`공개 노출 경계 OK — public/ ${n}개 파일에 내부용 파일 없음, 런타임 의존 경로 ${MUST_STAY_PUBLIC.length}개 정상.`);

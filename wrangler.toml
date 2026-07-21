@@ -7,7 +7,9 @@ name = "gilwell-media"
 compatibility_date = "2024-09-23"
 
 # Output directory for Cloudflare Pages (static files)
-pages_build_output_dir = "."
+# [2026-07-22] "." → "public". 저장소 루트를 통째로 올리던 것을 바꿔, 배포되는
+# 것과 개발용 파일을 구조로 분리한다. functions/ 는 Pages 규약상 루트에 남는다.
+pages_build_output_dir = "public"
 
 # ── D1 Database binding (local dev) ──────────────────────────
 # Replace database_id with your actual D1 database ID after

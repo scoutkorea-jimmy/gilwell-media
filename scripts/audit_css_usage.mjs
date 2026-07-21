@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * css/style.css 의 각 규칙이 어느 공개 표면에서 쓰이는지 기계적으로 귀속시킨다.
+ * public/css/style.css 의 각 규칙이 어느 공개 표면에서 쓰이는지 기계적으로 귀속시킨다.
  *
  * 왜 필요한가: style.css 는 320KB 이고 공개 페이지 17개가 공유한다. 눈으로
  * 섹션 배너를 보고 줄 범위를 잘라내면 반드시 사고가 난다 — 실제로 calendar-*
@@ -24,23 +24,23 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const CSS_PATH = path.join(ROOT, 'css/style.css');
+const CSS_PATH = path.join(ROOT, 'public/css/style.css');
 
 // 표면(surface) = 하나의 공개 페이지가 로드하는 소스 전체.
 // 공유 런타임(main.js/site-chrome.js/chatbot.js)은 모든 표면에 포함된다.
-const SHARED_JS = ['js/main.js', 'js/site-chrome.js', 'js/chatbot.js'];
+const SHARED_JS = ['public/js/main.js', 'public/js/site-chrome.js', 'public/js/chatbot.js'];
 
 const SURFACES = {
-  home: ['index.html', 'js/home.js', 'js/home-helpers.js', 'js/home-render.js', 'js/home-hero.js', 'js/home-runtime.js'],
-  board: ['latest.html', 'korea.html', 'apr.html', 'wosm.html', 'people.html', 'js/board.js', 'js/board-write.js'],
-  post: ['functions/post/[id].js', 'js/post-page.js', 'functions/feature/[category]/[slug].js'],
-  glossary: ['glossary.html', 'js/glossary.js', 'functions/glossary-raw.js'],
-  calendar: ['calendar.html', 'js/calendar.js'],
-  memorabilia: ['memorabilia.html', 'js/memorabilia.js', 'js/memorabilia-shared.js'],
-  wosm_members: ['wosm-members.html', 'js/wosm-members.js'],
-  search: ['search.html', 'js/search.js'],
-  jamboree16: ['jamboree16.html', 'js/jamboree16.js'],
-  kms: ['kms.html', 'js/kms.js'],
+  home: ['index.html', 'public/js/home.js', 'public/js/home-helpers.js', 'public/js/home-render.js', 'public/js/home-hero.js', 'public/js/home-runtime.js'],
+  board: ['latest.html', 'korea.html', 'apr.html', 'wosm.html', 'people.html', 'public/js/board.js', 'public/js/board-write.js'],
+  post: ['functions/post/[id].js', 'public/js/post-page.js', 'functions/feature/[category]/[slug].js'],
+  glossary: ['glossary.html', 'public/js/glossary.js', 'functions/glossary-raw.js'],
+  calendar: ['calendar.html', 'public/js/calendar.js'],
+  memorabilia: ['memorabilia.html', 'public/js/memorabilia.js', 'public/js/memorabilia-shared.js'],
+  wosm_members: ['wosm-members.html', 'public/js/wosm-members.js'],
+  search: ['search.html', 'public/js/search.js'],
+  jamboree16: ['jamboree16.html', 'public/js/jamboree16.js'],
+  kms: ['kms.html', 'public/js/kms.js'],
   static: ['about.html', 'contributors.html', 'privacy.html', 'editorial-policy.html', '404.html', '500.html'],
 };
 
@@ -291,7 +291,7 @@ function main() {
     byVerdict[r.verdict].bytes += r.bytes;
   }
 
-  console.log(`css/style.css — ${rules.length} rules, ${total} B\n`);
+  console.log(`public/css/style.css — ${rules.length} rules, ${total} B\n`);
   console.log('판정별:');
   for (const [k, v] of Object.entries(byVerdict)) {
     console.log(`  ${k.padEnd(10)} ${String(v.rules).padStart(5)} rules  ${String(v.bytes).padStart(8)} B`);

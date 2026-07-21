@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * css/style.css 에서 "정확히 한 표면에서만 쓰인다"고 확정된 규칙을 페이지별
+ * public/css/style.css 에서 "정확히 한 표면에서만 쓰인다"고 확정된 규칙을 페이지별
  * 시트로 떼어낸다. 분류는 하지 않는다 — scripts/audit_css_usage.mjs --json 의
  * 결과를 그대로 소비한다(귀속 판정의 단일 원본).
  *
@@ -22,21 +22,21 @@ import { execFileSync } from 'child_process';
 import { fileURLToPath } from 'url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const CSS_PATH = path.join(ROOT, 'css/style.css');
+const CSS_PATH = path.join(ROOT, 'public/css/style.css');
 const AUDIT = path.join(ROOT, 'scripts/audit_css_usage.mjs');
 
 // 떼어낼 표면 → 출력 파일. kms/static 은 이득이 작고(각 4~5KB) static 은
 // 404/500 이 style.css 를 로드하지 않는 예외가 있어 이번 범위에서 제외한다.
 const TARGETS = {
-  board: 'css/board.css',
-  calendar: 'css/calendar.css',
-  post: 'css/post.css',
-  wosm_members: 'css/wosm-members.css',
-  glossary: 'css/glossary.css',
-  jamboree16: 'css/jamboree16.css',
+  board: 'public/css/board.css',
+  calendar: 'public/css/calendar.css',
+  post: 'public/css/post.css',
+  wosm_members: 'public/css/wosm-members.css',
+  glossary: 'public/css/glossary.css',
+  jamboree16: 'public/css/jamboree16.css',
 };
 
-const HEADER = (surface) => `/* ${surface} 전용 스타일 — css/style.css 에서 분리.
+const HEADER = (surface) => `/* ${surface} 전용 스타일 — public/css/style.css 에서 분리.
  *
  * 이 파일의 규칙은 scripts/audit_css_usage.mjs 가 "${surface} 표면에서만 쓰인다"고
  * 확정한 것들이다. 다른 페이지에서 쓰기 시작하면 style.css 로 되돌려야 한다.

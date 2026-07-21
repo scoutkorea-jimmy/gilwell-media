@@ -3,23 +3,22 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>APR — BP미디어</title>
+  <title>세계연맹 회원국 현황 — BP미디어</title>
   <!-- SHARE_META -->
   <link rel="icon" type="image/svg+xml" href="/img/favicon.svg">
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png">
   <link rel="apple-touch-icon" href="/img/logo.png">
   <link rel="shortcut icon" href="/img/favicon-48.png">
   <style>.nav[data-managed-nav]{visibility:hidden;opacity:0}</style>
-  <link rel="stylesheet" href="/css/style.css?v=20260721121535">
-  <link rel="stylesheet" href="/css/board.css?v=20260721121535">
-  <link rel="stylesheet" href="/css/chatbot.css?v=20260721121535">
-  <link rel="stylesheet" href="/css/dark-mode.css?v=20260721121535">
+  <link rel="stylesheet" href="/css/style.css?v=20260721123831">
+  <link rel="stylesheet" href="/css/wosm-members.css?v=20260721123831">
+  <link rel="stylesheet" href="/css/chatbot.css?v=20260721123831">
+  <link rel="stylesheet" href="/css/dark-mode.css?v=20260721123831">
   <noscript><style>.nav[data-managed-nav]{visibility:visible!important;opacity:1!important}.nav[data-managed-nav] a{font-size:0!important}.nav[data-managed-nav] a::before{content:attr(data-fallback-label);font-size:12px}</style></noscript>
 </head>
-<body>
+<body class="wosm-members-page">
   <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
 
-  <!-- ── MASTHEAD ── -->
   <header class="masthead">
     <div class="masthead-top">
       <div class="masthead-date" id="today-date"></div>
@@ -29,7 +28,7 @@
             <img src="/img/logo.svg" alt="" class="masthead-logo-img" aria-hidden="true">
             <h1>BP미디어</h1>
           </div>
-          <div class="sub">The BP Post · bpmedia.net</div>
+          <div class="sub">bpmedia.net</div>
         </a>
       </div>
       <div class="masthead-right">
@@ -50,9 +49,9 @@
       <a href="/latest" data-i18n="nav.latest" data-fallback-label="최신 소식"></a>
       <a href="/jamboree16" data-i18n="nav.jamboree16" data-fallback-label="제16회 한국잼버리"></a>
       <a href="/korea" data-i18n="nav.korea" data-fallback-label="한국스카우트 소식"></a>
-      <a href="/apr" class="active" data-i18n="nav.apr" data-fallback-label="아시아-태평양 스카우트 소식"></a>
+      <a href="/apr" data-i18n="nav.apr" data-fallback-label="아시아-태평양 스카우트 소식"></a>
       <a href="/wosm" data-i18n="nav.wosm" data-fallback-label="세계의 스카우트 소식"></a>
-      <a href="/wosm-members" data-i18n="nav.wosm_members" data-fallback-label="세계연맹 회원국 현황"></a>
+      <a href="/wosm-members" class="active" data-i18n="nav.wosm_members" data-fallback-label="세계연맹 회원국 현황"></a>
       <a href="/people" data-i18n="nav.people" data-fallback-label="스카우트 인물"></a>
       <a href="/calendar" data-i18n="nav.calendar" data-fallback-label="캘린더"></a>
       <a href="/glossary" data-i18n="nav.glossary" data-fallback-label="용어집"></a>
@@ -60,50 +59,62 @@
     </nav>
   </header>
 
-  <!-- ── TICKER ── -->
   <main id="main-content">
-  <div class="ticker">
-    <div class="ticker-inner" id="ticker-inner">
-      아시아태평양 스카우트 지역 동향 — APR
-      &nbsp;&nbsp;&nbsp;<span class="ticker-diamond">◆</span>&nbsp;&nbsp;&nbsp;
-      BP미디어 · bpmedia.net
-      &nbsp;&nbsp;&nbsp;<span class="ticker-diamond">◆</span>&nbsp;&nbsp;&nbsp;
-      아시아태평양 스카우트 지역 동향 — APR
-      &nbsp;&nbsp;&nbsp;<span class="ticker-diamond">◆</span>&nbsp;&nbsp;&nbsp;
-      BP미디어 · bpmedia.net
-      &nbsp;&nbsp;&nbsp;<span class="ticker-diamond">◆</span>&nbsp;&nbsp;&nbsp;
-    </div>
-  </div>
-
-  <!-- ── BOARD BANNER ── -->
-  <div class="board-banner">
-    <div class="board-banner-text">
-      <span class="category-tag tag-apr" style="margin-bottom:16px;" data-i18n="board.apr.banner">APR</span>
-      <div class="board-banner-heading">
-        <h2 data-i18n="board.apr.title">아시아태평양 지역</h2>
-        <div class="board-banner-count" id="board-count">총 —개</div>
-      </div>
-      <p data-i18n="board.apr.desc" data-board-copy-key="apr">아시아태평양 스카우트 지역의 동향과 소식을 전합니다.</p>
-      <p class="board-banner-note" data-i18n="board.translation.note">일부 게시글은 번역 자료를 바탕으로 작성되어 표현이 완전히 정확하지 않을 수 있습니다. 더 나은 번역 제안은 언제든 환영합니다.</p>
-    </div>
-    <div class="board-banner-total" id="board-banner-total">—</div>
-  </div>
-
-  <!-- ── TAG FILTER BAR ── -->
-  <div id="tag-filter-bar" class="tag-filter-bar"></div>
-
-  <!-- ── BOARD GRID ── -->
-  <div class="board-container">
-    <div class="board-grid" id="board-grid">
-      <div class="loading-state">
-        <div class="loading-dots"><span></span><span></span><span></span></div>
+    <div class="ticker">
+      <div class="ticker-inner" id="ticker-inner">
+        BP미디어 · bpmedia.net
+        &nbsp;&nbsp;&nbsp;<span class="ticker-diamond">◆</span>&nbsp;&nbsp;&nbsp;
+        BP미디어 · bpmedia.net
+        &nbsp;&nbsp;&nbsp;<span class="ticker-diamond">◆</span>&nbsp;&nbsp;&nbsp;
       </div>
     </div>
-    <div class="board-pagination" id="board-pagination"></div>
-  </div>
 
+    <div class="glossary-page-wrap members-page-wrap">
+    <section class="glossary-hero members-hero">
+      <div class="glossary-hero-copy members-hero-copy">
+        <span class="category-tag tag-wosm">WOSM</span>
+        <h2 data-i18n="nav.wosm_members">세계연맹 회원국 현황</h2>
+        <p data-board-copy-key="wosm_members">WOSM 회원국 현황을 한국어와 영어 기준으로 확인하고, 필요한 공개 열은 관리자에서 직접 구성할 수 있습니다. 원본 파일은 `xlsx` 업로드 뒤 열 매핑과 미리보기를 거쳐 불러옵니다.</p>
+        <div class="members-summary-inline" id="wosm-members-summary">등록 국가 176개국</div>
+      </div>
+      <div class="glossary-search-card members-search-card">
+        <label for="wosm-members-search">국가 검색</label>
+        <input type="search" id="wosm-members-search" class="glossary-search-input members-search-input" placeholder="한국어, 영어로 검색" autocomplete="off" />
+        <div class="members-view-picker">
+          <span class="members-filter-label">보기 방식</span>
+          <div class="members-view-chips" role="tablist" aria-label="회원국 현황 보기 방식">
+            <button type="button" class="members-view-chip active" data-members-view="country" role="tab" aria-selected="true">국가별 보기</button>
+            <button type="button" class="members-view-chip" data-members-view="region" role="tab" aria-selected="false">지역연맹별 보기</button>
+            <button type="button" class="members-view-chip" data-members-view="language" role="tab" aria-selected="false">공식 언어별 보기</button>
+          </div>
+        </div>
+        <p class="glossary-search-help">대표 연맹을 먼저 보고, 같은 국가의 소속 회원연맹은 필요할 때 펼쳐볼 수 있습니다. 검색 결과에 하위 연맹이 포함되면 해당 그룹은 자동으로 펼쳐집니다.</p>
+      </div>
+    </section>
+
+      <div class="members-board-shell">
+        <div class="glossary-results-meta members-results-meta" id="wosm-members-results-meta">불러오는 중…</div>
+
+        <div class="glossary-table-wrap members-table-wrap">
+          <table class="glossary-table members-table">
+            <colgroup id="wosm-members-colgroup"></colgroup>
+            <thead id="wosm-members-head"></thead>
+            <tbody id="wosm-members-body">
+              <tr>
+                <td colspan="3">
+                  <div class="loading-state">
+                    <div class="loading-dots"><span></span><span></span><span></span></div>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="members-cards" id="wosm-members-cards"></div>
+    </div>
     <!-- Kakao AdFit 728x90 (horizontal) — 푸터 바로 위 -->
-
 
     <aside class="kakao-adfit kakao-adfit-horizontal" aria-label="광고">
     <div class="kakao-adfit-pc">
@@ -114,9 +125,8 @@
     </div>
   </aside>
 
-
   </main>
-  <!-- ── FOOTER ── -->
+
   <footer>
     <div class="footer-inner">
       <div class="footer-brand">
@@ -125,14 +135,11 @@
         <p data-footer-role="domain" style="margin-top:6px;">bpmedia.net</p>
         <p>기사제보: <!--email_off--><a data-footer-role="tip-email" href="mailto:story@bpmedia.net">story@bpmedia.net</a><!--/email_off--></p>
         <p>문의: <!--email_off--><a data-footer-role="contact-email" href="mailto:info@bpmedia.net">info@bpmedia.net</a><!--/email_off--></p>
-        <p class="footer-about-link"><a href="/about">About us</a></p>
-        <p class="footer-privacy-link"><a href="/privacy" data-footer-role="privacy-link">개인정보 처리방침</a></p>
       </div>
       <div class="footer-admin">
         <h4>관리자</h4>
         <a href="/admin.html">관리자 페이지 →</a>
-        <a href="/glossary-raw">용어집 RAW로 보기 →</a>
-        <p class="footer-build">Site <span class="site-build-version">V00.177.01</span> · Admin <span class="admin-build-version">V03.150.01</span></p>
+        <p class="footer-build">Site <span class="site-build-version">V00.178.00</span> · Admin <span class="admin-build-version">V03.150.01</span></p>
       </div>
       <div class="footer-bottom">
         <p data-i18n="footer.copyright">© 2026 BP미디어 · bpmedia.net</p>
@@ -141,24 +148,13 @@
     </div>
   </footer>
 
-  <!-- ── POST DETAIL MODAL ── -->
-  <div class="modal-overlay" id="post-modal">
-    <div class="modal"></div>
-  </div>
-
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.4/dist/purify.min.js" integrity="sha384-eEu5CTj3qGvu9PdJuS+YlkNi7d2XxQROAFYOr59zgObtlcux1ae1Il3u7jvdCSWu" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-  <script src="/js/main.js?v=20260721121535"></script>
-  <script src="/js/site-chrome.js?v=20260721121535"></script>
-  <script src="/js/chatbot.js?v=20260721121535" defer></script>
-  <script src="/js/board.js?v=20260721121535"></script>
-  <script src="/js/board-write.js?v=20260721121535"></script>
-  <script>
-    GW.bootstrapStandardPage();
-    var board = new GW.Board({ category: 'apr' });
-    board.init();
-  </script>
+  <script src="/js/main.js?v=20260721123831"></script>
+  <script src="/js/site-chrome.js?v=20260721123831"></script>
+  <script src="/js/chatbot.js?v=20260721123831" defer></script>
+  <script src="/js/wosm-members.js?v=20260721123831"></script>
   <script type="text/javascript" src="https://t1.kakaocdn.net/kas/static/ba.min.js" async></script>
 
 </body>

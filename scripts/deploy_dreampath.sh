@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 # ──────────────────────────────────────────────────────────────────────────────
-# deploy.sh  —  Dreampath 배포 + 버전 히스토리 자동 등록
+# scripts/deploy_dreampath.sh  —  Dreampath 배포 + 버전 히스토리 자동 등록
 #
 # 사용법:
-#   ./deploy.sh                          # git 커밋 메시지로 자동 감지
-#   ./deploy.sh feature "설명"           # feature 버전 직접 지정
-#   ./deploy.sh fix "설명"               # bugfix 버전 직접 지정
-#   ./deploy.sh --skip-version           # 버전 기록 없이 배포만
+#   ./scripts/deploy_dreampath.sh                          # git 커밋 메시지로 자동 감지
+#   ./scripts/deploy_dreampath.sh feature "설명"           # feature 버전 직접 지정
+#   ./scripts/deploy_dreampath.sh fix "설명"               # bugfix 버전 직접 지정
+#   ./scripts/deploy_dreampath.sh --skip-version           # 버전 기록 없이 배포만
 # ──────────────────────────────────────────────────────────────────────────────
 set -e
 
@@ -111,8 +111,8 @@ echo "🔄 Cache-busting: updating ?v= to ${VERSION}..."
 # Site/Admin HTML files use the main release flow and must not receive a
 # Dreampath semver token during this Pages deploy.
 HTML_FILES=(
-  "./dreampath/index.html"
-  "./dreampath/templates/DreamPath - Document Templates.html"
+  "./public/dreampath/index.html"
+  "./public/dreampath/templates/DreamPath - Document Templates.html"
 )
 declare -a PREV_TOKENS
 for f in "${HTML_FILES[@]}"; do
@@ -126,7 +126,7 @@ done
 # ── 배포 ──────────────────────────────────────────────────────────────────────
 echo ""
 echo "🚀 Deploying to Cloudflare Pages..."
-wrangler pages deploy . --project-name "$PROJECT"
+wrangler pages deploy public --project-name "$PROJECT"
 
 # ── HTML ?v= 토큰만 원래대로 되돌림 (커밋되지 않은 기능 변경은 건드리지 않음) ──
 for entry in "${PREV_TOKENS[@]}"; do
@@ -151,11 +151,11 @@ fi
 COMMIT_RANGE="origin/main..HEAD"
 COMMIT_BULLETS=$(git log "$COMMIT_RANGE" --reverse --no-merges \
   --format='%s' -- \
-  dreampath functions/api/dreampath functions/_shared/dreampath-perm.js docs/dreampath db/migration_*.sql \
+  public/dreampath functions/api/dreampath functions/_shared/dreampath-perm.js docs/dreampath scripts/deploy_dreampath.sh db/migration_*.sql \
   2>/dev/null | grep -Ei 'dreampath|dp_|calendar|version|session|pmo|risk|decision|comment|task|note|board|event|deploy' | head -12 || true)
 if [[ -z "$COMMIT_BULLETS" ]]; then
   COMMIT_BULLETS=$(git log -1 --no-merges --format='%s' -- \
-    dreampath functions/api/dreampath functions/_shared/dreampath-perm.js docs/dreampath db/migration_*.sql \
+    public/dreampath functions/api/dreampath functions/_shared/dreampath-perm.js docs/dreampath scripts/deploy_dreampath.sh db/migration_*.sql \
     2>/dev/null | grep -Ei 'dreampath|dp_|calendar|version|session|pmo|risk|decision|comment|task|note|board|event|deploy' || true)
 fi
 

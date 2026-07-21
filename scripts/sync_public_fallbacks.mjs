@@ -29,7 +29,7 @@ const NAV_FALLBACK_BY_HREF = new Map(
 );
 
 for (const relativePath of PUBLIC_HTML_FILES) {
-  const fullPath = path.join(ROOT_DIR, relativePath);
+  const fullPath = path.join(ROOT_DIR, 'public', relativePath);   // [2026-07-22] 정적 자산은 public/ 아래로 이동
   let html = fs.readFileSync(fullPath, 'utf8');
 
   html = html.replace(

@@ -14,7 +14,7 @@ import path from 'node:path';
  */
 
 // package.json 이 type: module 이라 __dirname 이 없다. Playwright 는 저장소 루트에서 실행된다.
-const CSS_DIR = path.resolve(process.cwd(), 'css');
+const CSS_DIR = path.resolve(process.cwd(), 'public', 'css');
 
 /** APCA — scripts/apca.mjs 와 동일 상수 (W3C SAPC-APCA 0.1.9) */
 function sRGBtoY([r, g, b]: number[]) {

@@ -1,6 +1,26 @@
 {
   "items": [
   {
+    "version": "00.178.00",
+    "date": "2026-07-22",
+    "released_at": "2026-07-22 01:40:00 KST",
+    "summary": "배포되는 파일과 개발용 파일을 폴더로 분리했다. 개발 문서·스크립트가 아예 서버에 올라가지 않게 됐다.",
+    "for_users": [
+      "방문자가 보는 화면과 주소는 전혀 바뀌지 않았습니다.",
+      "그동안은 개발 문서나 설정 파일이 서버에 올라간 뒤 접근만 차단하는 방식이었는데, 이제는 애초에 올라가지 않습니다. 실수로 차단 목록에서 빠뜨려도 새어나갈 수 없는 구조가 됐습니다."
+    ],
+    "for_developers": [
+      "정적 자산을 public/ 으로 이동하고 wrangler pages deploy . -> wrangler pages deploy public 으로 전환. wrangler.toml 의 pages_build_output_dir 도 . -> public.",
+      "public/ 에 들어간 것: HTML 22개, css/ js/ img/ data/ card-news-app/ dreampath/, _headers, _redirects, VERSION 계열. 루트 항목 45개 -> 20개.",
+      "functions/ 는 루트 유지 — Pages 규약. 샌드박스에서 wrangler pages dev public 으로 루트 functions/ 가 정상 컴파일·라우팅됨을 사전 검증했다.",
+      "Dreampath 개발 파일은 배포 대상에서 분리: deploy.sh -> scripts/deploy_dreampath.sh, DREAMPATH-HISTORY.md·templates README -> docs/dreampath/. public/dreampath/ 에는 앱 자산과 DREAMPATH.md(런타임 fetch 대상)만 남는다.",
+      "scripts/audit_public_exposure.mjs 재작성 — 노출 모델이 바뀌었다. 이전에는 차단 목록이 저장소 구성과 맞는가를 봤지만, 이제 불변식은 public/ 안에 내부용 파일이 없는가 하나다. .sh/.toml/.sql/package.json/CLAUDE.md/HISTORY.md 유입을 차단한다. 재작성 직후 실제 유출 1건(templates/README.md)을 즉시 잡아냈다.",
+      "경로 참조 갱신: sync_versions.sh, verify_release_metadata.sh(인라인 node 포함), post_deploy_check.sh, store_release_snapshot.sh, deploy_production.sh, audit_frontend_refs.mjs, audit_css_usage.mjs, split_css.mjs, sync_public_fallbacks.mjs, tests/darkmode-contrast.spec.ts.",
+      "로컬 검증(wrangler pages dev public): BP미디어·Dreampath 자산 전부 200, 리다이렉트 정상, CLAUDE.md·rules/·scripts/·db/·wrangler.toml·package.json 전부 404.",
+      "사이트 버전 00.177.01 -> 00.178.00 (구조적 리팩터)."
+    ]
+  },
+  {
     "version": "00.177.01",
     "date": "2026-07-21",
     "released_at": "2026-07-22 00:20:00 KST",

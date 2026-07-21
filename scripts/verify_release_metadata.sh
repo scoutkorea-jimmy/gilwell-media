@@ -4,15 +4,15 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT_DIR"
 
-SITE_VERSION="$(cat VERSION)"
-ADMIN_VERSION_FILE="$(cat ADMIN_VERSION)"
-ASSET_VERSION_FILE="$(cat ASSET_VERSION)"
-MAIN_SITE_VERSION="$(sed -n "s/.*GW.APP_VERSION = '\\([^']*\\)'.*/\\1/p" js/main.js | head -n 1)"
-ADMIN_VERSION="$(sed -n "s/.*GW.ADMIN_VERSION = '\\([^']*\\)'.*/\\1/p" js/main.js | head -n 1)"
-MAIN_ASSET_VERSION="$(sed -n "s/.*GW.ASSET_VERSION = '\\([^']*\\)'.*/\\1/p" js/main.js | head -n 1)"
-ADMIN_HTML_VERSION="$(sed -n "s/.*v3-ver-admin[^>]*>\\([^<]*\\)<.*/\\1/p" admin.html | head -n 1 | sed 's/^V//')"
-KMS_ADMIN_VERSION="$(sed -n "s/.*Admin v\\([0-9.]*\\).*/\\1/p" kms.html | head -n 1)"
-ADMIN_JS_VERSION="$(sed -n "s/.*Version: \\([0-9.]*\\).*/\\1/p" js/admin-v3.js | head -n 1)"
+SITE_VERSION="$(cat public/VERSION)"
+ADMIN_VERSION_FILE="$(cat public/ADMIN_VERSION)"
+ASSET_VERSION_FILE="$(cat public/ASSET_VERSION)"
+MAIN_SITE_VERSION="$(sed -n "s/.*GW.APP_VERSION = '\\([^']*\\)'.*/\\1/p" public/js/main.js | head -n 1)"
+ADMIN_VERSION="$(sed -n "s/.*GW.ADMIN_VERSION = '\\([^']*\\)'.*/\\1/p" public/js/main.js | head -n 1)"
+MAIN_ASSET_VERSION="$(sed -n "s/.*GW.ASSET_VERSION = '\\([^']*\\)'.*/\\1/p" public/js/main.js | head -n 1)"
+ADMIN_HTML_VERSION="$(sed -n "s/.*v3-ver-admin[^>]*>\\([^<]*\\)<.*/\\1/p" public/admin.html | head -n 1 | sed 's/^V//')"
+KMS_ADMIN_VERSION="$(sed -n "s/.*Admin v\\([0-9.]*\\).*/\\1/p" public/kms.html | head -n 1)"
+ADMIN_JS_VERSION="$(sed -n "s/.*Version: \\([0-9.]*\\).*/\\1/p" public/js/admin-v3.js | head -n 1)"
 
 if [[ -z "$SITE_VERSION" || -z "$MAIN_SITE_VERSION" || -z "$ADMIN_VERSION" || -z "$ADMIN_VERSION_FILE" || -z "$ASSET_VERSION_FILE" || -z "$MAIN_ASSET_VERSION" ]]; then
   echo "Version metadata is missing."
@@ -20,17 +20,17 @@ if [[ -z "$SITE_VERSION" || -z "$MAIN_SITE_VERSION" || -z "$ADMIN_VERSION" || -z
 fi
 
 if [[ "$SITE_VERSION" != "$MAIN_SITE_VERSION" ]]; then
-  echo "VERSION ($SITE_VERSION) and js/main.js APP_VERSION ($MAIN_SITE_VERSION) do not match."
+  echo "VERSION ($SITE_VERSION) and public/js/main.js APP_VERSION ($MAIN_SITE_VERSION) do not match."
   exit 1
 fi
 
 if [[ "$ADMIN_VERSION_FILE" != "$ADMIN_VERSION" ]]; then
-  echo "ADMIN_VERSION ($ADMIN_VERSION_FILE) and js/main.js ADMIN_VERSION ($ADMIN_VERSION) do not match."
+  echo "ADMIN_VERSION ($ADMIN_VERSION_FILE) and public/js/main.js ADMIN_VERSION ($ADMIN_VERSION) do not match."
   exit 1
 fi
 
 if [[ "$ASSET_VERSION_FILE" != "$MAIN_ASSET_VERSION" ]]; then
-  echo "ASSET_VERSION ($ASSET_VERSION_FILE) and js/main.js ASSET_VERSION ($MAIN_ASSET_VERSION) do not match."
+  echo "ASSET_VERSION ($ASSET_VERSION_FILE) and public/js/main.js ASSET_VERSION ($MAIN_ASSET_VERSION) do not match."
   exit 1
 fi
 
@@ -42,68 +42,68 @@ for value in "$ADMIN_HTML_VERSION" "$KMS_ADMIN_VERSION" "$ADMIN_JS_VERSION"; do
 done
 
 SITE_STYLE_FILES=(
-  index.html
-  latest.html
-  korea.html
-  apr.html
-  wosm.html
-  wosm-members.html
-  people.html
-  glossary.html
-  contributors.html
-  search.html
-  calendar.html
+  public/index.html
+  public/latest.html
+  public/korea.html
+  public/apr.html
+  public/wosm.html
+  public/wosm-members.html
+  public/people.html
+  public/glossary.html
+  public/contributors.html
+  public/search.html
+  public/calendar.html
   functions/post/'[id]'.js
   functions/feature/'[category]'/'[slug]'.js
   functions/glossary-raw.js
 )
 
 SITE_MAIN_JS_FILES=(
-  index.html
-  latest.html
-  korea.html
-  apr.html
-  wosm.html
-  wosm-members.html
-  people.html
-  glossary.html
-  contributors.html
-  search.html
-  calendar.html
+  public/index.html
+  public/latest.html
+  public/korea.html
+  public/apr.html
+  public/wosm.html
+  public/wosm-members.html
+  public/people.html
+  public/glossary.html
+  public/contributors.html
+  public/search.html
+  public/calendar.html
   functions/post/'[id]'.js
   functions/feature/'[category]'/'[slug]'.js
 )
 
 SITE_CHROME_JS_FILES=(
-  index.html
-  latest.html
-  korea.html
-  apr.html
-  wosm.html
-  wosm-members.html
-  people.html
-  glossary.html
-  contributors.html
-  search.html
-  calendar.html
+  public/index.html
+  public/latest.html
+  public/korea.html
+  public/apr.html
+  public/wosm.html
+  public/wosm-members.html
+  public/people.html
+  public/glossary.html
+  public/contributors.html
+  public/search.html
+  public/calendar.html
   functions/post/'[id]'.js
   functions/feature/'[category]'/'[slug]'.js
 )
 
 BOARD_JS_FILES=(
-  latest.html
-  korea.html
-  apr.html
-  wosm.html
-  people.html
+  public/latest.html
+  public/korea.html
+  public/apr.html
+  public/wosm.html
+  public/people.html
 )
 
 BOARD_WRITE_JS_FILES=(
-  latest.html
-  korea.html
-  apr.html
-  wosm.html
-  people.html
+  public/latest.html
+  public/korea.html
+  public/apr.html
+  public/wosm.html
+  public/people.html
 )
 
 for file in "${SITE_STYLE_FILES[@]}"; do
@@ -113,8 +113,8 @@ for file in "${SITE_STYLE_FILES[@]}"; do
   }
 done
 
-grep -F "/js/wosm-members.js?v=${ASSET_VERSION_FILE}" wosm-members.html >/dev/null || {
-  echo "Missing wosm-members.js version in wosm-members.html"
+grep -F "/js/wosm-members.js?v=${ASSET_VERSION_FILE}" public/wosm-members.html >/dev/null || {
+  echo "Missing wosm-members.js version in public/wosm-members.html"
   exit 1
 }
 
@@ -132,43 +132,43 @@ for file in "${BOARD_WRITE_JS_FILES[@]}"; do
   }
 done
 
-grep -F "/js/glossary.js?v=${ASSET_VERSION_FILE}" glossary.html >/dev/null || {
-  echo "Missing glossary.js asset version in glossary.html"
+grep -F "/js/glossary.js?v=${ASSET_VERSION_FILE}" public/glossary.html >/dev/null || {
+  echo "Missing glossary.js asset version in public/glossary.html"
   exit 1
 }
-grep -F "/js/search.js?v=${ASSET_VERSION_FILE}" search.html >/dev/null || {
-  echo "Missing search.js asset version in search.html"
+grep -F "/js/search.js?v=${ASSET_VERSION_FILE}" public/search.html >/dev/null || {
+  echo "Missing search.js asset version in public/search.html"
   exit 1
 }
-grep -F "/js/calendar.js?v=${ASSET_VERSION_FILE}" calendar.html >/dev/null || {
-  echo "Missing calendar.js asset version in calendar.html"
+grep -F "/js/calendar.js?v=${ASSET_VERSION_FILE}" public/calendar.html >/dev/null || {
+  echo "Missing calendar.js asset version in public/calendar.html"
   exit 1
 }
-grep -F "/dreampath/app.js?v=${ASSET_VERSION_FILE}" dreampath/index.html >/dev/null || {
-  echo "Missing app.js asset version in dreampath/index.html"
+grep -F "/dreampath/app.js?v=${ASSET_VERSION_FILE}" public/dreampath/index.html >/dev/null || {
+  echo "Missing app.js asset version in public/dreampath/index.html"
   exit 1
 }
 
 node - <<'NODE'
 const fs = require('fs');
 const managedNavFiles = [
-  'index.html',
-  'latest.html',
-  'korea.html',
-  'apr.html',
-  'wosm.html',
-  'wosm-members.html',
-  'people.html',
-  'glossary.html',
-  'contributors.html',
-  'search.html',
-  'calendar.html',
+  'public/index.html',
+  'public/latest.html',
+  'public/korea.html',
+  'public/apr.html',
+  'public/wosm.html',
+  'public/wosm-members.html',
+  'public/people.html',
+  'public/glossary.html',
+  'public/contributors.html',
+  'public/search.html',
+  'public/calendar.html',
 ];
-const siteChromeJs = fs.readFileSync('js/site-chrome.js', 'utf8');
+const siteChromeJs = fs.readFileSync('public/js/site-chrome.js', 'utf8');
 // NAV_ITEMS 블록만 추출 — NAV_STRUCTURE children 의 동일 패턴이 잡히지 않도록.
 const navItemsBlockMatch = siteChromeJs.match(/GW\.NAV_ITEMS\s*=\s*\[([\s\S]*?)\];/);
 if (!navItemsBlockMatch) {
-  console.error('Could not locate GW.NAV_ITEMS block in js/site-chrome.js');
+  console.error('Could not locate GW.NAV_ITEMS block in public/js/site-chrome.js');
   process.exit(1);
 }
 const itemRe = /\{\s*href:\s*'([^']+)'/g;
@@ -176,7 +176,7 @@ const expected = [];
 let match;
 while ((match = itemRe.exec(navItemsBlockMatch[1]))) expected.push(match[1]);
 if (!expected.length) {
-  console.error('Could not parse GW.NAV_ITEMS from js/site-chrome.js');
+  console.error('Could not parse GW.NAV_ITEMS from public/js/site-chrome.js');
   process.exit(1);
 }
 for (const file of managedNavFiles) {
@@ -208,46 +208,46 @@ for file in "${SITE_CHROME_JS_FILES[@]}"; do
   }
 done
 
-grep -F "/js/home.js?v=${ASSET_VERSION_FILE}" index.html >/dev/null || {
-  echo "Missing home.js asset version in index.html"
+grep -F "/js/home.js?v=${ASSET_VERSION_FILE}" public/index.html >/dev/null || {
+  echo "Missing home.js asset version in public/index.html"
   exit 1
 }
-grep -F "/js/home-helpers.js?v=${ASSET_VERSION_FILE}" index.html >/dev/null || {
-  echo "Missing home-helpers.js asset version in index.html"
+grep -F "/js/home-helpers.js?v=${ASSET_VERSION_FILE}" public/index.html >/dev/null || {
+  echo "Missing home-helpers.js asset version in public/index.html"
   exit 1
 }
-grep -F "/js/home-render.js?v=${ASSET_VERSION_FILE}" index.html >/dev/null || {
-  echo "Missing home-render.js asset version in index.html"
+grep -F "/js/home-render.js?v=${ASSET_VERSION_FILE}" public/index.html >/dev/null || {
+  echo "Missing home-render.js asset version in public/index.html"
   exit 1
 }
-grep -F "/js/home-hero.js?v=${ASSET_VERSION_FILE}" index.html >/dev/null || {
-  echo "Missing home-hero.js asset version in index.html"
+grep -F "/js/home-hero.js?v=${ASSET_VERSION_FILE}" public/index.html >/dev/null || {
+  echo "Missing home-hero.js asset version in public/index.html"
   exit 1
 }
-grep -F "/js/home-runtime.js?v=${ASSET_VERSION_FILE}" index.html >/dev/null || {
-  echo "Missing home-runtime.js asset version in index.html"
+grep -F "/js/home-runtime.js?v=${ASSET_VERSION_FILE}" public/index.html >/dev/null || {
+  echo "Missing home-runtime.js asset version in public/index.html"
   exit 1
 }
 
-grep -F "/css/admin-v3.css?v=${ASSET_VERSION_FILE}" admin.html >/dev/null || {
-  echo "Missing admin stylesheet asset version in admin.html"
+grep -F "/css/admin-v3.css?v=${ASSET_VERSION_FILE}" public/admin.html >/dev/null || {
+  echo "Missing admin stylesheet asset version in public/admin.html"
   exit 1
 }
-grep -F "/js/admin-v3.js?v=${ASSET_VERSION_FILE}" admin.html >/dev/null || {
-  echo "Missing admin JS asset version in admin.html"
+grep -F "/js/admin-v3.js?v=${ASSET_VERSION_FILE}" public/admin.html >/dev/null || {
+  echo "Missing admin JS asset version in public/admin.html"
   exit 1
 }
-grep -F "/js/shared-country-name-ko.js?v=${ASSET_VERSION_FILE}" admin.html >/dev/null || {
-  echo "Missing shared-country-name-ko asset version in admin.html"
+grep -F "/js/shared-country-name-ko.js?v=${ASSET_VERSION_FILE}" public/admin.html >/dev/null || {
+  echo "Missing shared-country-name-ko asset version in public/admin.html"
   exit 1
 }
 
 node - <<'NODE'
 const fs = require('fs');
-const siteVersion = fs.readFileSync('VERSION', 'utf8').trim();
-const mainJs = fs.readFileSync('js/main.js', 'utf8');
+const siteVersion = fs.readFileSync('public/VERSION', 'utf8').trim();
+const mainJs = fs.readFileSync('public/js/main.js', 'utf8');
 const adminVersion = (mainJs.match(/ADMIN_VERSION = '([0-9.]+)'/) || [])[1] || '';
-const changelog = JSON.parse(fs.readFileSync('data/changelog.json', 'utf8'));
+const changelog = JSON.parse(fs.readFileSync('public/data/changelog.json', 'utf8'));
 const items = Array.isArray(changelog.items) ? changelog.items : [];
 const versions = new Set(items.map((item) => String(item.version || '').trim()).filter(Boolean));
 if (!versions.has(siteVersion)) {
