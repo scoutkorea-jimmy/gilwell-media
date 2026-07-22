@@ -1815,10 +1815,20 @@ body[data-home-bootstrap] .lang-btn:hover {
   content:    '';
   position:   absolute;
   inset:      0;
+  /* [2026-07-22] 텍스트가 앉는 중간대(구 0.26)가 너무 옅어 흰 글씨가 사진과
+     뒤섞였다. 텍스트 밴드(40%~)를 어둡게 끌어올려 어떤 사진에서도 읽히게 한다. */
   background:
-    linear-gradient(180deg, rgba(8, 16, 28, 0.36) 0%, rgba(8, 16, 28, 0.26) 30%, rgba(8, 16, 28, 0.68) 100%),
+    linear-gradient(180deg, rgba(8, 16, 28, 0.42) 0%, rgba(8, 16, 28, 0.40) 40%, rgba(8, 16, 28, 0.72) 100%),
     linear-gradient(120deg, rgba(0, 148, 180, 0.10) 0%, rgba(17, 17, 17, 0.10) 100%);
   z-index:    1;
+}
+
+/* 플레이스홀더(밝은 크림색 로고)는 위 스크림으로도 흰 텍스트가 안 읽힌다.
+   실제 사진이 아니라 폴백 로고이므로, 훨씬 강한 스크림을 걸어 텍스트 가독성을
+   우선한다. 로고는 은은한 어두운 질감으로 남는다. */
+.site-hero.has-bg.is-ph::after {
+  background:
+    linear-gradient(180deg, rgba(8, 16, 28, 0.56) 0%, rgba(8, 16, 28, 0.60) 40%, rgba(8, 16, 28, 0.82) 100%);
 }
 
 .site-hero.site-hero-png::after {

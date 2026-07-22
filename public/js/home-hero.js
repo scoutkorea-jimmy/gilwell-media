@@ -67,6 +67,9 @@
       var div = document.createElement('div');
       div.className = 'site-hero site-hero-slide';
       if (helpers.isTransparentPng(post.image_url)) div.classList.add('site-hero-png');
+      // 플레이스홀더(밝은 크림색 로고)는 흰 히어로 텍스트가 묻히므로 더 강한
+      // 스크림을 걸 수 있도록 슬라이드 자체에 신호 클래스를 단다. (CSS .site-hero.is-ph)
+      if (post.image_is_placeholder) div.classList.add('is-ph');
       div.setAttribute('data-post-id', post.id);
 
       var mediaMarkup = '';
