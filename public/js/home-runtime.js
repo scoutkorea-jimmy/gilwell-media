@@ -265,23 +265,61 @@
       return true;
     }
 
+    // 우리 코드에서 난 에러만 보고 대상으로 삼는다.
+    //
+    // 배경(2026-07-22): 트래커에 medium P0 로 쌓인 [33][34] 는
+    //   `cloudflareinsights.com/beacon.min.js` 가 구형 브라우저에서 `.at()` 를
+    //   호출하다 던진 것으로, Cloudflare 자체 분석 스크립트다. 우리 소스가 아니고
+    //   우리가 고칠 수도 없는데 전역 error 핸들러가 무차별 보고했다.
+    //   또 크로스오리진 스크립트 에러는 브라우저가 상세를 가려 'Script error.' 로만
+    //   올라오는데, 이것도 원인 파악이 불가능한 순수 노이즈다.
+    function isOwnOriginError(filename) {
+      var src = String(filename || '').trim();
+      if (!src) return true;                 // 소스가 없으면 인라인/우리 코드로 간주
+      if (src.indexOf('/') === 0) return true; // 루트 상대경로 = 같은 오리진
+      try {
+        return new URL(src, window.location.href).hostname === window.location.hostname;
+      } catch (_) {
+        return true;                         // 파싱 불가 시 보수적으로 보고
+      }
+    }
+
     function bindRuntimeIssueReporting() {
       if (runtimeReportBound) return;
       runtimeReportBound = true;
 
       window.addEventListener('error', function (event) {
+        var message = event && event.message ? String(event.message) : 'runtime error';
+        var filename = event && event.filename ? String(event.filename) : '';
+
+        // 서드파티 스크립트(cloudflareinsights·kakao·google ads·CDN 등) 에러는
+        // 우리 버그가 아니므로 보고하지 않는다.
+        if (!isOwnOriginError(filename)) return;
+        // CORS 로 가려진 'Script error.' 는 상세가 없어 조치 불가 — 노이즈.
+        if (message === 'Script error.' || message === 'Script error') return;
+
         helpers.reportHomepageIssue('home_client_runtime_error', {
-          message: event && event.message ? String(event.message) : 'runtime error',
-          path: event && event.filename ? String(event.filename) : window.location.pathname,
-          source: event && event.filename ? String(event.filename) : '',
+          message: message,
+          path: filename || window.location.pathname,
+          source: filename,
           code: event && event.lineno ? String(event.lineno) + ':' + String(event.colno || 0) : ''
         });
       });
 
       window.addEventListener('unhandledrejection', function (event) {
         var reason = event && event.reason;
+        var message = reason && reason.message ? String(reason.message) : String(reason || 'promise rejection');
+        var lower = message.toLowerCase();
+
+        // 백그라운드 새로고침 실패와 같은 이유로 순간 네트워크 단절은 보고하지 않는다.
+        // (오프라인·숨김 탭 상태이거나 일반 fetch 실패 메시지면 조치 대상이 아니다)
+        var genericNetwork = lower === 'failed to fetch' || lower === 'load failed' || lower.indexOf('networkerror') >= 0;
+        var offline = typeof navigator !== 'undefined' && navigator && navigator.onLine === false;
+        var hidden = document.visibilityState && document.visibilityState !== 'visible';
+        if (genericNetwork && (offline || hidden)) return;
+
         helpers.reportHomepageIssue('home_client_promise_rejection', {
-          message: reason && reason.message ? String(reason.message) : String(reason || 'promise rejection'),
+          message: message,
           path: window.location.pathname,
           source: '',
           code: 'unhandledrejection'
