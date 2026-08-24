@@ -38,6 +38,10 @@ if [[ -f "$ROOT_DIR/wrangler.cleanup-drafts.toml" ]]; then
   wrangler deploy --config "$ROOT_DIR/wrangler.cleanup-drafts.toml"
 fi
 
+if [[ -f "$ROOT_DIR/wrangler.home-lead.toml" ]]; then
+  wrangler deploy --config "$ROOT_DIR/wrangler.home-lead.toml"
+fi
+
 if [[ -x "$ROOT_DIR/scripts/post_deploy_check.sh" || -f "$ROOT_DIR/scripts/post_deploy_check.sh" ]]; then
   chmod +x "$ROOT_DIR/scripts/post_deploy_check.sh"
   "$ROOT_DIR/scripts/post_deploy_check.sh" "https://bpmedia.net"

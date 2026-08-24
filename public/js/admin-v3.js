@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.152.00
+ * Version: 03.153.00
  *
  * Versioning:
  *   V3.aaa.bb
@@ -773,6 +773,7 @@
     _bindEl('trans-save-btn', 'click', _saveTranslations);
     _bindEl('home-lead-save-btn', 'click', _saveHomeLead);
     _bindEl('home-lead-clear-btn', 'click', _clearHomeLeadSelection);
+    _bindEl('home-lead-auto-btn', 'click', _switchHomeLeadToAuto);
     _bindEl('picks-refresh-btn', 'click', _loadPicksUI);
     _bindEl('banner-save-btn', 'click', _saveHomeBanners);
     _bindEl('banner-add-btn', 'click', function () {
@@ -9738,10 +9739,57 @@
     _apiFetch('/api/settings/home-lead').then(function (data) {
       _homeLeadPost = data && data.post ? data.post : null;
       _homeLeadMedia = _cloneHomeLeadMedia(data && data.media);
+      _renderHomeLeadMode(data);
       _syncHomeLeadControls();
       _renderHomeLeadSelected();
     }).catch(function () {
       if (wrap) wrap.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">불러오기 실패</div></div>';
+    });
+  }
+
+  // 자동/수동 상태를 배지와 안내문에 반영한다.
+  // 자동일 때는 규칙이 지금 무엇을 고르는지도 함께 보여준다 — 운영자가 '자동으로
+  // 전환' 을 누르기 전에 결과를 가늠할 수 있어야 하기 때문이다.
+  function _renderHomeLeadMode(data) {
+    var mode = (data && data.mode) === 'manual' ? 'manual' : 'auto';
+    var badge = document.getElementById('home-lead-mode-badge');
+    var desc = document.getElementById('home-lead-mode-desc');
+    var autoBtn = document.getElementById('home-lead-auto-btn');
+
+    if (badge) {
+      badge.textContent = mode === 'auto' ? '자동 선정' : '직접 지정';
+      badge.className = 'v3-badge ' + (mode === 'auto' ? 'v3-badge-green' : 'v3-badge-blue');
+    }
+    // 이미 자동이면 '자동으로 전환' 을 누를 이유가 없다.
+    if (autoBtn) autoBtn.style.display = mode === 'auto' ? 'none' : '';
+
+    if (!desc) return;
+    if (mode === 'auto') {
+      var preview = data && data.auto_preview;
+      desc.textContent = preview
+        ? '자동 선정 중 — 매일 자정에 다시 고릅니다. 지금 규칙상 1위: “' + (preview.title || '(제목 없음)') + '” (' + (preview.reason || '') + ')'
+        : '자동 선정 중 — 최근 한 달 안에 발행된 글 중 가장 많이 읽힌 글을 매일 자정에 올립니다.';
+    } else {
+      desc.textContent = '직접 지정 상태 — 자동 갱신이 멈춰 있습니다. 아래에서 고른 글이 계속 유지됩니다. 규칙에 맡기려면 ‘자동으로 전환’ 을 누르세요.';
+    }
+  }
+
+  // 자동 모드로 되돌린다. 다음 자정을 기다리지 않고 서버가 즉시 다시 고른다.
+  function _switchHomeLeadToAuto() {
+    if (!confirm('메인 스토리를 자동 선정으로 되돌릴까요?\n\n최근 한 달 안에 발행된 글 중 가장 많이 읽힌 글이 지금 바로 적용되고, 이후 매일 자정에 다시 선정됩니다.')) return;
+    var btn = document.getElementById('home-lead-auto-btn');
+    _setButtonBusy(btn, '전환 중…');
+    _apiFetch('/api/settings/home-lead', {
+      method: 'PUT',
+      body: JSON.stringify({ mode: 'auto' }),
+    }).then(function (res) {
+      GW.showToast((res && res.reason) ? ('자동 선정으로 전환했습니다 — ' + res.reason) : '자동 선정으로 전환했습니다', 'success');
+      _clearButtonBusy(btn, '완료');
+      _loadHomeLeadUI();
+    }).catch(function (e) {
+      GW.showToast((e && e.message) || '자동 선정 전환에 실패했습니다', 'error');
+    }).finally(function () {
+      if (btn && btn.classList.contains('is-busy')) _clearButtonBusy(btn);
     });
   }
 
