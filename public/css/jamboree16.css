@@ -255,3 +255,231 @@
   .jam16-countdown { padding: 9px 18px; gap: var(--gap-tight); }
   .jam16-countdown-value { font-size: var(--fs-title); }
 }
+
+/* ── 현장 사진 갤러리 ──────────────────────────────────────────────────────
+ * 사진은 구글드라이브 리사이즈 엔드포인트에서 핫링크한다 (js/jamboree16-photos.js).
+ * 순서는 방문마다 셔플되고, 타일은 정사각으로 잘라 붙여 랜덤 순서에서도
+ * 그리드 높이가 어긋나지 않게 한다.
+ * ──────────────────────────────────────────────────────────────────────── */
+
+.jam16-gallery-section[hidden] { display: none; }
+
+.jam16-gallery-grid {
+  display: grid;
+  /* 한 번에 그리는 장수(GALLERY_VISIBLE=12)의 약수로 열을 고정한다. auto-fill 은
+     넓은 화면에서 7열 같은 값을 만들어 마지막 줄이 반만 차므로 쓰지 않는다.
+     4열(데스크톱) → 3열(태블릿) → 2열(모바일) 모두 12를 정확히 나눈다. */
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--gap-tight);
+  margin-top: var(--gap-element);
+}
+
+.jam16-photo {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: var(--card-bg);
+  cursor: zoom-in;
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+.jam16-photo:hover { transform: translateY(-2px); box-shadow: var(--bw-shadow); }
+/* 기본 outline 을 지우지 않고 오히려 키워 배경과 |Lc| 30 이상을 확보한다. */
+.jam16-photo:focus-visible {
+  outline: 3px solid var(--scouting-purple-border);
+  outline-offset: 2px;
+}
+
+.jam16-photo-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* 캡션은 사진 위에 얹히므로 아래쪽에 어두운 그라디언트를 깔아 대비를 만든다. */
+.jam16-photo-cap {
+  position: absolute;
+  inset: auto 0 0 0;
+  padding: 18px 10px 7px;
+  font-size: var(--fs-micro);
+  font-weight: 500;
+  line-height: 1.35;
+  color: rgba(255, 255, 255, 0.95);
+  text-align: left;
+  word-break: keep-all;
+  background: linear-gradient(to top,
+    rgba(0, 0, 0, 0.88) 0%,
+    rgba(0, 0, 0, 0.72) 45%,
+    rgba(0, 0, 0, 0) 100%);
+  pointer-events: none;
+}
+
+.jam16-gallery-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--gap-tight);
+  margin-top: var(--gap-element);
+}
+
+.jam16-gallery-more {
+  font-family: inherit;
+  font-size: var(--fs-small);
+  font-weight: 500;
+  padding: 10px 20px;
+  border: 1px solid var(--scouting-purple-border);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  color: var(--scouting-purple-text);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.jam16-gallery-more:hover {
+  background: var(--midnight-purple);
+  color: var(--on-accent);
+  border-color: var(--midnight-purple);
+}
+.jam16-gallery-more:focus-visible {
+  outline: 3px solid var(--scouting-purple-border);
+  outline-offset: 2px;
+}
+.jam16-gallery-more[hidden] { display: none; }
+
+.jam16-gallery-credit { font-size: var(--fs-caption); }
+
+/* ── 사진 확대 보기 (라이트박스) ──────────────────────────────────────────
+ * 항상 어두운 배경 위에 놓이므로 라이트/다크 모드 모두 흰 글자를 쓴다.
+ * ──────────────────────────────────────────────────────────────────────── */
+
+body.jam16-lightbox-open { overflow: hidden; }
+
+.jam16-lightbox {
+  position: fixed;
+  inset: 0;
+  /* 챗봇 런처(9000)보다 위, 접근성 skip-link·업데이트 배너(10000)보다 아래.
+     1200 은 style.css 의 다른 오버레이가 이미 쓰는 값이라 챗봇에 가렸다. */
+  z-index: 9500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(0, 0, 0, 0.9);
+}
+.jam16-lightbox[hidden] { display: none; }
+
+.jam16-lightbox-inner {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--gap-tight);
+  max-width: min(1100px, 100%);
+  max-height: 100%;
+}
+
+.jam16-lightbox-img {
+  max-width: 100%;
+  /* 캡션·닫기 버튼 자리를 남기고 나머지를 사진에 준다. */
+  max-height: calc(100vh - 150px);
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  border-radius: var(--radius-sm);
+  background: var(--gray-900);
+}
+
+.jam16-lightbox-close,
+.jam16-lightbox-nav {
+  font-family: inherit;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  border-radius: var(--radius-pill);
+  background: rgba(0, 0, 0, 0.55);
+  color: rgba(255, 255, 255, 0.95);
+  cursor: pointer;
+  /* 모바일 터치 타겟 최소 44px 확보. */
+  min-width: 44px;
+  min-height: 44px;
+  transition: background 0.15s ease;
+}
+.jam16-lightbox-close:hover,
+.jam16-lightbox-nav:hover { background: rgba(255, 255, 255, 0.22); }
+.jam16-lightbox-close:focus-visible,
+.jam16-lightbox-nav:focus-visible {
+  outline: 3px solid rgba(255, 255, 255, 0.95);
+  outline-offset: 2px;
+}
+
+.jam16-lightbox-close {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  z-index: 2;
+  font-size: var(--fs-title);
+  line-height: 1;
+}
+
+.jam16-lightbox-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 2;
+  font-size: var(--fs-title);
+  line-height: 1;
+}
+.jam16-lightbox-prev { left: -8px; }
+.jam16-lightbox-next { right: -8px; }
+
+.jam16-lightbox-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--gap-tight);
+  text-align: center;
+}
+.jam16-lightbox-cap {
+  margin: 0;
+  font-size: var(--fs-caption);
+  font-weight: 500;
+  word-break: keep-all;
+  color: rgba(255, 255, 255, 0.95);
+}
+.jam16-lightbox-link {
+  font-size: var(--fs-caption);
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.95);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.jam16-lightbox-link:focus-visible {
+  outline: 3px solid rgba(255, 255, 255, 0.95);
+  outline-offset: 2px;
+}
+
+@media (max-width: 900px) {
+  .jam16-gallery-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (max-width: 480px) {
+  /* 320px 에서도 2열이 유지되도록 최소폭을 낮춘다 (가로 스크롤 방지). */
+  .jam16-gallery-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .jam16-lightbox { padding: 12px; }
+  .jam16-lightbox-img { max-height: calc(100vh - 170px); }
+  /* 좌우 화살표를 사진 안쪽으로 넣어 좁은 화면에서 잘리지 않게 한다. */
+  .jam16-lightbox-prev { left: 2px; }
+  .jam16-lightbox-next { right: 2px; }
+  .jam16-lightbox-close { top: 0; right: 0; }
+}
+
+/* 모션을 줄이도록 설정한 방문자에게는 타일 리프트를 끈다. */
+@media (prefers-reduced-motion: reduce) {
+  .jam16-photo { transition: none; }
+  .jam16-photo:hover { transform: none; }
+}

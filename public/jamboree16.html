@@ -10,10 +10,10 @@
   <link rel="apple-touch-icon" href="/img/logo.png">
   <link rel="shortcut icon" href="/img/favicon-48.png">
   <style>.nav[data-managed-nav]{visibility:hidden;opacity:0}</style>
-  <link rel="stylesheet" href="/css/style.css?v=20260722040643">
-  <link rel="stylesheet" href="/css/jamboree16.css?v=20260722040643">
-  <link rel="stylesheet" href="/css/chatbot.css?v=20260722040643">
-  <link rel="stylesheet" href="/css/dark-mode.css?v=20260722040643">
+  <link rel="stylesheet" href="/css/style.css?v=20260824054752">
+  <link rel="stylesheet" href="/css/jamboree16.css?v=20260824054752">
+  <link rel="stylesheet" href="/css/chatbot.css?v=20260824054752">
+  <link rel="stylesheet" href="/css/dark-mode.css?v=20260824054752">
   <noscript><style>.nav[data-managed-nav]{visibility:visible!important;opacity:1!important}.nav[data-managed-nav] a{font-size:0!important}.nav[data-managed-nav] a::before{content:attr(data-fallback-label);font-size:12px}</style></noscript>
   <script type="application/ld+json">
   {
@@ -146,6 +146,26 @@
         <p class="jam16-note">위 정보는 BP미디어가 보도한 시점의 발표 내용을 정리한 것입니다. 세부 일정과 규모는 주최 측 사정에 따라 변경될 수 있으며, 확정 정보는 한국스카우트연맹 공식 발표를 확인해 주세요.</p>
       </section>
 
+      <!-- 사진 미리보기 — 제16회 한국잼버리 홍보부 공개 드라이브 핫링크.
+           방문마다 순서를 셔플한다. 원본 폴더가 만료되면 jamboree16.js 가
+           로드 실패를 세어 이 섹션(hidden)을 접는다. -->
+      <section class="jam16-section jam16-gallery-section" id="jam16-gallery-section"
+               aria-labelledby="jam16-gallery-title" hidden>
+        <h2 id="jam16-gallery-title" class="home-section-title jam16-section-title"><span>현장 사진</span><span class="rule" aria-hidden="true"></span></h2>
+        <p class="jam16-section-desc">제16회 한국잼버리 기획조정본부 홍보부가 기록한 현장 사진입니다. 방문할 때마다 다른 사진이 먼저 보이며, 사진을 누르면 크게 볼 수 있습니다.</p>
+
+        <div class="jam16-gallery-grid" id="jam16-gallery-grid"></div>
+
+        <div class="jam16-gallery-actions">
+          <button type="button" class="jam16-gallery-more" id="jam16-gallery-more" hidden>사진 더 보기</button>
+          <a class="jam16-link-btn jam16-gallery-folder" id="jam16-gallery-folder"
+             href="https://drive.google.com/drive/folders/19xku4o2OTcxH-LXP9UtQ05mBKraQFe3M"
+             target="_blank" rel="noopener noreferrer">전체 사진 폴더 열기 →</a>
+        </div>
+
+        <p class="jam16-note jam16-gallery-credit">사진 &copy; 제16회 한국잼버리 기획조정본부 홍보부. 한국스카우트연맹 및 스카우트 활동 홍보 목적으로 제공된 사진이며, 영리·상업적 이용은 한국스카우트연맹에 사전 문의가 필요합니다. 원본 폴더는 주최 측 공지에 따라 2026년 11월 중 종료될 수 있습니다.</p>
+      </section>
+
       <section class="jam16-section" aria-labelledby="jam16-posts-title">
         <h2 id="jam16-posts-title" class="home-section-title jam16-section-title">
           <span>제16회 한국잼버리 소식</span>
@@ -209,7 +229,7 @@
         <h4>관리자</h4>
         <a href="/admin.html">관리자 페이지 →</a>
         <a href="/glossary-raw">용어집 RAW로 보기 →</a>
-        <p class="footer-build">Site <span class="site-build-version">V00.180.03</span> · Admin <span class="admin-build-version">V03.152.00</span></p>
+        <p class="footer-build">Site <span class="site-build-version">V00.181.00</span> · Admin <span class="admin-build-version">V03.152.00</span></p>
       </div>
       <div class="footer-bottom">
         <p data-i18n="footer.copyright">© 2026 BP미디어 · bpmedia.net</p>
@@ -218,13 +238,30 @@
     </div>
   </footer>
 
+
+  <!-- 사진 확대 보기. 열릴 때까지 hidden 이며 jamboree16.js 가 제어한다. -->
+  <div class="jam16-lightbox" id="jam16-lightbox" role="dialog" aria-modal="true"
+       aria-label="사진 크게 보기" hidden>
+    <div class="jam16-lightbox-inner">
+      <button type="button" class="jam16-lightbox-close" id="jam16-lightbox-close" aria-label="닫기">&times;</button>
+      <button type="button" class="jam16-lightbox-nav jam16-lightbox-prev" id="jam16-lightbox-prev" aria-label="이전 사진">&#8249;</button>
+      <img class="jam16-lightbox-img" id="jam16-lightbox-img" alt="" decoding="async">
+      <button type="button" class="jam16-lightbox-nav jam16-lightbox-next" id="jam16-lightbox-next" aria-label="다음 사진">&#8250;</button>
+      <div class="jam16-lightbox-foot">
+        <p class="jam16-lightbox-cap" id="jam16-lightbox-cap" role="status" aria-live="polite"></p>
+        <a class="jam16-lightbox-link" id="jam16-lightbox-link" href="#" target="_blank" rel="noopener noreferrer">드라이브 원본 보기 →</a>
+      </div>
+    </div>
+  </div>
+
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.4/dist/purify.min.js" integrity="sha384-eEu5CTj3qGvu9PdJuS+YlkNi7d2XxQROAFYOr59zgObtlcux1ae1Il3u7jvdCSWu" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-  <script src="/js/main.js?v=20260722040643"></script>
-  <script src="/js/site-chrome.js?v=20260722040643"></script>
-  <script src="/js/chatbot.js?v=20260722040643" defer></script>
-  <script src="/js/jamboree16.js?v=20260722040643"></script>
+  <script src="/js/main.js?v=20260824054752"></script>
+  <script src="/js/site-chrome.js?v=20260824054752"></script>
+  <script src="/js/chatbot.js?v=20260824054752" defer></script>
+  <script src="/js/jamboree16-photos.js?v=20260824054752"></script>
+  <script src="/js/jamboree16.js?v=20260824054752"></script>
   <script type="text/javascript" src="https://t1.kakaocdn.net/kas/static/ba.min.js" async></script>
 </body>
 </html>

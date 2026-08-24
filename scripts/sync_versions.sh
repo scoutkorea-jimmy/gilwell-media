@@ -43,7 +43,7 @@ for file in "${SITE_FILES[@]}"; do
 done
 
 # public/jamboree16.html — 제16회 한국잼버리 특별관 전용 런타임
-perl -0pi -e "s#/js/jamboree16\\.js\\?v=[0-9A-Za-z.-]+#/js/jamboree16.js?v=${ASSET_VERSION}#g" public/jamboree16.html
+perl -0pi -e "s#/js/jamboree16\\.js\\?v=[0-9A-Za-z.-]+#/js/jamboree16.js?v=${ASSET_VERSION}#g; s#/js/jamboree16-photos\\.js\\?v=[0-9A-Za-z.-]+#/js/jamboree16-photos.js?v=${ASSET_VERSION}#g" public/jamboree16.html
 
 # 페이지 전용 CSS (scripts/split_css.mjs 로 style.css 에서 분리한 것들).
 # 해당 시트를 링크하는 모든 표면에서 ?v= 를 함께 갱신한다.

@@ -155,11 +155,258 @@
       });
   }
 
+
+  /* ── 사진 미리보기 갤러리 ────────────────────────────────────────────────
+   * 사진은 제16회 한국잼버리 홍보부 공개 드라이브에서 핫링크한다 (원본은
+   * 장당 8~29MB 라 리사이즈 엔드포인트만 쓴다 — jamboree16-photos.js 참조).
+   *
+   * 방문마다 순서를 셔플해 매번 다른 사진이 위로 온다. 처음에는 GALLERY_VISIBLE
+   * 장만 그리고, 나머지는 '더 보기'를 눌렀을 때 붙인다 (초기 요청 수 억제).
+   *
+   * 드라이브 폴더는 2026-11-17 경 사라질 수 있다. 그래서 로드 실패를 세고,
+   * 시도한 것 중 절반 이상이 깨지면 섹션 전체를 접는다 — 깨진 회색 타일이
+   * 잔뜩 남는 것보다 아예 안 보이는 게 낫다.
+   * ──────────────────────────────────────────────────────────────────────── */
+
+  var GALLERY_VISIBLE = 12;   // 첫 화면에 그리는 장수
+  var THUMB_W = 640;          // 그리드 썸네일 너비
+  var FULL_W = 1600;          // 라이트박스 확대 너비
+
+  var galleryState = {
+    order: [],       // 셔플된 사진 배열
+    rendered: 0,     // 지금까지 DOM 에 붙인 장수
+    ok: 0,           // 로드 성공
+    failed: 0,       // 두 경로 모두 실패
+    lightboxAt: -1,  // 라이트박스가 보고 있는 galleryState.order 인덱스
+    lastFocus: null  // 라이트박스 열기 전 포커스 (닫을 때 되돌린다)
+  };
+
+  // Fisher-Yates. 원본 배열을 건드리지 않도록 복사본을 섞는다.
+  function shuffled(list) {
+    var arr = list.slice();
+    for (var i = arr.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var t = arr[i]; arr[i] = arr[j]; arr[j] = t;
+    }
+    return arr;
+  }
+
+  function photoAlt(photo) {
+    // day 가 빈 사진(메인 게이트)은 날짜 없이 장면만 읽힌다.
+    return '제16회 한국잼버리 ' + (photo.day ? photo.day + ' ' : '') + photo.scene;
+  }
+
+  // 두 경로 모두 죽었을 때만 타일을 버린다. 첫 실패에서는 대체 리사이저로
+  // 한 번 더 시도한다 (같은 파일, 다른 엔드포인트).
+  function attachImageFallback(img, catalog, photo, width, onDead) {
+    img.addEventListener('error', function () {
+      if (img.dataset.triedFallback === '1') {
+        galleryState.failed += 1;
+        if (typeof onDead === 'function') onDead();
+        maybeCollapseGallery();
+        return;
+      }
+      img.dataset.triedFallback = '1';
+      img.src = catalog.fallbackUrl(photo.id, width);
+    });
+    img.addEventListener('load', function () {
+      if (img.dataset.counted === '1') return;
+      img.dataset.counted = '1';
+      galleryState.ok += 1;
+    });
+  }
+
+  // 시도분 중 과반이 깨졌으면 섹션을 접는다. 3장 미만에서는 판단하지 않는다
+  // (한두 장 실패로 섹션이 사라지는 것을 막기 위함).
+  function maybeCollapseGallery() {
+    var tried = galleryState.ok + galleryState.failed;
+    if (tried < 3) return;
+    if (galleryState.failed <= tried / 2) return;
+    var section = document.getElementById('jam16-gallery-section');
+    if (!section || section.hidden) return;
+    section.hidden = true;
+    closeLightbox();
+    console.warn('[jamboree16] 사진 ' + galleryState.failed + '/' + tried +
+      '장 로드 실패 — 원본 드라이브 폴더가 만료됐을 수 있어 갤러리를 숨깁니다.');
+  }
+
+  function buildTile(catalog, photo, orderIndex) {
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'jam16-photo';
+    btn.setAttribute('aria-label', photoAlt(photo) + ' — 크게 보기');
+
+    var img = document.createElement('img');
+    img.className = 'jam16-photo-img';
+    img.loading = 'lazy';
+    img.decoding = 'async';
+    img.alt = photoAlt(photo);
+    img.src = catalog.thumbUrl(photo.id, THUMB_W);
+    attachImageFallback(img, catalog, photo, THUMB_W, function () { btn.remove(); });
+
+    var cap = document.createElement('span');
+    cap.className = 'jam16-photo-cap';
+    cap.setAttribute('aria-hidden', 'true');
+    cap.textContent = (photo.day ? photo.day + ' · ' : '') + photo.scene;
+
+    btn.appendChild(img);
+    btn.appendChild(cap);
+    btn.addEventListener('click', function () { openLightbox(orderIndex); });
+    return btn;
+  }
+
+  // count 장을 그리드에 이어 붙이고, 남은 장수를 '더 보기' 버튼에 반영한다.
+  function appendPhotos(catalog, gridEl, count) {
+    var frag = document.createDocumentFragment();
+    var end = Math.min(galleryState.rendered + count, galleryState.order.length);
+    for (var i = galleryState.rendered; i < end; i++) {
+      frag.appendChild(buildTile(catalog, galleryState.order[i], i));
+    }
+    gridEl.appendChild(frag);
+    galleryState.rendered = end;
+
+    var moreBtn = document.getElementById('jam16-gallery-more');
+    if (!moreBtn) return;
+    var left = galleryState.order.length - galleryState.rendered;
+    if (left <= 0) {
+      moreBtn.hidden = true;
+      return;
+    }
+    moreBtn.hidden = false;
+    moreBtn.textContent = '사진 ' + left + '장 더 보기';
+  }
+
+  /* ── 라이트박스 ─────────────────────────────────────────────────────── */
+
+  function lightboxEls() {
+    return {
+      box: document.getElementById('jam16-lightbox'),
+      img: document.getElementById('jam16-lightbox-img'),
+      cap: document.getElementById('jam16-lightbox-cap'),
+      link: document.getElementById('jam16-lightbox-link'),
+      closeBtn: document.getElementById('jam16-lightbox-close')
+    };
+  }
+
+  function showLightboxPhoto(index) {
+    var catalog = window.GW_JAM16_PHOTOS;
+    var els = lightboxEls();
+    var photo = galleryState.order[index];
+    if (!catalog || !els.box || !photo) return;
+
+    galleryState.lightboxAt = index;
+    els.img.dataset.triedFallback = '';
+    els.img.dataset.counted = '';
+    els.img.alt = photoAlt(photo);
+    els.img.src = catalog.thumbUrl(photo.id, FULL_W);
+    els.cap.textContent = (photo.day ? '8월 ' + photo.day.split('/')[1] + '일 · ' : '') + photo.scene +
+      '  (' + (index + 1) + '/' + galleryState.order.length + ')';
+    if (els.link) els.link.href = catalog.viewUrl(photo.id);
+  }
+
+  function openLightbox(index) {
+    var els = lightboxEls();
+    if (!els.box) return;
+    galleryState.lastFocus = document.activeElement;
+    els.box.hidden = false;
+    document.body.classList.add('jam16-lightbox-open');
+    showLightboxPhoto(index);
+    if (els.closeBtn) els.closeBtn.focus();
+  }
+
+  function closeLightbox() {
+    var els = lightboxEls();
+    if (!els.box || els.box.hidden) return;
+    els.box.hidden = true;
+    document.body.classList.remove('jam16-lightbox-open');
+    // src 를 비워 큰 이미지를 붙들고 있지 않게 한다.
+    if (els.img) els.img.removeAttribute('src');
+    galleryState.lightboxAt = -1;
+    if (galleryState.lastFocus && typeof galleryState.lastFocus.focus === 'function') {
+      galleryState.lastFocus.focus();
+    }
+  }
+
+  // step 만큼 이동. 끝에서는 반대쪽으로 감싼다.
+  function stepLightbox(step) {
+    if (galleryState.lightboxAt < 0) return;
+    var n = galleryState.order.length;
+    if (!n) return;
+    showLightboxPhoto((galleryState.lightboxAt + step + n) % n);
+  }
+
+  function wireLightbox() {
+    var els = lightboxEls();
+    if (!els.box) return;
+
+    if (els.closeBtn) els.closeBtn.addEventListener('click', closeLightbox);
+    var prev = document.getElementById('jam16-lightbox-prev');
+    var next = document.getElementById('jam16-lightbox-next');
+    if (prev) prev.addEventListener('click', function () { stepLightbox(-1); });
+    if (next) next.addEventListener('click', function () { stepLightbox(1); });
+
+    // 사진·캡션 바깥(백드롭)을 누르면 닫는다.
+    els.box.addEventListener('click', function (e) {
+      if (e.target === els.box) closeLightbox();
+    });
+
+    document.addEventListener('keydown', function (e) {
+      if (els.box.hidden) return;
+      if (e.key === 'Escape') { closeLightbox(); return; }
+      if (e.key === 'ArrowLeft') { e.preventDefault(); stepLightbox(-1); return; }
+      if (e.key === 'ArrowRight') { e.preventDefault(); stepLightbox(1); }
+    });
+  }
+
+  function initGallery() {
+    var catalog = window.GW_JAM16_PHOTOS;
+    var section = document.getElementById('jam16-gallery-section');
+    var gridEl = document.getElementById('jam16-gallery-grid');
+    if (!section || !gridEl) return;
+
+    // 카탈로그가 안 실렸거나 비었으면 섹션을 아예 내린다.
+    if (!catalog || !catalog.photos || !catalog.photos.length) {
+      section.hidden = true;
+      return;
+    }
+
+    // 만료 시점이 지났다면 로드해 보기 전에 콘솔로 경고한다. 이 시점에도
+    // 사진이 살아 있으면 그대로 보여주고, 죽었으면 maybeCollapseGallery 가 접는다.
+    if (catalog.expiresAt && Date.now() > catalog.expiresAt) {
+      console.warn('[jamboree16] 원본 드라이브 폴더의 공지 유지 기한(2026-11-17)이 지났습니다. ' +
+        '사진을 R2 로 옮기거나 섹션을 내려야 합니다.');
+    }
+
+    section.hidden = false;
+    galleryState.order = shuffled(catalog.photos);
+    galleryState.rendered = 0;
+    gridEl.innerHTML = '';
+
+    var folderLink = document.getElementById('jam16-gallery-folder');
+    if (folderLink) folderLink.href = catalog.folderUrl;
+
+    var moreBtn = document.getElementById('jam16-gallery-more');
+    if (moreBtn) {
+      moreBtn.addEventListener('click', function () {
+        appendPhotos(catalog, gridEl, GALLERY_VISIBLE);
+        // 새로 붙은 첫 타일로 포커스를 옮겨 키보드 사용자가 위치를 잃지 않게 한다.
+        var tiles = gridEl.querySelectorAll('.jam16-photo');
+        var target = tiles[Math.max(0, galleryState.rendered - GALLERY_VISIBLE)];
+        if (moreBtn.hidden && tiles.length) tiles[tiles.length - 1].focus();
+        else if (target) target.focus();
+      });
+    }
+
+    appendPhotos(catalog, gridEl, GALLERY_VISIBLE);
+    wireLightbox();
+  }
+
   function init() {
     GW.bootstrapStandardPage({ loadTicker: false });
     renderCountdown();
     // 자정을 넘겨도 D-day 가 갱신되도록 한 시간마다 다시 계산한다.
     setInterval(renderCountdown, 3600000);
+    initGallery();
     loadPosts();
   }
 
