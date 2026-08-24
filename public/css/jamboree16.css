@@ -13,10 +13,47 @@
    색은 전부 :root 토큰 참조 — 리터럴 HEX 금지 규칙 준수.
    ══════════════════════════════════════════════════════════════════ */
 .jam16-hero {
-  background-image: linear-gradient(135deg, var(--midnight-purple) 0%, var(--shade-purple-3) 46%, var(--shade-purple-1) 100%);
+  position: relative;
+  /* 배경은 잼버리 메인 게이트 사진(자체 호스팅 WebP). 사진 위에 보라 스크림을
+     얹어 브랜드 톤을 유지하면서 현장이 은근히 비치게 한다.
+     스크림은 위쪽을 살짝 더 진하게 기울인다 — 이 구간은 왼쪽 아래 밝은 보도블록,
+     오른쪽 흰 텐트처럼 밝은 면이 흩어져 있어, 균일한 알파로는 흰 글자가 놓이는
+     자리마다 대비(APCA)가 들쭉날쭉해진다.
+     사진 속 현수막에도 '제16회 한국잼버리'가 큼직하게 박혀 있어 그대로 두면
+     히어로 h1 과 글씨가 두 번 겹쳐 읽힌다. 그래서 background-position 으로
+     피하는 대신 이미지 자체를 띠로 잘랐다 — 현수막(위)과 대회 워터마크(아래)를
+     모두 제외하고 진입로·야영장 텐트·게이트 기둥만 담은 구간이다
+     (cwebp -crop 0 900 2400 500 → 1920x400). 사진에서 글자가 있는 부분을
+     통째로 들어냈으므로 초점은 center 로 두면 된다.
+     사진을 바꿀 때는 이 '글자 없는 구간' 규칙을 지켜야 한다. */
+  background-image: url('/img/jam16-hero-gate-1920.webp');
+  background-size: cover;
+  background-position: center center;
+  background-repeat: no-repeat;
+  /* 사진이 아직 안 왔거나 못 불러왔을 때도 흰 글자가 읽히도록 바탕을 깔아 둔다. */
+  background-color: var(--midnight-purple);
   color: var(--on-accent);
   padding: 54px 48px 48px;
   text-align: center;
+}
+/* 보라 스크림. color-mix 를 못 쓰는 브라우저는 앞줄의 불투명 그라디언트로
+   폴백돼 기존(사진 없던) 히어로와 같은 모습이 된다. */
+.jam16-hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: linear-gradient(135deg, var(--midnight-purple) 0%, var(--shade-purple-3) 46%, var(--shade-purple-1) 100%);
+  background-image: linear-gradient(
+    177deg,
+    color-mix(in srgb, var(--midnight-purple) 93%, transparent) 0%,
+    color-mix(in srgb, var(--scouting-purple) 84%, transparent) 46%,
+    color-mix(in srgb, var(--midnight-purple) 91%, transparent) 100%);
+}
+/* 텍스트를 스크림 위로 올린다. ::before 가 inset:0 이라 이 선언이 없으면 덮인다. */
+.jam16-hero-inner {
+  position: relative;
+  z-index: 1;
 }
 .jam16-hero-inner {
   max-width: 860px;
@@ -243,7 +280,10 @@
 }
 .jam16-disclaimer a { color: var(--scouting-purple-text); }
 @media (max-width: 900px) {
-  .jam16-hero { padding: 40px 20px 36px; }
+  .jam16-hero {
+    padding: 40px 20px 36px;
+    background-image: url('/img/jam16-hero-gate-960.webp');
+  }
   .jam16-hero h1 { font-size: var(--fs-display); }
   .jam16-theme { font-size: var(--fs-reading); }
   .jam16-wrapper { padding: 24px 16px 44px; }
