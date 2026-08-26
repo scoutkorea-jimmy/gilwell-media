@@ -15,6 +15,21 @@ const LEGACY_HOME_DESCRIPTIONS = [
 const LEGACY_HOME_TITLES = [
   'BP미디어 · bpmedia.net',
 ];
+// 운영·편집 책임자 인물 노드. `@id` 는 /about 의 전체 정의와 **반드시 같아야** 한다 —
+// 구글은 같은 @id 를 가진 노드를 한 인물로 합치고, 다르면 이름만 같은 별개 인물 셋이 된다.
+// 여기(전 페이지)에는 이름·별칭·sameAs 만 싣고, 스카우트 이력 같은 상세는 /about 한 곳에
+// 둔다. PUBLISHER 는 페이지마다 publisher 로 두 번 더 펼쳐지므로 여기서 덩치를 키우면
+// 모든 페이지에서 3배로 실린다.
+const OPERATOR_PERSON = {
+  '@type': 'Person',
+  '@id': `${SITE_ORIGIN}/about#person-jimmy-park`,
+  name: '박지민',
+  alternateName: ['Jimmy Park', '박지민 대장'],
+  jobTitle: 'BP미디어 기록·편집',
+  url: `${SITE_ORIGIN}/about`,
+  sameAs: ['https://www.linkedin.com/in/jimmy1420/'],
+};
+
 const PUBLISHER = {
   '@type': 'Organization',
   '@id': `${SITE_ORIGIN}/#organization`,
@@ -334,9 +349,12 @@ function buildStructuredDataEntries({ pageKey, title, description, url, imageUrl
 }
 
 function buildOrganizationStructuredData(imageUrl) {
+  // 인물은 여기(독립 Organization 노드)에만 붙인다. PUBLISHER 자체에 넣으면
+  // WebSite.publisher / WebPage.publisher 로 두 번 더 복제돼 페이지마다 3벌이 된다.
   const payload = {
     '@context': 'https://schema.org',
     ...PUBLISHER,
+    member: OPERATOR_PERSON,
   };
   if (imageUrl) payload.image = imageUrl;
   return payload;

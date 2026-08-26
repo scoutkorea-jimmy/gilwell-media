@@ -3572,6 +3572,32 @@ footer a:hover { color: var(--on-accent); }
   letter-spacing: 0.08em;
 }
 
+/* 기록·편집 크레딧. footer-bottom 은 space-between 2단(저작권 ↔ 면책)이라
+   그냥 끼우면 3단으로 갈라진다. flex-basis 100% + order 로 아래 줄에 따로 세운다.
+   footer-brand 가 아니라 footer-bottom 에 둔 이유: 관리자에서 footer.raw_text 를
+   채우면 site-chrome.js 가 footer-brand 안쪽을 통째로 innerHTML 로 갈아끼워
+   거기 넣은 정적 마크업은 소리 없이 사라진다. */
+.footer-bottom .footer-credit {
+  flex-basis:  100%;
+  order:       3;
+  margin:      0;
+  padding-top: 6px;
+  color:       rgba(255,255,255,0.72);
+}
+
+.footer-bottom .footer-credit a {
+  color:                  inherit;
+  text-decoration:        underline;
+  text-underline-offset:  2px;
+  text-decoration-color:  rgba(255,255,255,0.35);
+}
+
+.footer-bottom .footer-credit a:hover,
+.footer-bottom .footer-credit a:focus-visible {
+  color:                 #fff;
+  text-decoration-color: currentColor;
+}
+
 /* ════════════════════════════════════════════════════════════
    COVER IMAGE UPLOAD (write form)
    ════════════════════════════════════════════════════════════ */
