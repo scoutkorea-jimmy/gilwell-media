@@ -88,6 +88,9 @@ function getCanonicalPath(pathname, pageKey) {
   if (pageKey === 'people') return '/people';
   if (pageKey === 'glossary') return '/glossary';
   if (pageKey === 'calendar') return '/calendar';
+  // 도감은 `/memorabilia/<id>` 딥링크가 전부 같은 셸을 반환하므로 대표 URL 하나로 통합.
+  if (pageKey === 'memorabilia') return '/memorabilia';
+  if (pageKey === 'privacy') return '/privacy';
   return pathname;
 }
 

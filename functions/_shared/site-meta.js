@@ -62,6 +62,14 @@ const DEFAULT_SITE_META = {
       title: '스카우트 용어집 · BP미디어',
       description: '국문·영문·불어 3개 국어 기준의 스카우트 용어집입니다.',
     },
+    memorabilia: {
+      title: '스카우트 기념품 도감 · BP미디어',
+      description: '패치·뱃지·메달·항건·우표·책자 등 한국과 세계의 스카우트 기념품을 한 곳에 모은 도감입니다. 국문·영문 어느 쪽으로도 검색할 수 있습니다.',
+    },
+    privacy: {
+      title: '개인정보 처리방침 · BP미디어',
+      description: 'BP미디어가 수집하는 정보의 범위와 이용 목적, 보관 기간, 이용자의 권리와 문의 방법을 안내합니다.',
+    },
     contributors: {
       title: '도움을 주신 분들 · BP미디어',
       description: 'BP미디어 운영에 도움을 주신 분들을 소개합니다.',
@@ -149,7 +157,17 @@ export function normalizeSiteMeta(raw) {
 
 export function getSitePageKey(pathname) {
   const normalized = normalizePagePath(pathname);
-  return SITE_PAGE_KEY_BY_PATH[normalized] || null;
+  const exact = SITE_PAGE_KEY_BY_PATH[normalized];
+  if (exact) return exact;
+  // `_redirects` 의 `/memorabilia/* → /memorabilia 200` 은 도감 상세 딥링크
+  // (js/memorabilia.js 가 pathname 에서 id 를 읽는다) 를 위한 rewrite 다.
+  // 그런데 exact 매칭만 하면 이 하위 경로들이 pageKey 없이 통과해
+  // canonical 도 description 도 없는 200 페이지가 **무한히** 생긴다
+  // (2026-08-26 실측: /memorabilia/abc123nonexistent → 200, canonical 없음).
+  // 크롤러가 보는 HTML 은 어떤 id 든 동일한 셸이므로 전부 /memorabilia 의
+  // 중복이다 → pageKey 를 부여해 canonical 로 대표 URL 에 통합시킨다.
+  if (normalized === '/memorabilia' || normalized.startsWith('/memorabilia/')) return 'memorabilia';
+  return null;
 }
 
 export function normalizePagePath(pathname) {
@@ -346,7 +364,7 @@ function buildWebsiteStructuredData(imageUrl) {
 }
 
 function buildPageStructuredData({ pageKey, title, description, url, imageUrl }) {
-  const type = pageKey === 'search' ? 'SearchResultsPage' : (pageKey === 'home' ? 'WebPage' : 'CollectionPage');
+  const type = getPageSchemaType(pageKey);
   const payload = {
     '@context': 'https://schema.org',
     '@type': type,
@@ -378,6 +396,19 @@ function buildPageStructuredData({ pageKey, title, description, url, imageUrl })
   }
   if (imageUrl) payload.primaryImageOfPage = imageUrl;
   return payload;
+}
+
+// CollectionPage 는 "항목 목록을 모아 보여주는 페이지" 다. 예전에는 홈·검색을
+// 뺀 전부를 CollectionPage 로 찍었는데, 개인정보 처리방침·편집 정책·운영 주체
+// 처럼 목록이 아닌 문서 페이지까지 컬렉션이라고 주장하게 된다. 목록형만 남긴다.
+const COLLECTION_PAGE_KEYS = [
+  'latest', 'korea', 'apr', 'wosm', 'people',
+  'glossary', 'memorabilia', 'wosm_members', 'calendar',
+];
+
+function getPageSchemaType(pageKey) {
+  if (pageKey === 'search') return 'SearchResultsPage';
+  return COLLECTION_PAGE_KEYS.includes(pageKey) ? 'CollectionPage' : 'WebPage';
 }
 
 function buildBreadcrumbStructuredData(pageKey, url) {
@@ -413,9 +444,13 @@ function getBreadcrumbLabel(pageKey) {
     wosm_members: '세계연맹 회원국 현황',
     people: '스카우트 인물',
     glossary: '스카우트 용어집',
+    memorabilia: '스카우트 기념품 도감',
     contributors: '도움을 주신 분들',
     calendar: '스카우트 캘린더',
     search: '검색',
+    editorial_policy: '편집 정책',
+    about: '운영 주체',
+    privacy: '개인정보 처리방침',
   };
   return labels[pageKey] || '';
 }
@@ -431,9 +466,13 @@ function getPageTopic(pageKey) {
     wosm_members: '세계연맹 회원국 현황',
     people: '스카우트 인물',
     glossary: '스카우트 용어집',
+    memorabilia: '스카우트 기념품 도감',
     contributors: '후원 및 기여자 소개',
     calendar: '스카우트 행사 및 일정',
     search: '사이트 검색 결과',
+    editorial_policy: '편집 정책',
+    about: '운영 주체',
+    privacy: '개인정보 처리방침',
   };
   return topics[pageKey] || '스카우트 뉴스';
 }
@@ -449,9 +488,13 @@ function getPageKeywords(pageKey) {
     wosm_members: 'WOSM 회원국, 세계연맹 회원국 현황, 스카우트 회원국, BP미디어',
     people: '스카우트 인물, BP미디어',
     glossary: '스카우트 용어집, BP미디어',
+    memorabilia: '스카우트 기념품, 스카우트 도감, 스카우트 패치, 스카우트 뱃지, 스카우트 항건, 스카우트 우표, Scout Memorabilia, BP미디어',
     contributors: 'BP미디어, 도움을 주신 분들',
     calendar: '스카우트 캘린더, 스카우트 행사 일정, BP미디어',
     search: 'BP미디어 검색',
+    editorial_policy: '편집 정책, 정정 보도, 출처 검증, BP미디어',
+    about: '운영 주체, BP미디어, 길웰미디어',
+    privacy: '개인정보 처리방침, BP미디어',
   };
   return keywords[pageKey] || 'BP미디어';
 }

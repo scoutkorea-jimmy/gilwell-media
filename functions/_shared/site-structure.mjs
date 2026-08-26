@@ -74,6 +74,7 @@ export const SITE_PAGE_KEY_BY_PATH = Object.freeze({
   '/search': 'search',
   '/editorial-policy': 'editorial_policy',
   '/about': 'about',
+  '/privacy': 'privacy',
 });
 
 export const SITE_PATH_TITLE_FALLBACKS = Object.freeze({
@@ -103,6 +104,8 @@ export const SITE_PATH_TITLE_FALLBACKS = Object.freeze({
   '/contributors.html': DEFAULT_NAV_LABELS['nav.contributors'].ko,
   '/about': '운영 주체',
   '/about.html': '운영 주체',
+  '/privacy': '개인정보 처리방침',
+  '/privacy.html': '개인정보 처리방침',
   '/dreampath': 'Dreampath',
   '/dreampath.html': 'Dreampath',
   '/dreampath/': 'Dreampath',

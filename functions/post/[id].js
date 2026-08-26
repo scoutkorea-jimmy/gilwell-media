@@ -187,16 +187,10 @@ export async function onRequestGet({ params, env, request }) {
     articleBody: articleBodySchema,
     wordCount: articleWordCount,
   });
-  // BreadcrumbList JSON-LD — Home → Category → Article
-  const breadcrumbJsonLd = JSON.stringify({
-    '@context': 'https://schema.org',
-    '@type': 'BreadcrumbList',
-    itemListElement: [
-      { '@type': 'ListItem', position: 1, name: '홈', item: siteUrl + '/' },
-      { '@type': 'ListItem', position: 2, name: cat.label, item: categoryUrl },
-      { '@type': 'ListItem', position: 3, name: post.title || '' },
-    ],
-  });
+  // BreadcrumbList JSON-LD 는 buildArticleStructuredData() 가 NewsArticle 과
+  // 같은 배열에 담아 이미 내보낸다. 여기서 한 벌 더 만들어 붙였더니 기사마다
+  // BreadcrumbList 엔티티가 2개씩 나갔다 (2026-08-26 실측: /post/395 에서 2건).
+  // 중복 엔티티는 구조화 데이터 해석을 흐리기만 하므로 빌더 쪽 하나로 통일한다.
 
   const html = `<!DOCTYPE html>
 <html lang="ko">
@@ -236,15 +230,14 @@ export async function onRequestGet({ params, env, request }) {
   <link rel="dns-prefetch" href="https://display.ad.daum.net"/>
   ${coverImage ? `<link rel="preload" as="image" href="${coverImage}" fetchpriority="high"/>` : ''}
   <script type="application/ld+json">${articleJsonLd}</script>
-  <script type="application/ld+json">${breadcrumbJsonLd}</script>
   <link rel="icon" type="image/svg+xml" href="/img/favicon.svg"/>
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png"/>
   <link rel="apple-touch-icon" href="/img/logo.png"/>
   <link rel="shortcut icon" href="/img/favicon-48.png"/>
-  <link rel="stylesheet" href="/css/style.css?v=20260824095248">
-  <link rel="stylesheet" href="/css/post.css?v=20260824095248">
-  <link rel="stylesheet" href="/css/chatbot.css?v=20260824095248">
-  <link rel="stylesheet" href="/css/dark-mode.css?v=20260824095248">
+  <link rel="stylesheet" href="/css/style.css?v=20260826150049">
+  <link rel="stylesheet" href="/css/post.css?v=20260826150049">
+  <link rel="stylesheet" href="/css/chatbot.css?v=20260826150049">
+  <link rel="stylesheet" href="/css/dark-mode.css?v=20260826150049">
 </head>
 <body class="post-page">
   <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
@@ -429,7 +422,7 @@ export async function onRequestGet({ params, env, request }) {
         <h4>관리자</h4>
         <a href="/admin.html">관리자 페이지 →</a>
         <a href="/glossary-raw">용어집 RAW로 보기 →</a>
-        <p class="footer-build">Site <span class="site-build-version">V00.182.00</span> · Admin <span class="admin-build-version">V03.153.00</span></p>
+        <p class="footer-build">Site <span class="site-build-version">V00.182.01</span> · Admin <span class="admin-build-version">V03.153.00</span></p>
       </div>
       <div class="footer-bottom">
         <p data-i18n="footer.copyright">© 2026 ${SITE_BRAND_NAME} · ${SITE_DOMAIN_LABEL}</p>
@@ -630,10 +623,10 @@ export async function onRequestGet({ params, env, request }) {
 
   <script>window.GW_BOOT_RUNTIME=${serializeForScript(publicRuntime)};window.GW_KAKAO_JS_KEY=${serializeForScript(String(publicRuntime.kakao_js_key || ''))};window.GW_POST_BOOT=${serializeForScript({ editPostId: id, sharePostUrl: postUrl, sharePostTitle: titleText, sharePostSubtitle: subtitleText, editSeed: JSON.parse(editSeed), visibleTags })};</script>
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.4/dist/purify.min.js" integrity="sha384-eEu5CTj3qGvu9PdJuS+YlkNi7d2XxQROAFYOr59zgObtlcux1ae1Il3u7jvdCSWu" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-  <script src="/js/main.js?v=20260824095248"></script>
-  <script src="/js/site-chrome.js?v=20260824095248"></script>
-  <script src="/js/chatbot.js?v=20260824095248" defer></script>
-  <script src="/js/post-page.js?v=20260824095248"></script>
+  <script src="/js/main.js?v=20260826150049"></script>
+  <script src="/js/site-chrome.js?v=20260826150049"></script>
+  <script src="/js/chatbot.js?v=20260826150049" defer></script>
+  <script src="/js/post-page.js?v=20260826150049"></script>
   <script async type="text/javascript" charset="utf-8" src="https://t1.kakaocdn.net/kas/static/ba.min.js"></script>
 </body>
 </html>`;
@@ -1143,10 +1136,11 @@ function buildArticleStructuredData(meta) {
   const homeUrl = siteOrigin ? `${siteOrigin}/` : '';
   const logoUrl = siteOrigin ? `${siteOrigin}/img/logo.svg` : '';
   const authorName = meta.author || 'BP미디어';
-  const authorIsCode = /^Editor\.[A-Z0-9-]+$/i.test(authorName);
-  const authorUrl = authorIsCode && siteOrigin
-    ? `${siteOrigin}/editor/${encodeURIComponent(authorName)}`
-    : undefined;
+  // author.url 은 넣지 않는다. 예전에는 `Editor.A` 같은 코드명 바이라인을
+  // `/editor/<이름>` 으로 링크했는데 그 라우트가 존재한 적이 없어 구조화
+  // 데이터가 404 를 가리키고 있었다 (2026-08-26 실측: /editor/Editor.A → 404).
+  // 없는 URL 은 아예 없는 것보다 나쁘다 — 필자 소개 페이지를 실제로 만들면
+  // 그때 authorUrl 을 되살린다.
   const datelineCity = meta.locationName
     ? String(meta.locationName).split(',')[0].trim() || undefined
     : undefined;
@@ -1186,7 +1180,6 @@ function buildArticleStructuredData(meta) {
       author: {
         '@type': 'Person',
         name: authorName,
-        url: authorUrl,
       },
       publisher: {
         '@type': 'Organization',

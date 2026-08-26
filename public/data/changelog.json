@@ -1,6 +1,31 @@
 {
   "items": [
   {
+    "version": "00.182.01",
+    "date": "2026-08-27",
+    "released_at": "2026-08-27 00:00:00 KST",
+    "summary": "그날 올린 기사가 구글 뉴스 사이트맵에 하루 종일 안 들어가던 문제를 고치고, 검색엔진에 잘못 알려주던 정보 여섯 가지를 함께 바로잡았다.",
+    "for_users": [
+      "오늘 발행한 기사가 구글 뉴스에 그날 바로 올라갑니다. 그동안은 저녁에 올린 기사가 다음 날이 되어서야 뉴스 목록에 들어갔습니다.",
+      "기념품 도감과 개인정보 처리방침 페이지가 검색 결과에서 제 이름과 설명으로 나옵니다. 도감은 홈페이지와 똑같은 제목·설명을 쓰고 있었고, 처리방침은 설명이 아예 없었습니다.",
+      "기사에 실린 사진이 검색과 공유 카드에서 제대로 잡힙니다. 사진이 놓인 주소가 검색엔진 접근 차단 구역에 들어가 있었습니다.",
+      "도감 페이지가 주소 뒤에 아무 글자나 붙여도 열리면서 같은 내용이 무한히 복제되던 것을 대표 주소 하나로 모았습니다."
+    ],
+    "for_developers": [
+      "functions/sitemap-news.xml/index.js — WHERE 절이 `COALESCE(publish_at, created_at) <= datetime('now')` 로 KST naive 값을 UTC now 와 비교해 9시간 어긋났다. KST 15시 이후 공개분이 그날 내내 누락. _shared/post-public-date.js 의 PUBLIC_DATE_EXPR 로 교체하고 기준시를 datetime('now','+9 hours') 로 맞췄다. 원격 D1 실측: 같은 시점 4건 -> 9건(당일 5건 복구).",
+      "같은 파일 toIso() 가 publish_at·created_at 을 가리지 않고 naive=KST 로 해석해, publish_at 이 없는 글의 news:publication_date 가 9시간 앞당겨졌다. SQL 에서 public_date_kst 로 정규화해 뽑도록 변경.",
+      "functions/_shared/site-meta.js — DEFAULT_SITE_META.pages 에 memorabilia·privacy 누락. pages[key] || pages.home 폴백이 걸려 /memorabilia 가 홈과 동일한 title·description 을 내보내고 있었다(실측 확인). getPageTopic / getPageKeywords / getBreadcrumbLabel 에도 memorabilia·privacy·about·editorial_policy 추가.",
+      "functions/_shared/site-meta.js getSitePageKey() — `/memorabilia/<id>` 딥링크(_redirects 의 200 rewrite)가 exact 매칭을 못 통과해 canonical 없는 200 이 무한 생성됐다(/memorabilia/abc123nonexistent -> 200). prefix 매칭을 추가하고 [[path]].js getCanonicalPath() 가 /memorabilia 로 통합하도록 했다.",
+      "functions/_shared/site-structure.mjs — SITE_PAGE_KEY_BY_PATH 에 /privacy 등록. 그 전에는 pageKey 가 null 이라 description·canonical·robots 가 전부 없고 <!-- SHARE_META --> 주석이 그대로 나갔다.",
+      "functions/robots.txt.js — 기사 이미지가 /api/images/*, /api/posts/<id>/image, /api/og-image/<id> 로 서빙되는데 전 그룹이 Disallow: /api/ 였다. Allow: /api/images/, /api/og-image/, /api/posts/*/image 3줄을 표준 그룹에 추가. 같은 10줄을 봇마다 손으로 복사한 15벌 구조를 상수 3개 + 그룹 빌더로 정리했다(그룹 20개·기존 출력 동일, diff 는 Allow 추가분뿐).",
+      "functions/post/[id].js — BreadcrumbList JSON-LD 가 buildArticleStructuredData() 배열과 인라인 상수 양쪽에서 나가 기사마다 2개씩 출력됐다(/post/395 실측 2건). 인라인 쪽 제거.",
+      "functions/post/[id].js — author.url 이 존재한 적 없는 /editor/<이름> 을 가리켜 구조화 데이터가 404 를 참조했다(/editor/Editor.A -> 404). authorUrl 제거, author.name 만 유지.",
+      "functions/sitemap.xml/index.js — nav 1차 메뉴인 /memorabilia 와 /privacy 가 사이트맵에서 빠져 있어 추가. xmlUrl() 의 `new Date(lastmod).toISOString()` 이 try/catch 밖이라 날짜 하나만 깨져도 RangeError 로 사이트맵 전체가 500(=407개 URL 색인 증발)이 될 수 있었다. toIsoOrEmpty() 로 감쌌다.",
+      "functions/_shared/site-meta.js — 홈·검색을 뺀 전부를 CollectionPage 로 찍던 것을 목록형 9개(latest·korea·apr·wosm·people·glossary·memorabilia·wosm_members·calendar)로 한정. privacy·about·editorial_policy·contributors·jamboree16 은 WebPage.",
+      "사이트 버전 00.182.00 -> 00.182.01."
+    ]
+  },
+  {
     "version": "00.182.00",
     "date": "2026-08-24",
     "released_at": "2026-08-24 19:10:00 KST",

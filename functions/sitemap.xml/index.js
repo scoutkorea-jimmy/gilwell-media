@@ -24,9 +24,12 @@ async function buildSitemapResponse({ request, env }, headOnly) {
     { path: '/calendar', priority: '0.8', category: null },
     { path: '/glossary', priority: '0.9', category: 'glossary' },
     { path: '/glossary-raw', priority: '0.8', category: 'glossary' },
+    // nav 1차 메뉴인데 사이트맵에서 빠져 있었다 (2026-08-26 점검).
+    { path: '/memorabilia', priority: '0.8', category: null },
     { path: '/contributors', priority: '0.5', category: null },
     { path: '/editorial-policy', priority: '0.5', category: null },
     { path: '/about', priority: '0.5', category: null },
+    { path: '/privacy', priority: '0.3', category: null },
   ];
 
   let posts = [];
@@ -81,11 +84,22 @@ ${urls.join('\n')}
 }
 
 function xmlUrl(loc, lastmod, priority) {
+  const lastmodIso = toIsoOrEmpty(lastmod);
   return `  <url>
     <loc>${escapeXml(loc)}</loc>
-    ${lastmod ? `<lastmod>${escapeXml(new Date(lastmod).toISOString())}</lastmod>` : ''}
+    ${lastmodIso ? `<lastmod>${escapeXml(lastmodIso)}</lastmod>` : ''}
     <priority>${priority}</priority>
   </url>`;
+}
+
+// `new Date(x).toISOString()` 은 파싱 실패 시 RangeError 를 던진다. 이 호출은
+// try/catch 밖이라 DB 의 날짜 문자열 **하나만** 깨져도 사이트맵 전체가 500 이
+// 되고, 그러면 407개 URL 이 통째로 색인에서 사라진다. 못 읽는 값은 조용히
+// lastmod 만 빼고 나머지 URL 은 살린다 — 없어도 되는 필드다.
+function toIsoOrEmpty(value) {
+  if (!value) return '';
+  const date = new Date(String(value).replace(' ', 'T'));
+  return Number.isNaN(date.getTime()) ? '' : date.toISOString();
 }
 
 function escapeXml(value) {
