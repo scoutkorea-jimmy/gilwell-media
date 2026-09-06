@@ -1,0 +1,27 @@
+name: BPMediaWriter
+options:
+  bundleIdPrefix: net.bpmedia
+  deploymentTarget:
+    macOS: "14.0"
+  developmentLanguage: ko
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+targets:
+  BPMediaWriter:
+    type: application
+    platform: macOS
+    sources:
+      - Sources
+    resources:
+      - Resources/Assets.xcassets
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: net.bpmedia.writer
+        INFOPLIST_FILE: Resources/Info.plist
+        CODE_SIGN_ENTITLEMENTS: Resources/BPMediaWriter.entitlements
+        CODE_SIGN_STYLE: Automatic
+        DEVELOPMENT_TEAM: ""
+        ENABLE_HARDENED_RUNTIME: YES
+        MARKETING_VERSION: "1.0"
+        CURRENT_PROJECT_VERSION: "1"

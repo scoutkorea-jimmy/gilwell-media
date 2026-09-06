@@ -39,6 +39,14 @@ Required app secrets:
 
 ---
 
+## macOS Writer (local)
+
+Native SwiftUI writer for Personal Team Macs lives at `apps/BPMediaWriter/`.
+
+- Open `apps/BPMediaWriter/BPMediaWriter.xcodeproj` in Xcode
+- See `apps/BPMediaWriter/README.md` for signing / run steps
+- Uses existing `https://bpmedia.net` admin APIs (no separate CMS)
+
 ## Project Structure
 
 ```
