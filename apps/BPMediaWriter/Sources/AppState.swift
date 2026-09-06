@@ -28,10 +28,15 @@ final class AppState: ObservableObject {
     private var listGeneration = 0
 
     init(
-        auth: AuthService = AuthService(),
-        api: APIClient = APIClient(),
-        drafts: DraftStore = DraftStore()
+        auth: AuthService? = nil,
+        api: APIClient? = nil,
+        drafts: DraftStore? = nil
     ) {
+        // 기본 파라미터 표현식은 nonisolated 컨텍스트에서 평가되므로
+        // @MainActor 인 AuthService 는 여기(격리된 init 본문)에서 생성한다.
+        let auth = auth ?? AuthService()
+        let api = api ?? APIClient()
+        let drafts = drafts ?? DraftStore()
         self.auth = auth
         self.api = api
         self.drafts = drafts

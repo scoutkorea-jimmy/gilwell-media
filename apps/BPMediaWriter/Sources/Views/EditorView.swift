@@ -271,7 +271,7 @@ struct EditorView: View {
         publishMode = PublishMode(rawValue: d.publishMode) ?? .immediate
         coverDataURL = d.coverDataURL
         bodyImageDataURLs = d.bodyImageDataURLs
-        if let s = d.publishAt, let date = parsePublishAt(s) {
+        if !d.publishAt.isEmpty, let date = parsePublishAt(d.publishAt) {
             scheduleDate = date
         }
         if let dataURL = d.coverDataURL, dataURL.hasPrefix("data:"), let img = nsImage(fromDataURL: dataURL) {

@@ -18,9 +18,9 @@ See `Sources/Theme/BrandColors.swift`. Asset catalog `AccentColor` is set to Sco
 ## Open & run (Personal Team)
 
 1. Install **full Xcode** from the Mac App Store (Command Line Tools alone are not enough).
-2. Open the project:
+2. Open the project (저장소 루트에서):
    ```bash
-   open /Users/jimmy/Desktop/VS_Code/gilwell-media/apps/BPMediaWriter/BPMediaWriter.xcodeproj
+   open apps/BPMediaWriter/BPMediaWriter.xcodeproj
    ```
 3. In Xcode → **Signing & Capabilities**:
    - Team: select your **Personal Team** (free Apple ID)
@@ -71,6 +71,47 @@ If `xcodegen` is installed:
 ```bash
 cd apps/BPMediaWriter && xcodegen generate
 ```
+
+## Pre-check without Xcode (Command Line Tools only)
+
+Xcode 가 없는 기기(맥미니 등)에서도 **컴파일 오류를 미리 잡을 수 있다.** `xcodebuild` 는 못 쓰지만
+`swiftc -typecheck` 로 전체 소스를 검사한다. 실기 빌드 전에 이걸로 걸러라.
+
+```bash
+SDK=$(xcrun --sdk macosx --show-sdk-path)
+swiftc -typecheck -swift-version 5 -sdk "$SDK" -target arm64-apple-macos14.0 \
+  $(find apps/BPMediaWriter/Sources -name '*.swift')
+```
+
+⚠️ 위 명령은 View 파일에서 `SwiftUIMacros.StateMacro ... plugin not found` 로 멈춘다 —
+`@State` 는 **Xcode 전용 매크로 플러그인**이 있어야 확장되기 때문이다. **코드 결함이 아니다.**
+View 까지 검사하려면 사본을 만들어 `@State` 를 동등한 프로퍼티 래퍼로 치환한다:
+
+```bash
+TC=$(mktemp -d) && cp -R apps/BPMediaWriter/Sources/* "$TC"/
+find "$TC" -name '*.swift' -exec sed -i '' 's/@State /@StateShim /g' {} +
+cat > "$TC/__StateShim.swift" <<'EOF'
+import SwiftUI
+@propertyWrapper
+struct StateShim<Value> {
+    final class Box { var v: Value; init(_ v: Value) { self.v = v } }
+    private let box: Box
+    init(wrappedValue: Value) { box = Box(wrappedValue) }
+    var wrappedValue: Value {
+        get { box.v }
+        nonmutating set { box.v = newValue }
+    }
+    var projectedValue: Binding<Value> { Binding(get: { box.v }, set: { box.v = $0 }) }
+}
+extension StateShim where Value: ExpressibleByNilLiteral {
+    init() { box = Box(nil) }
+}
+EOF
+swiftc -typecheck -swift-version 5 -sdk "$(xcrun --sdk macosx --show-sdk-path)" \
+  -target arm64-apple-macos14.0 $(find "$TC" -name '*.swift')
+```
+
+출력이 없으면 통과다. (사본만 검사하므로 원본은 건드리지 않는다.)
 
 ## Build from CLI (after Xcode is installed)
 
