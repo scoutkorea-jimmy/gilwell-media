@@ -53,6 +53,9 @@ The login screen will show an embedded WKWebView widget when needed.
 ## Stability notes
 
 - Edit/save keeps existing http(s) Editor.js body images (preserves original JSON when body unchanged)
+- 목록(`list`)·표(`table`) 블록의 내용은 편집창에 텍스트로 보여 준다 — 안 보이면 본문을 고칠 때
+  **모르는 사이에 통째로 사라진다.** 서식은 문단으로 평탄화되지만 내용은 남는다(본문 미변경 시엔 원본 유지)
+- Editor.js JSON 은 필드별로 느슨하게 디코딩한다 — 낯선 타입이 하나 섞여도 글 전체가 깨지지 않는다
 - Image pick compresses/downscales before base64 (~max edge 2000px, JPEG ~0.82; ~4MB cap)
 - Login 401 does not clear session (`onUnauthorized` only when `authorized: true`)
 - Keychain write failures are surfaced; `try!` removed from Editor.js encode
@@ -71,6 +74,19 @@ If `xcodegen` is installed:
 ```bash
 cd apps/BPMediaWriter && xcodegen generate
 ```
+
+## Roundtrip test (Editor.js 인코더/디코더)
+
+기존 글을 열어 고쳐 저장할 때 **이미지·목록·표가 살아남는지**를 실제로 돌려 확인한다.
+Xcode 없이 돌아가고, 하나라도 실패하면 종료코드 1 이다.
+
+```bash
+bash apps/BPMediaWriter/Tests/run-roundtrip.sh
+```
+
+검사 항목 25건 — 이미지 보존, 미변경 시 원본 JSON 바이트 동일, 목록·표 노출,
+중첩 목록(Editor.js 2.30 객체형), 낯선 스키마 견고성, 특수문자 라운드트립.
+`Tests/` 는 `project.yml` 의 `sources: [Sources]` 밖이라 앱 빌드에 섞이지 않는다.
 
 ## Pre-check without Xcode (Command Line Tools only)
 
