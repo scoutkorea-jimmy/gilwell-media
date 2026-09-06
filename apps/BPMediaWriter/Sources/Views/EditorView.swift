@@ -16,11 +16,15 @@ struct EditorView: View {
     @State private var scheduleDate = Date().addingTimeInterval(3600)
     @State private var coverDataURL: String?
     @State private var coverPreview: NSImage?
+    /// Body image URLs — may be http(s) or data: (never drop http on edit).
     @State private var bodyImageDataURLs: [String] = []
     @State private var editingPost: PostDetail?
     @State private var isSaving = false
     @State private var autosaveTask: Task<Void, Never>?
     @State private var didLoad = false
+    @State private var originalContentJSON: String?
+    @State private var baselineBodyText = ""
+    @State private var baselineImageURLs: [String] = []
 
     var body: some View {
         VStack(spacing: 0) {
@@ -110,20 +114,22 @@ struct EditorView: View {
                                             coverPreview = nil
                                             scheduleAutosave()
                                         }
+                                        .tint(BrandColors.brandDanger)
                                     }
                                 }
                             }
                             VStack(alignment: .leading, spacing: 8) {
                                 Text("본문 이미지 (\(bodyImageDataURLs.count))")
                                 Button("본문 이미지 추가…") { pickBodyImages() }
-                                ForEach(Array(bodyImageDataURLs.enumerated()), id: \.offset) { idx, _ in
+                                ForEach(Array(bodyImageDataURLs.enumerated()), id: \.offset) { idx, url in
                                     HStack {
-                                        Text("이미지 \(idx + 1)")
+                                        Text(imageLabel(url, index: idx))
                                         Spacer()
                                         Button("삭제", role: .destructive) {
                                             bodyImageDataURLs.remove(at: idx)
                                             scheduleAutosave()
                                         }
+                                        .tint(BrandColors.brandDanger)
                                     }
                                     .font(.caption)
                                 }
@@ -143,6 +149,11 @@ struct EditorView: View {
                             Text("서버는 KST 벽시계 문자열로 저장합니다.")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
+                            if scheduleDate < Date() {
+                                Text("예약 시각이 과거입니다. 저장 시 확인이 필요합니다.")
+                                    .font(.caption)
+                                    .foregroundStyle(BrandColors.brandWarning)
+                            }
                         }
                     }
                 }
@@ -150,6 +161,8 @@ struct EditorView: View {
                 .formStyle(.grouped)
             }
         }
+        .background(BrandColors.brandBackground)
+        .tint(BrandColors.brandPrimary)
         .onAppear { loadFromMode() }
         .onChange(of: title) { _, _ in scheduleAutosave() }
         .onChange(of: subtitle) { _, _ in scheduleAutosave() }
@@ -183,11 +196,22 @@ struct EditorView: View {
                 }
             }
             .buttonStyle(.borderedProminent)
+            .tint(BrandColors.brandPrimary)
             .disabled(isSaving || title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || bodyText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
         }
         .padding(12)
+        .background(BrandColors.brandSurface)
     }
 
+    private func imageLabel(_ url: String, index: Int) -> String {
+        if url.hasPrefix("http") {
+            return "이미지 \(index + 1) (원격)"
+        }
+        if url.hasPrefix("data:") {
+            return "이미지 \(index + 1) (첨부)"
+        }
+        return "이미지 \(index + 1)"
+    }
 
     private func loadFromMode() {
         guard !didLoad else { return }
@@ -195,6 +219,9 @@ struct EditorView: View {
         switch appState.editorMode {
         case .create(let draft):
             editingPost = nil
+            originalContentJSON = nil
+            baselineBodyText = ""
+            baselineImageURLs = []
             let local = appState.drafts.load() ?? draft
             applyDraft(local)
         case .edit(let post):
@@ -205,9 +232,13 @@ struct EditorView: View {
             author = post.author ?? appState.authors.first?.code ?? "Editor.A"
             metaTags = post.metaTags ?? ""
             specialFeature = post.specialFeature ?? ""
+            originalContentJSON = post.content
             let decoded = EditorJSCodec.decode(post.content)
             bodyText = decoded.text
-            bodyImageDataURLs = decoded.imageURLs.filter { $0.hasPrefix("data:") }
+            // CRITICAL: keep ALL image URLs (http + data), not only data:
+            bodyImageDataURLs = decoded.imageURLs
+            baselineBodyText = decoded.text
+            baselineImageURLs = decoded.imageURLs
             coverDataURL = post.imageURL
             coverPreview = nil
             if post.published == true || post.publishedInt == 1 {
@@ -269,17 +300,38 @@ struct EditorView: View {
             specialFeature: specialFeature,
             publishMode: publishMode.rawValue,
             publishAt: formatPublishAt(scheduleDate),
-            coverDataURL: coverDataURL?.hasPrefix("data:") == true ? coverDataURL : coverDataURL,
+            coverDataURL: coverDataURL,
             bodyImageDataURLs: bodyImageDataURLs,
             editingPostID: editingPost?.id,
             expectedUpdatedAt: editingPost?.updatedAt
         )
     }
 
+    private func bodyUnchanged() -> Bool {
+        let textSame = bodyText.trimmingCharacters(in: .whitespacesAndNewlines)
+            == baselineBodyText.trimmingCharacters(in: .whitespacesAndNewlines)
+        let imagesSame = bodyImageDataURLs == baselineImageURLs
+        return textSame && imagesSame
+    }
+
+    private func resolveContentJSON() -> String {
+        if let original = originalContentJSON, bodyUnchanged() {
+            return original
+        }
+        return EditorJSCodec.encode(plainText: bodyText, imageDataURLs: bodyImageDataURLs)
+    }
+
     private func save() async {
+        guard !isSaving else { return }
         isSaving = true
         defer { isSaving = false }
-        let content = EditorJSCodec.encode(plainText: bodyText, imageDataURLs: bodyImageDataURLs)
+
+        if publishMode == .schedule, scheduleDate < Date() {
+            appState.globalAlert = "예약 시각이 과거입니다. 미래 시각으로 설정하거나 즉시 공개/비공개 보관으로 바꿔 주세요."
+            return
+        }
+
+        let content = resolveContentJSON()
         var published = false
         var publishAt: String? = nil
         switch publishMode {
@@ -287,7 +339,6 @@ struct EditorView: View {
             published = true
             publishAt = nil
         case .schedule:
-            // Server keeps unpublished future publish_at until publish-due job flips it.
             published = false
             publishAt = formatPublishAt(scheduleDate)
         case .hold:
@@ -309,9 +360,19 @@ struct EditorView: View {
             expectedUpdatedAt: nil
         )
         if let coverDataURL, coverDataURL.hasPrefix("data:") {
+            if ImageCompressor.approximateByteLength(ofDataURL: coverDataURL) > ImageCompressor.maxEncodedBytes {
+                appState.globalAlert = "커버 이미지가 너무 큽니다(약 4MB 초과). 더 작은 이미지로 줄인 뒤 다시 시도해 주세요."
+                return
+            }
             payload.imageData = coverDataURL
         } else if let coverDataURL, coverDataURL.hasPrefix("http") {
             payload.imageURL = coverDataURL
+        }
+        for url in bodyImageDataURLs where url.hasPrefix("data:") {
+            if ImageCompressor.approximateByteLength(ofDataURL: url) > ImageCompressor.maxEncodedBytes {
+                appState.globalAlert = "본문 이미지가 너무 큽니다(약 4MB 초과). 더 작은 이미지로 줄인 뒤 다시 시도해 주세요."
+                return
+            }
         }
         _ = await appState.savePost(payload, editing: editingPost)
     }
@@ -324,23 +385,31 @@ struct EditorView: View {
 
     private func pickCover() {
         guard let url = openImagePanel(multiple: false).first else { return }
-        guard let dataURL = makeDataURL(from: url), let img = nsImage(fromDataURL: dataURL) else {
-            appState.globalAlert = "이미지를 읽지 못했습니다."
-            return
+        do {
+            let dataURL = try ImageCompressor.makeDataURL(from: url)
+            coverDataURL = dataURL
+            coverPreview = nsImage(fromDataURL: dataURL)
+            scheduleAutosave()
+        } catch {
+            appState.globalAlert = error.localizedDescription
         }
-        coverDataURL = dataURL
-        coverPreview = img
-        scheduleAutosave()
     }
 
     private func pickBodyImages() {
         let urls = openImagePanel(multiple: true)
+        var failed = false
         for url in urls {
-            if let dataURL = makeDataURL(from: url) {
+            do {
+                let dataURL = try ImageCompressor.makeDataURL(from: url)
                 bodyImageDataURLs.append(dataURL)
+            } catch {
+                failed = true
+                appState.globalAlert = error.localizedDescription
             }
         }
-        scheduleAutosave()
+        if !failed || !bodyImageDataURLs.isEmpty {
+            scheduleAutosave()
+        }
     }
 
     private func openImagePanel(multiple: Bool) -> [URL] {
@@ -352,21 +421,6 @@ struct EditorView: View {
         return panel.runModal() == .OK ? panel.urls : []
     }
 
-    private func makeDataURL(from url: URL) -> String? {
-        guard let data = try? Data(contentsOf: url) else { return nil }
-        let ext = url.pathExtension.lowercased()
-        let mime: String
-        switch ext {
-        case "jpg", "jpeg": mime = "image/jpeg"
-        case "png": mime = "image/png"
-        case "gif": mime = "image/gif"
-        case "webp": mime = "image/webp"
-        case "heic": mime = "image/heic"
-        default: mime = "application/octet-stream"
-        }
-        return "data:\(mime);base64,\(data.base64EncodedString())"
-    }
-
     private func nsImage(fromDataURL dataURL: String) -> NSImage? {
         guard let range = dataURL.range(of: "base64,") else { return nil }
         let b64 = String(dataURL[range.upperBound...])
@@ -375,7 +429,6 @@ struct EditorView: View {
     }
 
     private func formatPublishAt(_ date: Date) -> String {
-        // Server stores KST wall-clock. Format local calendar components as KST-like string.
         var cal = Calendar(identifier: .gregorian)
         cal.timeZone = TimeZone(identifier: "Asia/Seoul") ?? .current
         let c = cal.dateComponents([.year, .month, .day, .hour, .minute, .second], from: date)
@@ -394,8 +447,6 @@ struct EditorView: View {
             "yyyy-MM-dd'T'HH:mm",
             "yyyy-MM-dd"
         ]
-        var cal = Calendar(identifier: .gregorian)
-        cal.timeZone = TimeZone(identifier: "Asia/Seoul") ?? .current
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "en_US_POSIX")
         formatter.timeZone = TimeZone(identifier: "Asia/Seoul")

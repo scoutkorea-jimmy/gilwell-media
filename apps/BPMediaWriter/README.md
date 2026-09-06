@@ -6,6 +6,15 @@ Bundle ID: `net.bpmedia.writer`
 Target: macOS 14+  
 Signing: Free Apple ID / Personal Team (local run only — no App Store, no notarization)
 
+## Brand
+
+UI colors follow the **World Scouting** brand guide (RGB for digital):
+
+- Primary: Scouting Purple `#622599` + Canvas White `#FFFFFF`
+- Accents (sparingly): Midnight Purple, Ocean Blue, Forest Green (success), Ember Orange (warning), Fire Red (destructive)
+
+See `Sources/Theme/BrandColors.swift`. Asset catalog `AccentColor` is set to Scouting Purple.
+
 ## Open & run (Personal Team)
 
 1. Install **full Xcode** from the Mac App Store (Command Line Tools alone are not enough).
@@ -36,10 +45,18 @@ The login screen will show an embedded WKWebView widget when needed.
 - Admin post list (`scope=admin`) with search / category / published filters
 - Create / edit / delete posts
 - Editor.js JSON content encoding from plain TextEditor + optional body images
-- Cover image via `NSOpenPanel` → `image_data` data URL
+- Cover image via `NSOpenPanel` → compressed `image_data` data URL
 - Publish modes: immediate / schedule (`publish_at`, unpublished until due) / hold
-- Local draft autosave under Application Support `BPMediaWriter/local-draft.json`
+- Local draft autosave under Application Support `BPMediaWriter/local-draft.json` (text-first; large images omitted)
 - Korean UI
+
+## Stability notes
+
+- Edit/save keeps existing http(s) Editor.js body images (preserves original JSON when body unchanged)
+- Image pick compresses/downscales before base64 (~max edge 2000px, JPEG ~0.82; ~4MB cap)
+- Login 401 does not clear session (`onUnauthorized` only when `authorized: true`)
+- Keychain write failures are surfaced; `try!` removed from Editor.js encode
+- List refresh honors cancellation so stale responses do not overwrite newer results
 
 Out of scope: analytics, KMS, member permissions UI, Facebook/SNS share, App Store metadata.
 

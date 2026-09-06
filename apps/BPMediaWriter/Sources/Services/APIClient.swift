@@ -158,9 +158,10 @@ final class APIClient {
         encodable: (any Encodable)? = nil,
         authorized: Bool = true
     ) async throws -> Data {
-        var components = URLComponents(url: baseURL.appendingPathComponent(path), resolvingAgainstBaseURL: false)!
-        // appendingPathComponent encodes oddly for query; rebuild path carefully
-        components = URLComponents(string: baseURL.absoluteString.trimmingCharacters(in: CharacterSet(charactersIn: "/")) + path)!
+        let root = baseURL.absoluteString.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+        guard var components = URLComponents(string: root + path) else {
+            throw APIError(message: "잘못된 URL입니다.", statusCode: nil, code: nil, retryAfter: nil)
+        }
         if !query.isEmpty {
             components.queryItems = query
         }
@@ -186,13 +187,13 @@ final class APIClient {
         guard let http = response as? HTTPURLResponse else {
             throw APIError(message: "네트워크 응답이 없습니다.", statusCode: nil, code: nil, retryAfter: nil)
         }
-        if http.statusCode == 401 {
+        // Login / unauthorized:false paths must NOT clear session on 401.
+        if http.statusCode == 401, authorized {
             onUnauthorized?()
         }
         if !(200...299).contains(http.statusCode) {
             if let body = try? JSONDecoder().decode(APIErrorBody.self, from: data) {
                 let msg = body.error ?? body.message ?? body.reason ?? "API 오류 (\(http.statusCode))"
-                // otp_required may appear as error string
                 let code = body.code ?? (body.error == "otp_required" ? "otp_required" : nil)
                 throw APIError(message: msg, statusCode: http.statusCode, code: code, retryAfter: body.retryAfter)
             }

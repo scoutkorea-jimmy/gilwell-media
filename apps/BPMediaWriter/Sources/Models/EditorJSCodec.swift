@@ -27,7 +27,7 @@ enum EditorJSCodec {
         var url: String
     }
 
-    /// Convert plain TextEditor text + optional body image data URLs into Editor.js JSON string.
+    /// Convert plain TextEditor text + image URLs (http(s) or data:) into Editor.js JSON string.
     static func encode(plainText: String, imageDataURLs: [String] = []) -> String {
         var blocks: [Block] = []
         let paragraphs = plainText
@@ -62,8 +62,15 @@ enum EditorJSCodec {
             blocks: blocks,
             version: version
         )
-        let data = try! JSONEncoder().encode(doc)
-        return String(data: data, encoding: .utf8) ?? "{\"time\":0,\"blocks\":[],\"version\":\"\(version)\"}"
+        do {
+            let data = try JSONEncoder().encode(doc)
+            if let s = String(data: data, encoding: .utf8) {
+                return s
+            }
+        } catch {
+            // fall through to safe empty doc
+        }
+        return "{\"time\":0,\"blocks\":[],\"version\":\"\(version)\"}"
     }
 
     /// Extract editable plain text and image URLs from an Editor.js JSON string (or legacy plain text).

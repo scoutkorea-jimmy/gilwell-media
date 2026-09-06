@@ -9,6 +9,8 @@ struct BPMediaWriterApp: App {
             RootView()
                 .environmentObject(appState)
                 .frame(minWidth: 980, minHeight: 640)
+                .tint(BrandColors.scoutingPurple)
+                .background(BrandColors.canvasWhite)
         }
         .commands {
             CommandGroup(replacing: .newItem) {
@@ -39,12 +41,16 @@ struct RootView: View {
                             systemImage: "doc.text",
                             description: Text("왼쪽 목록에서 글을 고르거나 새 글을 작성하세요.")
                         )
+                        .background(BrandColors.brandBackground)
                     }
                 }
+                .tint(BrandColors.brandPrimary)
             } else {
                 LoginView()
             }
         }
+        .background(BrandColors.canvasWhite)
+        .tint(BrandColors.scoutingPurple)
         .alert("알림", isPresented: Binding(
             get: { appState.globalAlert != nil },
             set: { if !$0 { appState.globalAlert = nil } }

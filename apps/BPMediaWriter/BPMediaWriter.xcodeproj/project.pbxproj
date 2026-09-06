@@ -20,6 +20,8 @@
 		B11000000000000000000002 /* PostListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B11000000000000000000001 /* PostListView.swift */; };
 		B11100000000000000000002 /* EditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B11100000000000000000001 /* EditorView.swift */; };
 		B11200000000000000000002 /* TurnstileWebView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B11200000000000000000001 /* TurnstileWebView.swift */; };
+		B11300000000000000000002 /* BrandColors.swift in Sources */ = {isa = PBXBuildFile; fileRef = B11300000000000000000001 /* BrandColors.swift */; };
+		B11400000000000000000002 /* ImageCompressor.swift in Sources */ = {isa = PBXBuildFile; fileRef = B11400000000000000000001 /* ImageCompressor.swift */; };
 		C10000000000000000000002 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C10000000000000000000001 /* Assets.xcassets */; };
 /* End PBXBuildFile section */
 
@@ -37,6 +39,8 @@
 		B11000000000000000000001 /* PostListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PostListView.swift; sourceTree = "<group>"; };
 		B11100000000000000000001 /* EditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorView.swift; sourceTree = "<group>"; };
 		B11200000000000000000001 /* TurnstileWebView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TurnstileWebView.swift; sourceTree = "<group>"; };
+		B11300000000000000000001 /* BrandColors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrandColors.swift; sourceTree = "<group>"; };
+		B11400000000000000000001 /* ImageCompressor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageCompressor.swift; sourceTree = "<group>"; };
 		C10000000000000000000001 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		A10000000000000000000006 /* BPMediaWriter.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = BPMediaWriter.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -76,6 +80,7 @@
 				B10100000000000000000001 /* AppState.swift */,
 				A1000000000000000000000A /* Models */,
 				A1000000000000000000000B /* Services */,
+				A1000000000000000000000E /* Theme */,
 				A1000000000000000000000C /* Views */,
 			);
 			path = Sources;
@@ -98,6 +103,7 @@
 				B10600000000000000000001 /* AuthService.swift */,
 				B10700000000000000000001 /* KeychainStore.swift */,
 				B10800000000000000000001 /* DraftStore.swift */,
+				B11400000000000000000001 /* ImageCompressor.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -111,6 +117,14 @@
 				B11200000000000000000001 /* TurnstileWebView.swift */,
 			);
 			path = Views;
+			sourceTree = "<group>";
+		};
+		A1000000000000000000000E /* Theme */ = {
+			isa = PBXGroup;
+			children = (
+				B11300000000000000000001 /* BrandColors.swift */,
+			);
+			path = Theme;
 			sourceTree = "<group>";
 		};
 		A1000000000000000000000D /* Resources */ = {
@@ -199,6 +213,8 @@
 				B11000000000000000000002 /* PostListView.swift in Sources */,
 				B11100000000000000000002 /* EditorView.swift in Sources */,
 				B11200000000000000000002 /* TurnstileWebView.swift in Sources */,
+				B11300000000000000000002 /* BrandColors.swift in Sources */,
+				B11400000000000000000002 /* ImageCompressor.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -1,5 +1,16 @@
 import Foundation
 
+enum AuthServiceError: LocalizedError {
+    case keychainWriteFailed
+
+    var errorDescription: String? {
+        switch self {
+        case .keychainWriteFailed:
+            return "로그인 토큰을 Keychain에 저장하지 못했습니다. macOS Keychain 권한을 확인해 주세요."
+        }
+    }
+}
+
 @MainActor
 final class AuthService {
     private let tokenAccount = "auth_token"
@@ -23,13 +34,14 @@ final class AuthService {
         return true
     }
 
-    func saveSession(token: String, role: String?, user: AuthUser?) {
+    func saveSession(token: String, role: String?, user: AuthUser?) throws {
+        let ok = KeychainStore.set(token, account: tokenAccount)
+        guard ok else { throw AuthServiceError.keychainWriteFailed }
         self.token = token
         self.role = role
         self.user = user
-        KeychainStore.set(token, account: tokenAccount)
         if let role {
-            KeychainStore.set(role, account: roleAccount)
+            _ = KeychainStore.set(role, account: roleAccount)
         }
         if let user, let data = try? JSONEncoder().encode(user) {
             UserDefaults.standard.set(data, forKey: userDefaultsKey)

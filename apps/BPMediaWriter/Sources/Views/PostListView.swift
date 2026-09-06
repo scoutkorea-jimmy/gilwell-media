@@ -4,12 +4,14 @@ struct PostListView: View {
     @EnvironmentObject private var appState: AppState
     @State private var pendingDelete: PostSummary?
     @State private var confirmDelete = false
+    @State private var selectedID: Int?
 
     var body: some View {
         VStack(spacing: 0) {
             HStack {
                 Text("게시글")
                     .font(.headline)
+                    .foregroundStyle(BrandColors.scoutingPurple)
                 Spacer()
                 Button {
                     appState.openNewPost()
@@ -17,10 +19,12 @@ struct PostListView: View {
                     Label("새 글", systemImage: "square.and.pencil")
                 }
                 .buttonStyle(.borderedProminent)
+                .tint(BrandColors.brandPrimary)
                 .controlSize(.small)
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 10)
+            .background(BrandColors.brandSurface)
 
             VStack(alignment: .leading, spacing: 8) {
                 TextField("제목·내용 검색", text: $appState.searchQuery)
@@ -56,6 +60,7 @@ struct PostListView: View {
 
             if appState.isLoadingList && appState.posts.isEmpty {
                 ProgressView("불러오는 중…")
+                    .tint(BrandColors.brandPrimary)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if let err = appState.listError, appState.posts.isEmpty {
                 VStack(spacing: 8) {
@@ -63,12 +68,15 @@ struct PostListView: View {
                     Button("다시 시도") {
                         Task { await appState.refreshPosts() }
                     }
+                    .buttonStyle(.borderedProminent)
+                    .tint(BrandColors.brandPrimary)
                 }
                 .padding()
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
-                List(appState.posts) { post in
+                List(appState.posts, selection: $selectedID) { post in
                     Button {
+                        selectedID = post.id
                         Task { await appState.openEdit(postID: post.id) }
                     } label: {
                         VStack(alignment: .leading, spacing: 4) {
@@ -82,11 +90,15 @@ struct PostListView: View {
                                     .font(.caption2.weight(.semibold))
                                     .padding(.horizontal, 6)
                                     .padding(.vertical, 2)
-                                    .background(post.isPublished ? Color.green.opacity(0.2) : Color.orange.opacity(0.2))
+                                    .foregroundStyle(post.isPublished ? BrandColors.forestGreen : BrandColors.midnightPurple)
+                                    .background(
+                                        (post.isPublished ? BrandColors.leafGreen : BrandColors.blossomPink)
+                                            .opacity(0.35)
+                                    )
                                     .clipShape(Capsule())
                             }
                             HStack(spacing: 8) {
-                                Text(post.category?.uppercased() ?? "-")
+                                categoryChip(post.category)
                                 Text("·")
                                 Text(post.displayDate)
                                 if let author = post.author, !author.isEmpty {
@@ -98,10 +110,23 @@ struct PostListView: View {
                             .foregroundStyle(.secondary)
                         }
                         .padding(.vertical, 2)
+                        .padding(.horizontal, 4)
+                        .background(
+                            selectedID == post.id
+                                ? BrandColors.scoutingPurple.opacity(0.12)
+                                : Color.clear
+                        )
+                        .cornerRadius(6)
                     }
                     .buttonStyle(.plain)
+                    .listRowBackground(
+                        selectedID == post.id
+                            ? BrandColors.scoutingPurple.opacity(0.08)
+                            : BrandColors.canvasWhite
+                    )
                     .contextMenu {
                         Button("편집") {
+                            selectedID = post.id
                             Task { await appState.openEdit(postID: post.id) }
                         }
                         Button("삭제…", role: .destructive) {
@@ -111,6 +136,7 @@ struct PostListView: View {
                     }
                 }
                 .listStyle(.sidebar)
+                .tint(BrandColors.brandPrimary)
             }
 
             Divider()
@@ -127,8 +153,11 @@ struct PostListView: View {
                 .controlSize(.small)
             }
             .padding(10)
+            .background(BrandColors.brandSurface)
         }
         .frame(minWidth: 300)
+        .background(BrandColors.brandBackground)
+        .tint(BrandColors.brandPrimary)
         .task {
             if appState.isAuthenticated {
                 await appState.refreshPosts()
@@ -143,5 +172,17 @@ struct PostListView: View {
         } message: { post in
             Text("「\(post.title ?? "#\(post.id)")」을(를) 삭제할까요? 이 작업은 되돌릴 수 없습니다.")
         }
+    }
+
+    @ViewBuilder
+    private func categoryChip(_ raw: String?) -> some View {
+        let label = (raw ?? "-").uppercased()
+        Text(label)
+            .font(.caption2.weight(.semibold))
+            .padding(.horizontal, 5)
+            .padding(.vertical, 1)
+            .foregroundStyle(BrandColors.midnightPurple)
+            .background(BrandColors.riverBlue.opacity(0.45))
+            .clipShape(Capsule())
     }
 }

@@ -25,6 +25,7 @@ final class AppState: ObservableObject {
     let drafts: DraftStore
 
     private var listTask: Task<Void, Never>?
+    private var listGeneration = 0
 
     init(
         auth: AuthService = AuthService(),
@@ -60,7 +61,7 @@ final class AppState: ObservableObject {
     func login(username: String, password: String, turnstileToken: String?) async {
         do {
             let result = try await api.login(username: username, password: password, turnstileToken: turnstileToken)
-            auth.saveSession(token: result.token ?? "", role: result.role, user: result.user)
+            try auth.saveSession(token: result.token ?? "", role: result.role, user: result.user)
             currentUser = result.user
             role = result.role
             isAuthenticated = true
@@ -75,6 +76,8 @@ final class AppState: ObservableObject {
             } else {
                 globalAlert = error.message
             }
+        } catch let error as AuthServiceError {
+            globalAlert = error.localizedDescription
         } catch {
             globalAlert = error.localizedDescription
         }
@@ -91,6 +94,8 @@ final class AppState: ObservableObject {
 
     func refreshPosts() async {
         listTask?.cancel()
+        listGeneration += 1
+        let generation = listGeneration
         isLoadingList = true
         listError = nil
         do {
@@ -101,15 +106,23 @@ final class AppState: ObservableObject {
                 page: 1,
                 limit: 50
             )
+            guard !Task.isCancelled, generation == listGeneration else { return }
             posts = page.posts
             totalPosts = page.total
+        } catch is CancellationError {
+            return
         } catch let error as APIError {
+            guard !Task.isCancelled, generation == listGeneration else { return }
             listError = error.message
-            if error.statusCode == 401 { handleUnauthorized() }
+            // 401 on authorized calls already triggers onUnauthorized; avoid double-clear here
+            // but still surface list error.
         } catch {
+            guard !Task.isCancelled, generation == listGeneration else { return }
             listError = error.localizedDescription
         }
-        isLoadingList = false
+        if generation == listGeneration {
+            isLoadingList = false
+        }
     }
 
     func scheduleRefresh() {
@@ -143,7 +156,6 @@ final class AppState: ObservableObject {
             authors = options
             metaTagPool = try await tags
         } catch {
-            // Helpers are optional; editor still works with defaults.
             if authors.isEmpty {
                 authors = [AuthorOption(code: "Editor.A", label: "Editor.A")]
             }
