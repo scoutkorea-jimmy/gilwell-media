@@ -1,4 +1,4 @@
-# BP Media Writer (macOS) v1.1
+# BP Media Writer (macOS) v1.1.1
 
 Korean-first SwiftUI macOS app for writing/editing BP Media posts via existing `https://bpmedia.net` APIs. No new web CMS.
 
@@ -46,7 +46,9 @@ The login screen will show an embedded WKWebView widget when needed.
 - List row tap opens **read-only detail**; 「수정」 enters the editor. 「새 글」 always starts blank (draft cleared)
 - **조회수** on list rows and detail when API provides `views`
 - Pagination: page size **10 / 30 / 50**, previous/next, range label (`1–30 / 406`)
-- Top toolbar: 새 글 · 새로고침 · 웹 관리자 · 로그아웃
+- Top toolbar: 새 글 · 새로고침 · 웹 관리자 · 로그아웃 · 설정(글자 크기/글꼴)
+- Home tabs: 대시보드 | 게시글 (analytics / geo-audience / popular)
+- Read-only: full-bleed 대표 이미지; category chips use homepage Korean labels
 - Update notice when remote `mac_writer_version` (`/api/version` or `/MAC_WRITER_VERSION`) is newer than local `CFBundleShortVersionString`
 - Create / edit / delete posts (create POSTs; edit PUTs with `expected_updated_at`)
 - Editor.js JSON content encoding from plain TextEditor + optional body images

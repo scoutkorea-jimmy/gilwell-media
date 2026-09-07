@@ -3,17 +3,24 @@ import AppKit
 
 struct PostListView: View {
     @EnvironmentObject private var appState: AppState
+    @Environment(\.appTypography) private var typography
     @State private var pendingDelete: PostSummary?
     @State private var confirmDelete = false
+    @State private var showSettings = false
 
     var body: some View {
         VStack(spacing: 0) {
             topToolbar
-            filterCard
-            Divider()
-            listBody
-            Divider()
-            paginationBar
+            homeTabBar
+            if appState.homeTab == .posts {
+                filterCard
+                Divider()
+                listBody
+                Divider()
+                paginationBar
+            } else {
+                dashboardSidebarHint
+            }
         }
         .frame(minWidth: 320)
         .background(BrandColors.brandBackground)
@@ -27,6 +34,9 @@ struct PostListView: View {
         }
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
             Task { await appState.checkForUpdateIfNeeded(reason: .focus) }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .bpmediaOpenSettings)) { _ in
+            showSettings = true
         }
         .alert("게시글 삭제", isPresented: $confirmDelete, presenting: pendingDelete) { post in
             Button("취소", role: .cancel) {}
@@ -44,10 +54,10 @@ struct PostListView: View {
         HStack(alignment: .center, spacing: 10) {
             VStack(alignment: .leading, spacing: 2) {
                 Text("BP Media")
-                    .font(.caption.weight(.semibold))
+                    .font(typography.captionSemibold)
                     .foregroundStyle(BrandColors.scoutingPurple.opacity(0.85))
                 Text("게시글")
-                    .font(.title2.weight(.bold))
+                    .font(typography.title2)
                     .foregroundStyle(BrandColors.scoutingPurple)
             }
             Spacer(minLength: 8)
@@ -85,12 +95,24 @@ struct PostListView: View {
                 }
                 .buttonStyle(.bordered)
                 .controlSize(.regular)
+
+                Button {
+                    showSettings = true
+                } label: {
+                    Label("설정", systemImage: "gearshape")
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.regular)
+                .help("글자 크기·글꼴 설정")
             }
             .labelStyle(.titleAndIcon)
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 12)
         .background(BrandColors.brandSurface)
+        .sheet(isPresented: $showSettings) {
+            SettingsView()
+        }
     }
 
     // MARK: - Filters (card below toolbar)
@@ -104,13 +126,13 @@ struct PostListView: View {
                 }
 
             Text("카테고리")
-                .font(.caption.weight(.semibold))
+                .font(typography.captionSemibold)
                 .foregroundStyle(.secondary)
 
             categoryChips
 
             Text("공개 상태")
-                .font(.caption.weight(.semibold))
+                .font(typography.captionSemibold)
                 .foregroundStyle(.secondary)
 
             Picker("공개", selection: $appState.publishedFilter) {
@@ -141,7 +163,7 @@ struct PostListView: View {
     }
 
     private var categoryChips: some View {
-        // Wrapping row: 전체 | Korea | APR | WOSM | People
+        // Wrapping row: 전체 | 홈페이지 nav 한국어 카테고리명
         FlexibleChipRow(spacing: 6) {
             categoryChip(title: "전체", selected: appState.categoryFilter == nil) {
                 appState.categoryFilter = nil
@@ -161,9 +183,11 @@ struct PostListView: View {
     private func categoryChip(title: String, selected: Bool, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Text(title)
-                .font(.caption.weight(.semibold))
+                .font(typography.captionSemibold)
                 .padding(.horizontal, 10)
                 .padding(.vertical, 6)
+                .lineLimit(2)
+                .multilineTextAlignment(.center)
                 .foregroundStyle(selected ? Color.white : BrandColors.midnightPurple)
                 .background(selected ? BrandColors.scoutingPurple : BrandColors.riverBlue.opacity(0.35))
                 .clipShape(Capsule())
@@ -234,16 +258,16 @@ struct PostListView: View {
     }
 
     private func postRow(_ post: PostSummary) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .firstTextBaseline, spacing: 8) {
                 Text(post.title ?? "(제목 없음)")
-                    .font(.body.weight(.semibold))
+                    .font(typography.bodySemibold)
                     .foregroundStyle(.primary)
                     .lineLimit(2)
                     .multilineTextAlignment(.leading)
                 Spacer(minLength: 4)
                 Text(post.isPublished ? "공개" : "비공개")
-                    .font(.caption2.weight(.semibold))
+                    .font(typography.caption2Semibold)
                     .padding(.horizontal, 6)
                     .padding(.vertical, 2)
                     .foregroundStyle(post.isPublished ? BrandColors.forestGreen : BrandColors.midnightPurple)
@@ -254,16 +278,16 @@ struct PostListView: View {
                     .clipShape(Capsule())
             }
 
-            HStack(alignment: .center, spacing: 6) {
-                Text((post.category ?? "-").uppercased())
-                    .font(.caption2.weight(.semibold))
-                    .padding(.horizontal, 5)
-                    .padding(.vertical, 1)
-                    .foregroundStyle(BrandColors.midnightPurple)
-                    .background(BrandColors.riverBlue.opacity(0.45))
-                    .clipShape(Capsule())
+            Text(PostCategory.displayTitle(for: post.category))
+                .font(typography.caption2Semibold)
+                .padding(.horizontal, 6)
+                .padding(.vertical, 2)
+                .foregroundStyle(BrandColors.midnightPurple)
+                .background(BrandColors.riverBlue.opacity(0.45))
+                .clipShape(Capsule())
+                .lineLimit(2)
 
-                Text("·")
+            HStack(alignment: .center, spacing: 6) {
                 Text(post.displayDate)
                 if let author = post.author, !author.isEmpty {
                     Text("·")
@@ -273,7 +297,7 @@ struct PostListView: View {
                 Text("·")
                 Label(post.viewsLabel, systemImage: "eye")
             }
-            .font(.caption)
+            .font(typography.caption)
             .foregroundStyle(.secondary)
             .lineLimit(1)
         }

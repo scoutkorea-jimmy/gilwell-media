@@ -4,6 +4,7 @@ import UniformTypeIdentifiers
 
 struct EditorView: View {
     @EnvironmentObject private var appState: AppState
+    @Environment(\.appTypography) private var typography
 
     @State private var title = ""
     @State private var subtitle = ""
@@ -51,14 +52,14 @@ struct EditorView: View {
     private func readOnlyDetail(_ post: PostDetail) -> some View {
         let decoded = EditorJSCodec.decode(post.content)
         VStack(spacing: 0) {
-            HStack {
-                VStack(alignment: .leading, spacing: 2) {
+            HStack(alignment: .firstTextBaseline) {
+                VStack(alignment: .leading, spacing: 4) {
                     Text("글 보기")
-                        .font(.title2.weight(.bold))
+                        .font(typography.title2)
                         .foregroundStyle(BrandColors.scoutingPurple)
                     Text("ID \(post.id)")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .font(typography.caption2)
+                        .foregroundStyle(.tertiary)
                 }
                 Spacer()
                 Button("닫기") { appState.closeEditor() }
@@ -68,150 +69,183 @@ struct EditorView: View {
                 .buttonStyle(.borderedProminent)
                 .tint(BrandColors.brandPrimary)
             }
-            .padding(12)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
             .background(BrandColors.brandSurface)
 
             Divider()
 
             ScrollView {
-                VStack(alignment: .leading, spacing: 16) {
-                    // 1. 제목
-                    Text(post.title ?? "(제목 없음)")
-                        .font(.title.weight(.bold))
-                        .foregroundStyle(BrandColors.scoutingPurple)
-                        .textSelection(.enabled)
-
-                    // 카테고리 + 공개 + 조회수
-                    HStack(spacing: 10) {
-                        metaChip((post.category ?? "-").uppercased())
-                        Text(post.isPublished ? "공개" : "비공개")
-                            .font(.caption.weight(.semibold))
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 3)
-                            .foregroundStyle(post.isPublished ? BrandColors.forestGreen : BrandColors.midnightPurple)
-                            .background(
-                                (post.isPublished ? BrandColors.leafGreen : BrandColors.blossomPink)
-                                    .opacity(0.35)
-                            )
-                            .clipShape(Capsule())
-                        Label(post.viewsLabel, systemImage: "eye")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-
-                    // 2. 부제
-                    if let sub = post.subtitle, !sub.isEmpty {
-                        Text(sub)
-                            .font(.title3)
-                            .foregroundStyle(.secondary)
+                VStack(alignment: .leading, spacing: 0) {
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text(post.title ?? "(제목 없음)")
+                            .font(typography.title)
+                            .foregroundStyle(BrandColors.scoutingPurple)
                             .textSelection(.enabled)
-                    }
+                            .fixedSize(horizontal: false, vertical: true)
 
-                    // 3. 스페셜 피처
-                    if let feature = post.specialFeature, !feature.isEmpty {
-                        labeledRow("스페셜 피처", feature)
-                    }
+                        HStack(spacing: 8) {
+                            metaChip(PostCategory.displayTitle(for: post.category))
+                            Text(post.isPublished ? "공개" : "비공개")
+                                .font(typography.captionSemibold)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 3)
+                                .foregroundStyle(post.isPublished ? BrandColors.forestGreen : BrandColors.midnightPurple)
+                                .background(
+                                    (post.isPublished ? BrandColors.leafGreen : BrandColors.blossomPink)
+                                        .opacity(0.35)
+                                )
+                                .clipShape(Capsule())
+                            Label(post.viewsLabel, systemImage: "eye")
+                                .font(typography.caption)
+                                .foregroundStyle(.secondary)
+                        }
 
-                    // 5. 대표 이미지
-                    if let url = post.imageURL, !url.isEmpty {
-                        Text("대표 이미지")
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(.secondary)
-                        if url.hasPrefix("http"), let nsURL = URL(string: url) {
-                            AsyncImage(url: nsURL) { phase in
-                                switch phase {
-                                case .success(let img):
-                                    img.resizable().scaledToFit().frame(maxWidth: 420, maxHeight: 240)
-                                        .cornerRadius(8)
-                                case .failure:
-                                    Link(url, destination: nsURL)
-                                        .font(.caption)
-                                default:
-                                    ProgressView()
-                                }
-                            }
-                        } else {
-                            Text(url)
-                                .font(.caption)
+                        if let sub = post.subtitle, !sub.isEmpty {
+                            Text(sub)
+                                .font(typography.title3)
                                 .foregroundStyle(.secondary)
                                 .textSelection(.enabled)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+
+                        if let feature = post.specialFeature, !feature.isEmpty {
+                            labeledRow("스페셜 피처", feature)
+                        }
+
+                        if let url = post.imageURL, !url.isEmpty {
+                            Text("대표 이미지")
+                                .font(typography.captionSemibold)
+                                .foregroundStyle(BrandColors.scoutingPurple.opacity(0.85))
                         }
                     }
+                    .padding(.horizontal, 20)
+                    .padding(.top, 20)
+                    .padding(.bottom, 12)
+                    .frame(maxWidth: .infinity, alignment: .leading)
 
-                    Divider()
-                        .padding(.vertical, 4)
+                    if let url = post.imageURL, !url.isEmpty {
+                        fullBleedCover(url)
+                            .padding(.bottom, 20)
+                    }
 
-                    // 6. 본문
-                    Text("본문")
-                        .font(.headline)
-                        .foregroundStyle(BrandColors.scoutingPurple)
-                    Text(decoded.text.isEmpty ? "(본문 없음)" : decoded.text)
-                        .font(.body)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.top, 4)
-                        .textSelection(.enabled)
+                    VStack(alignment: .leading, spacing: 16) {
+                        sectionHeader("본문")
+                        Text(decoded.text.isEmpty ? "(본문 없음)" : decoded.text)
+                            .font(typography.body)
+                            .lineSpacing(4)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .textSelection(.enabled)
 
-                    // 7. 본문 이미지
-                    if !decoded.imageURLs.isEmpty {
-                        Text("본문 이미지")
-                            .font(.headline)
-                            .foregroundStyle(BrandColors.scoutingPurple)
-                            .padding(.top, 8)
-                        ForEach(Array(decoded.imageURLs.enumerated()), id: \.offset) { idx, url in
-                            if url.hasPrefix("http"), let nsURL = URL(string: url) {
-                                HStack(alignment: .top, spacing: 8) {
-                                    Text("이미지 \(idx + 1)")
-                                        .font(.caption)
-                                    Link(url, destination: nsURL)
-                                        .font(.caption)
-                                        .lineLimit(2)
-                                }
-                                AsyncImage(url: nsURL) { phase in
-                                    if case .success(let img) = phase {
-                                        img.resizable().scaledToFit().frame(maxWidth: 360, maxHeight: 200)
-                                            .cornerRadius(6)
+                        if !decoded.imageURLs.isEmpty {
+                            sectionHeader("본문 이미지")
+                                .padding(.top, 8)
+                            ForEach(Array(decoded.imageURLs.enumerated()), id: \.offset) { idx, url in
+                                if url.hasPrefix("http"), let nsURL = URL(string: url) {
+                                    VStack(alignment: .leading, spacing: 6) {
+                                        HStack(alignment: .top, spacing: 8) {
+                                            Text("이미지 \(idx + 1)")
+                                                .font(typography.caption)
+                                            Link(url, destination: nsURL)
+                                                .font(typography.caption)
+                                                .lineLimit(2)
+                                        }
+                                        AsyncImage(url: nsURL) { phase in
+                                            if case .success(let img) = phase {
+                                                img.resizable()
+                                                    .scaledToFit()
+                                                    .frame(maxWidth: .infinity, maxHeight: 220)
+                                                    .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+                                            }
+                                        }
                                     }
+                                } else {
+                                    Text("이미지 \(idx + 1): \(url.hasPrefix("data:") ? "(첨부 data URL)" : url)")
+                                        .font(typography.caption)
+                                        .foregroundStyle(.secondary)
                                 }
-                            } else {
-                                Text("이미지 \(idx + 1): \(url.hasPrefix("data:") ? "(첨부 data URL)" : url)")
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
+                            }
+                        }
+
+                        Divider()
+                            .padding(.vertical, 4)
+
+                        VStack(alignment: .leading, spacing: 8) {
+                            if let meta = post.metaTags, !meta.isEmpty {
+                                labeledRow("메타 태그", meta)
+                            }
+                            if let author = post.author, !author.isEmpty {
+                                labeledRow("작성자", author)
+                            }
+                            if let at = post.publishAt, !at.isEmpty {
+                                labeledRow("공개 예정/시각", at)
+                            } else if let created = post.createdAt, !created.isEmpty {
+                                labeledRow("작성", created)
+                            }
+                            if let updated = post.updatedAt, !updated.isEmpty {
+                                labeledRow("수정", updated)
                             }
                         }
                     }
-
-                    Divider()
-
-                    // 8. 메타 + 작성자 + 공개 메타
-                    VStack(alignment: .leading, spacing: 4) {
-                        if let meta = post.metaTags, !meta.isEmpty {
-                            labeledRow("메타 태그", meta)
-                        }
-                        if let author = post.author, !author.isEmpty {
-                            labeledRow("작성자", author)
-                        }
-                        if let at = post.publishAt, !at.isEmpty {
-                            labeledRow("공개 예정/시각", at)
-                        } else if let created = post.createdAt, !created.isEmpty {
-                            labeledRow("작성", created)
-                        }
-                        if let updated = post.updatedAt, !updated.isEmpty {
-                            labeledRow("수정", updated)
-                        }
-                    }
-                    .font(.callout)
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 28)
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
-                .padding(20)
             }
         }
+    }
+
+    private func sectionHeader(_ title: String) -> some View {
+        Text(title)
+            .font(typography.headline)
+            .foregroundStyle(BrandColors.scoutingPurple)
+            .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    /// Edge-to-edge cover inside the detail pane (ignores horizontal content padding).
+    @ViewBuilder
+    private func fullBleedCover(_ url: String) -> some View {
+        Group {
+            if url.hasPrefix("http"), let nsURL = URL(string: url) {
+                AsyncImage(url: nsURL) { phase in
+                    switch phase {
+                    case .success(let img):
+                        img
+                            .resizable()
+                            .scaledToFill()
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 300)
+                            .clipped()
+                    case .failure:
+                        Link(url, destination: nsURL)
+                            .font(typography.caption)
+                            .padding(.horizontal, 20)
+                    default:
+                        ProgressView()
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 160)
+                    }
+                }
+            } else {
+                Text(url)
+                    .font(typography.caption)
+                    .foregroundStyle(.secondary)
+                    .textSelection(.enabled)
+                    .padding(.horizontal, 20)
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .background(BrandColors.brandSurface)
     }
 
     private func labeledRow(_ label: String, _ value: String) -> some View {
         HStack(alignment: .top, spacing: 8) {
             Text(label)
+                .font(typography.caption)
                 .foregroundStyle(.secondary)
-                .frame(width: 88, alignment: .leading)
+                .frame(width: 96, alignment: .leading)
             Text(value)
+                .font(typography.callout)
                 .textSelection(.enabled)
             Spacer(minLength: 0)
         }
@@ -219,12 +253,13 @@ struct EditorView: View {
 
     private func metaChip(_ text: String) -> some View {
         Text(text)
-            .font(.caption2.weight(.semibold))
-            .padding(.horizontal, 6)
-            .padding(.vertical, 2)
+            .font(typography.caption2Semibold)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 3)
             .foregroundStyle(BrandColors.midnightPurple)
             .background(BrandColors.riverBlue.opacity(0.45))
             .clipShape(Capsule())
+            .lineLimit(2)
     }
 
     // MARK: - Editable editor
@@ -239,7 +274,7 @@ struct EditorView: View {
                     Section {
                         fieldLabel("제목", required: true)
                         TextField("제목을 입력하세요", text: $title)
-                            .font(.body.weight(.semibold))
+                            .font(typography.bodySemibold)
                     }
 
                     // 카테고리 (필수) — 제목 바로 다음
@@ -251,7 +286,7 @@ struct EditorView: View {
                             }
                         }
                         .labelsHidden()
-                        .pickerStyle(.segmented)
+                        .pickerStyle(.menu)
                         .onChange(of: category) { _, newValue in
                             Task { await appState.loadSpecialFeatures(for: newValue) }
                         }
@@ -293,22 +328,28 @@ struct EditorView: View {
                             if let coverPreview {
                                 Image(nsImage: coverPreview)
                                     .resizable()
-                                    .scaledToFit()
-                                    .frame(maxWidth: 280, maxHeight: 160)
-                                    .cornerRadius(8)
+                                    .scaledToFill()
+                                    .frame(maxWidth: .infinity)
+                                    .frame(height: 200)
+                                    .clipped()
+                                    .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
                             } else if let url = coverDataURL, url.hasPrefix("http"), let nsURL = URL(string: url) {
                                 AsyncImage(url: nsURL) { phase in
                                     switch phase {
                                     case .success(let img):
-                                        img.resizable().scaledToFit().frame(maxWidth: 280, maxHeight: 160)
-                                            .cornerRadius(8)
+                                        img.resizable()
+                                            .scaledToFill()
+                                            .frame(maxWidth: .infinity)
+                                            .frame(height: 200)
+                                            .clipped()
+                                            .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
                                     default:
                                         ProgressView()
                                     }
                                 }
                             } else {
                                 Text("없음")
-                                    .font(.body)
+                                    .font(typography.body)
                                     .foregroundStyle(.secondary)
                             }
                             HStack(spacing: 8) {
@@ -329,7 +370,7 @@ struct EditorView: View {
                     Section {
                         fieldLabel("본문", required: true)
                         TextEditor(text: $bodyText)
-                            .font(.body)
+                            .font(typography.body)
                             .frame(minHeight: 240)
                             .padding(6)
                             .background(BrandColors.canvasWhite)
@@ -429,14 +470,14 @@ struct EditorView: View {
 
     private var editToolbar: some View {
         HStack {
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: 4) {
                 Text(editingPost == nil ? "새 글 작성" : "글 수정")
-                    .font(.title2.weight(.bold))
+                    .font(typography.title2)
                     .foregroundStyle(BrandColors.scoutingPurple)
                 if let id = editingPost?.id {
                     Text("ID \(id)")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .font(typography.caption2)
+                        .foregroundStyle(.tertiary)
                 }
             }
             Spacer()
@@ -471,10 +512,10 @@ struct EditorView: View {
     private func fieldLabel(_ title: String, required: Bool) -> some View {
         HStack(spacing: 8) {
             Text(title)
-                .font(.headline)
+                .font(typography.headline)
                 .foregroundStyle(BrandColors.scoutingPurple)
             Text(required ? "필수" : "선택")
-                .font(.caption2.weight(.bold))
+                .font(typography.caption2Semibold)
                 .padding(.horizontal, 7)
                 .padding(.vertical, 2)
                 .foregroundStyle(required ? Color.white : BrandColors.midnightPurple)

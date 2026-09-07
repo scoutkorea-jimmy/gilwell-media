@@ -8,6 +8,7 @@ struct BPMediaWriterApp: App {
         WindowGroup {
             RootView()
                 .environmentObject(appState)
+                .withAppTypography()
                 .frame(minWidth: 980, minHeight: 640)
                 .tint(BrandColors.scoutingPurple)
                 .background(BrandColors.canvasWhite)
@@ -18,6 +19,12 @@ struct BPMediaWriterApp: App {
                     appState.openNewPost()
                 }
                 .keyboardShortcut("n", modifiers: [.command])
+            }
+            CommandGroup(after: .appSettings) {
+                Button("설정…") {
+                    NotificationCenter.default.post(name: .bpmediaOpenSettings, object: nil)
+                }
+                .keyboardShortcut(",", modifiers: [.command])
             }
         }
     }
@@ -32,7 +39,9 @@ struct RootView: View {
                 NavigationSplitView {
                     PostListView()
                 } detail: {
-                    if appState.editorMode != nil {
+                    if appState.homeTab == .dashboard {
+                        DashboardView()
+                    } else if appState.editorMode != nil {
                         EditorView()
                             .id(appState.editorSessionID)
                     } else {

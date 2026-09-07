@@ -23,6 +23,24 @@ final class AppState: ObservableObject {
     @Published var specialFeatures: [String] = []
     @Published var metaTagPool: [String] = []
 
+    /// Sidebar home: posts list (default) or article dashboard.
+    @Published var homeTab: WriterHomeTab = .posts
+
+    // Dashboard (KST "today" via API days=1 + start/end_date)
+    @Published var isLoadingDashboard = false
+    @Published var dashboardError: String?
+    @Published var dashboardPermissionDenied = false
+    @Published var dashTodayVisits: Int?
+    @Published var dashTodayViews: Int?
+    @Published var dashTodayPublished: Int?
+    @Published var dashTotalPosts: Int?
+    @Published var dashPublishedPosts: Int?
+    @Published var dashTopPosts: [AnalyticsTopPost] = []
+    @Published var dashPopularPosts: [PostSummary] = []
+    @Published var dashCountries: [GeoCountryRow] = []
+    @Published var dashTrackingNote: String?
+    @Published var dashLoadedAt: Date?
+
     /// Remote Mac writer version newer than local — shown once per dismissed version.
     @Published var updateAvailableVersion: String?
     private var lastUpdateCheckAt: Date?
@@ -81,6 +99,7 @@ final class AppState: ObservableObject {
         currentUser = nil
         role = nil
         editorMode = nil
+        homeTab = .posts
         selectedPostID = nil
         posts = []
         globalAlert = "세션이 만료되었습니다. 다시 로그인해 주세요."
@@ -118,6 +137,7 @@ final class AppState: ObservableObject {
         currentUser = nil
         role = nil
         editorMode = nil
+        homeTab = .posts
         selectedPostID = nil
         posts = []
     }
@@ -230,6 +250,7 @@ final class AppState: ObservableObject {
     /// 「새 글」 — always blank create. Clears autosave so a prior edit draft cannot leak in.
     func openNewPost() {
         drafts.clear()
+        homeTab = .posts
         selectedPostID = nil
         editorSessionID = UUID()
         editorMode = .create(LocalDraft())
@@ -237,6 +258,7 @@ final class AppState: ObservableObject {
 
     /// List row tap → read-only detail.
     func openView(postID: Int) async {
+        homeTab = .posts
         do {
             let post = try await api.fetchPost(id: postID)
             selectedPostID = postID
@@ -365,6 +387,106 @@ final class AppState: ObservableObject {
         updateAvailableVersion = nil
     }
 
+
+    // MARK: - Dashboard
+
+    /// YYYY-MM-DD in Asia/Seoul.
+    var todayKSTString: String {
+        var cal = Calendar(identifier: .gregorian)
+        cal.timeZone = TimeZone(identifier: "Asia/Seoul") ?? .current
+        let c = cal.dateComponents([.year, .month, .day], from: Date())
+        return String(format: "%04d-%02d-%02d", c.year ?? 0, c.month ?? 0, c.day ?? 0)
+    }
+
+    func loadDashboard() async {
+        guard isAuthenticated else { return }
+        isLoadingDashboard = true
+        dashboardError = nil
+        dashboardPermissionDenied = false
+        defer { isLoadingDashboard = false }
+
+        let today = todayKSTString
+        var permissionHit = false
+
+        do {
+            let data = try await api.fetchAdminAnalytics(days: 1)
+            dashTodayVisits = data.resolvedTodayVisits
+            dashTodayViews = data.resolvedTodayViews
+            if let counts = data.counts {
+                if let total = counts.total { dashTotalPosts = total }
+                if let published = counts.published { dashPublishedPosts = published }
+            }
+            dashTopPosts = Array(data.resolvedTopPosts.prefix(8))
+            dashTrackingNote = data.trackingNote
+        } catch let error as APIError {
+            if error.statusCode == 403 { permissionHit = true }
+            dashboardError = "방문 분석: \(error.message)"
+        } catch {
+            dashboardError = "방문 분석: \(error.localizedDescription)"
+        }
+
+        do {
+            let data = try await api.fetchGeoAudience(days: 1)
+            dashCountries = Array((data.countries ?? []).prefix(12))
+            if (dashTrackingNote ?? "").isEmpty {
+                dashTrackingNote = data.trackingNote ?? data.warmupNote
+            }
+        } catch let error as APIError {
+            if error.statusCode == 403 { permissionHit = true }
+            if dashboardError == nil {
+                dashboardError = "접속 국가: \(error.message)"
+            }
+        } catch {
+            if dashboardError == nil {
+                dashboardError = "접속 국가: \(error.localizedDescription)"
+            }
+        }
+
+        if let posts = try? await api.fetchPopularPosts(limit: 8) {
+            dashPopularPosts = posts
+        }
+
+        if let res = try? await api.fetchPosts(
+            query: "",
+            category: nil,
+            published: .all,
+            page: 1,
+            limit: 1,
+            startDate: today,
+            endDate: today
+        ) {
+            dashTodayPublished = res.total
+        }
+
+        if dashTotalPosts == nil,
+           let res = try? await api.fetchPosts(
+            query: "",
+            category: nil,
+            published: .all,
+            page: 1,
+            limit: 1
+           ) {
+            dashTotalPosts = res.total
+        }
+
+        if dashPublishedPosts == nil,
+           let res = try? await api.fetchPosts(
+            query: "",
+            category: nil,
+            published: .published,
+            page: 1,
+            limit: 1
+           ) {
+            dashPublishedPosts = res.total
+        }
+
+        dashboardPermissionDenied = permissionHit
+        if permissionHit {
+            dashboardError = "분석 메뉴 권한이 필요합니다. 웹 관리자에서 analytics-visits / geo-audience 권한을 확인해 주세요."
+        }
+        dashLoadedAt = Date()
+    }
+
 }
 
 enum PublishedFilter: String, CaseIterable, Identifiable {
@@ -387,6 +509,20 @@ enum PublishedFilter: String, CaseIterable, Identifiable {
         case .all: return nil
         case .published: return "1"
         case .unpublished: return "0"
+        }
+    }
+}
+
+enum WriterHomeTab: String, CaseIterable, Identifiable {
+    case posts
+    case dashboard
+
+    var id: String { rawValue }
+
+    var titleKO: String {
+        switch self {
+        case .posts: return "게시글"
+        case .dashboard: return "대시보드"
         }
     }
 }

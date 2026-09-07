@@ -7,11 +7,18 @@ enum PostCategory: String, CaseIterable, Identifiable, Codable {
 
     var titleKO: String {
         switch self {
-        case .korea: return "Korea"
-        case .apr: return "APR"
-        case .wosm: return "WOSM"
-        case .people: return "People"
+        case .korea: return "한국스카우트 소식"
+        case .apr: return "아시아-태평양 스카우트 소식"
+        case .wosm: return "세계의 스카우트 소식"
+        case .people: return "스카우트 인물"
         }
+    }
+
+    /// Homepage-nav Korean label for a raw API category string.
+    static func displayTitle(for raw: String?) -> String {
+        guard let raw, !raw.isEmpty else { return "-" }
+        if let cat = PostCategory(rawValue: raw) { return cat.titleKO }
+        return raw
     }
 }
 

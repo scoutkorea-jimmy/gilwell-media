@@ -58,7 +58,9 @@ final class APIClient {
         category: PostCategory?,
         published: PublishedFilter,
         page: Int,
-        limit: Int
+        limit: Int,
+        startDate: String? = nil,
+        endDate: String? = nil
     ) async throws -> PostListResponse {
         var items: [URLQueryItem] = [
             URLQueryItem(name: "scope", value: "admin"),
@@ -69,8 +71,43 @@ final class APIClient {
         if !q.isEmpty { items.append(URLQueryItem(name: "q", value: q)) }
         if let category { items.append(URLQueryItem(name: "category", value: category.rawValue)) }
         if let pub = published.queryValue { items.append(URLQueryItem(name: "published", value: pub)) }
+        if let startDate { items.append(URLQueryItem(name: "start_date", value: startDate)) }
+        if let endDate { items.append(URLQueryItem(name: "end_date", value: endDate)) }
         let data = try await request(path: "/api/posts", method: "GET", query: items)
         return try JSONDecoder().decode(PostListResponse.self, from: data)
+    }
+
+    func fetchAdminAnalytics(days: Int = 1) async throws -> AdminAnalyticsResponse {
+        let data = try await request(
+            path: "/api/admin/analytics",
+            method: "GET",
+            query: [URLQueryItem(name: "days", value: String(days))]
+        )
+        return try JSONDecoder().decode(AdminAnalyticsResponse.self, from: data)
+    }
+
+    func fetchGeoAudience(days: Int = 1) async throws -> GeoAudienceResponse {
+        let data = try await request(
+            path: "/api/admin/geo-audience",
+            method: "GET",
+            query: [URLQueryItem(name: "days", value: String(days))]
+        )
+        return try JSONDecoder().decode(GeoAudienceResponse.self, from: data)
+    }
+
+    func fetchPopularPosts(limit: Int = 5) async throws -> [PostSummary] {
+        let data = try await request(
+            path: "/api/posts/popular",
+            method: "GET",
+            query: [URLQueryItem(name: "limit", value: String(limit))]
+        )
+        if let decoded = try? JSONDecoder().decode(PopularPostsResponse.self, from: data) {
+            return decoded.posts ?? []
+        }
+        if let arr = try? JSONDecoder().decode([PostSummary].self, from: data) {
+            return arr
+        }
+        return []
     }
 
     func fetchPost(id: Int) async throws -> PostDetail {
