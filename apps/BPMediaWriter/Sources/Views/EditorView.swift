@@ -374,7 +374,13 @@ struct EditorView: View {
                 return
             }
         }
-        _ = await appState.savePost(payload, editing: editingPost)
+        guard let saved = await appState.savePost(payload, editing: editingPost) else { return }
+        // 저장 성공 = 서버의 updated_at 이 방금 바뀌었다. 그 값을 여기서 받아 두지 않으면
+        // 바로 이어지는 두 번째 저장이 옛 스탬프를 보내 409("다른 사용자가 먼저 수정")로 막힌다.
+        editingPost = saved
+        originalContentJSON = saved.content ?? content
+        baselineBodyText = bodyText
+        baselineImageURLs = bodyImageDataURLs
     }
 
     private func appendMetaTag(_ tag: String) {

@@ -60,6 +60,9 @@ The login screen will show an embedded WKWebView widget when needed.
 - Login 401 does not clear session (`onUnauthorized` only when `authorized: true`)
 - Keychain write failures are surfaced; `try!` removed from Editor.js encode
 - List refresh honors cancellation so stale responses do not overwrite newer results
+- 저장에 성공하면 서버가 돌려준 `updated_at` 을 편집 화면이 곧바로 받아 둔다 —
+  안 그러면 **바로 이어지는 두 번째 저장이 409("다른 사용자가 먼저 수정")로 막힌다**
+- 409 는 코드로 가른다(`EDIT_CONFLICT` 만 동시편집 안내) — 다른 409 에 엉뚱한 안내를 하지 않도록
 
 Out of scope: analytics, KMS, member permissions UI, Facebook/SNS share, App Store metadata.
 
@@ -87,6 +90,22 @@ bash apps/BPMediaWriter/Tests/run-roundtrip.sh
 검사 항목 25건 — 이미지 보존, 미변경 시 원본 JSON 바이트 동일, 목록·표 노출,
 중첩 목록(Editor.js 2.30 객체형), 낯선 스키마 견고성, 특수문자 라운드트립.
 `Tests/` 는 `project.yml` 의 `sources: [Sources]` 밖이라 앱 빌드에 섞이지 않는다.
+
+## Live audit (운영 기사로 디코더 검증)
+
+실제 `bpmedia.net` 기사를 받아 디코더가 **내용을 하나도 안 잃는지** 대조한다.
+정답은 Python 이 **다른 구현으로** 뽑아 Swift 결과와 맞춰 본다 — 같은 코드로 채점하면 의미가 없다.
+
+```bash
+bash apps/BPMediaWriter/Tests/live-audit/run-live-audit.sh 100
+```
+
+⚠️ 운영 API 를 **읽기만** 한다(GET). 아무것도 쓰지 않는다.
+검사 항목 7가지 — 이미지 추출 일치 · 빈 본문 · 원시 JSON 노출 · 미변경 시 원본 보존 ·
+수정 저장 시 이미지 생존 · 두 번 저장 안정성 · **원본 텍스트 조각 유실**.
+
+2026-09-07 전수 결과: 운영 98건 · 문제 0건.
+(같은 검사를 목록 노출 수정 이전 코드로 돌리면 **2건에서 텍스트 11조각이 유실**된다.)
 
 ## Pre-check without Xcode (Command Line Tools only)
 

@@ -209,7 +209,10 @@ final class AppState: ObservableObject {
         }
     }
 
-    func savePost(_ payload: PostWritePayload, editing: PostDetail?) async -> Bool {
+    /// 저장에 성공하면 서버가 돌려준 글(갱신된 `updated_at` 포함)을, 실패하면 nil 을 준다.
+    /// 호출부는 이 값으로 편집 중인 글을 갱신해야 한다 — 안 하면 두 번째 저장이 409 로 막힌다.
+    @discardableResult
+    func savePost(_ payload: PostWritePayload, editing: PostDetail?) async -> PostDetail? {
         do {
             let saved: PostDetail
             if let editing {
@@ -223,17 +226,19 @@ final class AppState: ObservableObject {
             editorMode = .edit(saved)
             await refreshPosts()
             globalAlert = (saved.published == true || saved.publishedInt == 1) ? "공개 상태로 저장했습니다." : "비공개(또는 예약)로 저장했습니다."
-            return true
+            return saved
         } catch let error as APIError {
-            if error.statusCode == 409 {
+            // 409 는 두 가지다 — 동시편집 충돌(EDIT_CONFLICT)과 그 밖의 규칙 위반(예: 에디터 추천 4개 초과).
+            // 코드로 갈라야 엉뚱한 안내를 하지 않는다.
+            if error.statusCode == 409, error.code == "EDIT_CONFLICT" {
                 globalAlert = "다른 사용자가 이 글을 먼저 수정했습니다. 목록에서 다시 열어 주세요."
             } else {
                 globalAlert = error.message
             }
-            return false
+            return nil
         } catch {
             globalAlert = error.localizedDescription
-            return false
+            return nil
         }
     }
 }
