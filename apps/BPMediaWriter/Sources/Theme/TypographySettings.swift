@@ -110,16 +110,17 @@ struct AppTypography {
 
     private func basePointSize(for style: Font.TextStyle) -> CGFloat {
         switch style {
+        // 위계가 굵기에만 기대지 않도록 단계마다 크기를 띄운다.
         case .largeTitle: return 26
         case .title: return 22
         case .title2: return 17
         case .title3: return 15
-        case .headline: return 13
+        case .headline: return 14
         case .body: return 13
         case .callout: return 12
-        case .subheadline: return 11
-        case .footnote: return 10
-        case .caption: return 10
+        case .subheadline: return 12
+        case .footnote: return 11
+        case .caption: return 11
         case .caption2: return 10
         @unknown default: return 13
         }

@@ -14,10 +14,26 @@ enum PostCategory: String, CaseIterable, Identifiable, Codable {
         }
     }
 
+    /// 칩·목록 행처럼 좁은 자리에 쓰는 짧은 라벨. 전체 라벨은 피커·상세에서.
+    var shortKO: String {
+        switch self {
+        case .korea: return "한국"
+        case .apr: return "아태"
+        case .wosm: return "세계"
+        case .people: return "인물"
+        }
+    }
+
     /// Homepage-nav Korean label for a raw API category string.
     static func displayTitle(for raw: String?) -> String {
         guard let raw, !raw.isEmpty else { return "-" }
         if let cat = PostCategory(rawValue: raw) { return cat.titleKO }
+        return raw
+    }
+
+    static func shortTitle(for raw: String?) -> String {
+        guard let raw, !raw.isEmpty else { return "-" }
+        if let cat = PostCategory(rawValue: raw) { return cat.shortKO }
         return raw
     }
 }
@@ -77,8 +93,12 @@ struct PostSummary: Identifiable, Codable, Hashable {
 
     var isPublished: Bool { published == true || publishedInt == 1 }
 
+    /// 공개 시각(KST)이 있으면 그것, 없으면 작성 시각(UTC→KST 변환).
     var displayDate: String {
-        publishAt ?? createdAt ?? ""
+        if let publishAt, !publishAt.isEmpty {
+            return APIDates.display(publishAt, kind: .kst)
+        }
+        return APIDates.display(createdAt, kind: .utc)
     }
 
     var viewsLabel: String {

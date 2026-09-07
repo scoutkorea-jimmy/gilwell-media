@@ -1,7 +1,9 @@
 import SwiftUI
+import AppKit
 
 struct LoginView: View {
     @EnvironmentObject private var appState: AppState
+    @Environment(\.appTypography) private var typography
     @State private var username = ""
     @State private var password = ""
     @State private var isBusy = false
@@ -17,35 +19,20 @@ struct LoginView: View {
 
     var body: some View {
         HStack(spacing: 0) {
-            VStack(alignment: .leading, spacing: 16) {
-                Text("BP Media Writer")
-                    .font(.largeTitle.bold())
-                    .foregroundStyle(.white)
-                Text("macOS 작성기 v1 · bpmedia.net")
-                    .foregroundStyle(.white.opacity(0.85))
-                Spacer()
-                Text("Personal Team / Free Apple ID용 로컬 앱입니다. App Store 배포·공증은 포함하지 않습니다.")
-                    .font(.callout)
-                    .foregroundStyle(.white.opacity(0.75))
-            }
-            .padding(40)
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-            .background(BrandColors.scoutingPurple)
+            brandPanel
 
             VStack(alignment: .leading, spacing: 14) {
                 Text("관리자 로그인")
-                    .font(.title2.bold())
+                    .font(typography.title2)
                     .foregroundStyle(BrandColors.scoutingPurple)
-                Text("웹 관리자와 동일한 계정명·비밀번호를 사용합니다.")
-                    .font(.callout)
+                Text("웹 관리자와 같은 계정으로 로그인합니다.")
+                    .font(typography.callout)
                     .foregroundStyle(.secondary)
 
                 TextField("계정명", text: $username)
                     .multilineTextAlignment(.leading)
-                    .environment(\.layoutDirection, .leftToRight)
                     .textFieldStyle(.roundedBorder)
                 SecureField("비밀번호", text: $password)
-                    .environment(\.layoutDirection, .leftToRight)
                     .textFieldStyle(.roundedBorder)
                     .onSubmit {
                         Task { await submit() }
@@ -63,9 +50,7 @@ struct LoginView: View {
                 }
 
                 if let statusMessage {
-                    Text(statusMessage)
-                        .font(.caption)
-                        .foregroundStyle(BrandColors.brandWarning)
+                    InlineNotice(text: statusMessage, kind: .warning)
                 }
 
                 Button {
@@ -78,11 +63,13 @@ struct LoginView: View {
                     .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.writerPrimary)
+                .keyboardShortcut(.defaultAction)
                 .disabled(isBusy || username.trimmingCharacters(in: .whitespaces).isEmpty || password.isEmpty)
 
-                Text("2단계 인증(OTP)이 켜진 계정은 v1에서 웹 관리자로 먼저 인증해야 합니다.")
-                    .font(.caption)
+                Text("2단계 인증(OTP)을 켠 계정은 웹 관리자에서 먼저 인증해 주세요.")
+                    .font(typography.caption)
                     .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
             .padding(40)
             .frame(width: 420)
@@ -90,6 +77,34 @@ struct LoginView: View {
             .background(BrandColors.canvasWhite)
         }
         .tint(BrandColors.brandPrimary)
+        .environment(\.layoutDirection, .leftToRight)
+    }
+
+    /// 브랜드 패널 — 앱 아이콘 + 이름 + 한 줄. 개발 환경 이야기는 여기 두지 않는다.
+    private var brandPanel: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            Image(nsImage: NSApp.applicationIconImage)
+                .resizable()
+                .interpolation(.high)
+                .frame(width: 72, height: 72)
+                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                .shadow(color: .black.opacity(0.25), radius: 8, y: 4)
+            VStack(alignment: .leading, spacing: 6) {
+                Text("BP Media Writer")
+                    .font(.system(size: 28, weight: .bold))
+                    .foregroundStyle(.white)
+                Text("bpmedia.net 기사 작성·관리")
+                    .font(typography.callout)
+                    .foregroundStyle(.white.opacity(0.85))
+            }
+            Spacer()
+            Text("버전 \(UpdateChecker.localVersion)")
+                .font(typography.caption)
+                .foregroundStyle(.white.opacity(0.6))
+        }
+        .padding(40)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .background(BrandColors.scoutingPurple)
     }
 
     private func submit() async {
@@ -109,44 +124,40 @@ struct LoginView: View {
             if error.code == "rejected" || error.message.contains("로그인할 수 없습니다") {
                 if !siteKey.isEmpty && token == nil {
                     showTurnstile = true
-                    statusMessage = "Turnstile 확인이 필요할 수 있습니다. 아래 CAPTCHA를 완료한 뒤 다시 로그인해 주세요."
+                    statusMessage = "보안 확인이 필요합니다. 아래 확인을 마친 뒤 다시 로그인해 주세요."
                     password = ""
                     return
                 }
             }
             if error.code == "otp_required" || error.message.contains("otp") || error.message.contains("2단계") {
-                appState.globalAlert = "v1 Mac 작성기에서는 2단계 인증(OTP)을 지원하지 않습니다. 웹 관리자에서 인증해 주세요."
+                statusMessage = "2단계 인증(OTP)을 켠 계정입니다. 웹 관리자에서 먼저 인증해 주세요."
                 password = ""
                 return
             }
             if error.code == "throttled" {
-                let retry = error.retryAfter.map { "\($0)초 후" } ?? "잠시 후"
-                statusMessage = "로그인이 일시 제한되었습니다. \(retry) 다시 시도해 주세요."
-                appState.globalAlert = statusMessage
+                let retry = error.retryAfter.map { "\($0)초 뒤" } ?? "잠시 뒤"
+                statusMessage = "로그인 시도가 잠시 제한되었습니다. \(retry) 다시 시도해 주세요."
                 password = ""
                 return
             }
             statusMessage = error.message
-            appState.globalAlert = error.message
             password = ""
         } catch let error as AuthServiceError {
             statusMessage = error.localizedDescription
-            appState.globalAlert = error.localizedDescription
             password = ""
         } catch {
             statusMessage = error.localizedDescription
-            appState.globalAlert = error.localizedDescription
             password = ""
         }
     }
 
+    /// 로그인만 한다. 목록·헬퍼는 `PostListView` 가 나타나며 알아서 불러온다 — 여기서 또 부르면 두 번 나간다.
     private func attemptLogin(username: String, password: String, turnstile: String?) async throws {
         let result = try await appState.api.login(username: username, password: password, turnstileToken: turnstile)
         try appState.auth.saveSession(token: result.token ?? "", role: result.role, user: result.user)
         appState.currentUser = result.user
         appState.role = result.role
+        appState.currentPage = 1
         appState.isAuthenticated = true
-        await appState.refreshPosts()
-        await appState.loadHelpers()
     }
 }

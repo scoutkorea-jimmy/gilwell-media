@@ -1,4 +1,4 @@
-# BP Media Writer (macOS) v1.1.4
+# BP Media Writer (macOS) v1.1.5
 
 Korean-first SwiftUI macOS app for writing/editing BP Media posts via existing `https://bpmedia.net` APIs. No new web CMS.
 
@@ -39,6 +39,24 @@ defaults write net.bpmedia.writer bpmedia.turnstile.sitekey "YOUR_SITE_KEY"
 
 The login screen will show an embedded WKWebView widget when needed.
 
+## v1.1.5 — 검토 보고서(2026-09-07) 반영
+
+안정성
+- **서버 임시저장을 자동으로 덮어쓰지 않는다.** 수정/새 글 진입 시 서버 draft 가 있으면 「불러오기 / 버리기 / 나중에」로 묻는다.
+  draft 가 글의 `updated_at` 보다 오래되면 경고를 붙인다. 취소·닫기 때 고친 게 있거나 draft 가 남아 있으면 「지우고 나가기 / 두고 나가기」를 묻는다. 툴바에 「임시저장 삭제」.
+- **본문을 고쳐도 원본 블록을 보존한다** — `EditorJSCodec.merge`. 손대지 않은 문단·헤더·목록·표·**이미지 캡션·이미지 위치**는 원본 JSON 그대로, 바뀐 문단만 paragraph 로 교체. 라운드트립 42건.
+- 열기만 해서는 draft 를 만들지 않는다(로드 스냅샷·마지막 전송분과 비교). 자동저장 실패는 툴바 한 줄로만(권한 오류만 1회 알림).
+- 앱 아이콘 카탈로그 정리(`icon_NxN@2x.png`, 128@2x 256px 매핑). 라이트 모드 고정(`preferredColorScheme`).
+- 날짜는 `APIDates` 로 KST 표시 — `created_at/updated_at` 은 UTC, `publish_at` 은 KST 벽시계로 읽는다.
+- 대시보드 요청 병렬화(TaskGroup / async let). 로그인 코드 단일화(중복 로드 제거). grouped Form 의 ScrollView 중첩 제거. 검색 0건 빈 상태. Turnstile 비공개 KVC 제거·핸들러 해제.
+
+디자인
+- 칩 하나(`WriterChip` / `WriterChipButton` / `ChipFlowLayout`)로 통일. 카테고리 칩은 짧은 라벨(한국·아태·세계·인물).
+- 경고 글자색에 Ember Orange 를 쓰지 않는다 — `InlineNotice`(아이콘만 색, 글자는 본문색).
+- 타이포 스케일 headline 14 / caption 11 / caption2 10. 헬퍼 텍스트도 설정의 글꼴을 따른다.
+- 저장 성공은 모달 대신 툴바 인라인 「공개 저장됨 14:02」. 알림 제목은 오류/안내/새 버전으로 구분.
+- 개발자 문구 제거(로그인 패널·예약 시각 안내·업데이트 안내), 존댓말 「해 주세요」로 통일, 대시보드 힌트는 데이터가 뒷받침하는 문장만.
+
 ## Features (v1.1.4)
 
 ### Save / CSRF (root cause)
@@ -55,7 +73,7 @@ Mac writer maps TextEditor plain text to Editor.js like the web admin `_createPa
 
 - Login → Keychain token → `Authorization: Bearer`
 - Admin post list (`scope=admin`) with search, **category chips** (전체|Korea|APR|WOSM|People), published filter
-- List row tap opens **read-only detail**; 「수정」 enters the editor. 「새 글」 always starts blank (draft cleared)
+- List row tap opens **read-only detail**; 「수정」 enters the editor. 「새 글」 starts blank; a leftover server draft is **offered**, never auto-applied
 - **조회수** on list rows and detail when API provides `views`
 - Pagination: page size **10 / 30 / 50**, previous/next, range label (`1–30 / 406`)
 - Top toolbar: 새 글(primary) · 새로고침 · overflow Menu(웹관리자/설정/로그아웃); icon-only + .help() to avoid clipped Korean labels
@@ -77,7 +95,7 @@ Mac writer maps TextEditor plain text to Editor.js like the web admin `_createPa
 
 - Edit/save keeps existing http(s) Editor.js body images (preserves original JSON when body unchanged)
 - 목록(`list`)·표(`table`) 블록의 내용은 편집창에 텍스트로 보여 준다 — 안 보이면 본문을 고칠 때
-  **모르는 사이에 통째로 사라진다.** 서식은 문단으로 평탄화되지만 내용은 남는다(본문 미변경 시엔 원본 유지)
+  **모르는 사이에 통째로 사라진다.** 안 고친 목록·표는 서식까지 원본 그대로 남고(`merge`), 고친 것만 문단이 된다
 - Editor.js JSON 은 필드별로 느슨하게 디코딩한다 — 낯선 타입이 하나 섞여도 글 전체가 깨지지 않는다
 - Image pick compresses/downscales before base64 (~max edge 2000px, JPEG ~0.82; ~4MB cap)
 - Login 401 does not clear session (`onUnauthorized` only when `authorized: true`)
@@ -110,8 +128,9 @@ Xcode 없이 돌아가고, 하나라도 실패하면 종료코드 1 이다.
 bash apps/BPMediaWriter/Tests/run-roundtrip.sh
 ```
 
-검사 항목 25건 — 이미지 보존, 미변경 시 원본 JSON 바이트 동일, 목록·표 노출,
-중첩 목록(Editor.js 2.30 객체형), 낯선 스키마 견고성, 특수문자 라운드트립.
+검사 항목 42건 — 이미지 보존, 미변경 시 원본 JSON 바이트 동일, 목록·표 노출,
+중첩 목록(Editor.js 2.30 객체형), 낯선 스키마 견고성, 특수문자 라운드트립,
+**본문 수정 시 이미지 캡션·위치 보존, 헤더·목록·표 서식 보존(안 고친 것만), 이미지 삭제·추가·두 번 저장.**
 `Tests/` 는 `project.yml` 의 `sources: [Sources]` 밖이라 앱 빌드에 섞이지 않는다.
 
 ## Live audit (운영 기사로 디코더 검증)

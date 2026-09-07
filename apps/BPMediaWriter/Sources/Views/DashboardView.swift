@@ -102,7 +102,7 @@ struct DashboardView: View {
                         }
 
                         if let at = appState.dashLoadedAt {
-                            Text("갱신 \(at.formatted(date: .omitted, time: .shortened))")
+                            Text("갱신 \(APIDates.clock(at))")
                                 .font(typography.caption2)
                                 .foregroundStyle(.tertiary)
                         }
@@ -128,7 +128,7 @@ struct DashboardView: View {
                 Text("아젠다 대시보드")
                     .font(typography.title2)
                     .foregroundStyle(BrandColors.scoutingPurple)
-                Text("다음에 쓸 기사 주제 발견 · Asia/Seoul")
+                Text("다음에 쓸 기사 주제 찾기 · 한국 시간 기준")
                     .font(typography.caption)
                     .foregroundStyle(.secondary)
             }
@@ -173,23 +173,15 @@ struct DashboardView: View {
     }
 
     private func errorBanner(_ message: String) -> some View {
-        HStack(alignment: .top, spacing: 10) {
-            Image(systemName: appState.dashboardPermissionDenied ? "lock.fill" : "exclamationmark.triangle.fill")
-                .foregroundStyle(appState.dashboardPermissionDenied ? BrandColors.brandWarning : BrandColors.brandDanger)
-            Text(message)
-                .font(typography.callout)
-                .foregroundStyle(.primary)
-                .multilineTextAlignment(.leading)
-                .fixedSize(horizontal: false, vertical: true)
-            Spacer(minLength: 0)
-        }
-        .padding(BrandColors.cardPadding)
-        .background(BrandColors.brandSurface)
-        .overlay(
-            RoundedRectangle(cornerRadius: BrandColors.cardRadius)
-                .stroke(BrandColors.scoutingPurple.opacity(0.15), lineWidth: 1)
-        )
-        .clipShape(RoundedRectangle(cornerRadius: BrandColors.cardRadius))
+        InlineNotice(text: message, kind: appState.dashboardPermissionDenied ? .warning : .error)
+            .padding(BrandColors.cardPadding)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(BrandColors.brandSurface)
+            .overlay(
+                RoundedRectangle(cornerRadius: BrandColors.cardRadius)
+                    .stroke(BrandColors.scoutingPurple.opacity(0.15), lineWidth: 1)
+            )
+            .clipShape(RoundedRectangle(cornerRadius: BrandColors.cardRadius))
     }
 
     private func sectionCard<Content: View>(title: String, @ViewBuilder content: () -> Content) -> some View {
@@ -231,9 +223,7 @@ struct DashboardView: View {
     @ViewBuilder
     private var keywordsBlock: some View {
         if let err = appState.dashSearchKeywordsError {
-            Text(err)
-                .font(typography.caption)
-                .foregroundStyle(BrandColors.brandWarning)
+            InlineNotice(text: err, kind: .warning)
         }
         if appState.dashSearchKeywords.isEmpty {
             Text(appState.dashSearchKeywordsError == nil
@@ -242,29 +232,12 @@ struct DashboardView: View {
                 .font(typography.caption)
                 .foregroundStyle(.secondary)
         } else {
-            FlowChips {
+            ChipFlowLayout {
                 ForEach(appState.dashSearchKeywords) { row in
                     if let kw = row.keyword, !kw.isEmpty {
-                        Button {
+                        WriterChipButton(text: kw, style: .neutral, count: row.visits, help: "목록 검색에 ‘\(kw)’ 넣기") {
                             appState.applyDashboardSearch(kw)
-                        } label: {
-                            HStack(spacing: 4) {
-                                Text(kw)
-                                    .font(typography.captionSemibold)
-                                if let v = row.visits {
-                                    Text("\(v)")
-                                        .font(typography.caption2)
-                                        .foregroundStyle(.secondary)
-                                }
-                            }
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 6)
-                            .foregroundStyle(BrandColors.midnightPurple)
-                            .background(BrandColors.riverBlue.opacity(0.35))
-                            .clipShape(Capsule())
                         }
-                        .buttonStyle(.plain)
-                        .help("목록 검색에 ‘\(kw)’ 넣기")
                     }
                 }
             }
@@ -284,13 +257,7 @@ struct DashboardView: View {
                                 .font(typography.bodySemibold)
                                 .multilineTextAlignment(.leading)
                             if gap.isStale {
-                                Text("아젠다 기회")
-                                    .font(typography.caption2Semibold)
-                                    .padding(.horizontal, 6)
-                                    .padding(.vertical, 2)
-                                    .foregroundStyle(.white)
-                                    .background(BrandColors.scoutingPurple)
-                                    .clipShape(Capsule())
+                                WriterChip(text: "아젠다 기회", style: .filled, size: .badge)
                             }
                         }
                         Text(gapSummary(gap))
@@ -337,9 +304,7 @@ struct DashboardView: View {
     @ViewBuilder
     private var tagsBlock: some View {
         if let err = appState.dashTagInsightsError {
-            Text(err)
-                .font(typography.caption)
-                .foregroundStyle(BrandColors.brandWarning)
+            InlineNotice(text: err, kind: .warning)
         }
         let rows = !appState.dashMetaTags.isEmpty ? appState.dashMetaTags : appState.dashHeaderTags
         if rows.isEmpty {
@@ -347,29 +312,12 @@ struct DashboardView: View {
                 .font(typography.caption)
                 .foregroundStyle(.secondary)
         } else {
-            FlowChips {
+            ChipFlowLayout {
                 ForEach(rows.prefix(16)) { row in
                     if let tag = row.tag, !tag.isEmpty {
-                        Button {
+                        WriterChipButton(text: tag, style: .topic, count: row.count, help: "‘\(tag)’ 로 목록 검색") {
                             appState.applyDashboardSearch(tag)
-                        } label: {
-                            HStack(spacing: 4) {
-                                Text(tag)
-                                    .font(typography.captionSemibold)
-                                if let c = row.count {
-                                    Text("\(c)")
-                                        .font(typography.caption2)
-                                        .foregroundStyle(.secondary)
-                                }
-                            }
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 6)
-                            .foregroundStyle(BrandColors.midnightPurple)
-                            .background(BrandColors.blossomPink.opacity(0.28))
-                            .clipShape(Capsule())
                         }
-                        .buttonStyle(.plain)
-                        .help("‘\(tag)’로 목록 검색")
                     }
                 }
             }
@@ -389,7 +337,7 @@ struct DashboardView: View {
                     title: post.title ?? "(제목 없음)",
                     views: post.displayViews,
                     postID: post.postID,
-                    hint: adjacentHint(forTitle: post.title)
+                    hint: nil
                 )
                 if idx < fromAnalytics.count - 1 { Divider() }
             }
@@ -400,7 +348,7 @@ struct DashboardView: View {
                     title: post.title ?? "(제목 없음)",
                     views: post.views ?? 0,
                     postID: post.id,
-                    hint: adjacentHint(fromMeta: post.metaTags)
+                    hint: ownTagHint(post.metaTags)
                 )
                 if idx < fromPopular.count - 1 { Divider() }
             }
@@ -448,20 +396,14 @@ struct DashboardView: View {
         .disabled(postID == nil)
     }
 
-    private func adjacentHint(forTitle title: String?) -> String? {
-        guard let tag = appState.dashMetaTags.first?.tag, !tag.isEmpty else { return nil }
-        return "이 주제 인접 아젠다? · \(tag)"
-    }
-
-    private func adjacentHint(fromMeta meta: String?) -> String? {
+    /// 그 기사 자신의 메타 태그만 힌트로 쓴다. 전체 1위 태그를 모든 행에 붙이면 같은 말이 반복될 뿐이다.
+    private func ownTagHint(_ meta: String?) -> String? {
         let parts = (meta ?? "")
             .split(separator: ",")
             .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
             .filter { !$0.isEmpty }
-        guard let first = parts.first else {
-            return adjacentHint(forTitle: nil)
-        }
-        return "이 주제 인접 아젠다? · \(first)"
+        guard !parts.isEmpty else { return nil }
+        return "태그 · " + parts.prefix(3).joined(separator: " · ")
     }
 
     @ViewBuilder
@@ -495,47 +437,5 @@ struct DashboardView: View {
         f.numberStyle = .decimal
         f.locale = Locale(identifier: "ko_KR")
         return f.string(from: NSNumber(value: value)) ?? "\(value)"
-    }
-}
-
-// MARK: - Flow wrap for chips (leading-aligned)
-
-private struct FlowChips: Layout {
-    var spacing: CGFloat = 6
-
-    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
-        arrange(proposal: proposal, subviews: subviews).size
-    }
-
-    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
-        let result = arrange(proposal: ProposedViewSize(width: bounds.width, height: bounds.height), subviews: subviews)
-        for (index, frame) in result.frames.enumerated() {
-            subviews[index].place(
-                at: CGPoint(x: bounds.minX + frame.minX, y: bounds.minY + frame.minY),
-                proposal: ProposedViewSize(frame.size)
-            )
-        }
-    }
-
-    private func arrange(proposal: ProposedViewSize, subviews: Subviews) -> (size: CGSize, frames: [CGRect]) {
-        let maxWidth = proposal.width ?? .infinity
-        var frames: [CGRect] = []
-        var x: CGFloat = 0
-        var y: CGFloat = 0
-        var rowHeight: CGFloat = 0
-        var width: CGFloat = 0
-        for sub in subviews {
-            let size = sub.sizeThatFits(.unspecified)
-            if x > 0, x + size.width > maxWidth {
-                x = 0
-                y += rowHeight + spacing
-                rowHeight = 0
-            }
-            frames.append(CGRect(origin: CGPoint(x: x, y: y), size: size))
-            rowHeight = max(rowHeight, size.height)
-            x += size.width + spacing
-            width = max(width, x - spacing)
-        }
-        return (CGSize(width: width, height: y + rowHeight), frames)
     }
 }

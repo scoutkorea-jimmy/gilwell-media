@@ -5,7 +5,7 @@ func resolveContentJSON(originalContentJSON: String?, bodyText: String, baseline
     let textSame = bodyText.trimmingCharacters(in: .whitespacesAndNewlines)
         == baselineBodyText.trimmingCharacters(in: .whitespacesAndNewlines)
     if let original = originalContentJSON, textSame, imageURLs == baselineImageURLs { return original }
-    return EditorJSCodec.encode(plainText: bodyText, imageDataURLs: imageURLs)
+    return EditorJSCodec.merge(original: originalContentJSON, plainText: bodyText, imageURLs: imageURLs)
 }
 var pass = 0, fail = 0
 func check(_ n: String, _ ok: Bool, _ d: String = "") {
@@ -116,6 +116,37 @@ check("빈 줄로 문단 2개", paraCount == 2, "count=\(paraCount) \(brEnc)")
 let brDec = EditorJSCodec.decode(brEnc)
 check("디코드 시 빈 줄 복원", brDec.text.contains("\n\n"), brDec.text)
 check("문단 내부 줄바꿈 복원", brDec.text.contains("첫 줄\n둘째 줄"), brDec.text)
+
+
+print("\n[13] ★본문 수정 시 이미지 캡션·위치 보존 (merge)")
+let m1 = resolveContentJSON(originalContentJSON: serverJSON, bodyText: d.text.replacingOccurrences(of: "여전히 심각하다", with: "아직도 심각하다"), baselineBodyText: d.text, imageURLs: d.imageURLs, baselineImageURLs: d.imageURLs)
+check("캡션 ‘현장’ 살아남음", m1.contains("\"caption\":\"현장\""), m1)
+let m1types = (try? JSONSerialization.jsonObject(with: m1.data(using: .utf8)!) as? [String: Any]).flatMap { ($0["blocks"] as? [[String: Any]])?.map { $0["type"] as? String ?? "" } } ?? []
+check("블록 순서 문단·이미지·문단·이미지 유지", m1types == ["paragraph","image","paragraph","image"], "\(m1types)")
+check("안 고친 첫 문단은 원본 그대로", m1.contains("&quot;Mobilising Hope&quot;"))
+check("고친 문단 반영", EditorJSCodec.decode(m1).text.contains("아직도 심각하다"))
+
+print("\n[14] 문단을 앞에 끼워 넣어도 이미지가 끝으로 안 밀림")
+let m2 = resolveContentJSON(originalContentJSON: serverJSON, bodyText: "새 머리 문단\n\n" + d.text, baselineBodyText: d.text, imageURLs: d.imageURLs, baselineImageURLs: d.imageURLs)
+let m2types = (try? JSONSerialization.jsonObject(with: m2.data(using: .utf8)!) as? [String: Any]).flatMap { ($0["blocks"] as? [[String: Any]])?.map { $0["type"] as? String ?? "" } } ?? []
+check("머리 문단 뒤에도 이미지 위치 유지", m2types == ["paragraph","paragraph","image","paragraph","image"], "\(m2types)")
+
+print("\n[15] 헤더·목록·표를 안 고치면 서식이 남고, 고친 것만 문단이 된다")
+let m3 = resolveContentJSON(originalContentJSON: complexJSON, bodyText: cd.text.replacingOccurrences(of: "끝 문단", with: "끝 문단 고침"), baselineBodyText: cd.text, imageURLs: [], baselineImageURLs: [])
+check("header 블록 유지", m3.contains("\"type\":\"header\""), m3)
+check("list 블록 유지", m3.contains("\"type\":\"list\""))
+check("table 블록 유지", m3.contains("\"type\":\"table\""))
+check("quote 블록 유지", m3.contains("\"type\":\"quote\""))
+check("고친 문단 반영", EditorJSCodec.decode(m3).text.contains("끝 문단 고침"))
+let m4 = resolveContentJSON(originalContentJSON: complexJSON, bodyText: cd.text.replacingOccurrences(of: "항목 둘", with: "항목 둘 수정"), baselineBodyText: cd.text, imageURLs: [], baselineImageURLs: [])
+check("목록을 고치면 그 목록만 문단으로(내용 보존)", !m4.contains("\"type\":\"list\"") && EditorJSCodec.decode(m4).text.contains("항목 둘 수정") && m4.contains("\"type\":\"header\""), m4)
+
+print("\n[16] 이미지 삭제·추가와 두 번 저장")
+let m5 = resolveContentJSON(originalContentJSON: serverJSON, bodyText: d.text + "\n\n덧", baselineBodyText: d.text, imageURLs: [d.imageURLs[1], "data:image/jpeg;base64,AAAA"], baselineImageURLs: d.imageURLs)
+let m5d = EditorJSCodec.decode(m5)
+check("지운 이미지 빠지고 새 이미지 붙음", m5d.imageURLs == [d.imageURLs[1], "data:image/jpeg;base64,AAAA"], "\(m5d.imageURLs)")
+let m6 = resolveContentJSON(originalContentJSON: m1, bodyText: EditorJSCodec.decode(m1).text, baselineBodyText: "x", imageURLs: d.imageURLs, baselineImageURLs: d.imageURLs)
+check("두 번째 저장도 캡션·순서 유지", m6.contains("\"caption\":\"현장\"") && EditorJSCodec.decode(m6).text == EditorJSCodec.decode(m1).text)
 
 print("\n════ 통과 \(pass) · 실패 \(fail) ════")
 if fail > 0 { exit(1) }

@@ -4,6 +4,7 @@ struct SettingsView: View {
     @AppStorage(TypographyStorage.sizeKey) private var sizeRaw = WriterFontSizeChoice.medium.rawValue
     @AppStorage(TypographyStorage.familyKey) private var familyRaw = WriterFontFamilyChoice.system.rawValue
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.appTypography) private var typography
 
     private var sizeBinding: Binding<WriterFontSizeChoice> {
         Binding(
@@ -23,7 +24,7 @@ struct SettingsView: View {
         VStack(alignment: .leading, spacing: 0) {
             HStack {
                 Text("설정")
-                    .font(.title2.weight(.bold))
+                    .font(typography.title2)
                     .foregroundStyle(BrandColors.scoutingPurple)
                 Spacer()
                 Button("완료") { dismiss() }
@@ -38,7 +39,7 @@ struct SettingsView: View {
             Form {
                 Section {
                     Text("글자 크기")
-                        .font(.headline)
+                        .font(typography.headline)
                         .foregroundStyle(BrandColors.scoutingPurple)
                     Picker("글자 크기", selection: sizeBinding) {
                         ForEach(WriterFontSizeChoice.allCases) { choice in
@@ -49,13 +50,13 @@ struct SettingsView: View {
                     .labelsHidden()
 
                     Text("목록·읽기 화면·에디터 본문에 적용됩니다.")
-                        .font(.caption)
+                        .font(typography.caption)
                         .foregroundStyle(.secondary)
                 }
 
                 Section {
                     Text("글꼴")
-                        .font(.headline)
+                        .font(typography.headline)
                         .foregroundStyle(BrandColors.scoutingPurple)
                     Picker("글꼴", selection: familyBinding) {
                         ForEach(WriterFontFamilyChoice.allCases) { choice in
@@ -65,13 +66,13 @@ struct SettingsView: View {
                     .labelsHidden()
 
                     Text("시스템 · 본고딕(Apple SD Gothic Neo) · 명조(가능 시 Apple Myungjo / New York)")
-                        .font(.caption)
+                        .font(typography.caption)
                         .foregroundStyle(.secondary)
                 }
 
                 Section {
                     Text("미리보기")
-                        .font(.headline)
+                        .font(typography.headline)
                         .foregroundStyle(BrandColors.scoutingPurple)
                     let typo = AppTypography(
                         sizeChoice: sizeBinding.wrappedValue,

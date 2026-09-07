@@ -27,6 +27,8 @@
 		B11800000000000000000002 /* AnalyticsModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = B11800000000000000000001 /* AnalyticsModels.swift */; };
 		B11900000000000000000002 /* DashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B11900000000000000000001 /* DashboardView.swift */; };
 		B11500000000000000000002 /* UpdateChecker.swift in Sources */ = {isa = PBXBuildFile; fileRef = B11500000000000000000001 /* UpdateChecker.swift */; };
+		B12000000000000000000002 /* WriterChip.swift in Sources */ = {isa = PBXBuildFile; fileRef = B12000000000000000000001 /* WriterChip.swift */; };
+		B12100000000000000000002 /* APIDates.swift in Sources */ = {isa = PBXBuildFile; fileRef = B12100000000000000000001 /* APIDates.swift */; };
 		C10000000000000000000002 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C10000000000000000000001 /* Assets.xcassets */; };
 /* End PBXBuildFile section */
 
@@ -51,6 +53,8 @@
 		B11900000000000000000001 /* DashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardView.swift; sourceTree = "<group>"; };
 		B11400000000000000000001 /* ImageCompressor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageCompressor.swift; sourceTree = "<group>"; };
 		B11500000000000000000001 /* UpdateChecker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateChecker.swift; sourceTree = "<group>"; };
+		B12000000000000000000001 /* WriterChip.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WriterChip.swift; sourceTree = "<group>"; };
+		B12100000000000000000001 /* APIDates.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIDates.swift; sourceTree = "<group>"; };
 		C10000000000000000000001 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		A10000000000000000000006 /* BPMediaWriter.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = BPMediaWriter.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -103,6 +107,7 @@
 				B10300000000000000000001 /* AuthModels.swift */,
 				B10400000000000000000001 /* EditorJSCodec.swift */,
 				B11800000000000000000001 /* AnalyticsModels.swift */,
+				B12100000000000000000001 /* APIDates.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -138,6 +143,7 @@
 			children = (
 				B11300000000000000000001 /* BrandColors.swift */,
 				B11600000000000000000001 /* TypographySettings.swift */,
+				B12000000000000000000001 /* WriterChip.swift */,
 			);
 			path = Theme;
 			sourceTree = "<group>";
@@ -231,6 +237,8 @@
 				B11300000000000000000002 /* BrandColors.swift in Sources */,
 				B11400000000000000000002 /* ImageCompressor.swift in Sources */,
 				B11500000000000000000002 /* UpdateChecker.swift in Sources */,
+				B12000000000000000000002 /* WriterChip.swift in Sources */,
+				B12100000000000000000002 /* APIDates.swift in Sources */,
 				B11600000000000000000002 /* TypographySettings.swift in Sources */,
 				B11700000000000000000002 /* SettingsView.swift in Sources */,
 				B11800000000000000000002 /* AnalyticsModels.swift in Sources */,
@@ -279,7 +287,7 @@
 				CODE_SIGN_IDENTITY = "-";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 6;
+				CURRENT_PROJECT_VERSION = 7;
 				DEVELOPMENT_TEAM = "";
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = NO;
@@ -288,7 +296,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 1.1.4;
+				MARKETING_VERSION = 1.1.5;
 				PRODUCT_BUNDLE_IDENTIFIER = net.bpmedia.writer;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -304,7 +312,7 @@
 				CODE_SIGN_IDENTITY = "-";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 6;
+				CURRENT_PROJECT_VERSION = 7;
 				DEVELOPMENT_TEAM = "";
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = NO;
@@ -313,7 +321,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 1.1.4;
+				MARKETING_VERSION = 1.1.5;
 				PRODUCT_BUNDLE_IDENTIFIER = net.bpmedia.writer;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;

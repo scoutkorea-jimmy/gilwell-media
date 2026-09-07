@@ -148,13 +148,13 @@ struct PostListView: View {
                     .font(typography.headline)
                     .foregroundStyle(BrandColors.scoutingPurple)
 
-                Text("아젠다 힌트와 키워드를 탭하면 목록 검색이 채워집니다.")
+                Text("힌트나 키워드를 누르면 목록 검색이 채워집니다.")
                     .font(typography.caption)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
 
                 if appState.dashAgendaHints.isEmpty && appState.dashCategoryGaps.isEmpty {
-                    Text("대시보드를 불러오면 아젠다 칩이 여기에 표시됩니다.")
+                    Text("대시보드를 불러오면 힌트가 여기에 표시됩니다.")
                         .font(typography.callout)
                         .foregroundStyle(.secondary)
                 }
@@ -187,26 +187,18 @@ struct PostListView: View {
                     Text("카테고리 바로가기")
                         .font(typography.captionSemibold)
                         .foregroundStyle(.secondary)
-                    FlexibleChipRow(spacing: 6) {
+                    ChipFlowLayout(spacing: 6) {
                         ForEach(appState.dashCategoryGaps) { gap in
-                            Button {
+                            WriterChipButton(
+                                text: gap.category.shortKO,
+                                style: gap.isStale ? .filled : .neutral,
+                                help: gap.isStale ? "\(gap.category.titleKO) · 오래 비어 있음 · 목록 필터" : "\(gap.category.titleKO) 목록"
+                            ) {
                                 appState.homeTab = .posts
                                 appState.categoryFilter = gap.category
                                 appState.currentPage = 1
                                 Task { await appState.refreshPosts(quietIfPossible: true) }
-                            } label: {
-                                Text(gap.category.titleKO)
-                                    .font(typography.captionSemibold)
-                                    .lineLimit(2)
-                                    .multilineTextAlignment(.center)
-                                    .padding(.horizontal, 10)
-                                    .padding(.vertical, 6)
-                                    .foregroundStyle(gap.isStale ? Color.white : BrandColors.midnightPurple)
-                                    .background(gap.isStale ? BrandColors.scoutingPurple : BrandColors.riverBlue.opacity(0.35))
-                                    .clipShape(Capsule())
                             }
-                            .buttonStyle(.plain)
-                            .help(gap.isStale ? "아젠다 기회 · 목록 필터" : "카테고리 목록")
                         }
                     }
                 }
@@ -233,7 +225,6 @@ struct PostListView: View {
             HStack(spacing: 8) {
                 TextField("제목·내용 검색", text: $appState.searchQuery)
                     .textFieldStyle(.roundedBorder)
-                    .environment(\.layoutDirection, .leftToRight)
                     .multilineTextAlignment(.leading)
                     .onChange(of: appState.searchQuery) { _, _ in
                         appState.scheduleRefresh(resetPage: true)
@@ -287,35 +278,26 @@ struct PostListView: View {
     }
 
     private var categoryChips: some View {
-        FlexibleChipRow(spacing: 6) {
-            categoryChip(title: "전체", selected: appState.categoryFilter == nil) {
-                appState.categoryFilter = nil
-                appState.currentPage = 1
-                Task { await appState.refreshPosts(quietIfPossible: true) }
+        ChipFlowLayout(spacing: 6) {
+            WriterChipButton(text: "전체", style: appState.categoryFilter == nil ? .filled : .neutral, help: "모든 카테고리") {
+                selectCategory(nil)
             }
             ForEach(PostCategory.allCases) { cat in
-                categoryChip(title: cat.titleKO, selected: appState.categoryFilter == cat) {
-                    appState.categoryFilter = cat
-                    appState.currentPage = 1
-                    Task { await appState.refreshPosts(quietIfPossible: true) }
+                WriterChipButton(
+                    text: cat.shortKO,
+                    style: appState.categoryFilter == cat ? .filled : .neutral,
+                    help: cat.titleKO
+                ) {
+                    selectCategory(cat)
                 }
             }
         }
     }
 
-    private func categoryChip(title: String, selected: Bool, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Text(title)
-                .font(typography.captionSemibold)
-                .padding(.horizontal, 10)
-                .padding(.vertical, 6)
-                .lineLimit(2)
-                .multilineTextAlignment(.center)
-                .foregroundStyle(selected ? Color.white : BrandColors.midnightPurple)
-                .background(selected ? BrandColors.scoutingPurple : BrandColors.riverBlue.opacity(0.35))
-                .clipShape(Capsule())
-        }
-        .buttonStyle(.plain)
+    private func selectCategory(_ cat: PostCategory?) {
+        appState.categoryFilter = cat
+        appState.currentPage = 1
+        Task { await appState.refreshPosts(quietIfPossible: true) }
     }
 
     // MARK: - List
@@ -327,10 +309,8 @@ struct PostListView: View {
                 .tint(BrandColors.brandPrimary)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else if let err = appState.listError, appState.posts.isEmpty {
-            VStack(spacing: 8) {
-                Text(err)
-                    .font(.body)
-                    .multilineTextAlignment(.center)
+            VStack(spacing: 10) {
+                InlineNotice(text: err, kind: .error)
                 Button("다시 시도") {
                     Task { await appState.refreshPosts(quietIfPossible: false) }
                 }
@@ -338,6 +318,12 @@ struct PostListView: View {
             }
             .padding()
             .frame(maxWidth: .infinity, maxHeight: .infinity)
+        } else if appState.posts.isEmpty {
+            WriterEmptyState(
+                title: hasActiveFilter ? "검색 결과가 없습니다" : "아직 글이 없습니다",
+                detail: hasActiveFilter ? "검색어나 필터를 바꿔 보세요." : "「새 글」로 첫 기사를 시작해 보세요.",
+                systemImage: hasActiveFilter ? "magnifyingglass" : "doc.text"
+            )
         } else {
             List(selection: Binding(
                 get: { appState.selectedPostID },
@@ -380,38 +366,35 @@ struct PostListView: View {
         }
     }
 
-    private func postRow(_ post: PostSummary) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(alignment: .firstTextBaseline, spacing: 8) {
-                Text(post.title ?? "(제목 없음)")
-                    .font(typography.bodySemibold)
-                    .foregroundStyle(.primary)
-                    .lineLimit(2)
-                    .multilineTextAlignment(.leading)
-                Spacer(minLength: 4)
-                Text(post.isPublished ? "공개" : "비공개")
-                    .font(typography.caption2Semibold)
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 2)
-                    .foregroundStyle(post.isPublished ? BrandColors.forestGreen : BrandColors.midnightPurple)
-                    .background(
-                        (post.isPublished ? BrandColors.leafGreen : BrandColors.blossomPink)
-                            .opacity(0.35)
-                    )
-                    .clipShape(Capsule())
-            }
+    private var hasActiveFilter: Bool {
+        !appState.searchQuery.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            || appState.categoryFilter != nil
+            || appState.publishedFilter != .all
+    }
 
-            Text(PostCategory.displayTitle(for: post.category))
-                .font(typography.caption2Semibold)
-                .padding(.horizontal, 6)
-                .padding(.vertical, 2)
-                .foregroundStyle(BrandColors.midnightPurple)
-                .background(BrandColors.riverBlue.opacity(0.45))
-                .clipShape(Capsule())
+    private func postRow(_ post: PostSummary) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(post.title ?? "(제목 없음)")
+                .font(typography.bodySemibold)
+                .foregroundStyle(.primary)
                 .lineLimit(2)
+                .multilineTextAlignment(.leading)
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+            HStack(spacing: 6) {
+                WriterChip(text: PostCategory.shortTitle(for: post.category), style: .neutral, size: .badge)
+                WriterChip(
+                    text: post.isPublished ? "공개" : "비공개",
+                    style: post.isPublished ? .success : .muted,
+                    size: .badge,
+                    systemImage: post.isPublished ? "checkmark" : "lock"
+                )
+                Spacer(minLength: 0)
+            }
 
             HStack(alignment: .center, spacing: 6) {
                 Text(post.displayDate)
+                    .monospacedDigit()
                 if let author = post.author, !author.isEmpty {
                     Text("·")
                     Text(author)
@@ -434,23 +417,14 @@ struct PostListView: View {
         VStack(spacing: 8) {
             HStack(spacing: 6) {
                 Text("페이지 크기")
-                    .font(.caption)
+                    .font(typography.caption)
                     .foregroundStyle(.secondary)
                 ForEach(AppState.pageSizeOptions, id: \.self) { size in
-                    Button("\(size)") {
-                        Task { await appState.setPageSize(size) }
-                    }
-                    .buttonStyle(.writerSecondary)
-                    .opacity(appState.pageSize == size ? 1 : 0.85)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: BrandColors.buttonRadius, style: .continuous)
-                            .stroke(appState.pageSize == size ? BrandColors.scoutingPurple : Color.clear, lineWidth: 1.5)
-                    )
-                    .disabled(appState.pageSize == size)
+                    pageSizeButton(size)
                 }
                 Spacer()
                 Text(appState.listRangeLabel)
-                    .font(.caption.weight(.medium))
+                    .font(typography.captionSemibold)
                     .foregroundStyle(.secondary)
                     .monospacedDigit()
             }
@@ -465,7 +439,7 @@ struct PostListView: View {
                 .disabled(appState.currentPage <= 1 || appState.isLoadingList)
 
                 Text("\(appState.currentPage) / \(appState.totalPages)")
-                    .font(.caption.weight(.semibold))
+                    .font(typography.captionSemibold)
                     .monospacedDigit()
                     .foregroundStyle(BrandColors.scoutingPurple)
 
@@ -488,53 +462,26 @@ struct PostListView: View {
         .background(BrandColors.brandSurface)
     }
 
+    /// 선택된 크기는 채운 버튼으로 보여 준다. 예전엔 disabled 로 두어 선택된 것이 오히려 흐려 보였다.
+    @ViewBuilder
+    private func pageSizeButton(_ size: Int) -> some View {
+        let selected = appState.pageSize == size
+        if selected {
+            Button("\(size)") {}
+                .buttonStyle(.writerPrimary)
+                .help("한 페이지에 \(size)개 (선택됨)")
+        } else {
+            Button("\(size)") {
+                Task { await appState.setPageSize(size) }
+            }
+            .buttonStyle(.writerSecondary)
+            .help("한 페이지에 \(size)개")
+        }
+    }
+
     private func openWebAdmin() {
         if let url = URL(string: "https://bpmedia.net/admin.html") {
             NSWorkspace.shared.open(url)
         }
-    }
-}
-
-// MARK: - Simple wrapping chip layout (leading-aligned)
-
-private struct FlexibleChipRow: Layout {
-    var spacing: CGFloat = 6
-
-    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
-        arrange(proposal: proposal, subviews: subviews).size
-    }
-
-    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
-        let result = arrange(proposal: ProposedViewSize(width: bounds.width, height: bounds.height), subviews: subviews)
-        for (index, frame) in result.frames.enumerated() {
-            subviews[index].place(
-                at: CGPoint(x: bounds.minX + frame.minX, y: bounds.minY + frame.minY),
-                proposal: ProposedViewSize(frame.size)
-            )
-        }
-    }
-
-    private func arrange(proposal: ProposedViewSize, subviews: Subviews) -> (size: CGSize, frames: [CGRect]) {
-        let maxWidth = proposal.width ?? .infinity
-        var frames: [CGRect] = []
-        var x: CGFloat = 0
-        var y: CGFloat = 0
-        var rowHeight: CGFloat = 0
-        var width: CGFloat = 0
-
-        for sub in subviews {
-            let size = sub.sizeThatFits(.unspecified)
-            if x > 0, x + size.width > maxWidth {
-                x = 0
-                y += rowHeight + spacing
-                rowHeight = 0
-            }
-            frames.append(CGRect(origin: CGPoint(x: x, y: y), size: size))
-            rowHeight = max(rowHeight, size.height)
-            x += size.width + spacing
-            width = max(width, x - spacing)
-        }
-        let height = y + rowHeight
-        return (CGSize(width: width, height: height), frames)
     }
 }

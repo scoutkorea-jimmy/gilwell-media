@@ -154,40 +154,153 @@ enum EditorJSCodec {
             var lines: [String] = []
             var images: [String] = []
             for block in doc.blocks {
-                switch block.type {
-                case "paragraph", "header":
-                    if let text = block.data.text {
-                        lines.append(unescapeHTML(text))
-                    }
-                case "image":
+                if block.type == "image" {
                     if let url = block.data.file?.url {
                         images.append(url)
                     }
-                case "list", "checklist":
-                    // 목록은 편집창에 그대로 보여 준다 — 안 보이면 본문을 고칠 때 통째로 사라진다.
-                    if let items = block.data.items, !items.isEmpty {
-                        lines.append(contentsOf: flattenListItems(items, depth: 0))
-                    } else if let text = block.data.text {
-                        lines.append(unescapeHTML(text))
-                    }
-                case "table":
-                    if let rows = block.data.content, !rows.isEmpty {
-                        for row in rows where !row.isEmpty {
-                            lines.append(unescapeHTML(row.joined(separator: " | ")))
-                        }
-                    } else if let text = block.data.text {
-                        lines.append(unescapeHTML(text))
-                    }
-                default:
-                    if let text = block.data.text, !text.isEmpty {
-                        lines.append(unescapeHTML(text))
-                    }
+                    continue
                 }
+                lines.append(contentsOf: textChunks(of: block))
             }
             return (lines.joined(separator: "\n\n"), images)
         } catch {
             return (content, [])
         }
+    }
+
+    /// 한 블록이 편집창에 내보내는 문단 조각들. `decode` 와 `merge` 가 같은 규칙을 쓴다.
+    static func textChunks(of block: Block) -> [String] {
+        switch block.type {
+        case "image":
+            return []
+        case "paragraph", "header":
+            if let text = block.data.text { return [unescapeHTML(text)] }
+            return []
+        case "list", "checklist":
+            // 목록은 편집창에 그대로 보여 준다 — 안 보이면 본문을 고칠 때 통째로 사라진다.
+            if let items = block.data.items, !items.isEmpty {
+                return flattenListItems(items, depth: 0)
+            }
+            if let text = block.data.text { return [unescapeHTML(text)] }
+            return []
+        case "table":
+            if let rows = block.data.content, !rows.isEmpty {
+                return rows.filter { !$0.isEmpty }.map { unescapeHTML($0.joined(separator: " | ")) }
+            }
+            if let text = block.data.text { return [unescapeHTML(text)] }
+            return []
+        default:
+            if let text = block.data.text, !text.isEmpty { return [unescapeHTML(text)] }
+            return []
+        }
+    }
+
+    // MARK: - Merge (본문 수정 시 원본 블록 보존)
+
+    /// 고친 평문과 이미지 목록을 **원본 문서에 되돌려 넣는다.**
+    /// 손대지 않은 블록(헤더 레벨·목록·표·이미지 캡션·이미지 위치)은 원본 JSON 그대로 남기고,
+    /// 바뀐 문단만 paragraph 블록으로 교체한다. 원본이 없거나 Editor.js JSON 이 아니면 `encode` 로 떨어진다.
+    static func merge(original: String?, plainText: String, imageURLs: [String]) -> String {
+        guard let original,
+              let originalData = original.trimmingCharacters(in: .whitespacesAndNewlines).data(using: .utf8),
+              let rootObj = try? JSONSerialization.jsonObject(with: originalData) as? [String: Any],
+              let rawBlocks = rootObj["blocks"] as? [[String: Any]],
+              let doc = try? JSONDecoder().decode(Document.self, from: originalData),
+              doc.blocks.count == rawBlocks.count
+        else {
+            return encode(plainText: plainText, imageDataURLs: imageURLs)
+        }
+
+        let normalized = plainText
+            .replacingOccurrences(of: "\r\n", with: "\n")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        let newParas: [String] = normalized.isEmpty ? [] : splitParagraphs(normalized)
+        let norm: (String) -> String = { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+        let newNorm = newParas.map(norm)
+
+        // 원본 블록별 조각 (이미지는 빈 배열)
+        let chunks: [[String]] = doc.blocks.map { textChunks(of: $0).map(norm) }
+
+        func firstMatch(_ seq: [String], from start: Int) -> Int? {
+            guard !seq.isEmpty, start <= newNorm.count - seq.count else { return nil }
+            var i = start
+            while i + seq.count <= newNorm.count {
+                if Array(newNorm[i..<(i + seq.count)]) == seq { return i }
+                i += 1
+            }
+            return nil
+        }
+
+        func paragraphBlock(_ text: String) -> [String: Any] {
+            let withBreaks = escapeHTML(text).replacingOccurrences(of: "\n", with: "<br>")
+            return ["type": "paragraph", "data": ["text": withBreaks]]
+        }
+
+        var out: [[String: Any]] = []
+        var remainingImages = imageURLs
+        var j = 0
+
+        for (i, block) in doc.blocks.enumerated() {
+            let raw = rawBlocks[i]
+            if block.type == "image" {
+                guard let url = block.data.file?.url, let idx = remainingImages.firstIndex(of: url) else {
+                    continue // 사용자가 지운 이미지
+                }
+                remainingImages.remove(at: idx)
+                out.append(raw)
+                continue
+            }
+            let seq = chunks[i]
+            if seq.isEmpty {
+                out.append(raw) // 편집창에 안 보이는 블록(구분선 등)은 그대로
+                continue
+            }
+            if let pos = firstMatch(seq, from: j), pos == j {
+                out.append(raw) // 손대지 않은 블록 — 원본 그대로
+                j += seq.count
+                continue
+            }
+            // 이 블록은 바뀌었거나 지워졌다. 다음에 살아남은 블록이 새 본문 어디에 있는지 찾아
+            // 그 앞까지를 새 문단으로 내보낸다.
+            var anchor: Int? = nil
+            for k in (i + 1)..<doc.blocks.count where !chunks[k].isEmpty {
+                if let pos = firstMatch(chunks[k], from: j) { anchor = pos; break }
+            }
+            let upto = anchor ?? newNorm.count
+            while j < upto {
+                out.append(paragraphBlock(newParas[j]))
+                j += 1
+            }
+        }
+        while j < newParas.count {
+            out.append(paragraphBlock(newParas[j]))
+            j += 1
+        }
+        for url in remainingImages where !url.isEmpty {
+            out.append([
+                "type": "image",
+                "data": [
+                    "file": ["url": url],
+                    "caption": "",
+                    "withBorder": false,
+                    "stretched": false,
+                    "withBackground": false
+                ]
+            ])
+        }
+        if out.isEmpty {
+            out.append(paragraphBlock(""))
+        }
+
+        var root = rootObj
+        root["blocks"] = out
+        root["time"] = Int64(Date().timeIntervalSince1970 * 1000)
+        if root["version"] == nil { root["version"] = version }
+        if let data = try? JSONSerialization.data(withJSONObject: root, options: [.sortedKeys, .withoutEscapingSlashes]),
+           let s = String(data: data, encoding: .utf8) {
+            return s
+        }
+        return encode(plainText: plainText, imageDataURLs: imageURLs)
     }
 
     /// 중첩 목록을 들여쓰기 붙인 줄로 편다.

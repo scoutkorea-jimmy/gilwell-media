@@ -13,6 +13,9 @@ struct BPMediaWriterApp: App {
                 .frame(minWidth: 980, minHeight: 640)
                 .tint(BrandColors.scoutingPurple)
                 .background(BrandColors.canvasWhite)
+                // 배경은 Canvas White 로 고정인데 글자는 시스템 동적색이라, 다크 모드에선 흰 바탕에 흰 글자가 된다.
+                // 다크 팔레트(11-site-design: 딥퍼플이 소멸)를 따로 만들기 전까지는 라이트로 잠근다.
+                .preferredColorScheme(.light)
         }
         .commands {
             CommandGroup(replacing: .newItem) {
@@ -47,9 +50,9 @@ struct RootView: View {
                             .id(appState.editorSessionID)
                     } else {
                         ContentUnavailableView(
-                            "글을 선택하세요",
+                            "글을 선택해 주세요",
                             systemImage: "doc.text",
-                            description: Text("왼쪽 목록에서 글을 고르거나 새 글을 작성하세요.")
+                            description: Text("왼쪽 목록에서 글을 고르거나 「새 글」로 시작해 주세요.")
                         )
                         .background(BrandColors.brandBackground)
                     }
@@ -62,7 +65,7 @@ struct RootView: View {
         .background(BrandColors.canvasWhite)
         .tint(BrandColors.scoutingPurple)
         .environment(\.layoutDirection, .leftToRight)
-        .alert("알림", isPresented: Binding(
+        .alert(appState.globalAlertTitle, isPresented: Binding(
             get: { appState.globalAlert != nil },
             set: { if !$0 {
                 if appState.updateAvailableVersion != nil {
