@@ -105,6 +105,24 @@ final class APIClient {
         return try JSONDecoder().decode(GeoAudienceResponse.self, from: data)
     }
 
+    func fetchSearchKeywords(days: Int = 30) async throws -> SearchKeywordsResponse {
+        let data = try await request(
+            path: "/api/admin/search-keywords",
+            method: "GET",
+            query: [URLQueryItem(name: "days", value: String(days))]
+        )
+        return try JSONDecoder().decode(SearchKeywordsResponse.self, from: data)
+    }
+
+    func fetchTagInsights(days: Int = 90) async throws -> TagInsightsResponse {
+        let data = try await request(
+            path: "/api/admin/tag-insights",
+            method: "GET",
+            query: [URLQueryItem(name: "days", value: String(days))]
+        )
+        return try JSONDecoder().decode(TagInsightsResponse.self, from: data)
+    }
+
     func fetchPopularPosts(limit: Int = 5) async throws -> [PostSummary] {
         let data = try await request(
             path: "/api/posts/popular",

@@ -9,6 +9,8 @@ final class AppState: ObservableObject {
     @Published var posts: [PostSummary] = []
     @Published var totalPosts = 0
     @Published var isLoadingList = false
+    /// Quiet list refresh (search/filter) — keep existing rows visible.
+    @Published var isRefreshingQuietly = false
     @Published var listError: String?
     @Published var searchQuery = ""
     @Published var categoryFilter: PostCategory? = nil
@@ -40,6 +42,13 @@ final class AppState: ObservableObject {
     @Published var dashCountries: [GeoCountryRow] = []
     @Published var dashTrackingNote: String?
     @Published var dashLoadedAt: Date?
+    @Published var dashSearchKeywords: [SearchKeywordRow] = []
+    @Published var dashSearchKeywordsError: String?
+    @Published var dashMetaTags: [TagRankingRow] = []
+    @Published var dashHeaderTags: [TagRankingRow] = []
+    @Published var dashTagInsightsError: String?
+    @Published var dashCategoryGaps: [CategoryGapRow] = []
+    @Published var dashAgendaHints: [AgendaHintCard] = []
 
     /// Remote Mac writer version newer than local — shown once per dismissed version.
     @Published var updateAvailableVersion: String?
@@ -142,11 +151,39 @@ final class AppState: ObservableObject {
         posts = []
     }
 
-    func refreshPosts() async {
+    func refreshPosts(quietIfPossible: Bool = true) async {
+        // Cancel any pending debounce without self-canceling an in-flight listTask body.
         listTask?.cancel()
+        listTask = nil
         listGeneration += 1
+        await performListRefresh(quietIfPossible: quietIfPossible, generation: listGeneration)
+    }
+
+    /// Debounced list refresh for search typing. Empty query refreshes immediately.
+    func scheduleRefresh(resetPage: Bool = true) {
+        if resetPage { currentPage = 1 }
+        listTask?.cancel()
+        listGeneration += 1  // invalidate in-flight URLSession via generation + cancel
         let generation = listGeneration
-        isLoadingList = true
+        let trimmed = searchQuery.trimmingCharacters(in: .whitespacesAndNewlines)
+        let delayNs: UInt64 = trimmed.isEmpty ? 0 : 500_000_000  // 500ms within 450–600
+        listTask = Task { [generation] in
+            if delayNs > 0 {
+                try? await Task.sleep(nanoseconds: delayNs)
+            }
+            guard !Task.isCancelled, generation == listGeneration else { return }
+            await performListRefresh(quietIfPossible: true, generation: generation)
+        }
+    }
+
+    private func performListRefresh(quietIfPossible: Bool, generation: Int) async {
+        let quiet = quietIfPossible && !posts.isEmpty
+        if quiet {
+            isRefreshingQuietly = true
+        } else {
+            isLoadingList = true
+            isRefreshingQuietly = false
+        }
         listError = nil
         // Clamp page if filters shrunk the result set.
         if currentPage > totalPages { currentPage = totalPages }
@@ -167,8 +204,11 @@ final class AppState: ObservableObject {
             let pages = max(1, Int(ceil(Double(pageResult.total) / Double(max(limit, 1)))))
             if page > pages, pageResult.total > 0 {
                 currentPage = pages
-                isLoadingList = false
-                await refreshPosts()
+                if generation == listGeneration {
+                    isLoadingList = false
+                    isRefreshingQuietly = false
+                }
+                await refreshPosts(quietIfPossible: quietIfPossible)
                 return
             }
         } catch is CancellationError {
@@ -176,25 +216,24 @@ final class AppState: ObservableObject {
         } catch let error as APIError {
             guard !Task.isCancelled, generation == listGeneration else { return }
             listError = error.message
-            // 401 on authorized calls already triggers onUnauthorized; avoid double-clear here
-            // but still surface list error.
         } catch {
             guard !Task.isCancelled, generation == listGeneration else { return }
             listError = error.localizedDescription
         }
         if generation == listGeneration {
             isLoadingList = false
+            isRefreshingQuietly = false
         }
     }
 
-    func scheduleRefresh(resetPage: Bool = true) {
-        if resetPage { currentPage = 1 }
-        listTask?.cancel()
-        listTask = Task {
-            try? await Task.sleep(nanoseconds: 350_000_000)
-            guard !Task.isCancelled else { return }
-            await refreshPosts()
-        }
+    /// Prefill list search from dashboard keyword/tag chips.
+    func applyDashboardSearch(_ raw: String) {
+        let q = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !q.isEmpty else { return }
+        homeTab = .posts
+        searchQuery = q
+        currentPage = 1
+        scheduleRefresh(resetPage: true)
     }
 
     func goToPage(_ page: Int) async {
@@ -403,11 +442,15 @@ final class AppState: ObservableObject {
         isLoadingDashboard = true
         dashboardError = nil
         dashboardPermissionDenied = false
+        dashSearchKeywordsError = nil
+        dashTagInsightsError = nil
         defer { isLoadingDashboard = false }
 
         let today = todayKSTString
         var permissionHit = false
+        var partialErrors: [String] = []
 
+        // Slim KPI strip (secondary)
         do {
             let data = try await api.fetchAdminAnalytics(days: 1)
             dashTodayVisits = data.resolvedTodayVisits
@@ -420,26 +463,22 @@ final class AppState: ObservableObject {
             dashTrackingNote = data.trackingNote
         } catch let error as APIError {
             if error.statusCode == 403 { permissionHit = true }
-            dashboardError = "방문 분석: \(error.message)"
+            partialErrors.append("방문 분석: \(error.message)")
         } catch {
-            dashboardError = "방문 분석: \(error.localizedDescription)"
+            partialErrors.append("방문 분석: \(error.localizedDescription)")
         }
 
+        // Geo — demoted; still fetch for disclosure
         do {
             let data = try await api.fetchGeoAudience(days: 1)
-            dashCountries = Array((data.countries ?? []).prefix(12))
+            dashCountries = Array((data.countries ?? []).prefix(8))
             if (dashTrackingNote ?? "").isEmpty {
                 dashTrackingNote = data.trackingNote ?? data.warmupNote
             }
         } catch let error as APIError {
             if error.statusCode == 403 { permissionHit = true }
-            if dashboardError == nil {
-                dashboardError = "접속 국가: \(error.message)"
-            }
         } catch {
-            if dashboardError == nil {
-                dashboardError = "접속 국가: \(error.localizedDescription)"
-            }
+            // ignore — geo is optional disclosure
         }
 
         if let posts = try? await api.fetchPopularPosts(limit: 8) {
@@ -480,12 +519,202 @@ final class AppState: ObservableObject {
             dashPublishedPosts = res.total
         }
 
+        // 1) 독자가 찾는 키워드
+        do {
+            let kw = try await api.fetchSearchKeywords(days: 30)
+            dashSearchKeywords = Array((kw.keywords ?? []).prefix(12))
+        } catch let error as APIError {
+            if error.statusCode == 403 {
+                permissionHit = true
+                dashSearchKeywordsError = "검색 키워드 권한이 없습니다 (analytics-visits)."
+            } else {
+                dashSearchKeywordsError = error.message
+            }
+            dashSearchKeywords = []
+        } catch {
+            dashSearchKeywordsError = error.localizedDescription
+            dashSearchKeywords = []
+        }
+
+        // 2) 뜨는 태그 / 메타 주제
+        do {
+            let tags = try await api.fetchTagInsights(days: 90)
+            dashMetaTags = Array((tags.metaRanking ?? []).prefix(12))
+            dashHeaderTags = Array((tags.headerRanking ?? []).prefix(8))
+        } catch let error as APIError {
+            if error.statusCode == 403 {
+                permissionHit = true
+                dashTagInsightsError = "태그 인사이트 권한이 없습니다 (analytics-tags)."
+            } else {
+                dashTagInsightsError = error.message
+            }
+            // Fallback: meta-tag-pool frequency order already loaded in helpers
+            if dashMetaTags.isEmpty, !metaTagPool.isEmpty {
+                dashMetaTags = metaTagPool.prefix(12).map {
+                    // Build a lightweight ranking row from pool names
+                    TagRankingRow(tag: $0, count: nil)
+                }
+            }
+        } catch {
+            dashTagInsightsError = error.localizedDescription
+        }
+
+        // 3) 카테고리 공백 — always works with scope=admin list
+        dashCategoryGaps = await computeCategoryGaps()
+
+        // 5) 미발굴 힌트 — templated Korean copy from keywords + stale categories
+        dashAgendaHints = buildAgendaHints(
+            keywords: dashSearchKeywords,
+            gaps: dashCategoryGaps,
+            tags: dashMetaTags
+        )
+
         dashboardPermissionDenied = permissionHit
         if permissionHit {
-            dashboardError = "분석 메뉴 권한이 필요합니다. 웹 관리자에서 analytics-visits / geo-audience 권한을 확인해 주세요."
+            dashboardError = "일부 분석 API 권한이 없습니다. 권한이 있는 데이터와 카테고리 공백은 계속 표시합니다."
+        } else if !partialErrors.isEmpty {
+            dashboardError = partialErrors.joined(separator: " · ")
+        } else {
+            dashboardError = nil
         }
         dashLoadedAt = Date()
     }
+
+    private func computeCategoryGaps() async -> [CategoryGapRow] {
+        var cal = Calendar(identifier: .gregorian)
+        cal.timeZone = TimeZone(identifier: "Asia/Seoul") ?? .current
+        let today = cal.startOfDay(for: Date())
+        let day7 = cal.date(byAdding: .day, value: -7, to: today).map { Self.kstDateString($0) }
+        let day30 = cal.date(byAdding: .day, value: -30, to: today).map { Self.kstDateString($0) }
+        let todayStr = todayKSTString
+
+        var rows: [CategoryGapRow] = []
+        for cat in PostCategory.allCases {
+            var daysSince: Int? = nil
+            var lastTitle: String? = nil
+            var lastID: Int? = nil
+            if let latest = try? await api.fetchPosts(
+                query: "",
+                category: cat,
+                published: .published,
+                page: 1,
+                limit: 1
+            ), let post = latest.posts.first {
+                lastTitle = post.title
+                lastID = post.id
+                if let date = Self.parseAPIDate(post.publishAt ?? post.createdAt) {
+                    let start = cal.startOfDay(for: date)
+                    daysSince = cal.dateComponents([.day], from: start, to: today).day
+                }
+            } else {
+                daysSince = nil // never / unknown → treat as stale
+            }
+
+            var c7 = 0
+            var c30 = 0
+            if let day7, let res = try? await api.fetchPosts(
+                query: "", category: cat, published: .published,
+                page: 1, limit: 1, startDate: day7, endDate: todayStr
+            ) {
+                c7 = res.total
+            }
+            if let day30, let res = try? await api.fetchPosts(
+                query: "", category: cat, published: .published,
+                page: 1, limit: 1, startDate: day30, endDate: todayStr
+            ) {
+                c30 = res.total
+            }
+
+            rows.append(CategoryGapRow(
+                category: cat,
+                daysSinceLast: daysSince,
+                count7d: c7,
+                count30d: c30,
+                lastTitle: lastTitle,
+                lastPostID: lastID
+            ))
+        }
+        return rows.sorted { ($0.daysSinceLast ?? 9999) > ($1.daysSinceLast ?? 9999) }
+    }
+
+    private func buildAgendaHints(
+        keywords: [SearchKeywordRow],
+        gaps: [CategoryGapRow],
+        tags: [TagRankingRow]
+    ) -> [AgendaHintCard] {
+        var cards: [AgendaHintCard] = []
+        let topKW = keywords.compactMap(\.keyword).filter { !$0.isEmpty }.prefix(3)
+        let stale = gaps.filter(\.isStale)
+
+        for gap in stale.prefix(3) {
+            let days = gap.daysSinceLast.map { "\($0)일째" } ?? "기록 없음"
+            if let kw = topKW.first {
+                cards.append(AgendaHintCard(
+                    id: "gap-\(gap.category.rawValue)-\(kw)",
+                    text: "「\(gap.category.titleKO)」 소식이 \(days) 없음 · 검색어 ‘\(kw)’ 상승"
+                ))
+            } else if let tag = tags.first?.tag, !tag.isEmpty {
+                cards.append(AgendaHintCard(
+                    id: "gap-\(gap.category.rawValue)-\(tag)",
+                    text: "「\(gap.category.titleKO)」 \(days) 공백 · 메타 주제 ‘\(tag)’ 활용 가능"
+                ))
+            } else {
+                cards.append(AgendaHintCard(
+                    id: "gap-\(gap.category.rawValue)",
+                    text: "「\(gap.category.titleKO)」 아젠다 기회 — 최근 7일 \(gap.count7d)건 · 30일 \(gap.count30d)건"
+                ))
+            }
+        }
+
+        for (idx, kw) in topKW.enumerated() {
+            if cards.count >= 5 { break }
+            let tagHint = tags.first?.tag
+            let text: String
+            if let tagHint, !tagHint.isEmpty {
+                text = "검색어 ‘\(kw)’ 유입 증가 · 태그 ‘\(tagHint)’와 묶어 해설 기사?"
+            } else {
+                text = "독자가 ‘\(kw)’를 찾고 있음 — 입문·현황 정리 기사 기회"
+            }
+            cards.append(AgendaHintCard(id: "kw-\(idx)-\(kw)", text: text))
+        }
+
+        // Deduplicate by text, cap 2–5
+        var seen = Set<String>()
+        var unique: [AgendaHintCard] = []
+        for c in cards {
+            if seen.insert(c.text).inserted {
+                unique.append(c)
+            }
+            if unique.count >= 5 { break }
+        }
+        return Array(unique.prefix(5))
+    }
+
+    private static func kstDateString(_ date: Date) -> String {
+        var cal = Calendar(identifier: .gregorian)
+        cal.timeZone = TimeZone(identifier: "Asia/Seoul") ?? .current
+        let c = cal.dateComponents([.year, .month, .day], from: date)
+        return String(format: "%04d-%02d-%02d", c.year ?? 0, c.month ?? 0, c.day ?? 0)
+    }
+
+    private static func parseAPIDate(_ raw: String?) -> Date? {
+        guard let raw, !raw.isEmpty else { return nil }
+        let iso = ISO8601DateFormatter()
+        iso.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        if let d = iso.date(from: raw) { return d }
+        iso.formatOptions = [.withInternetDateTime]
+        if let d = iso.date(from: raw) { return d }
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "en_US_POSIX")
+        f.timeZone = TimeZone(identifier: "Asia/Seoul")
+        for pattern in ["yyyy-MM-dd'T'HH:mm:ss", "yyyy-MM-dd HH:mm:ss", "yyyy-MM-dd"] {
+            f.dateFormat = pattern
+            if let d = f.date(from: String(raw.prefix(19))) { return d }
+            if let d = f.date(from: raw) { return d }
+        }
+        return nil
+    }
+
 
 }
 

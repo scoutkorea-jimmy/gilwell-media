@@ -43,6 +43,7 @@ struct EditorView: View {
         }
         .background(BrandColors.brandBackground)
         .tint(BrandColors.brandPrimary)
+        .environment(\.layoutDirection, .leftToRight)
         .onAppear { reloadFromMode() }
         .onChange(of: appState.editorSessionID) { _, _ in
             reloadFromMode()
@@ -300,6 +301,8 @@ struct EditorView: View {
                         fieldLabel("제목", required: true)
                         TextField("제목을 입력하세요", text: $title)
                             .font(typography.bodySemibold)
+                            .multilineTextAlignment(.leading)
+                            .environment(\.layoutDirection, .leftToRight)
                     }
 
                     // 카테고리 (필수) — 제목 바로 다음
@@ -321,12 +324,16 @@ struct EditorView: View {
                     Section {
                         fieldLabel("부제", required: false)
                         TextField("부제 (선택)", text: $subtitle)
+                            .multilineTextAlignment(.leading)
+                            .environment(\.layoutDirection, .leftToRight)
                     }
 
                     // 3. 스페셜 피처 (선택) + 4. 기존 특집 불러오기
                     Section {
                         fieldLabel("스페셜 피처", required: false)
                         TextField("특집명 직접 입력", text: $specialFeature)
+                            .multilineTextAlignment(.leading)
+                            .environment(\.layoutDirection, .leftToRight)
                         fieldLabel("등록된 특집에서 선택", required: false)
                         Text("이미 쓴 특집명을 고르면 위에 채워집니다")
                             .font(.caption)
@@ -395,6 +402,8 @@ struct EditorView: View {
                     Section {
                         fieldLabel("출처 / 캡션", required: false)
                         TextField("이미지 출처 또는 캡션 (선택)", text: $imageCaption)
+                            .multilineTextAlignment(.leading)
+                            .environment(\.layoutDirection, .leftToRight)
                             .onChange(of: imageCaption) { _, _ in scheduleAutosave() }
                     }
 
@@ -403,6 +412,8 @@ struct EditorView: View {
                         fieldLabel("본문", required: true)
                         TextEditor(text: $bodyText)
                             .font(typography.body)
+                            .multilineTextAlignment(.leading)
+                            .environment(\.layoutDirection, .leftToRight)
                             .frame(minHeight: 240)
                             .padding(6)
                             .background(BrandColors.canvasWhite)
@@ -440,6 +451,8 @@ struct EditorView: View {
                             .font(.caption)
                             .foregroundStyle(.secondary)
                         TextField("예: 스카우트,잼버리", text: $metaTags)
+                            .multilineTextAlignment(.leading)
+                            .environment(\.layoutDirection, .leftToRight)
                         if !appState.metaTagPool.isEmpty {
                             ScrollView(.horizontal, showsIndicators: false) {
                                 HStack(spacing: 6) {
@@ -487,8 +500,9 @@ struct EditorView: View {
                         }
                     }
                 }
-                .padding(20)
+                .padding(BrandColors.panePadding)
                 .formStyle(.grouped)
+                .environment(\.layoutDirection, .leftToRight)
             }
         }
         .onChange(of: title) { _, _ in scheduleAutosave() }

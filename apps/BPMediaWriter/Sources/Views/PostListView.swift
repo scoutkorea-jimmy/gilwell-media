@@ -7,27 +7,29 @@ struct PostListView: View {
     @State private var pendingDelete: PostSummary?
     @State private var confirmDelete = false
     @State private var showSettings = false
+    @State private var filtersExpanded = true
 
     var body: some View {
         VStack(spacing: 0) {
             topToolbar
             homeTabBar
             if appState.homeTab == .posts {
-                filterCard
+                filterSection
                 Divider()
                 listBody
                 Divider()
                 paginationBar
             } else {
-                dashboardSidebarHint
+                dashboardSidebar
             }
         }
-        .frame(minWidth: 320)
+        .frame(minWidth: 300)
         .background(BrandColors.brandBackground)
         .tint(BrandColors.brandPrimary)
+        .environment(\.layoutDirection, .leftToRight)
         .task {
             if appState.isAuthenticated {
-                await appState.refreshPosts()
+                await appState.refreshPosts(quietIfPossible: false)
                 await appState.loadHelpers()
                 await appState.checkForUpdateIfNeeded(reason: .appear)
             }
@@ -48,10 +50,10 @@ struct PostListView: View {
         }
     }
 
-    // MARK: - Top toolbar (always-visible actions)
+    // MARK: - Top toolbar (primary CTA + secondary Menu)
 
     private var topToolbar: some View {
-        HStack(alignment: .center, spacing: 10) {
+        HStack(alignment: .center, spacing: 8) {
             VStack(alignment: .leading, spacing: 2) {
                 Text("BP Media")
                     .font(typography.captionSemibold)
@@ -61,57 +63,63 @@ struct PostListView: View {
                     .foregroundStyle(BrandColors.scoutingPurple)
             }
             Spacer(minLength: 8)
-            HStack(spacing: 8) {
-                Button {
-                    appState.openNewPost()
-                } label: {
-                    Label("새 글", systemImage: "square.and.pencil")
-                }
-                .buttonStyle(.borderedProminent)
-                .tint(BrandColors.brandPrimary)
-                .controlSize(.regular)
 
-                Button {
-                    Task { await appState.refreshPosts() }
-                } label: {
-                    Label("새로고침", systemImage: "arrow.clockwise")
-                }
-                .buttonStyle(.bordered)
-                .controlSize(.regular)
-                .disabled(appState.isLoadingList)
+            // Primary action — always prominent
+            Button {
+                appState.openNewPost()
+            } label: {
+                Label("새 글", systemImage: "square.and.pencil")
+                    .labelStyle(.titleAndIcon)
+                    .lineLimit(1)
+            }
+            .buttonStyle(.borderedProminent)
+            .tint(BrandColors.brandPrimary)
+            .controlSize(.regular)
+            .help("새 글 작성 (⌘N)")
 
+            // Secondary prominent — refresh
+            Button {
+                Task { await appState.refreshPosts(quietIfPossible: false) }
+            } label: {
+                Image(systemName: "arrow.clockwise")
+                    .frame(minWidth: BrandColors.minTapTarget, minHeight: BrandColors.minTapTarget)
+            }
+            .buttonStyle(.bordered)
+            .controlSize(.regular)
+            .disabled(appState.isLoadingList || appState.isRefreshingQuietly)
+            .help("새로고침")
+
+            // Overflow secondary actions — avoid clipped titleAndIcon stack
+            Menu {
                 Button {
                     openWebAdmin()
                 } label: {
                     Label("웹 관리자", systemImage: "safari")
                 }
-                .buttonStyle(.bordered)
-                .controlSize(.regular)
-
-                Button {
-                    appState.logout()
-                } label: {
-                    Label("로그아웃", systemImage: "rectangle.portrait.and.arrow.right")
-                }
-                .buttonStyle(.bordered)
-                .controlSize(.regular)
-
                 Button {
                     showSettings = true
                 } label: {
                     Label("설정", systemImage: "gearshape")
                 }
-                .buttonStyle(.bordered)
-                .controlSize(.regular)
-                .help("글자 크기·글꼴 설정")
+                Divider()
+                Button(role: .destructive) {
+                    appState.logout()
+                } label: {
+                    Label("로그아웃", systemImage: "rectangle.portrait.and.arrow.right")
+                }
+            } label: {
+                Image(systemName: "ellipsis.circle")
+                    .frame(minWidth: BrandColors.minTapTarget, minHeight: BrandColors.minTapTarget)
             }
-            .labelStyle(.titleAndIcon)
+            .help("더 보기 · 웹관리자 · 설정 · 로그아웃")
+            .menuStyle(.borderlessButton)
         }
-        .padding(.horizontal, 14)
+        .padding(.horizontal, BrandColors.panePadding)
         .padding(.vertical, 12)
         .background(BrandColors.brandSurface)
         .sheet(isPresented: $showSettings) {
             SettingsView()
+                .environment(\.layoutDirection, .leftToRight)
         }
     }
 
@@ -124,96 +132,172 @@ struct PostListView: View {
             }
         }
         .pickerStyle(.segmented)
-        .padding(.horizontal, 14)
+        .padding(.horizontal, BrandColors.panePadding)
         .padding(.vertical, 8)
         .background(BrandColors.brandSurface)
     }
 
-    private var dashboardSidebarHint: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Spacer(minLength: 24)
-            Image(systemName: "chart.bar.doc.horizontal")
-                .font(.system(size: 36))
-                .foregroundStyle(BrandColors.scoutingPurple.opacity(0.85))
-            Text("대시보드")
-                .font(typography.title2)
-                .foregroundStyle(BrandColors.scoutingPurple)
-            Text("오늘 방문·조회·게시 수와 방문 국가는 오른쪽 상세 영역에 표시됩니다.")
-                .font(typography.body)
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-            Button("게시글 목록으로") {
-                appState.homeTab = .posts
+    // MARK: - Dashboard sidebar (useful, not empty void)
+
+    private var dashboardSidebar: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: BrandColors.sectionSpacing) {
+                Text("다음에 쓸 글")
+                    .font(typography.headline)
+                    .foregroundStyle(BrandColors.scoutingPurple)
+
+                Text("아젠다 힌트와 키워드를 탭하면 목록 검색이 채워집니다.")
+                    .font(typography.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                if appState.dashAgendaHints.isEmpty && appState.dashCategoryGaps.isEmpty {
+                    Text("대시보드를 불러오면 아젠다 칩이 여기에 표시됩니다.")
+                        .font(typography.callout)
+                        .foregroundStyle(.secondary)
+                }
+
+                ForEach(appState.dashAgendaHints.prefix(4)) { hint in
+                    Button {
+                        // Prefer first quoted search term if present
+                        if let range = hint.text.range(of: "‘"),
+                           let end = hint.text.range(of: "’", range: range.upperBound..<hint.text.endIndex) {
+                            let kw = String(hint.text[range.upperBound..<end.lowerBound])
+                            appState.applyDashboardSearch(kw)
+                        } else {
+                            appState.homeTab = .posts
+                        }
+                    } label: {
+                        Text(hint.text)
+                            .font(typography.caption)
+                            .foregroundStyle(.primary)
+                            .multilineTextAlignment(.leading)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(10)
+                            .background(BrandColors.brandSurface)
+                            .clipShape(RoundedRectangle(cornerRadius: BrandColors.chipRadius))
+                    }
+                    .buttonStyle(.plain)
+                    .help("목록 검색으로 이동")
+                }
+
+                if !appState.dashCategoryGaps.isEmpty {
+                    Text("카테고리 바로가기")
+                        .font(typography.captionSemibold)
+                        .foregroundStyle(.secondary)
+                    FlexibleChipRow(spacing: 6) {
+                        ForEach(appState.dashCategoryGaps) { gap in
+                            Button {
+                                appState.homeTab = .posts
+                                appState.categoryFilter = gap.category
+                                appState.currentPage = 1
+                                Task { await appState.refreshPosts(quietIfPossible: true) }
+                            } label: {
+                                Text(gap.category.titleKO)
+                                    .font(typography.captionSemibold)
+                                    .lineLimit(2)
+                                    .multilineTextAlignment(.center)
+                                    .padding(.horizontal, 10)
+                                    .padding(.vertical, 6)
+                                    .foregroundStyle(gap.isStale ? Color.white : BrandColors.midnightPurple)
+                                    .background(gap.isStale ? BrandColors.scoutingPurple : BrandColors.riverBlue.opacity(0.35))
+                                    .clipShape(Capsule())
+                            }
+                            .buttonStyle(.plain)
+                            .help(gap.isStale ? "아젠다 기회 · 목록 필터" : "카테고리 목록")
+                        }
+                    }
+                }
+
+                Button {
+                    appState.homeTab = .posts
+                } label: {
+                    Label("게시글 목록으로", systemImage: "list.bullet")
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(BrandColors.brandPrimary)
+                .padding(.top, 4)
             }
-            .buttonStyle(.borderedProminent)
-            .tint(BrandColors.brandPrimary)
-            Spacer()
+            .padding(BrandColors.panePadding)
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .padding(20)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .background(BrandColors.brandBackground)
+        .environment(\.layoutDirection, .leftToRight)
     }
 
-    // MARK: - Filters (card below toolbar)
+    // MARK: - Filters (full-bleed, collapsible)
 
-    private var filterCard: some View {
+    private var filterSection: some View {
         VStack(alignment: .leading, spacing: 10) {
-            TextField("제목·내용 검색", text: $appState.searchQuery)
-                .textFieldStyle(.roundedBorder)
-                .onChange(of: appState.searchQuery) { _, _ in
-                    appState.scheduleRefresh(resetPage: true)
+            HStack(spacing: 8) {
+                TextField("제목·내용 검색", text: $appState.searchQuery)
+                    .textFieldStyle(.roundedBorder)
+                    .environment(\.layoutDirection, .leftToRight)
+                    .multilineTextAlignment(.leading)
+                    .onChange(of: appState.searchQuery) { _, _ in
+                        appState.scheduleRefresh(resetPage: true)
+                    }
+
+                if appState.isRefreshingQuietly {
+                    ProgressView()
+                        .controlSize(.small)
+                        .help("검색 갱신 중")
                 }
 
-            Text("카테고리")
-                .font(typography.captionSemibold)
-                .foregroundStyle(.secondary)
-
-            categoryChips
-
-            Text("공개 상태")
-                .font(typography.captionSemibold)
-                .foregroundStyle(.secondary)
-
-            Picker("공개", selection: $appState.publishedFilter) {
-                ForEach(PublishedFilter.allCases) { f in
-                    Text(f.title).tag(f)
+                Button {
+                    withAnimation(.easeInOut(duration: 0.15)) {
+                        filtersExpanded.toggle()
+                    }
+                } label: {
+                    Image(systemName: filtersExpanded ? "chevron.up" : "chevron.down")
+                        .frame(minWidth: BrandColors.minTapTarget, minHeight: BrandColors.minTapTarget)
                 }
+                .buttonStyle(.borderless)
+                .help(filtersExpanded ? "필터 접기" : "필터 펼치기")
             }
-            .pickerStyle(.segmented)
-            .labelsHidden()
-            .onChange(of: appState.publishedFilter) { _, _ in
-                appState.currentPage = 1
-                Task { await appState.refreshPosts() }
+
+            if filtersExpanded {
+                Text("카테고리")
+                    .font(typography.captionSemibold)
+                    .foregroundStyle(.secondary)
+
+                categoryChips
+
+                Text("공개 상태")
+                    .font(typography.captionSemibold)
+                    .foregroundStyle(.secondary)
+
+                Picker("공개", selection: $appState.publishedFilter) {
+                    ForEach(PublishedFilter.allCases) { f in
+                        Text(f.title).tag(f)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .labelsHidden()
+                .onChange(of: appState.publishedFilter) { _, _ in
+                    appState.currentPage = 1
+                    Task { await appState.refreshPosts(quietIfPossible: true) }
+                }
             }
         }
-        .padding(12)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(
-            RoundedRectangle(cornerRadius: 10)
-                .fill(BrandColors.canvasWhite)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 10)
-                        .stroke(BrandColors.scoutingPurple.opacity(0.12), lineWidth: 1)
-                )
-        )
-        .padding(.horizontal, 12)
+        .padding(.horizontal, BrandColors.panePadding)
         .padding(.vertical, 10)
-        .background(BrandColors.brandSurface.opacity(0.65))
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(BrandColors.brandSurface)
     }
 
     private var categoryChips: some View {
-        // Wrapping row: 전체 | 홈페이지 nav 한국어 카테고리명
         FlexibleChipRow(spacing: 6) {
             categoryChip(title: "전체", selected: appState.categoryFilter == nil) {
                 appState.categoryFilter = nil
                 appState.currentPage = 1
-                Task { await appState.refreshPosts() }
+                Task { await appState.refreshPosts(quietIfPossible: true) }
             }
             ForEach(PostCategory.allCases) { cat in
                 categoryChip(title: cat.titleKO, selected: appState.categoryFilter == cat) {
                     appState.categoryFilter = cat
                     appState.currentPage = 1
-                    Task { await appState.refreshPosts() }
+                    Task { await appState.refreshPosts(quietIfPossible: true) }
                 }
             }
         }
@@ -248,7 +332,7 @@ struct PostListView: View {
                     .font(.body)
                     .multilineTextAlignment(.center)
                 Button("다시 시도") {
-                    Task { await appState.refreshPosts() }
+                    Task { await appState.refreshPosts(quietIfPossible: false) }
                 }
                 .buttonStyle(.borderedProminent)
                 .tint(BrandColors.brandPrimary)
@@ -269,7 +353,7 @@ struct PostListView: View {
                     }
                     .buttonStyle(.plain)
                     .tag(post.id)
-                    .listRowInsets(EdgeInsets(top: 8, leading: 14, bottom: 8, trailing: 12))
+                    .listRowInsets(EdgeInsets(top: 8, leading: BrandColors.panePadding, bottom: 8, trailing: 12))
                     .listRowBackground(
                         appState.selectedPostID == post.id
                             ? BrandColors.scoutingPurple.opacity(0.10)
@@ -293,6 +377,7 @@ struct PostListView: View {
             }
             .listStyle(.sidebar)
             .tint(BrandColors.brandPrimary)
+            .environment(\.layoutDirection, .leftToRight)
         }
     }
 
@@ -391,12 +476,12 @@ struct PostListView: View {
                 .disabled(appState.currentPage >= appState.totalPages || appState.isLoadingList)
 
                 Spacer()
-                if appState.isLoadingList {
+                if appState.isLoadingList || appState.isRefreshingQuietly {
                     ProgressView().controlSize(.small)
                 }
             }
         }
-        .padding(.horizontal, 12)
+        .padding(.horizontal, BrandColors.panePadding)
         .padding(.vertical, 10)
         .background(BrandColors.brandSurface)
     }
@@ -410,13 +495,11 @@ struct PostListView: View {
 
 // MARK: - Simple wrapping chip layout (leading-aligned)
 
-/// Lightweight wrap layout so category chips stay leading-aligned without a heavy dependency.
 private struct FlexibleChipRow: Layout {
     var spacing: CGFloat = 6
 
     func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
-        let result = arrange(proposal: proposal, subviews: subviews)
-        return result.size
+        arrange(proposal: proposal, subviews: subviews).size
     }
 
     func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {

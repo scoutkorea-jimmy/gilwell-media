@@ -1,4 +1,4 @@
-# BP Media Writer (macOS) v1.1.2
+# BP Media Writer (macOS) v1.1.3
 
 Korean-first SwiftUI macOS app for writing/editing BP Media posts via existing `https://bpmedia.net` APIs. No new web CMS.
 
@@ -39,7 +39,7 @@ defaults write net.bpmedia.writer bpmedia.turnstile.sitekey "YOUR_SITE_KEY"
 
 The login screen will show an embedded WKWebView widget when needed.
 
-## Features (v1.1.2)
+## Features (v1.1.3)
 
 ### Save / CSRF (root cause)
 
@@ -58,8 +58,10 @@ Mac writer maps TextEditor plain text to Editor.js like the web admin `_createPa
 - List row tap opens **read-only detail**; 「수정」 enters the editor. 「새 글」 always starts blank (draft cleared)
 - **조회수** on list rows and detail when API provides `views`
 - Pagination: page size **10 / 30 / 50**, previous/next, range label (`1–30 / 406`)
-- Top toolbar: 새 글 · 새로고침 · 웹 관리자 · 로그아웃 · 설정(글자 크기/글꼴)
-- Home tabs: 대시보드 | 게시글 (analytics / geo-audience / popular)
+- Top toolbar: 새 글(primary) · 새로고침 · overflow Menu(웹관리자/설정/로그아웃); icon-only + .help() to avoid clipped Korean labels
+- Home tabs: 대시보드 | 게시글
+- **아젠다 대시보드**: vanity traffic board가 아니라 **다음에 쓸 기사 주제를 발견**하는 화면. 독자 검색어·뜨는 태그·카테고리 공백(아젠다 기회)·반응 좋은 기사·미발굴 힌트 카드가 1순위이고, 오늘 방문/조회 KPI와 방문 국가는 접을 수 있는 2차 정보다. 키워드/태그 칩을 누르면 목록 검색이 채워진다.
+- 검색 디바운스(약 500ms)·조용한 갱신(기존 목록 유지 + 인라인 스피너)·LTR 강제·툴바 overflow Menu·풀블리드 페인 레이아웃
 - Read-only: full-bleed 대표 이미지; category chips use homepage Korean labels
 - Update notice when remote `mac_writer_version` (`/api/version` or `/MAC_WRITER_VERSION`) is newer than local `CFBundleShortVersionString`
 - Create / edit / delete posts (create POSTs; edit PUTs with `expected_updated_at`)
@@ -85,7 +87,7 @@ Mac writer maps TextEditor plain text to Editor.js like the web admin `_createPa
   안 그러면 **바로 이어지는 두 번째 저장이 409("다른 사용자가 먼저 수정")로 막힌다**
 - 409 는 코드로 가른다(`EDIT_CONFLICT` 만 동시편집 안내) — 다른 409 에 엉뚱한 안내를 하지 않도록
 
-Out of scope: analytics, KMS, member permissions UI, Facebook/SNS share, App Store metadata.
+Out of scope: KMS, member permissions UI, Facebook/SNS share, App Store metadata.
 
 ## OTP / 2FA
 

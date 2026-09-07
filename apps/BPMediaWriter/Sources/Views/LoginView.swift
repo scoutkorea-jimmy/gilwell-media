@@ -41,8 +41,11 @@ struct LoginView: View {
                     .foregroundStyle(.secondary)
 
                 TextField("계정명", text: $username)
+                    .multilineTextAlignment(.leading)
+                    .environment(\.layoutDirection, .leftToRight)
                     .textFieldStyle(.roundedBorder)
                 SecureField("비밀번호", text: $password)
+                    .environment(\.layoutDirection, .leftToRight)
                     .textFieldStyle(.roundedBorder)
                     .onSubmit {
                         Task { await submit() }

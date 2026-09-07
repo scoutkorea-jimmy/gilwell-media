@@ -9,6 +9,7 @@ struct BPMediaWriterApp: App {
             RootView()
                 .environmentObject(appState)
                 .withAppTypography()
+                .environment(\.layoutDirection, .leftToRight)
                 .frame(minWidth: 980, minHeight: 640)
                 .tint(BrandColors.scoutingPurple)
                 .background(BrandColors.canvasWhite)
@@ -60,6 +61,7 @@ struct RootView: View {
         }
         .background(BrandColors.canvasWhite)
         .tint(BrandColors.scoutingPurple)
+        .environment(\.layoutDirection, .leftToRight)
         .alert("알림", isPresented: Binding(
             get: { appState.globalAlert != nil },
             set: { if !$0 {

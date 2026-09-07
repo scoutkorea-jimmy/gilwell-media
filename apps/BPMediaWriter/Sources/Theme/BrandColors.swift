@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// World Scouting brand colors (RGB for digital).
+/// World Scouting brand colors (RGB for digital) + shared layout tokens (Figma-aligned).
 enum BrandColors {
     // PRIMARY
     static let scoutingPurple = Color(red: 98 / 255, green: 37 / 255, blue: 153 / 255) // #622599
@@ -24,6 +24,14 @@ enum BrandColors {
     static let brandSuccess = forestGreen
     static let brandWarning = emberOrange
     static let brandAccent = oceanBlue
+
+    // Layout tokens — consistent across Dashboard / Posts / Editor panes
+    static let cardRadius: CGFloat = 12
+    static let chipRadius: CGFloat = 8
+    static let panePadding: CGFloat = 16
+    static let sectionSpacing: CGFloat = 16
+    static let cardPadding: CGFloat = 14
+    static let minTapTarget: CGFloat = 28
 }
 
 extension Color {

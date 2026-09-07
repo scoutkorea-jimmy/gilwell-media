@@ -213,3 +213,138 @@ private func flexInt<K: CodingKey>(_ c: KeyedDecodingContainer<K>, _ key: K) -> 
     if let s = try? c.decodeIfPresent(String.self, forKey: key), let i = Int(s) { return i }
     return nil
 }
+
+
+// MARK: - Search keywords (GET /api/admin/search-keywords)
+
+struct SearchKeywordsResponse: Decodable {
+    var range: SearchKeywordsRange?
+    var totalVisits: Int?
+    var totalUnique: Int?
+    var byEngine: [SearchEngineRow]?
+    var keywords: [SearchKeywordRow]?
+
+    enum CodingKeys: String, CodingKey {
+        case range, keywords
+        case totalVisits = "total_visits"
+        case totalUnique = "total_unique"
+        case byEngine = "by_engine"
+    }
+}
+
+struct SearchKeywordsRange: Decodable {
+    var start: String?
+    var end: String?
+    var days: Int?
+}
+
+struct SearchEngineRow: Decodable, Identifiable {
+    var engine: String?
+    var visits: Int?
+    var id: String { "engine-\(engine ?? "unknown")-\(visits ?? 0)" }
+}
+
+struct SearchKeywordRow: Decodable, Identifiable {
+    var keyword: String?
+    var engine: String?
+    var visits: Int?
+    var id: String { "\(keyword ?? "")-\(engine ?? "")-\(visits ?? 0)" }
+}
+
+// MARK: - Tag insights (GET /api/admin/tag-insights)
+
+struct TagInsightsResponse: Decodable {
+    var headerRanking: [TagRankingRow]?
+    var metaRanking: [TagRankingRow]?
+    var suggestions: TagInsightsSuggestions?
+
+    enum CodingKeys: String, CodingKey {
+        case headerRanking = "header_ranking"
+        case metaRanking = "meta_ranking"
+        case suggestions
+    }
+}
+
+struct TagRankingRow: Decodable, Identifiable {
+    var tag: String?
+    var count: Int?
+    var pct: Double?
+    var topCategory: String?
+    var topHeader: String?
+    var views: Int?
+
+    var id: String { "\(tag ?? "tag")-\(count ?? 0)" }
+
+    enum CodingKeys: String, CodingKey {
+        case tag, count, pct, views
+        case topCategory = "top_category"
+        case topHeader = "top_header"
+    }
+
+    init(tag: String?, count: Int?, pct: Double? = nil, topCategory: String? = nil, topHeader: String? = nil, views: Int? = nil) {
+        self.tag = tag
+        self.count = count
+        self.pct = pct
+        self.topCategory = topCategory
+        self.topHeader = topHeader
+        self.views = views
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        tag = try c.decodeIfPresent(String.self, forKey: .tag)
+        count = flexInt(c, .count)
+        views = flexInt(c, .views)
+        pct = try c.decodeIfPresent(Double.self, forKey: .pct)
+        topCategory = try c.decodeIfPresent(String.self, forKey: .topCategory)
+        topHeader = try c.decodeIfPresent(String.self, forKey: .topHeader)
+    }
+}
+
+struct TagInsightsSuggestions: Decodable {
+    var suggestions: [TagSuggestionItem]?
+    var thinHeaders: [TagRankingRow]?
+
+    enum CodingKeys: String, CodingKey {
+        case suggestions
+        case thinHeaders = "thin_headers"
+    }
+}
+
+struct TagSuggestionItem: Decodable, Identifiable {
+    var titleHint: String?
+    var headerHint: String?
+    var rationale: String?
+    var priority: String?
+
+    var id: String { titleHint ?? "suggestion-\(priority ?? "")-\(headerHint ?? "")" }
+
+    enum CodingKeys: String, CodingKey {
+        case titleHint = "title_hint"
+        case headerHint = "header_hint"
+        case rationale, priority
+    }
+}
+
+// MARK: - Category gap (computed client-side)
+
+struct CategoryGapRow: Identifiable, Hashable {
+    var category: PostCategory
+    var daysSinceLast: Int?
+    var count7d: Int
+    var count30d: Int
+    var lastTitle: String?
+    var lastPostID: Int?
+
+    var id: String { category.rawValue }
+
+    var isStale: Bool {
+        guard let days = daysSinceLast else { return true }
+        return days >= 7
+    }
+}
+
+struct AgendaHintCard: Identifiable, Hashable {
+    var id: String
+    var text: String
+}
