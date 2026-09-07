@@ -12,16 +12,21 @@ struct PostListView: View {
     var body: some View {
         VStack(spacing: 0) {
             topToolbar
-            homeTabBar
-            if appState.homeTab == .posts {
-                filterSection
-                Divider()
-                listBody
-                Divider()
-                paginationBar
-            } else {
-                dashboardSidebar
+            Divider()
+            Group {
+                if appState.homeTab == .posts {
+                    VStack(spacing: 0) {
+                        filterSection
+                        Divider()
+                        listBody
+                        Divider()
+                        paginationBar
+                    }
+                } else {
+                    dashboardSidebar
+                }
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .frame(minWidth: 300)
         .background(BrandColors.brandBackground)
@@ -58,13 +63,20 @@ struct PostListView: View {
                 Text("BP Media")
                     .font(typography.captionSemibold)
                     .foregroundStyle(BrandColors.scoutingPurple.opacity(0.85))
-                Text(appState.homeTab.titleKO)
-                    .font(typography.title2)
-                    .foregroundStyle(BrandColors.scoutingPurple)
+                // Stable macOS dropdown — avoids segmented chrome reshape
+                Picker("화면", selection: $appState.homeTab) {
+                    ForEach(WriterHomeTab.allCases) { tab in
+                        Text(tab.titleKO).tag(tab)
+                    }
+                }
+                .pickerStyle(.menu)
+                .labelsHidden()
+                .tint(BrandColors.scoutingPurple)
+                .fixedSize()
+                .help("게시글 / 대시보드 전환")
             }
             Spacer(minLength: 8)
 
-            // Primary action — always prominent
             Button {
                 appState.openNewPost()
             } label: {
@@ -72,24 +84,28 @@ struct PostListView: View {
                     .labelStyle(.titleAndIcon)
                     .lineLimit(1)
             }
-            .buttonStyle(.borderedProminent)
-            .tint(BrandColors.brandPrimary)
-            .controlSize(.regular)
+            .buttonStyle(.writerPrimary)
             .help("새 글 작성 (⌘N)")
 
-            // Secondary prominent — refresh
             Button {
-                Task { await appState.refreshPosts(quietIfPossible: false) }
+                Task {
+                    if appState.homeTab == .dashboard {
+                        await appState.loadDashboard()
+                    } else {
+                        await appState.refreshPosts(quietIfPossible: false)
+                    }
+                }
             } label: {
                 Image(systemName: "arrow.clockwise")
-                    .frame(minWidth: BrandColors.minTapTarget, minHeight: BrandColors.minTapTarget)
             }
-            .buttonStyle(.bordered)
-            .controlSize(.regular)
-            .disabled(appState.isLoadingList || appState.isRefreshingQuietly)
-            .help("새로고침")
+            .buttonStyle(.writerIcon)
+            .disabled(
+                appState.homeTab == .dashboard
+                    ? appState.isLoadingDashboard
+                    : (appState.isLoadingList || appState.isRefreshingQuietly)
+            )
+            .help(appState.homeTab == .dashboard ? "대시보드 새로고침" : "목록 새로고침")
 
-            // Overflow secondary actions — avoid clipped titleAndIcon stack
             Menu {
                 Button {
                     openWebAdmin()
@@ -109,32 +125,18 @@ struct PostListView: View {
                 }
             } label: {
                 Image(systemName: "ellipsis.circle")
-                    .frame(minWidth: BrandColors.minTapTarget, minHeight: BrandColors.minTapTarget)
             }
+            .buttonStyle(.writerIcon)
             .help("더 보기 · 웹관리자 · 설정 · 로그아웃")
-            .menuStyle(.borderlessButton)
         }
         .padding(.horizontal, BrandColors.panePadding)
-        .padding(.vertical, 12)
+        .padding(.vertical, BrandColors.toolbarVerticalPadding)
+        .frame(minHeight: BrandColors.buttonHeight + BrandColors.toolbarVerticalPadding * 2 + 18)
         .background(BrandColors.brandSurface)
         .sheet(isPresented: $showSettings) {
             SettingsView()
                 .environment(\.layoutDirection, .leftToRight)
         }
-    }
-
-    // MARK: - Home tabs
-
-    private var homeTabBar: some View {
-        Picker("화면", selection: $appState.homeTab) {
-            ForEach(WriterHomeTab.allCases) { tab in
-                Text(tab.titleKO).tag(tab)
-            }
-        }
-        .pickerStyle(.segmented)
-        .padding(.horizontal, BrandColors.panePadding)
-        .padding(.vertical, 8)
-        .background(BrandColors.brandSurface)
     }
 
     // MARK: - Dashboard sidebar (useful, not empty void)
@@ -214,8 +216,7 @@ struct PostListView: View {
                 } label: {
                     Label("게시글 목록으로", systemImage: "list.bullet")
                 }
-                .buttonStyle(.borderedProminent)
-                .tint(BrandColors.brandPrimary)
+                .buttonStyle(.writerPrimary)
                 .padding(.top, 4)
             }
             .padding(BrandColors.panePadding)
@@ -250,9 +251,8 @@ struct PostListView: View {
                     }
                 } label: {
                     Image(systemName: filtersExpanded ? "chevron.up" : "chevron.down")
-                        .frame(minWidth: BrandColors.minTapTarget, minHeight: BrandColors.minTapTarget)
                 }
-                .buttonStyle(.borderless)
+                .buttonStyle(.writerIconPlain)
                 .help(filtersExpanded ? "필터 접기" : "필터 펼치기")
             }
 
@@ -334,8 +334,7 @@ struct PostListView: View {
                 Button("다시 시도") {
                     Task { await appState.refreshPosts(quietIfPossible: false) }
                 }
-                .buttonStyle(.borderedProminent)
-                .tint(BrandColors.brandPrimary)
+                .buttonStyle(.writerPrimary)
             }
             .padding()
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -441,9 +440,12 @@ struct PostListView: View {
                     Button("\(size)") {
                         Task { await appState.setPageSize(size) }
                     }
-                    .buttonStyle(.bordered)
-                    .tint(appState.pageSize == size ? BrandColors.brandPrimary : nil)
-                    .controlSize(.mini)
+                    .buttonStyle(.writerSecondary)
+                    .opacity(appState.pageSize == size ? 1 : 0.85)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: BrandColors.buttonRadius, style: .continuous)
+                            .stroke(appState.pageSize == size ? BrandColors.scoutingPurple : Color.clear, lineWidth: 1.5)
+                    )
                     .disabled(appState.pageSize == size)
                 }
                 Spacer()
@@ -459,7 +461,7 @@ struct PostListView: View {
                 } label: {
                     Label("이전", systemImage: "chevron.left")
                 }
-                .controlSize(.small)
+                .buttonStyle(.writerSecondary)
                 .disabled(appState.currentPage <= 1 || appState.isLoadingList)
 
                 Text("\(appState.currentPage) / \(appState.totalPages)")
@@ -472,7 +474,7 @@ struct PostListView: View {
                 } label: {
                     Label("다음", systemImage: "chevron.right")
                 }
-                .controlSize(.small)
+                .buttonStyle(.writerSecondary)
                 .disabled(appState.currentPage >= appState.totalPages || appState.isLoadingList)
 
                 Spacer()

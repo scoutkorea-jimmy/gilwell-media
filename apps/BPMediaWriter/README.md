@@ -1,4 +1,4 @@
-# BP Media Writer (macOS) v1.1.3
+# BP Media Writer (macOS) v1.1.4
 
 Korean-first SwiftUI macOS app for writing/editing BP Media posts via existing `https://bpmedia.net` APIs. No new web CMS.
 
@@ -39,7 +39,7 @@ defaults write net.bpmedia.writer bpmedia.turnstile.sitekey "YOUR_SITE_KEY"
 
 The login screen will show an embedded WKWebView widget when needed.
 
-## Features (v1.1.3)
+## Features (v1.1.4)
 
 ### Save / CSRF (root cause)
 

@@ -138,8 +138,7 @@ struct DashboardView: View {
             } label: {
                 Label("새 글", systemImage: "square.and.pencil")
             }
-            .buttonStyle(.borderedProminent)
-            .tint(BrandColors.brandPrimary)
+            .buttonStyle(.writerPrimary)
             .help("새 글 작성")
 
             Button {
@@ -149,15 +148,15 @@ struct DashboardView: View {
                     ProgressView().controlSize(.small)
                 } else {
                     Image(systemName: "arrow.clockwise")
-                        .frame(minWidth: BrandColors.minTapTarget, minHeight: BrandColors.minTapTarget)
                 }
             }
-            .buttonStyle(.bordered)
+            .buttonStyle(.writerIcon)
             .disabled(appState.isLoadingDashboard)
             .help("대시보드 새로고침")
         }
         .padding(.horizontal, BrandColors.panePadding)
-        .padding(.vertical, 12)
+        .padding(.vertical, BrandColors.toolbarVerticalPadding)
+        .frame(minHeight: BrandColors.buttonHeight + BrandColors.toolbarVerticalPadding * 2 + 18)
         .background(BrandColors.brandSurface)
     }
 
@@ -307,9 +306,8 @@ struct DashboardView: View {
                         Task { await appState.refreshPosts(quietIfPossible: true) }
                     } label: {
                         Image(systemName: "line.3.horizontal.decrease.circle")
-                            .frame(minWidth: BrandColors.minTapTarget, minHeight: BrandColors.minTapTarget)
                     }
-                    .buttonStyle(.borderless)
+                    .buttonStyle(.writerIconPlain)
                     .help("이 카테고리로 목록 필터")
                 }
                 if gap.id != appState.dashCategoryGaps.last?.id {

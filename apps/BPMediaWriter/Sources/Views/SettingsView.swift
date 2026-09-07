@@ -27,9 +27,10 @@ struct SettingsView: View {
                     .foregroundStyle(BrandColors.scoutingPurple)
                 Spacer()
                 Button("완료") { dismiss() }
+                    .buttonStyle(.writerPrimary)
                     .keyboardShortcut(.defaultAction)
             }
-            .padding(16)
+            .padding(BrandColors.panePadding)
             .background(BrandColors.brandSurface)
 
             Divider()
@@ -91,7 +92,7 @@ struct SettingsView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .background(BrandColors.canvasWhite)
                     .overlay(
-                        RoundedRectangle(cornerRadius: 8)
+                        RoundedRectangle(cornerRadius: BrandColors.cardRadius)
                             .stroke(BrandColors.scoutingPurple.opacity(0.15), lineWidth: 1)
                     )
                 }

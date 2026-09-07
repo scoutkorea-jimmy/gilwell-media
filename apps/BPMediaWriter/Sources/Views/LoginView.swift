@@ -77,8 +77,7 @@ struct LoginView: View {
                     }
                     .frame(maxWidth: .infinity)
                 }
-                .buttonStyle(.borderedProminent)
-                .tint(BrandColors.brandPrimary)
+                .buttonStyle(.writerPrimary)
                 .disabled(isBusy || username.trimmingCharacters(in: .whitespaces).isEmpty || password.isEmpty)
 
                 Text("2단계 인증(OTP)이 켜진 계정은 v1에서 웹 관리자로 먼저 인증해야 합니다.")

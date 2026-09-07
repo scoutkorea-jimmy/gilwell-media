@@ -67,14 +67,15 @@ struct EditorView: View {
                 }
                 Spacer()
                 Button("닫기") { appState.closeEditor() }
+                    .buttonStyle(.writerSecondary)
                 Button("수정") {
                     appState.openEdit(post: post)
                 }
-                .buttonStyle(.borderedProminent)
-                .tint(BrandColors.brandPrimary)
+                .buttonStyle(.writerPrimary)
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 12)
+            .padding(.horizontal, BrandColors.panePadding)
+            .padding(.vertical, BrandColors.toolbarVerticalPadding)
+            .frame(minHeight: BrandColors.buttonHeight + BrandColors.toolbarVerticalPadding * 2 + 18)
             .background(BrandColors.brandSurface)
 
             Divider()
@@ -386,13 +387,14 @@ struct EditorView: View {
                             }
                             HStack(spacing: 8) {
                                 Button("대표 이미지 선택…") { pickCover() }
+                                    .buttonStyle(.writerSecondary)
                                 if coverDataURL != nil {
                                     Button("제거", role: .destructive) {
                                         coverDataURL = nil
                                         coverPreview = nil
                                         scheduleAutosave()
                                     }
-                                    .tint(BrandColors.brandDanger)
+                                    .buttonStyle(.writerDestructive)
                                 }
                             }
                         }
@@ -418,7 +420,7 @@ struct EditorView: View {
                             .padding(6)
                             .background(BrandColors.canvasWhite)
                             .overlay(
-                                RoundedRectangle(cornerRadius: 8)
+                                RoundedRectangle(cornerRadius: BrandColors.chipRadius, style: .continuous)
                                     .stroke(BrandColors.scoutingPurple.opacity(0.25), lineWidth: 1)
                             )
                     }
@@ -430,6 +432,7 @@ struct EditorView: View {
                             .font(.caption)
                             .foregroundStyle(.secondary)
                         Button("본문 이미지 추가…") { pickBodyImages() }
+                            .buttonStyle(.writerSecondary)
                         ForEach(Array(bodyImageDataURLs.enumerated()), id: \.offset) { idx, url in
                             HStack {
                                 Text(imageLabel(url, index: idx))
@@ -438,7 +441,7 @@ struct EditorView: View {
                                     bodyImageDataURLs.remove(at: idx)
                                     scheduleAutosave()
                                 }
-                                .tint(BrandColors.brandDanger)
+                                .buttonStyle(.writerDestructive)
                             }
                             .font(.caption)
                         }
@@ -458,8 +461,7 @@ struct EditorView: View {
                                 HStack(spacing: 6) {
                                     ForEach(appState.metaTagPool.prefix(30), id: \.self) { tag in
                                         Button(tag) { appendMetaTag(tag) }
-                                            .buttonStyle(.bordered)
-                                            .controlSize(.mini)
+                                            .buttonStyle(.writerSecondary)
                                     }
                                 }
                             }
@@ -541,8 +543,10 @@ struct EditorView: View {
                         appState.closeEditor()
                     }
                 }
+                .buttonStyle(.writerSecondary)
             }
             Button("닫기") { appState.closeEditor() }
+                .buttonStyle(.writerSecondary)
             Button {
                 Task { await save() }
             } label: {
@@ -552,11 +556,12 @@ struct EditorView: View {
                     Text("저장")
                 }
             }
-            .buttonStyle(.borderedProminent)
-            .tint(BrandColors.brandPrimary)
+            .buttonStyle(.writerPrimary)
             .disabled(isSaving || title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || bodyText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
         }
-        .padding(12)
+        .padding(.horizontal, BrandColors.panePadding)
+        .padding(.vertical, BrandColors.toolbarVerticalPadding)
+        .frame(minHeight: BrandColors.buttonHeight + BrandColors.toolbarVerticalPadding * 2 + 18)
         .background(BrandColors.brandSurface)
     }
 

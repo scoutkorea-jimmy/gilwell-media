@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// World Scouting brand colors (RGB for digital) + shared layout tokens (Figma-aligned).
+/// World Scouting brand colors (RGB for digital) + shared layout / control tokens.
 enum BrandColors {
     // PRIMARY
     static let scoutingPurple = Color(red: 98 / 255, green: 37 / 255, blue: 153 / 255) // #622599
@@ -31,7 +31,15 @@ enum BrandColors {
     static let panePadding: CGFloat = 16
     static let sectionSpacing: CGFloat = 16
     static let cardPadding: CGFloat = 14
+    static let toolbarVerticalPadding: CGFloat = 12
+
+    // Control tokens — unified buttons / hit targets app-wide
+    static let buttonHeight: CGFloat = 28
+    static let buttonPaddingH: CGFloat = 12
+    static let buttonRadius: CGFloat = 8
+    static let iconButtonSize: CGFloat = 28
     static let minTapTarget: CGFloat = 28
+    static let controlFontSize: CGFloat = 13
 }
 
 extension Color {
@@ -42,4 +50,117 @@ extension Color {
     static var brandSuccess: Color { BrandColors.brandSuccess }
     static var brandWarning: Color { BrandColors.brandWarning }
     static var brandAccent: Color { BrandColors.brandAccent }
+}
+
+// MARK: - Shared Button Styles
+
+/// Primary CTA — Scouting Purple fill.
+struct WriterPrimaryButtonStyle: ButtonStyle {
+    @Environment(\.isEnabled) private var isEnabled
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.system(size: BrandColors.controlFontSize, weight: .semibold))
+            .foregroundStyle(Color.white.opacity(labelOpacity(configuration)))
+            .padding(.horizontal, BrandColors.buttonPaddingH)
+            .frame(minHeight: BrandColors.buttonHeight)
+            .background(
+                RoundedRectangle(cornerRadius: BrandColors.buttonRadius, style: .continuous)
+                    .fill(BrandColors.scoutingPurple.opacity(fillOpacity(configuration)))
+            )
+            .opacity(configuration.isPressed ? 0.92 : 1)
+    }
+
+    private func fillOpacity(_ configuration: Configuration) -> Double {
+        guard isEnabled else { return 0.4 }
+        return configuration.isPressed ? 0.88 : 1
+    }
+
+    private func labelOpacity(_ configuration: Configuration) -> Double {
+        isEnabled ? 1 : 0.7
+    }
+}
+
+/// Secondary / bordered control.
+struct WriterSecondaryButtonStyle: ButtonStyle {
+    @Environment(\.isEnabled) private var isEnabled
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.system(size: BrandColors.controlFontSize, weight: .medium))
+            .foregroundStyle(BrandColors.scoutingPurple.opacity(isEnabled ? 1 : 0.45))
+            .padding(.horizontal, BrandColors.buttonPaddingH)
+            .frame(minHeight: BrandColors.buttonHeight)
+            .background(
+                RoundedRectangle(cornerRadius: BrandColors.buttonRadius, style: .continuous)
+                    .fill(BrandColors.brandSurface.opacity(configuration.isPressed ? 1 : 0.65))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: BrandColors.buttonRadius, style: .continuous)
+                    .stroke(BrandColors.scoutingPurple.opacity(isEnabled ? 0.35 : 0.18), lineWidth: 1)
+            )
+            .opacity(configuration.isPressed ? 0.9 : 1)
+    }
+}
+
+/// Destructive action (delete / logout emphasis).
+struct WriterDestructiveButtonStyle: ButtonStyle {
+    @Environment(\.isEnabled) private var isEnabled
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.system(size: BrandColors.controlFontSize, weight: .semibold))
+            .foregroundStyle(Color.white.opacity(isEnabled ? 1 : 0.65))
+            .padding(.horizontal, BrandColors.buttonPaddingH)
+            .frame(minHeight: BrandColors.buttonHeight)
+            .background(
+                RoundedRectangle(cornerRadius: BrandColors.buttonRadius, style: .continuous)
+                    .fill(BrandColors.fireRed.opacity(isEnabled ? (configuration.isPressed ? 0.85 : 1) : 0.4))
+            )
+    }
+}
+
+/// Icon-only control with consistent hit target (toolbar refresh, overflow, filters).
+struct WriterIconButtonStyle: ButtonStyle {
+    var bordered: Bool = true
+    @Environment(\.isEnabled) private var isEnabled
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.system(size: BrandColors.controlFontSize, weight: .medium))
+            .foregroundStyle(BrandColors.scoutingPurple.opacity(isEnabled ? 1 : 0.4))
+            .frame(width: BrandColors.iconButtonSize, height: BrandColors.iconButtonSize)
+            .contentShape(Rectangle())
+            .background {
+                if bordered {
+                    RoundedRectangle(cornerRadius: BrandColors.buttonRadius, style: .continuous)
+                        .fill(BrandColors.brandSurface.opacity(configuration.isPressed ? 1 : 0.65))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: BrandColors.buttonRadius, style: .continuous)
+                                .stroke(BrandColors.scoutingPurple.opacity(isEnabled ? 0.28 : 0.14), lineWidth: 1)
+                        )
+                } else if configuration.isPressed {
+                    RoundedRectangle(cornerRadius: BrandColors.buttonRadius, style: .continuous)
+                        .fill(BrandColors.scoutingPurple.opacity(0.1))
+                }
+            }
+            .opacity(configuration.isPressed ? 0.9 : 1)
+    }
+}
+
+extension ButtonStyle where Self == WriterPrimaryButtonStyle {
+    static var writerPrimary: WriterPrimaryButtonStyle { WriterPrimaryButtonStyle() }
+}
+
+extension ButtonStyle where Self == WriterSecondaryButtonStyle {
+    static var writerSecondary: WriterSecondaryButtonStyle { WriterSecondaryButtonStyle() }
+}
+
+extension ButtonStyle where Self == WriterDestructiveButtonStyle {
+    static var writerDestructive: WriterDestructiveButtonStyle { WriterDestructiveButtonStyle() }
+}
+
+extension ButtonStyle where Self == WriterIconButtonStyle {
+    static var writerIcon: WriterIconButtonStyle { WriterIconButtonStyle(bordered: true) }
+    static var writerIconPlain: WriterIconButtonStyle { WriterIconButtonStyle(bordered: false) }
 }
