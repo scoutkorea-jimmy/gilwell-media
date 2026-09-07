@@ -22,11 +22,11 @@
 		B11200000000000000000002 /* TurnstileWebView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B11200000000000000000001 /* TurnstileWebView.swift */; };
 		B11300000000000000000002 /* BrandColors.swift in Sources */ = {isa = PBXBuildFile; fileRef = B11300000000000000000001 /* BrandColors.swift */; };
 		B11400000000000000000002 /* ImageCompressor.swift in Sources */ = {isa = PBXBuildFile; fileRef = B11400000000000000000001 /* ImageCompressor.swift */; };
+		B11600000000000000000002 /* TypographySettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = B11600000000000000000001 /* TypographySettings.swift */; };
+		B11700000000000000000002 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B11700000000000000000001 /* SettingsView.swift */; };
+		B11800000000000000000002 /* AnalyticsModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = B11800000000000000000001 /* AnalyticsModels.swift */; };
+		B11900000000000000000002 /* DashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B11900000000000000000001 /* DashboardView.swift */; };
 		B11500000000000000000002 /* UpdateChecker.swift in Sources */ = {isa = PBXBuildFile; fileRef = B11500000000000000000001 /* UpdateChecker.swift */; };
-		B1190000000000000000000002 /* DashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1190000000000000000000001 /* DashboardView.swift */; };
-		B1180000000000000000000002 /* AnalyticsModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1180000000000000000000001 /* AnalyticsModels.swift */; };
-		B1170000000000000000000002 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1170000000000000000000001 /* SettingsView.swift */; };
-		B1160000000000000000000002 /* TypographySettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1160000000000000000000001 /* TypographySettings.swift */; };
 		C10000000000000000000002 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C10000000000000000000001 /* Assets.xcassets */; };
 /* End PBXBuildFile section */
 
@@ -45,12 +45,12 @@
 		B11100000000000000000001 /* EditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorView.swift; sourceTree = "<group>"; };
 		B11200000000000000000001 /* TurnstileWebView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TurnstileWebView.swift; sourceTree = "<group>"; };
 		B11300000000000000000001 /* BrandColors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrandColors.swift; sourceTree = "<group>"; };
+		B11600000000000000000001 /* TypographySettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TypographySettings.swift; sourceTree = "<group>"; };
+		B11700000000000000000001 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		B11800000000000000000001 /* AnalyticsModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalyticsModels.swift; sourceTree = "<group>"; };
+		B11900000000000000000001 /* DashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardView.swift; sourceTree = "<group>"; };
 		B11400000000000000000001 /* ImageCompressor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageCompressor.swift; sourceTree = "<group>"; };
 		B11500000000000000000001 /* UpdateChecker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateChecker.swift; sourceTree = "<group>"; };
-		B1190000000000000000000001 /* DashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardView.swift; sourceTree = "<group>"; };
-		B1180000000000000000000001 /* AnalyticsModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalyticsModels.swift; sourceTree = "<group>"; };
-		B1170000000000000000000001 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
-		B1160000000000000000000001 /* TypographySettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TypographySettings.swift; sourceTree = "<group>"; };
 		C10000000000000000000001 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		A10000000000000000000006 /* BPMediaWriter.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = BPMediaWriter.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -231,10 +231,10 @@
 				B11300000000000000000002 /* BrandColors.swift in Sources */,
 				B11400000000000000000002 /* ImageCompressor.swift in Sources */,
 				B11500000000000000000002 /* UpdateChecker.swift in Sources */,
-				B1190000000000000000000002 /* DashboardView.swift in Sources */,
-				B1180000000000000000000002 /* AnalyticsModels.swift in Sources */,
-				B1170000000000000000000002 /* SettingsView.swift in Sources */,
-				B1160000000000000000000002 /* TypographySettings.swift in Sources */,
+				B11600000000000000000002 /* TypographySettings.swift in Sources */,
+				B11700000000000000000002 /* SettingsView.swift in Sources */,
+				B11800000000000000000002 /* AnalyticsModels.swift in Sources */,
+				B11900000000000000000002 /* DashboardView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -154,3 +154,7 @@ extension View {
         modifier(TypographyEnvironmentModifier())
     }
 }
+
+extension Notification.Name {
+    static let bpmediaOpenSettings = Notification.Name("bpmedia.openSettings")
+}

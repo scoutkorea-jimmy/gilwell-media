@@ -56,7 +56,7 @@ struct PostListView: View {
                 Text("BP Media")
                     .font(typography.captionSemibold)
                     .foregroundStyle(BrandColors.scoutingPurple.opacity(0.85))
-                Text("게시글")
+                Text(appState.homeTab.titleKO)
                     .font(typography.title2)
                     .foregroundStyle(BrandColors.scoutingPurple)
             }
@@ -113,6 +113,45 @@ struct PostListView: View {
         .sheet(isPresented: $showSettings) {
             SettingsView()
         }
+    }
+
+    // MARK: - Home tabs
+
+    private var homeTabBar: some View {
+        Picker("화면", selection: $appState.homeTab) {
+            ForEach(WriterHomeTab.allCases) { tab in
+                Text(tab.titleKO).tag(tab)
+            }
+        }
+        .pickerStyle(.segmented)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 8)
+        .background(BrandColors.brandSurface)
+    }
+
+    private var dashboardSidebarHint: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Spacer(minLength: 24)
+            Image(systemName: "chart.bar.doc.horizontal")
+                .font(.system(size: 36))
+                .foregroundStyle(BrandColors.scoutingPurple.opacity(0.85))
+            Text("대시보드")
+                .font(typography.title2)
+                .foregroundStyle(BrandColors.scoutingPurple)
+            Text("오늘 방문·조회·게시 수와 방문 국가는 오른쪽 상세 영역에 표시됩니다.")
+                .font(typography.body)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+            Button("게시글 목록으로") {
+                appState.homeTab = .posts
+            }
+            .buttonStyle(.borderedProminent)
+            .tint(BrandColors.brandPrimary)
+            Spacer()
+        }
+        .padding(20)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .background(BrandColors.brandBackground)
     }
 
     // MARK: - Filters (card below toolbar)
