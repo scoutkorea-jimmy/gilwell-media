@@ -1,168 +1,32 @@
 import SwiftUI
+import AppKit
 
 struct PostListView: View {
     @EnvironmentObject private var appState: AppState
     @State private var pendingDelete: PostSummary?
     @State private var confirmDelete = false
-    @State private var selectedID: Int?
 
     var body: some View {
         VStack(spacing: 0) {
-            HStack {
-                Text("게시글")
-                    .font(.headline)
-                    .foregroundStyle(BrandColors.scoutingPurple)
-                Spacer()
-                Button {
-                    appState.openNewPost()
-                } label: {
-                    Label("새 글", systemImage: "square.and.pencil")
-                }
-                .buttonStyle(.borderedProminent)
-                .tint(BrandColors.brandPrimary)
-                .controlSize(.small)
-            }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 10)
-            .background(BrandColors.brandSurface)
-
-            VStack(alignment: .leading, spacing: 8) {
-                TextField("제목·내용 검색", text: $appState.searchQuery)
-                    .textFieldStyle(.roundedBorder)
-                    .onChange(of: appState.searchQuery) { _, _ in
-                        appState.scheduleRefresh()
-                    }
-
-                Picker("카테고리", selection: $appState.categoryFilter) {
-                    Text("전체 카테고리").tag(Optional<PostCategory>.none)
-                    ForEach(PostCategory.allCases) { cat in
-                        Text(cat.titleKO).tag(Optional(cat))
-                    }
-                }
-                .onChange(of: appState.categoryFilter) { _, _ in
-                    Task { await appState.refreshPosts() }
-                }
-
-                Picker("공개", selection: $appState.publishedFilter) {
-                    ForEach(PublishedFilter.allCases) { f in
-                        Text(f.title).tag(f)
-                    }
-                }
-                .pickerStyle(.segmented)
-                .onChange(of: appState.publishedFilter) { _, _ in
-                    Task { await appState.refreshPosts() }
-                }
-            }
-            .padding(.horizontal, 12)
-            .padding(.bottom, 8)
-
+            topToolbar
+            filterCard
             Divider()
-
-            if appState.isLoadingList && appState.posts.isEmpty {
-                ProgressView("불러오는 중…")
-                    .tint(BrandColors.brandPrimary)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else if let err = appState.listError, appState.posts.isEmpty {
-                VStack(spacing: 8) {
-                    Text(err).multilineTextAlignment(.center)
-                    Button("다시 시도") {
-                        Task { await appState.refreshPosts() }
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .tint(BrandColors.brandPrimary)
-                }
-                .padding()
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else {
-                List(appState.posts, selection: $selectedID) { post in
-                    Button {
-                        selectedID = post.id
-                        Task { await appState.openEdit(postID: post.id) }
-                    } label: {
-                        VStack(alignment: .leading, spacing: 4) {
-                            HStack {
-                                Text(post.title ?? "(제목 없음)")
-                                    .font(.body.weight(.semibold))
-                                    .foregroundStyle(.primary)
-                                    .lineLimit(2)
-                                Spacer()
-                                Text(post.isPublished ? "공개" : "비공개")
-                                    .font(.caption2.weight(.semibold))
-                                    .padding(.horizontal, 6)
-                                    .padding(.vertical, 2)
-                                    .foregroundStyle(post.isPublished ? BrandColors.forestGreen : BrandColors.midnightPurple)
-                                    .background(
-                                        (post.isPublished ? BrandColors.leafGreen : BrandColors.blossomPink)
-                                            .opacity(0.35)
-                                    )
-                                    .clipShape(Capsule())
-                            }
-                            HStack(spacing: 8) {
-                                categoryChip(post.category)
-                                Text("·")
-                                Text(post.displayDate)
-                                if let author = post.author, !author.isEmpty {
-                                    Text("·")
-                                    Text(author)
-                                }
-                            }
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                        }
-                        .padding(.vertical, 2)
-                        .padding(.horizontal, 4)
-                        .background(
-                            selectedID == post.id
-                                ? BrandColors.scoutingPurple.opacity(0.12)
-                                : Color.clear
-                        )
-                        .cornerRadius(6)
-                    }
-                    .buttonStyle(.plain)
-                    .listRowBackground(
-                        selectedID == post.id
-                            ? BrandColors.scoutingPurple.opacity(0.08)
-                            : BrandColors.canvasWhite
-                    )
-                    .contextMenu {
-                        Button("편집") {
-                            selectedID = post.id
-                            Task { await appState.openEdit(postID: post.id) }
-                        }
-                        Button("삭제…", role: .destructive) {
-                            pendingDelete = post
-                            confirmDelete = true
-                        }
-                    }
-                }
-                .listStyle(.sidebar)
-                .tint(BrandColors.brandPrimary)
-            }
-
+            listBody
             Divider()
-            HStack {
-                Text("총 \(appState.totalPosts)건")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                Spacer()
-                Button {
-                    appState.logout()
-                } label: {
-                    Text("로그아웃")
-                }
-                .controlSize(.small)
-            }
-            .padding(10)
-            .background(BrandColors.brandSurface)
+            paginationBar
         }
-        .frame(minWidth: 300)
+        .frame(minWidth: 320)
         .background(BrandColors.brandBackground)
         .tint(BrandColors.brandPrimary)
         .task {
             if appState.isAuthenticated {
                 await appState.refreshPosts()
                 await appState.loadHelpers()
+                await appState.checkForUpdateIfNeeded(reason: .appear)
             }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
+            Task { await appState.checkForUpdateIfNeeded(reason: .focus) }
         }
         .alert("게시글 삭제", isPresented: $confirmDelete, presenting: pendingDelete) { post in
             Button("취소", role: .cancel) {}
@@ -174,15 +38,355 @@ struct PostListView: View {
         }
     }
 
+    // MARK: - Top toolbar (always-visible actions)
+
+    private var topToolbar: some View {
+        HStack(alignment: .center, spacing: 10) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text("BP Media")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(BrandColors.scoutingPurple.opacity(0.85))
+                Text("게시글")
+                    .font(.title2.weight(.bold))
+                    .foregroundStyle(BrandColors.scoutingPurple)
+            }
+            Spacer(minLength: 8)
+            HStack(spacing: 8) {
+                Button {
+                    appState.openNewPost()
+                } label: {
+                    Label("새 글", systemImage: "square.and.pencil")
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(BrandColors.brandPrimary)
+                .controlSize(.regular)
+
+                Button {
+                    Task { await appState.refreshPosts() }
+                } label: {
+                    Label("새로고침", systemImage: "arrow.clockwise")
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.regular)
+                .disabled(appState.isLoadingList)
+
+                Button {
+                    openWebAdmin()
+                } label: {
+                    Label("웹 관리자", systemImage: "safari")
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.regular)
+
+                Button {
+                    appState.logout()
+                } label: {
+                    Label("로그아웃", systemImage: "rectangle.portrait.and.arrow.right")
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.regular)
+            }
+            .labelStyle(.titleAndIcon)
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
+        .background(BrandColors.brandSurface)
+    }
+
+    // MARK: - Filters (card below toolbar)
+
+    private var filterCard: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            TextField("제목·내용 검색", text: $appState.searchQuery)
+                .textFieldStyle(.roundedBorder)
+                .onChange(of: appState.searchQuery) { _, _ in
+                    appState.scheduleRefresh(resetPage: true)
+                }
+
+            Text("카테고리")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+
+            categoryChips
+
+            Text("공개 상태")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+
+            Picker("공개", selection: $appState.publishedFilter) {
+                ForEach(PublishedFilter.allCases) { f in
+                    Text(f.title).tag(f)
+                }
+            }
+            .pickerStyle(.segmented)
+            .labelsHidden()
+            .onChange(of: appState.publishedFilter) { _, _ in
+                appState.currentPage = 1
+                Task { await appState.refreshPosts() }
+            }
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 10)
+                .fill(BrandColors.canvasWhite)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 10)
+                        .stroke(BrandColors.scoutingPurple.opacity(0.12), lineWidth: 1)
+                )
+        )
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .background(BrandColors.brandSurface.opacity(0.65))
+    }
+
+    private var categoryChips: some View {
+        // Wrapping row: 전체 | Korea | APR | WOSM | People
+        FlexibleChipRow(spacing: 6) {
+            categoryChip(title: "전체", selected: appState.categoryFilter == nil) {
+                appState.categoryFilter = nil
+                appState.currentPage = 1
+                Task { await appState.refreshPosts() }
+            }
+            ForEach(PostCategory.allCases) { cat in
+                categoryChip(title: cat.titleKO, selected: appState.categoryFilter == cat) {
+                    appState.categoryFilter = cat
+                    appState.currentPage = 1
+                    Task { await appState.refreshPosts() }
+                }
+            }
+        }
+    }
+
+    private func categoryChip(title: String, selected: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(title)
+                .font(.caption.weight(.semibold))
+                .padding(.horizontal, 10)
+                .padding(.vertical, 6)
+                .foregroundStyle(selected ? Color.white : BrandColors.midnightPurple)
+                .background(selected ? BrandColors.scoutingPurple : BrandColors.riverBlue.opacity(0.35))
+                .clipShape(Capsule())
+        }
+        .buttonStyle(.plain)
+    }
+
+    // MARK: - List
+
     @ViewBuilder
-    private func categoryChip(_ raw: String?) -> some View {
-        let label = (raw ?? "-").uppercased()
-        Text(label)
-            .font(.caption2.weight(.semibold))
-            .padding(.horizontal, 5)
-            .padding(.vertical, 1)
-            .foregroundStyle(BrandColors.midnightPurple)
-            .background(BrandColors.riverBlue.opacity(0.45))
-            .clipShape(Capsule())
+    private var listBody: some View {
+        if appState.isLoadingList && appState.posts.isEmpty {
+            ProgressView("불러오는 중…")
+                .tint(BrandColors.brandPrimary)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+        } else if let err = appState.listError, appState.posts.isEmpty {
+            VStack(spacing: 8) {
+                Text(err)
+                    .font(.body)
+                    .multilineTextAlignment(.center)
+                Button("다시 시도") {
+                    Task { await appState.refreshPosts() }
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(BrandColors.brandPrimary)
+            }
+            .padding()
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        } else {
+            List(selection: Binding(
+                get: { appState.selectedPostID },
+                set: { appState.selectedPostID = $0 }
+            )) {
+                ForEach(appState.posts) { post in
+                    Button {
+                        appState.selectedPostID = post.id
+                        Task { await appState.openView(postID: post.id) }
+                    } label: {
+                        postRow(post)
+                    }
+                    .buttonStyle(.plain)
+                    .tag(post.id)
+                    .listRowInsets(EdgeInsets(top: 8, leading: 14, bottom: 8, trailing: 12))
+                    .listRowBackground(
+                        appState.selectedPostID == post.id
+                            ? BrandColors.scoutingPurple.opacity(0.10)
+                            : BrandColors.canvasWhite
+                    )
+                    .contextMenu {
+                        Button("보기") {
+                            appState.selectedPostID = post.id
+                            Task { await appState.openView(postID: post.id) }
+                        }
+                        Button("수정") {
+                            appState.selectedPostID = post.id
+                            Task { await appState.openEdit(postID: post.id) }
+                        }
+                        Button("삭제…", role: .destructive) {
+                            pendingDelete = post
+                            confirmDelete = true
+                        }
+                    }
+                }
+            }
+            .listStyle(.sidebar)
+            .tint(BrandColors.brandPrimary)
+        }
+    }
+
+    private func postRow(_ post: PostSummary) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Text(post.title ?? "(제목 없음)")
+                    .font(.body.weight(.semibold))
+                    .foregroundStyle(.primary)
+                    .lineLimit(2)
+                    .multilineTextAlignment(.leading)
+                Spacer(minLength: 4)
+                Text(post.isPublished ? "공개" : "비공개")
+                    .font(.caption2.weight(.semibold))
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 2)
+                    .foregroundStyle(post.isPublished ? BrandColors.forestGreen : BrandColors.midnightPurple)
+                    .background(
+                        (post.isPublished ? BrandColors.leafGreen : BrandColors.blossomPink)
+                            .opacity(0.35)
+                    )
+                    .clipShape(Capsule())
+            }
+
+            HStack(alignment: .center, spacing: 6) {
+                Text((post.category ?? "-").uppercased())
+                    .font(.caption2.weight(.semibold))
+                    .padding(.horizontal, 5)
+                    .padding(.vertical, 1)
+                    .foregroundStyle(BrandColors.midnightPurple)
+                    .background(BrandColors.riverBlue.opacity(0.45))
+                    .clipShape(Capsule())
+
+                Text("·")
+                Text(post.displayDate)
+                if let author = post.author, !author.isEmpty {
+                    Text("·")
+                    Text(author)
+                        .lineLimit(1)
+                }
+                Text("·")
+                Label(post.viewsLabel, systemImage: "eye")
+            }
+            .font(.caption)
+            .foregroundStyle(.secondary)
+            .lineLimit(1)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .contentShape(Rectangle())
+    }
+
+    // MARK: - Pagination
+
+    private var paginationBar: some View {
+        VStack(spacing: 8) {
+            HStack(spacing: 6) {
+                Text("페이지 크기")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                ForEach(AppState.pageSizeOptions, id: \.self) { size in
+                    Button("\(size)") {
+                        Task { await appState.setPageSize(size) }
+                    }
+                    .buttonStyle(.bordered)
+                    .tint(appState.pageSize == size ? BrandColors.brandPrimary : nil)
+                    .controlSize(.mini)
+                    .disabled(appState.pageSize == size)
+                }
+                Spacer()
+                Text(appState.listRangeLabel)
+                    .font(.caption.weight(.medium))
+                    .foregroundStyle(.secondary)
+                    .monospacedDigit()
+            }
+
+            HStack(spacing: 10) {
+                Button {
+                    Task { await appState.goToPage(appState.currentPage - 1) }
+                } label: {
+                    Label("이전", systemImage: "chevron.left")
+                }
+                .controlSize(.small)
+                .disabled(appState.currentPage <= 1 || appState.isLoadingList)
+
+                Text("\(appState.currentPage) / \(appState.totalPages)")
+                    .font(.caption.weight(.semibold))
+                    .monospacedDigit()
+                    .foregroundStyle(BrandColors.scoutingPurple)
+
+                Button {
+                    Task { await appState.goToPage(appState.currentPage + 1) }
+                } label: {
+                    Label("다음", systemImage: "chevron.right")
+                }
+                .controlSize(.small)
+                .disabled(appState.currentPage >= appState.totalPages || appState.isLoadingList)
+
+                Spacer()
+                if appState.isLoadingList {
+                    ProgressView().controlSize(.small)
+                }
+            }
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .background(BrandColors.brandSurface)
+    }
+
+    private func openWebAdmin() {
+        if let url = URL(string: "https://bpmedia.net/admin.html") {
+            NSWorkspace.shared.open(url)
+        }
+    }
+}
+
+// MARK: - Simple wrapping chip layout (leading-aligned)
+
+/// Lightweight wrap layout so category chips stay leading-aligned without a heavy dependency.
+private struct FlexibleChipRow: Layout {
+    var spacing: CGFloat = 6
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        let result = arrange(proposal: proposal, subviews: subviews)
+        return result.size
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        let result = arrange(proposal: ProposedViewSize(width: bounds.width, height: bounds.height), subviews: subviews)
+        for (index, frame) in result.frames.enumerated() {
+            subviews[index].place(
+                at: CGPoint(x: bounds.minX + frame.minX, y: bounds.minY + frame.minY),
+                proposal: ProposedViewSize(frame.size)
+            )
+        }
+    }
+
+    private func arrange(proposal: ProposedViewSize, subviews: Subviews) -> (size: CGSize, frames: [CGRect]) {
+        let maxWidth = proposal.width ?? .infinity
+        var frames: [CGRect] = []
+        var x: CGFloat = 0
+        var y: CGFloat = 0
+        var rowHeight: CGFloat = 0
+        var width: CGFloat = 0
+
+        for sub in subviews {
+            let size = sub.sizeThatFits(.unspecified)
+            if x > 0, x + size.width > maxWidth {
+                x = 0
+                y += rowHeight + spacing
+                rowHeight = 0
+            }
+            frames.append(CGRect(origin: CGPoint(x: x, y: y), size: size))
+            rowHeight = max(rowHeight, size.height)
+            x += size.width + spacing
+            width = max(width, x - spacing)
+        }
+        let height = y + rowHeight
+        return (CGSize(width: width, height: height), frames)
     }
 }

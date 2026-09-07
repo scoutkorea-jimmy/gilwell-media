@@ -73,6 +73,18 @@ struct PostSummary: Identifiable, Codable, Hashable {
     var displayDate: String {
         publishAt ?? createdAt ?? ""
     }
+
+    var viewsLabel: String {
+        let n = views ?? 0
+        return Self.viewsFormatter.string(from: NSNumber(value: n)) ?? "\(n)"
+    }
+
+    private static let viewsFormatter: NumberFormatter = {
+        let f = NumberFormatter()
+        f.numberStyle = .decimal
+        f.locale = Locale(identifier: "ko_KR")
+        return f
+    }()
 }
 
 struct PostDetail: Identifiable, Codable, Hashable {
@@ -91,9 +103,10 @@ struct PostDetail: Identifiable, Codable, Hashable {
     var publishAt: String?
     var updatedAt: String?
     var createdAt: String?
+    var views: Int?
 
     enum CodingKeys: String, CodingKey {
-        case id, category, title, subtitle, content, author, published
+        case id, category, title, subtitle, content, author, published, views
         case imageURL = "image_url"
         case imageCaption = "image_caption"
         case metaTags = "meta_tags"
@@ -118,6 +131,7 @@ struct PostDetail: Identifiable, Codable, Hashable {
         publishAt = try c.decodeIfPresent(String.self, forKey: .publishAt)
         updatedAt = try c.decodeIfPresent(String.self, forKey: .updatedAt)
         createdAt = try c.decodeIfPresent(String.self, forKey: .createdAt)
+        views = try c.decodeIfPresent(Int.self, forKey: .views)
         if let b = try? c.decodeIfPresent(Bool.self, forKey: .published) {
             published = b
             publishedInt = b ? 1 : 0
@@ -145,7 +159,18 @@ struct PostDetail: Identifiable, Codable, Hashable {
         try c.encodeIfPresent(publishAt, forKey: .publishAt)
         try c.encodeIfPresent(updatedAt, forKey: .updatedAt)
         try c.encodeIfPresent(createdAt, forKey: .createdAt)
+        try c.encodeIfPresent(views, forKey: .views)
         try c.encodeIfPresent(publishedInt ?? (published == true ? 1 : 0), forKey: .published)
+    }
+
+    var isPublished: Bool { published == true || publishedInt == 1 }
+
+    var viewsLabel: String {
+        let n = views ?? 0
+        let f = NumberFormatter()
+        f.numberStyle = .decimal
+        f.locale = Locale(identifier: "ko_KR")
+        return f.string(from: NSNumber(value: n)) ?? "\(n)"
     }
 }
 

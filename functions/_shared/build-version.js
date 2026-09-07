@@ -4,3 +4,4 @@
 export const SITE_VERSION = '00.183.00';
 export const ADMIN_VERSION = '03.153.00';
 export const ASSET_VERSION = '20260826160115';
+export const MAC_WRITER_VERSION = '1.1.0';

@@ -22,6 +22,7 @@
 		B11200000000000000000002 /* TurnstileWebView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B11200000000000000000001 /* TurnstileWebView.swift */; };
 		B11300000000000000000002 /* BrandColors.swift in Sources */ = {isa = PBXBuildFile; fileRef = B11300000000000000000001 /* BrandColors.swift */; };
 		B11400000000000000000002 /* ImageCompressor.swift in Sources */ = {isa = PBXBuildFile; fileRef = B11400000000000000000001 /* ImageCompressor.swift */; };
+		B11500000000000000000002 /* UpdateChecker.swift in Sources */ = {isa = PBXBuildFile; fileRef = B11500000000000000000001 /* UpdateChecker.swift */; };
 		C10000000000000000000002 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C10000000000000000000001 /* Assets.xcassets */; };
 /* End PBXBuildFile section */
 
@@ -41,6 +42,7 @@
 		B11200000000000000000001 /* TurnstileWebView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TurnstileWebView.swift; sourceTree = "<group>"; };
 		B11300000000000000000001 /* BrandColors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrandColors.swift; sourceTree = "<group>"; };
 		B11400000000000000000001 /* ImageCompressor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageCompressor.swift; sourceTree = "<group>"; };
+		B11500000000000000000001 /* UpdateChecker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateChecker.swift; sourceTree = "<group>"; };
 		C10000000000000000000001 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		A10000000000000000000006 /* BPMediaWriter.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = BPMediaWriter.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -104,6 +106,7 @@
 				B10700000000000000000001 /* KeychainStore.swift */,
 				B10800000000000000000001 /* DraftStore.swift */,
 				B11400000000000000000001 /* ImageCompressor.swift */,
+				B11500000000000000000001 /* UpdateChecker.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -215,6 +218,7 @@
 				B11200000000000000000002 /* TurnstileWebView.swift in Sources */,
 				B11300000000000000000002 /* BrandColors.swift in Sources */,
 				B11400000000000000000002 /* ImageCompressor.swift in Sources */,
+				B11500000000000000000002 /* UpdateChecker.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -259,7 +263,7 @@
 				CODE_SIGN_IDENTITY = "-";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_TEAM = "";
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = NO;
@@ -268,7 +272,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = net.bpmedia.writer;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -284,7 +288,7 @@
 				CODE_SIGN_IDENTITY = "-";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_TEAM = "";
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = NO;
@@ -293,7 +297,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = net.bpmedia.writer;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;

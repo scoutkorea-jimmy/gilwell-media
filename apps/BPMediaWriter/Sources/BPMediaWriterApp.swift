@@ -53,9 +53,19 @@ struct RootView: View {
         .tint(BrandColors.scoutingPurple)
         .alert("알림", isPresented: Binding(
             get: { appState.globalAlert != nil },
-            set: { if !$0 { appState.globalAlert = nil } }
+            set: { if !$0 {
+                if appState.updateAvailableVersion != nil {
+                    appState.dismissUpdateAlert()
+                }
+                appState.globalAlert = nil
+            } }
         )) {
-            Button("확인", role: .cancel) { appState.globalAlert = nil }
+            Button("확인", role: .cancel) {
+                if appState.updateAvailableVersion != nil {
+                    appState.dismissUpdateAlert()
+                }
+                appState.globalAlert = nil
+            }
         } message: {
             Text(appState.globalAlert ?? "")
         }

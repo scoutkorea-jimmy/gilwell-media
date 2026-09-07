@@ -1,4 +1,4 @@
-# BP Media Writer (macOS) v1
+# BP Media Writer (macOS) v1.1
 
 Korean-first SwiftUI macOS app for writing/editing BP Media posts via existing `https://bpmedia.net` APIs. No new web CMS.
 
@@ -39,16 +39,22 @@ defaults write net.bpmedia.writer bpmedia.turnstile.sitekey "YOUR_SITE_KEY"
 
 The login screen will show an embedded WKWebView widget when needed.
 
-## Features (v1)
+## Features (v1.1)
 
 - Login → Keychain token → `Authorization: Bearer`
-- Admin post list (`scope=admin`) with search / category / published filters
-- Create / edit / delete posts
+- Admin post list (`scope=admin`) with search, **category chips** (전체|Korea|APR|WOSM|People), published filter
+- List row tap opens **read-only detail**; 「수정」 enters the editor. 「새 글」 always starts blank (draft cleared)
+- **조회수** on list rows and detail when API provides `views`
+- Pagination: page size **10 / 30 / 50**, previous/next, range label (`1–30 / 406`)
+- Top toolbar: 새 글 · 새로고침 · 웹 관리자 · 로그아웃
+- Update notice when remote `mac_writer_version` (`/api/version` or `/MAC_WRITER_VERSION`) is newer than local `CFBundleShortVersionString`
+- Create / edit / delete posts (create POSTs; edit PUTs with `expected_updated_at`)
 - Editor.js JSON content encoding from plain TextEditor + optional body images
 - Cover image via `NSOpenPanel` → compressed `image_data` data URL
 - Publish modes: immediate / schedule (`publish_at`, unpublished until due) / hold
-- Local draft autosave under Application Support `BPMediaWriter/local-draft.json` (text-first; large images omitted)
-- Korean UI
+- Local draft autosave under Application Support `BPMediaWriter/local-draft.json` (create-only restore; never into create from an edit draft)
+- Korean UI · Scouting Purple brand
+- Editor field order matches web admin: 제목→카테고리→부제→스페셜 피처→특집 불러오기→대표 이미지→본문→본문 이미지→메타→작성자→공개 (필수/선택은 라벨 옆 칩)
 
 ## Stability notes
 

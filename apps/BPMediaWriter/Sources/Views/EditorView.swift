@@ -21,54 +21,355 @@ struct EditorView: View {
     @State private var editingPost: PostDetail?
     @State private var isSaving = false
     @State private var autosaveTask: Task<Void, Never>?
-    @State private var didLoad = false
+    @State private var loadToken = UUID()
     @State private var originalContentJSON: String?
     @State private var baselineBodyText = ""
     @State private var baselineImageURLs: [String] = []
 
     var body: some View {
+        Group {
+            switch appState.editorMode {
+            case .view(let post):
+                readOnlyDetail(post)
+            case .edit, .create:
+                editableEditor
+            case .none:
+                EmptyView()
+            }
+        }
+        .background(BrandColors.brandBackground)
+        .tint(BrandColors.brandPrimary)
+        .onAppear { reloadFromMode() }
+        .onChange(of: appState.editorSessionID) { _, _ in
+            reloadFromMode()
+        }
+    }
+
+    // MARK: - Read-only detail
+
+    @ViewBuilder
+    private func readOnlyDetail(_ post: PostDetail) -> some View {
+        let decoded = EditorJSCodec.decode(post.content)
         VStack(spacing: 0) {
-            toolbar
+            HStack {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("글 보기")
+                        .font(.title2.weight(.bold))
+                        .foregroundStyle(BrandColors.scoutingPurple)
+                    Text("ID \(post.id)")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                Spacer()
+                Button("닫기") { appState.closeEditor() }
+                Button("수정") {
+                    appState.openEdit(post: post)
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(BrandColors.brandPrimary)
+            }
+            .padding(12)
+            .background(BrandColors.brandSurface)
+
+            Divider()
+
+            ScrollView {
+                VStack(alignment: .leading, spacing: 16) {
+                    // 1. 제목
+                    Text(post.title ?? "(제목 없음)")
+                        .font(.title.weight(.bold))
+                        .foregroundStyle(BrandColors.scoutingPurple)
+                        .textSelection(.enabled)
+
+                    // 카테고리 + 공개 + 조회수
+                    HStack(spacing: 10) {
+                        metaChip((post.category ?? "-").uppercased())
+                        Text(post.isPublished ? "공개" : "비공개")
+                            .font(.caption.weight(.semibold))
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 3)
+                            .foregroundStyle(post.isPublished ? BrandColors.forestGreen : BrandColors.midnightPurple)
+                            .background(
+                                (post.isPublished ? BrandColors.leafGreen : BrandColors.blossomPink)
+                                    .opacity(0.35)
+                            )
+                            .clipShape(Capsule())
+                        Label(post.viewsLabel, systemImage: "eye")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+
+                    // 2. 부제
+                    if let sub = post.subtitle, !sub.isEmpty {
+                        Text(sub)
+                            .font(.title3)
+                            .foregroundStyle(.secondary)
+                            .textSelection(.enabled)
+                    }
+
+                    // 3. 스페셜 피처
+                    if let feature = post.specialFeature, !feature.isEmpty {
+                        labeledRow("스페셜 피처", feature)
+                    }
+
+                    // 5. 대표 이미지
+                    if let url = post.imageURL, !url.isEmpty {
+                        Text("대표 이미지")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.secondary)
+                        if url.hasPrefix("http"), let nsURL = URL(string: url) {
+                            AsyncImage(url: nsURL) { phase in
+                                switch phase {
+                                case .success(let img):
+                                    img.resizable().scaledToFit().frame(maxWidth: 420, maxHeight: 240)
+                                        .cornerRadius(8)
+                                case .failure:
+                                    Link(url, destination: nsURL)
+                                        .font(.caption)
+                                default:
+                                    ProgressView()
+                                }
+                            }
+                        } else {
+                            Text(url)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .textSelection(.enabled)
+                        }
+                    }
+
+                    Divider()
+                        .padding(.vertical, 4)
+
+                    // 6. 본문
+                    Text("본문")
+                        .font(.headline)
+                        .foregroundStyle(BrandColors.scoutingPurple)
+                    Text(decoded.text.isEmpty ? "(본문 없음)" : decoded.text)
+                        .font(.body)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.top, 4)
+                        .textSelection(.enabled)
+
+                    // 7. 본문 이미지
+                    if !decoded.imageURLs.isEmpty {
+                        Text("본문 이미지")
+                            .font(.headline)
+                            .foregroundStyle(BrandColors.scoutingPurple)
+                            .padding(.top, 8)
+                        ForEach(Array(decoded.imageURLs.enumerated()), id: \.offset) { idx, url in
+                            if url.hasPrefix("http"), let nsURL = URL(string: url) {
+                                HStack(alignment: .top, spacing: 8) {
+                                    Text("이미지 \(idx + 1)")
+                                        .font(.caption)
+                                    Link(url, destination: nsURL)
+                                        .font(.caption)
+                                        .lineLimit(2)
+                                }
+                                AsyncImage(url: nsURL) { phase in
+                                    if case .success(let img) = phase {
+                                        img.resizable().scaledToFit().frame(maxWidth: 360, maxHeight: 200)
+                                            .cornerRadius(6)
+                                    }
+                                }
+                            } else {
+                                Text("이미지 \(idx + 1): \(url.hasPrefix("data:") ? "(첨부 data URL)" : url)")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                    }
+
+                    Divider()
+
+                    // 8. 메타 + 작성자 + 공개 메타
+                    VStack(alignment: .leading, spacing: 4) {
+                        if let meta = post.metaTags, !meta.isEmpty {
+                            labeledRow("메타 태그", meta)
+                        }
+                        if let author = post.author, !author.isEmpty {
+                            labeledRow("작성자", author)
+                        }
+                        if let at = post.publishAt, !at.isEmpty {
+                            labeledRow("공개 예정/시각", at)
+                        } else if let created = post.createdAt, !created.isEmpty {
+                            labeledRow("작성", created)
+                        }
+                        if let updated = post.updatedAt, !updated.isEmpty {
+                            labeledRow("수정", updated)
+                        }
+                    }
+                    .font(.callout)
+                }
+                .padding(20)
+            }
+        }
+    }
+
+    private func labeledRow(_ label: String, _ value: String) -> some View {
+        HStack(alignment: .top, spacing: 8) {
+            Text(label)
+                .foregroundStyle(.secondary)
+                .frame(width: 88, alignment: .leading)
+            Text(value)
+                .textSelection(.enabled)
+            Spacer(minLength: 0)
+        }
+    }
+
+    private func metaChip(_ text: String) -> some View {
+        Text(text)
+            .font(.caption2.weight(.semibold))
+            .padding(.horizontal, 6)
+            .padding(.vertical, 2)
+            .foregroundStyle(BrandColors.midnightPurple)
+            .background(BrandColors.riverBlue.opacity(0.45))
+            .clipShape(Capsule())
+    }
+
+    // MARK: - Editable editor
+
+    private var editableEditor: some View {
+        VStack(spacing: 0) {
+            editToolbar
             Divider()
             ScrollView {
                 Form {
-                    Section("필수") {
-                        TextField("제목", text: $title)
+                    // 1. 제목 (필수)
+                    Section {
+                        fieldLabel("제목", required: true)
+                        TextField("제목을 입력하세요", text: $title)
+                            .font(.body.weight(.semibold))
+                    }
+
+                    // 카테고리 (필수) — 제목 바로 다음
+                    Section {
+                        fieldLabel("카테고리", required: true)
                         Picker("카테고리", selection: $category) {
                             ForEach(PostCategory.allCases) { cat in
                                 Text(cat.titleKO).tag(cat)
                             }
                         }
+                        .labelsHidden()
+                        .pickerStyle(.segmented)
                         .onChange(of: category) { _, newValue in
                             Task { await appState.loadSpecialFeatures(for: newValue) }
                         }
-                        Text("본문")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                        TextEditor(text: $bodyText)
-                            .font(.body)
-                            .frame(minHeight: 220)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 6)
-                                    .stroke(Color.secondary.opacity(0.25))
-                            )
                     }
 
-                    Section("선택") {
-                        TextField("부제", text: $subtitle)
-                        TextField("스페셜 피처", text: $specialFeature)
-                        if !appState.specialFeatures.isEmpty {
-                            Picker("기존 피처", selection: $specialFeature) {
-                                Text("(직접 입력)").tag("")
+                    // 2. 부제 (선택)
+                    Section {
+                        fieldLabel("부제", required: false)
+                        TextField("부제 (선택)", text: $subtitle)
+                    }
+
+                    // 3. 스페셜 피처 (선택) + 4. 기존 특집 불러오기
+                    Section {
+                        fieldLabel("스페셜 피처", required: false)
+                        TextField("특집명 직접 입력", text: $specialFeature)
+                        fieldLabel("등록된 특집에서 선택", required: false)
+                        Text("이미 쓴 특집명을 고르면 위에 채워집니다")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        if appState.specialFeatures.isEmpty {
+                            Text("이 카테고리에 등록된 특집이 없습니다.")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        } else {
+                            Picker("등록된 특집에서 선택", selection: $specialFeature) {
+                                Text("(선택 안 함)").tag("")
                                 ForEach(appState.specialFeatures, id: \.self) { f in
                                     Text(f).tag(f)
                                 }
                             }
+                            .labelsHidden()
                         }
-                        TextField("메타 태그 (쉼표 구분)", text: $metaTags)
+                    }
+
+                    // 5. 대표 이미지 (선택)
+                    Section {
+                        fieldLabel("대표 이미지", required: false)
+                        VStack(alignment: .leading, spacing: 8) {
+                            if let coverPreview {
+                                Image(nsImage: coverPreview)
+                                    .resizable()
+                                    .scaledToFit()
+                                    .frame(maxWidth: 280, maxHeight: 160)
+                                    .cornerRadius(8)
+                            } else if let url = coverDataURL, url.hasPrefix("http"), let nsURL = URL(string: url) {
+                                AsyncImage(url: nsURL) { phase in
+                                    switch phase {
+                                    case .success(let img):
+                                        img.resizable().scaledToFit().frame(maxWidth: 280, maxHeight: 160)
+                                            .cornerRadius(8)
+                                    default:
+                                        ProgressView()
+                                    }
+                                }
+                            } else {
+                                Text("없음")
+                                    .font(.body)
+                                    .foregroundStyle(.secondary)
+                            }
+                            HStack(spacing: 8) {
+                                Button("대표 이미지 선택…") { pickCover() }
+                                if coverDataURL != nil {
+                                    Button("제거", role: .destructive) {
+                                        coverDataURL = nil
+                                        coverPreview = nil
+                                        scheduleAutosave()
+                                    }
+                                    .tint(BrandColors.brandDanger)
+                                }
+                            }
+                        }
+                    }
+
+                    // 6. 본문 (필수)
+                    Section {
+                        fieldLabel("본문", required: true)
+                        TextEditor(text: $bodyText)
+                            .font(.body)
+                            .frame(minHeight: 240)
+                            .padding(6)
+                            .background(BrandColors.canvasWhite)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .stroke(BrandColors.scoutingPurple.opacity(0.25), lineWidth: 1)
+                            )
+                    }
+
+                    // 7. 본문 이미지 (선택)
+                    Section {
+                        fieldLabel("본문 이미지", required: false)
+                        Text("본문에 붙일 이미지 (\(bodyImageDataURLs.count))")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        Button("본문 이미지 추가…") { pickBodyImages() }
+                        ForEach(Array(bodyImageDataURLs.enumerated()), id: \.offset) { idx, url in
+                            HStack {
+                                Text(imageLabel(url, index: idx))
+                                Spacer()
+                                Button("삭제", role: .destructive) {
+                                    bodyImageDataURLs.remove(at: idx)
+                                    scheduleAutosave()
+                                }
+                                .tint(BrandColors.brandDanger)
+                            }
+                            .font(.caption)
+                        }
+                    }
+
+                    // 8. 메타 태그 (선택)
+                    Section {
+                        fieldLabel("메타 태그", required: false)
+                        Text("SEO 해시태그 · 쉼표로 구분")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        TextField("예: 스카우트,잼버리", text: $metaTags)
                         if !appState.metaTagPool.isEmpty {
                             ScrollView(.horizontal, showsIndicators: false) {
-                                HStack {
+                                HStack(spacing: 6) {
                                     ForEach(appState.metaTagPool.prefix(30), id: \.self) { tag in
                                         Button(tag) { appendMetaTag(tag) }
                                             .buttonStyle(.bordered)
@@ -77,73 +378,29 @@ struct EditorView: View {
                                 }
                             }
                         }
+                    }
+
+                    // 작성자 (선택) — 공개 설정 직전
+                    Section {
+                        fieldLabel("작성자", required: false)
                         Picker("작성자", selection: $author) {
                             ForEach(appState.authors) { opt in
                                 Text(opt.label).tag(opt.code)
                             }
                         }
+                        .labelsHidden()
                     }
 
-                    Section("이미지") {
-                        HStack(alignment: .top, spacing: 16) {
-                            VStack(alignment: .leading, spacing: 8) {
-                                Text("커버 이미지")
-                                if let coverPreview {
-                                    Image(nsImage: coverPreview)
-                                        .resizable()
-                                        .scaledToFit()
-                                        .frame(maxWidth: 220, maxHeight: 140)
-                                        .cornerRadius(8)
-                                } else if let url = coverDataURL, url.hasPrefix("http"), let nsURL = URL(string: url) {
-                                    AsyncImage(url: nsURL) { phase in
-                                        switch phase {
-                                        case .success(let img):
-                                            img.resizable().scaledToFit().frame(maxWidth: 220, maxHeight: 140)
-                                        default:
-                                            ProgressView()
-                                        }
-                                    }
-                                } else {
-                                    Text("없음").foregroundStyle(.secondary)
-                                }
-                                HStack {
-                                    Button("커버 선택…") { pickCover() }
-                                    if coverDataURL != nil {
-                                        Button("제거", role: .destructive) {
-                                            coverDataURL = nil
-                                            coverPreview = nil
-                                            scheduleAutosave()
-                                        }
-                                        .tint(BrandColors.brandDanger)
-                                    }
-                                }
-                            }
-                            VStack(alignment: .leading, spacing: 8) {
-                                Text("본문 이미지 (\(bodyImageDataURLs.count))")
-                                Button("본문 이미지 추가…") { pickBodyImages() }
-                                ForEach(Array(bodyImageDataURLs.enumerated()), id: \.offset) { idx, url in
-                                    HStack {
-                                        Text(imageLabel(url, index: idx))
-                                        Spacer()
-                                        Button("삭제", role: .destructive) {
-                                            bodyImageDataURLs.remove(at: idx)
-                                            scheduleAutosave()
-                                        }
-                                        .tint(BrandColors.brandDanger)
-                                    }
-                                    .font(.caption)
-                                }
-                            }
-                        }
-                    }
-
-                    Section("공개 설정") {
+                    // 9. 공개 설정
+                    Section {
+                        fieldLabel("공개 설정", required: true)
                         Picker("모드", selection: $publishMode) {
                             ForEach(PublishMode.allCases) { mode in
                                 Text(mode.titleKO).tag(mode)
                             }
                         }
                         .pickerStyle(.segmented)
+                        .labelsHidden()
                         if publishMode == .schedule {
                             DatePicker("예약 시각 (로컬)", selection: $scheduleDate)
                             Text("서버는 KST 벽시계 문자열로 저장합니다.")
@@ -161,9 +418,6 @@ struct EditorView: View {
                 .formStyle(.grouped)
             }
         }
-        .background(BrandColors.brandBackground)
-        .tint(BrandColors.brandPrimary)
-        .onAppear { loadFromMode() }
         .onChange(of: title) { _, _ in scheduleAutosave() }
         .onChange(of: subtitle) { _, _ in scheduleAutosave() }
         .onChange(of: bodyText) { _, _ in scheduleAutosave() }
@@ -173,11 +427,12 @@ struct EditorView: View {
         .onChange(of: publishMode) { _, _ in scheduleAutosave() }
     }
 
-    private var toolbar: some View {
+    private var editToolbar: some View {
         HStack {
             VStack(alignment: .leading, spacing: 2) {
                 Text(editingPost == nil ? "새 글 작성" : "글 수정")
-                    .font(.headline)
+                    .font(.title2.weight(.bold))
+                    .foregroundStyle(BrandColors.scoutingPurple)
                 if let id = editingPost?.id {
                     Text("ID \(id)")
                         .font(.caption)
@@ -185,7 +440,16 @@ struct EditorView: View {
                 }
             }
             Spacer()
-            Button("닫기") { appState.editorMode = nil }
+            if editingPost != nil {
+                Button("취소") {
+                    if let id = editingPost?.id {
+                        Task { await appState.openView(postID: id) }
+                    } else {
+                        appState.closeEditor()
+                    }
+                }
+            }
+            Button("닫기") { appState.closeEditor() }
             Button {
                 Task { await save() }
             } label: {
@@ -203,6 +467,23 @@ struct EditorView: View {
         .background(BrandColors.brandSurface)
     }
 
+
+    private func fieldLabel(_ title: String, required: Bool) -> some View {
+        HStack(spacing: 8) {
+            Text(title)
+                .font(.headline)
+                .foregroundStyle(BrandColors.scoutingPurple)
+            Text(required ? "필수" : "선택")
+                .font(.caption2.weight(.bold))
+                .padding(.horizontal, 7)
+                .padding(.vertical, 2)
+                .foregroundStyle(required ? Color.white : BrandColors.midnightPurple)
+                .background(required ? BrandColors.scoutingPurple : BrandColors.riverBlue.opacity(0.35))
+                .clipShape(Capsule())
+            Spacer(minLength: 0)
+        }
+    }
+
     private func imageLabel(_ url: String, index: Int) -> String {
         if url.hasPrefix("http") {
             return "이미지 \(index + 1) (원격)"
@@ -213,51 +494,83 @@ struct EditorView: View {
         return "이미지 \(index + 1)"
     }
 
-    private func loadFromMode() {
-        guard !didLoad else { return }
-        didLoad = true
+    /// Full state reset + reload. Driven by session id / onAppear — never rely on didLoad alone.
+    private func reloadFromMode() {
+        autosaveTask?.cancel()
+        loadToken = UUID()
+        resetFields()
         switch appState.editorMode {
-        case .create(let draft):
+        case .create:
             editingPost = nil
             originalContentJSON = nil
             baselineBodyText = ""
             baselineImageURLs = []
-            let local = appState.drafts.load() ?? draft
-            applyDraft(local)
+            // Never restore a draft tied to an existing post into create.
+            // Intentional 「새 글」 clears drafts first; leftover draft is crash-recovery for create only.
+            if let local = appState.drafts.load(), local.editingPostID == nil {
+                applyDraft(local)
+            } else {
+                applyDraft(LocalDraft())
+            }
+            Task { await appState.loadSpecialFeatures(for: category) }
         case .edit(let post):
-            editingPost = post
-            title = post.title ?? ""
-            subtitle = post.subtitle ?? ""
-            category = PostCategory(rawValue: post.category ?? "korea") ?? .korea
-            author = post.author ?? appState.authors.first?.code ?? "Editor.A"
-            metaTags = post.metaTags ?? ""
-            specialFeature = post.specialFeature ?? ""
-            originalContentJSON = post.content
-            let decoded = EditorJSCodec.decode(post.content)
-            bodyText = decoded.text
-            // CRITICAL: keep ALL image URLs (http + data), not only data:
-            bodyImageDataURLs = decoded.imageURLs
-            baselineBodyText = decoded.text
-            baselineImageURLs = decoded.imageURLs
-            coverDataURL = post.imageURL
-            coverPreview = nil
-            if post.published == true || post.publishedInt == 1 {
-                if let at = post.publishAt, isFuturePublishAt(at) {
-                    publishMode = .schedule
-                    scheduleDate = parsePublishAt(at) ?? scheduleDate
-                } else {
-                    publishMode = .immediate
-                }
-            } else if let at = post.publishAt, !at.isEmpty {
+            applyPost(post)
+        case .view, .none:
+            break
+        }
+    }
+
+    private func resetFields() {
+        title = ""
+        subtitle = ""
+        category = .korea
+        bodyText = ""
+        author = appState.authors.first?.code ?? "Editor.A"
+        metaTags = ""
+        specialFeature = ""
+        publishMode = .immediate
+        scheduleDate = Date().addingTimeInterval(3600)
+        coverDataURL = nil
+        coverPreview = nil
+        bodyImageDataURLs = []
+        editingPost = nil
+        originalContentJSON = nil
+        baselineBodyText = ""
+        baselineImageURLs = []
+        isSaving = false
+    }
+
+    private func applyPost(_ post: PostDetail) {
+        editingPost = post
+        title = post.title ?? ""
+        subtitle = post.subtitle ?? ""
+        category = PostCategory(rawValue: post.category ?? "korea") ?? .korea
+        author = post.author ?? appState.authors.first?.code ?? "Editor.A"
+        metaTags = post.metaTags ?? ""
+        specialFeature = post.specialFeature ?? ""
+        originalContentJSON = post.content
+        let decoded = EditorJSCodec.decode(post.content)
+        bodyText = decoded.text
+        // CRITICAL: keep ALL image URLs (http + data), not only data:
+        bodyImageDataURLs = decoded.imageURLs
+        baselineBodyText = decoded.text
+        baselineImageURLs = decoded.imageURLs
+        coverDataURL = post.imageURL
+        coverPreview = nil
+        if post.published == true || post.publishedInt == 1 {
+            if let at = post.publishAt, isFuturePublishAt(at) {
                 publishMode = .schedule
                 scheduleDate = parsePublishAt(at) ?? scheduleDate
             } else {
-                publishMode = .hold
+                publishMode = .immediate
             }
-            Task { await appState.loadSpecialFeatures(for: category) }
-        case .none:
-            break
+        } else if let at = post.publishAt, !at.isEmpty {
+            publishMode = .schedule
+            scheduleDate = parsePublishAt(at) ?? scheduleDate
+        } else {
+            publishMode = .hold
         }
+        Task { await appState.loadSpecialFeatures(for: category) }
     }
 
     private func applyDraft(_ d: LocalDraft) {
@@ -280,10 +593,13 @@ struct EditorView: View {
     }
 
     private func scheduleAutosave() {
+        // View mode never autosaves.
+        if case .view = appState.editorMode { return }
         autosaveTask?.cancel()
         autosaveTask = Task {
             try? await Task.sleep(nanoseconds: 800_000_000)
             guard !Task.isCancelled else { return }
+            if case .view = appState.editorMode { return }
             let draft = currentDraft()
             appState.drafts.save(draft)
         }
@@ -325,6 +641,11 @@ struct EditorView: View {
         guard !isSaving else { return }
         isSaving = true
         defer { isSaving = false }
+
+        // Hard guarantee: create mode never carries an editingPost (no accidental PUT).
+        if case .create = appState.editorMode {
+            editingPost = nil
+        }
 
         if publishMode == .schedule, scheduleDate < Date() {
             appState.globalAlert = "예약 시각이 과거입니다. 미래 시각으로 설정하거나 즉시 공개/비공개 보관으로 바꿔 주세요."
@@ -374,6 +695,7 @@ struct EditorView: View {
                 return
             }
         }
+        // editingPost == nil → POST create; non-nil → PUT with expected_updated_at
         guard let saved = await appState.savePost(payload, editing: editingPost) else { return }
         // 저장 성공 = 서버의 updated_at 이 방금 바뀌었다. 그 값을 여기서 받아 두지 않으면
         // 바로 이어지는 두 번째 저장이 옛 스탬프를 보내 409("다른 사용자가 먼저 수정")로 막힌다.

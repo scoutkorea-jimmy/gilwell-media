@@ -15,10 +15,21 @@ final class AppState: ObservableObject {
     @Published var publishedFilter: PublishedFilter = .all
     @Published var editorMode: EditorMode?
     @Published var editorSessionID = UUID()
+    @Published var selectedPostID: Int?
+    @Published var currentPage = 1
+    @Published var pageSize = 30
     @Published var globalAlert: String?
     @Published var authors: [AuthorOption] = []
     @Published var specialFeatures: [String] = []
     @Published var metaTagPool: [String] = []
+
+    /// Remote Mac writer version newer than local — shown once per dismissed version.
+    @Published var updateAvailableVersion: String?
+    private var lastUpdateCheckAt: Date?
+    private let updateCheckMinInterval: TimeInterval = 7 * 60
+    private let dismissedUpdateKey = "bpmedia.writer.dismissedUpdateVersion"
+
+    static let pageSizeOptions = [10, 30, 50]
 
     let auth: AuthService
     let api: APIClient
@@ -26,6 +37,17 @@ final class AppState: ObservableObject {
 
     private var listTask: Task<Void, Never>?
     private var listGeneration = 0
+
+    var totalPages: Int {
+        max(1, Int(ceil(Double(totalPosts) / Double(max(pageSize, 1)))))
+    }
+
+    var listRangeLabel: String {
+        guard totalPosts > 0 else { return "0 / 0" }
+        let start = (currentPage - 1) * pageSize + 1
+        let end = min(currentPage * pageSize, totalPosts)
+        return "\(start)–\(end) / \(totalPosts)"
+    }
 
     init(
         auth: AuthService? = nil,
@@ -59,6 +81,7 @@ final class AppState: ObservableObject {
         currentUser = nil
         role = nil
         editorMode = nil
+        selectedPostID = nil
         posts = []
         globalAlert = "세션이 만료되었습니다. 다시 로그인해 주세요."
     }
@@ -70,6 +93,7 @@ final class AppState: ObservableObject {
             currentUser = result.user
             role = result.role
             isAuthenticated = true
+            currentPage = 1
             await refreshPosts()
             await loadHelpers()
         } catch let error as APIError {
@@ -94,6 +118,7 @@ final class AppState: ObservableObject {
         currentUser = nil
         role = nil
         editorMode = nil
+        selectedPostID = nil
         posts = []
     }
 
@@ -103,17 +128,29 @@ final class AppState: ObservableObject {
         let generation = listGeneration
         isLoadingList = true
         listError = nil
+        // Clamp page if filters shrunk the result set.
+        if currentPage > totalPages { currentPage = totalPages }
+        let page = max(1, currentPage)
+        let limit = pageSize
         do {
-            let page = try await api.fetchPosts(
+            let pageResult = try await api.fetchPosts(
                 query: searchQuery,
                 category: categoryFilter,
                 published: publishedFilter,
-                page: 1,
-                limit: 50
+                page: page,
+                limit: limit
             )
             guard !Task.isCancelled, generation == listGeneration else { return }
-            posts = page.posts
-            totalPosts = page.total
+            posts = pageResult.posts
+            totalPosts = pageResult.total
+            // If we asked past the last page (e.g. after deletes), snap back once.
+            let pages = max(1, Int(ceil(Double(pageResult.total) / Double(max(limit, 1)))))
+            if page > pages, pageResult.total > 0 {
+                currentPage = pages
+                isLoadingList = false
+                await refreshPosts()
+                return
+            }
         } catch is CancellationError {
             return
         } catch let error as APIError {
@@ -130,13 +167,28 @@ final class AppState: ObservableObject {
         }
     }
 
-    func scheduleRefresh() {
+    func scheduleRefresh(resetPage: Bool = true) {
+        if resetPage { currentPage = 1 }
         listTask?.cancel()
         listTask = Task {
             try? await Task.sleep(nanoseconds: 350_000_000)
             guard !Task.isCancelled else { return }
             await refreshPosts()
         }
+    }
+
+    func goToPage(_ page: Int) async {
+        let clamped = max(1, min(page, totalPages))
+        guard clamped != currentPage || posts.isEmpty else { return }
+        currentPage = clamped
+        await refreshPosts()
+    }
+
+    func setPageSize(_ size: Int) async {
+        guard Self.pageSizeOptions.contains(size) else { return }
+        pageSize = size
+        currentPage = 1
+        await refreshPosts()
     }
 
     func loadHelpers() async {
@@ -175,16 +227,21 @@ final class AppState: ObservableObject {
         }
     }
 
+    /// 「새 글」 — always blank create. Clears autosave so a prior edit draft cannot leak in.
     func openNewPost() {
+        drafts.clear()
+        selectedPostID = nil
         editorSessionID = UUID()
         editorMode = .create(LocalDraft())
     }
 
-    func openEdit(postID: Int) async {
+    /// List row tap → read-only detail.
+    func openView(postID: Int) async {
         do {
             let post = try await api.fetchPost(id: postID)
+            selectedPostID = postID
             editorSessionID = UUID()
-            editorMode = .edit(post)
+            editorMode = .view(post)
             if let category = PostCategory(rawValue: post.category ?? "") {
                 await loadSpecialFeatures(for: category)
             }
@@ -195,11 +252,45 @@ final class AppState: ObservableObject {
         }
     }
 
+    /// 「수정」 from read-only view (or context menu) → editable editor with same post.
+    func openEdit(post: PostDetail) {
+        selectedPostID = post.id
+        editorSessionID = UUID()
+        editorMode = .edit(post)
+        if let category = PostCategory(rawValue: post.category ?? "") {
+            Task { await loadSpecialFeatures(for: category) }
+        }
+    }
+
+    func openEdit(postID: Int) async {
+        do {
+            let post = try await api.fetchPost(id: postID)
+            openEdit(post: post)
+        } catch let error as APIError {
+            globalAlert = error.message
+        } catch {
+            globalAlert = error.localizedDescription
+        }
+    }
+
+    func closeEditor() {
+        editorMode = nil
+        // Keep list selection highlight; user may re-open.
+    }
+
     func deletePost(id: Int) async {
         do {
             try await api.deletePost(id: id)
-            if case .edit(let post) = editorMode, post.id == id {
-                editorMode = nil
+            if let mode = editorMode {
+                switch mode {
+                case .edit(let post), .view(let post):
+                    if post.id == id {
+                        editorMode = nil
+                        selectedPostID = nil
+                    }
+                case .create:
+                    break
+                }
             }
             await refreshPosts()
         } catch let error as APIError {
@@ -220,9 +311,12 @@ final class AppState: ObservableObject {
                 body.expectedUpdatedAt = editing.updatedAt
                 saved = try await api.updatePost(id: editing.id, payload: body)
             } else {
+                // Create path: never PUT — editing must be nil.
                 saved = try await api.createPost(payload: payload)
             }
             drafts.clear()
+            selectedPostID = saved.id
+            // Stay in edit with fresh server state (updated_at for next save).
             editorMode = .edit(saved)
             await refreshPosts()
             globalAlert = (saved.published == true || saved.publishedInt == 1) ? "공개 상태로 저장했습니다." : "비공개(또는 예약)로 저장했습니다."
@@ -241,6 +335,36 @@ final class AppState: ObservableObject {
             return nil
         }
     }
+
+    enum UpdateCheckReason {
+        case appear
+        case focus
+        case manual
+    }
+
+    /// Poll remote mac_writer_version (start/appear + focus, throttled).
+    func checkForUpdateIfNeeded(reason: UpdateCheckReason) async {
+        let now = Date()
+        if reason != .manual, let last = lastUpdateCheckAt, now.timeIntervalSince(last) < updateCheckMinInterval {
+            return
+        }
+        lastUpdateCheckAt = now
+        guard let remote = await UpdateChecker.fetchRemoteVersion(baseURL: api.baseURL) else { return }
+        let local = UpdateChecker.localVersion
+        guard UpdateChecker.isRemoteNewer(remote, than: local) else { return }
+        let dismissed = UserDefaults.standard.string(forKey: dismissedUpdateKey)
+        if dismissed == remote { return }
+        updateAvailableVersion = remote
+        globalAlert = "새로운 버전이 업로드되었습니다 (\(remote)). 최신 코드로 다시 빌드·실행해 주세요. (현재 \(local))"
+    }
+
+    func dismissUpdateAlert() {
+        if let v = updateAvailableVersion {
+            UserDefaults.standard.set(v, forKey: dismissedUpdateKey)
+        }
+        updateAvailableVersion = nil
+    }
+
 }
 
 enum PublishedFilter: String, CaseIterable, Identifiable {
@@ -268,8 +392,9 @@ enum PublishedFilter: String, CaseIterable, Identifiable {
 }
 
 enum EditorMode {
-    case create(LocalDraft)
+    case view(PostDetail)
     case edit(PostDetail)
+    case create(LocalDraft)
 }
 
 struct AuthorOption: Identifiable, Hashable {

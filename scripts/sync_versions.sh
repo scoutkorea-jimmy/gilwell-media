@@ -96,4 +96,13 @@ for file in "${CHATBOT_EXTRA[@]}"; do
   perl -0pi -e "s#/css/chatbot\\.css\\?v=[0-9A-Za-z.-]+#/css/chatbot.css?v=${ASSET_VERSION}#g; s#/js/chatbot\\.js\\?v=[0-9A-Za-z.-]+#/js/chatbot.js?v=${ASSET_VERSION}#g" "$file"
 done
 
+
+# Mac writer marketing version (apps/BPMediaWriter + public static + API)
+if [[ -f apps/BPMediaWriter/VERSION ]]; then
+  MAC_WRITER_VERSION="$(tr -d '\n' < apps/BPMediaWriter/VERSION)"
+  printf '%s\n' "$MAC_WRITER_VERSION" > public/MAC_WRITER_VERSION
+  perl -0pi -e "s/export const MAC_WRITER_VERSION = '[^']+'/export const MAC_WRITER_VERSION = '${MAC_WRITER_VERSION}'/" functions/_shared/build-version.js
+  echo "Synced mac writer ${MAC_WRITER_VERSION}."
+fi
+
 echo "Synced site ${SITE_VERSION} / admin ${ADMIN_VERSION} / assets ${ASSET_VERSION}."
