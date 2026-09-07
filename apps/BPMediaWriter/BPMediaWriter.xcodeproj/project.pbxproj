@@ -80,7 +80,7 @@
 				B10100000000000000000001 /* AppState.swift */,
 				A1000000000000000000000A /* Models */,
 				A1000000000000000000000B /* Services */,
-				A1000000000000000000000E /* Theme */,
+				A10000000000000000000014 /* Theme */,
 				A1000000000000000000000C /* Views */,
 			);
 			path = Sources;
@@ -119,7 +119,7 @@
 			path = Views;
 			sourceTree = "<group>";
 		};
-		A1000000000000000000000E /* Theme */ = {
+		A10000000000000000000014 /* Theme */ = {
 			isa = PBXGroup;
 			children = (
 				B11300000000000000000001 /* BrandColors.swift */,
