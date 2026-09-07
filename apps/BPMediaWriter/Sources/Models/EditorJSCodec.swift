@@ -93,19 +93,21 @@ enum EditorJSCodec {
     }
 
     /// Convert plain TextEditor text + image URLs (http(s) or data:) into Editor.js JSON string.
+    /// Matches web `_createParagraphBlocks`: split on blank lines (`\n\n`) for paragraph
+    /// blocks; within a paragraph, single `\n` becomes `<br>` (site renderer rhythm).
     static func encode(plainText: String, imageDataURLs: [String] = []) -> String {
         var blocks: [Block] = []
-        let paragraphs = plainText
+        let normalized = plainText
             .replacingOccurrences(of: "\r\n", with: "\n")
-            .components(separatedBy: "\n")
-            .map { $0.trimmingCharacters(in: .whitespaces) }
+            .trimmingCharacters(in: .whitespacesAndNewlines)
 
-        let nonEmpty = paragraphs.filter { !$0.isEmpty }
-        if nonEmpty.isEmpty && imageDataURLs.isEmpty {
+        if normalized.isEmpty && imageDataURLs.isEmpty {
             blocks.append(Block(type: "paragraph", data: BlockData(text: "")))
-        } else {
-            for p in nonEmpty {
-                blocks.append(Block(type: "paragraph", data: BlockData(text: escapeHTML(p))))
+        } else if !normalized.isEmpty {
+            let paragraphs = splitParagraphs(normalized)
+            for p in paragraphs {
+                let withBreaks = escapeHTML(p).replacingOccurrences(of: "\n", with: "<br>")
+                blocks.append(Block(type: "paragraph", data: BlockData(text: withBreaks)))
             }
         }
         for url in imageDataURLs where !url.isEmpty {
@@ -202,6 +204,27 @@ enum EditorJSCodec {
             }
         }
         return out
+    }
+
+    /// Blank line (`\n\n+`) = paragraph break; keep single newlines inside a chunk.
+    private static func splitParagraphs(_ text: String) -> [String] {
+        var parts: [String] = []
+        var current: [String] = []
+        let lines = text.components(separatedBy: "\n")
+        for line in lines {
+            if line.trimmingCharacters(in: .whitespaces).isEmpty {
+                if !current.isEmpty {
+                    parts.append(current.joined(separator: "\n"))
+                    current = []
+                }
+            } else {
+                current.append(line)
+            }
+        }
+        if !current.isEmpty {
+            parts.append(current.joined(separator: "\n"))
+        }
+        return parts.isEmpty ? [""] : parts
     }
 
     private static func escapeHTML(_ s: String) -> String {

@@ -107,5 +107,15 @@ let once = EditorJSCodec.decode(EditorJSCodec.encode(plainText: cd.text)).text
 let twice = EditorJSCodec.decode(EditorJSCodec.encode(plainText: once)).text
 check("두 번 저장해도 동일", once == twice, "1:\(once)\n2:\(twice)")
 
+print("\n[12] 문단/br 매핑 (웹 _createParagraphBlocks 패리티)")
+let brSrc = "첫 줄\n둘째 줄\n\n다음 문단"
+let brEnc = EditorJSCodec.encode(plainText: brSrc)
+check("한 문단 안에 <br>", brEnc.contains("<br>"), brEnc)
+let paraCount = brEnc.components(separatedBy: "\"type\":\"paragraph\"").count - 1
+check("빈 줄로 문단 2개", paraCount == 2, "count=\(paraCount) \(brEnc)")
+let brDec = EditorJSCodec.decode(brEnc)
+check("디코드 시 빈 줄 복원", brDec.text.contains("\n\n"), brDec.text)
+check("문단 내부 줄바꿈 복원", brDec.text.contains("첫 줄\n둘째 줄"), brDec.text)
+
 print("\n════ 통과 \(pass) · 실패 \(fail) ════")
 if fail > 0 { exit(1) }

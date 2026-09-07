@@ -38,8 +38,9 @@ function enforceSameOriginForMutations(request) {
   const hasCookie = !!request.headers.get('Cookie');
   // No cookie and not a browser form request — treat as server-to-server.
   if (!hasCookie && !usesBearer) return null;
-  // Explicit Bearer flow has its own CSRF resistance (not auto-sent by browsers).
-  if (usesBearer && !hasCookie) return null;
+  // Explicit Bearer flow has its own CSRF resistance (token not auto-sent by browsers).
+  // Exempt even if Cookie is also present (native Mac URLSession may attach Safari cookies).
+  if (usesBearer) return null;
 
   const originHeader = request.headers.get('Origin') || request.headers.get('Referer') || '';
   if (!originHeader) {

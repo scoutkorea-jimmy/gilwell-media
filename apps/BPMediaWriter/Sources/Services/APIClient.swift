@@ -16,8 +16,18 @@ final class APIClient {
 
     private let session: URLSession
 
-    init(session: URLSession = .shared) {
-        self.session = session
+    /// Ephemeral session avoids Safari's shared cookie jar. Cookie + Bearer
+    /// without Origin/Referer trips CSRF middleware (`csrfReject`).
+    init(session: URLSession? = nil) {
+        if let session {
+            self.session = session
+        } else {
+            let config = URLSessionConfiguration.ephemeral
+            config.httpCookieAcceptPolicy = .never
+            config.httpShouldSetCookies = false
+            config.httpCookieStorage = nil
+            self.session = URLSession(configuration: config)
+        }
     }
 
     func login(username: String, password: String, turnstileToken: String?) async throws -> LoginResponse {
@@ -185,6 +195,37 @@ final class APIClient {
         return []
     }
 
+
+    // MARK: - Server drafts (/api/admin/drafts)
+
+    func fetchDrafts() async throws -> [ServerDraft] {
+        let data = try await request(path: "/api/admin/drafts", method: "GET")
+        let decoded = try JSONDecoder().decode(ServerDraftListResponse.self, from: data)
+        return decoded.drafts ?? []
+    }
+
+    func createDraft(_ payload: ServerDraftPayload) async throws -> ServerDraft {
+        let data = try await request(path: "/api/admin/drafts", method: "POST", encodable: payload)
+        let env = try JSONDecoder().decode(ServerDraftEnvelope.self, from: data)
+        guard let draft = env.draft else {
+            throw APIError(message: "드래프트 생성 응답이 비어 있습니다.", statusCode: nil, code: nil, retryAfter: nil)
+        }
+        return draft
+    }
+
+    func updateDraft(id: Int, payload: ServerDraftPayload) async throws -> ServerDraft {
+        let data = try await request(path: "/api/admin/drafts/\(id)", method: "PUT", encodable: payload)
+        let env = try JSONDecoder().decode(ServerDraftEnvelope.self, from: data)
+        guard let draft = env.draft else {
+            throw APIError(message: "드래프트 갱신 응답이 비어 있습니다.", statusCode: nil, code: nil, retryAfter: nil)
+        }
+        return draft
+    }
+
+    func deleteDraft(id: Int) async throws {
+        _ = try await request(path: "/api/admin/drafts/\(id)", method: "DELETE")
+    }
+
     // MARK: - Core
 
     private func request(
@@ -208,6 +249,9 @@ final class APIClient {
         var req = URLRequest(url: url)
         req.httpMethod = method
         req.setValue("application/json", forHTTPHeaderField: "Accept")
+        // Harmless for Bearer-only; satisfies CSRF if cookies ever appear.
+        req.setValue("https://bpmedia.net", forHTTPHeaderField: "Origin")
+        req.setValue("https://bpmedia.net/admin.html", forHTTPHeaderField: "Referer")
         if authorized, let token = tokenProvider?(), !token.isEmpty {
             req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         }
@@ -230,14 +274,25 @@ final class APIClient {
         }
         if !(200...299).contains(http.statusCode) {
             if let body = try? JSONDecoder().decode(APIErrorBody.self, from: data) {
-                let msg = body.error ?? body.message ?? body.reason ?? "API 오류 (\(http.statusCode))"
+                var msg = body.error ?? body.message ?? body.reason ?? "API 오류 (\(http.statusCode))"
                 let code = body.code ?? (body.error == "otp_required" ? "otp_required" : nil)
+                if http.statusCode == 403, Self.looksLikeCSRF(msg) {
+                    msg = "보안 검사(CSRF)에 실패했습니다. 앱을 재실행하거나 다시 로그인해 주세요."
+                }
                 throw APIError(message: msg, statusCode: http.statusCode, code: code, retryAfter: body.retryAfter)
             }
             let text = String(data: data, encoding: .utf8) ?? ""
-            throw APIError(message: text.isEmpty ? "API 오류 (\(http.statusCode))" : text, statusCode: http.statusCode, code: nil, retryAfter: nil)
+            var msg = text.isEmpty ? "API 오류 (\(http.statusCode))" : text
+            if http.statusCode == 403, Self.looksLikeCSRF(msg) {
+                msg = "보안 검사(CSRF)에 실패했습니다. 앱을 재실행하거나 다시 로그인해 주세요."
+            }
+            throw APIError(message: msg, statusCode: http.statusCode, code: nil, retryAfter: nil)
         }
         return data
+    }
+
+    private static func looksLikeCSRF(_ message: String) -> Bool {
+        message.contains("보안 검사") || message.lowercased().contains("csrf")
     }
 }
 

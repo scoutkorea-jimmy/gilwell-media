@@ -17,11 +17,14 @@ struct EditorView: View {
     @State private var scheduleDate = Date().addingTimeInterval(3600)
     @State private var coverDataURL: String?
     @State private var coverPreview: NSImage?
+    @State private var imageCaption = ""
     /// Body image URLs — may be http(s) or data: (never drop http on edit).
     @State private var bodyImageDataURLs: [String] = []
     @State private var editingPost: PostDetail?
     @State private var isSaving = false
     @State private var autosaveTask: Task<Void, Never>?
+    @State private var serverDraftID: Int?
+    @State private var draftStatus: String?
     @State private var loadToken = UUID()
     @State private var originalContentJSON: String?
     @State private var baselineBodyText = ""
@@ -126,16 +129,38 @@ struct EditorView: View {
 
                     if let url = post.imageURL, !url.isEmpty {
                         fullBleedCover(url)
-                            .padding(.bottom, 20)
+                        if let caption = post.imageCaption?.trimmingCharacters(in: .whitespacesAndNewlines), !caption.isEmpty {
+                            Text(caption)
+                                .font(typography.caption)
+                                .foregroundStyle(.secondary)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(.horizontal, 20)
+                                .padding(.top, 8)
+                                .textSelection(.enabled)
+                        }
+                        Color.clear.frame(height: 20)
                     }
 
                     VStack(alignment: .leading, spacing: 16) {
                         sectionHeader("본문")
-                        Text(decoded.text.isEmpty ? "(본문 없음)" : decoded.text)
-                            .font(typography.body)
-                            .lineSpacing(4)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .textSelection(.enabled)
+                        if decoded.text.isEmpty {
+                            Text("(본문 없음)")
+                                .font(typography.body)
+                                .foregroundStyle(.secondary)
+                        } else {
+                            let paragraphs = decoded.text
+                                .components(separatedBy: "\n\n")
+                                .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+                                .filter { !$0.isEmpty }
+                            ForEach(Array(paragraphs.enumerated()), id: \.offset) { _, para in
+                                Text(para)
+                                    .font(typography.body)
+                                    .lineSpacing(4)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .textSelection(.enabled)
+                                    .padding(.bottom, 10)
+                            }
+                        }
 
                         if !decoded.imageURLs.isEmpty {
                             sectionHeader("본문 이미지")
@@ -366,6 +391,13 @@ struct EditorView: View {
                         }
                     }
 
+                    // 5b. 출처 / 캡션 (선택)
+                    Section {
+                        fieldLabel("출처 / 캡션", required: false)
+                        TextField("이미지 출처 또는 캡션 (선택)", text: $imageCaption)
+                            .onChange(of: imageCaption) { _, _ in scheduleAutosave() }
+                    }
+
                     // 6. 본문 (필수)
                     Section {
                         fieldLabel("본문", required: true)
@@ -481,6 +513,12 @@ struct EditorView: View {
                 }
             }
             Spacer()
+            if let draftStatus {
+                Text(draftStatus)
+                    .font(typography.caption2)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+            }
             if editingPost != nil {
                 Button("취소") {
                     if let id = editingPost?.id {
@@ -546,16 +584,22 @@ struct EditorView: View {
             originalContentJSON = nil
             baselineBodyText = ""
             baselineImageURLs = []
-            // Never restore a draft tied to an existing post into create.
-            // Intentional 「새 글」 clears drafts first; leftover draft is crash-recovery for create only.
+            serverDraftID = nil
+            draftStatus = nil
+            // Local slim backup for offline; server drafts are source of truth when online.
             if let local = appState.drafts.load(), local.editingPostID == nil {
                 applyDraft(local)
+                serverDraftID = local.serverDraftID
             } else {
                 applyDraft(LocalDraft())
             }
-            Task { await appState.loadSpecialFeatures(for: category) }
+            Task {
+                await appState.loadSpecialFeatures(for: category)
+                await resumeServerDraftIfNeeded(editingPostID: nil)
+            }
         case .edit(let post):
             applyPost(post)
+            Task { await resumeServerDraftIfNeeded(editingPostID: post.id) }
         case .view, .none:
             break
         }
@@ -573,11 +617,14 @@ struct EditorView: View {
         scheduleDate = Date().addingTimeInterval(3600)
         coverDataURL = nil
         coverPreview = nil
+        imageCaption = ""
         bodyImageDataURLs = []
         editingPost = nil
         originalContentJSON = nil
         baselineBodyText = ""
         baselineImageURLs = []
+        serverDraftID = nil
+        draftStatus = nil
         isSaving = false
     }
 
@@ -598,6 +645,7 @@ struct EditorView: View {
         baselineImageURLs = decoded.imageURLs
         coverDataURL = post.imageURL
         coverPreview = nil
+        imageCaption = post.imageCaption ?? ""
         if post.published == true || post.publishedInt == 1 {
             if let at = post.publishAt, isFuturePublishAt(at) {
                 publishMode = .schedule
@@ -624,7 +672,9 @@ struct EditorView: View {
         specialFeature = d.specialFeature
         publishMode = PublishMode(rawValue: d.publishMode) ?? .immediate
         coverDataURL = d.coverDataURL
+        imageCaption = d.imageCaption
         bodyImageDataURLs = d.bodyImageDataURLs
+        serverDraftID = d.serverDraftID
         if !d.publishAt.isEmpty, let date = parsePublishAt(d.publishAt) {
             scheduleDate = date
         }
@@ -638,11 +688,12 @@ struct EditorView: View {
         if case .view = appState.editorMode { return }
         autosaveTask?.cancel()
         autosaveTask = Task {
-            try? await Task.sleep(nanoseconds: 800_000_000)
+            try? await Task.sleep(nanoseconds: 1_200_000_000)
             guard !Task.isCancelled else { return }
             if case .view = appState.editorMode { return }
             let draft = currentDraft()
             appState.drafts.save(draft)
+            await pushServerDraft()
         }
     }
 
@@ -658,10 +709,133 @@ struct EditorView: View {
             publishMode: publishMode.rawValue,
             publishAt: formatPublishAt(scheduleDate),
             coverDataURL: coverDataURL,
+            imageCaption: imageCaption,
             bodyImageDataURLs: bodyImageDataURLs,
             editingPostID: editingPost?.id,
-            expectedUpdatedAt: editingPost?.updatedAt
+            expectedUpdatedAt: editingPost?.updatedAt,
+            serverDraftID: serverDraftID
         )
+    }
+
+    private func serverDraftPayload() -> ServerDraftPayload {
+        var publishedFlag = true
+        var publishAt: String? = nil
+        switch publishMode {
+        case .immediate:
+            publishedFlag = true
+            publishAt = nil
+        case .schedule:
+            publishedFlag = false
+            publishAt = formatPublishAt(scheduleDate)
+        case .hold:
+            publishedFlag = false
+            publishAt = nil
+        }
+        return ServerDraftPayload(
+            editingPostId: editingPost?.id,
+            title: title,
+            subtitle: subtitle.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty,
+            category: category.rawValue,
+            metaTags: metaTags.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty,
+            author: author.nilIfEmpty,
+            publishAt: publishAt,
+            imageURL: coverDataURL,
+            imageCaption: imageCaption.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty,
+            specialFeature: specialFeature.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty,
+            content: resolveContentJSON(),
+            publishedFlag: publishedFlag
+        )
+    }
+
+    @MainActor
+    private func pushServerDraft() async {
+        let payload = serverDraftPayload()
+        do {
+            let saved: ServerDraft
+            if let id = serverDraftID {
+                saved = try await appState.api.updateDraft(id: id, payload: payload)
+            } else {
+                saved = try await appState.api.createDraft(payload)
+            }
+            serverDraftID = saved.id
+            var draft = currentDraft()
+            draft.serverDraftID = saved.id
+            appState.drafts.save(draft)
+            draftStatus = "서버 임시저장됨"
+        } catch let error as APIError {
+            draftStatus = "임시저장 실패"
+            if error.statusCode == 403 || error.statusCode == 401 {
+                appState.globalAlert = error.message
+            } else {
+                appState.globalAlert = "서버 임시저장에 실패했습니다: \(error.message)"
+            }
+        } catch {
+            draftStatus = "임시저장 실패"
+            appState.globalAlert = "서버 임시저장에 실패했습니다: \(error.localizedDescription)"
+        }
+    }
+
+    @MainActor
+    private func resumeServerDraftIfNeeded(editingPostID: Int?) async {
+        do {
+            let drafts = try await appState.api.fetchDrafts()
+            let match: ServerDraft?
+            if let editingPostID {
+                match = drafts.first { $0.editingPostId == editingPostID }
+            } else {
+                match = drafts.first { $0.editingPostId == nil }
+            }
+            guard let match else { return }
+            applyServerDraft(match)
+            serverDraftID = match.id
+            draftStatus = "서버 임시저장 불러옴"
+        } catch {
+            // Offline / permission — keep local backup only.
+        }
+    }
+
+    private func applyServerDraft(_ d: ServerDraft) {
+        if let title = d.title, !title.isEmpty { self.title = title }
+        if let subtitle = d.subtitle { self.subtitle = subtitle }
+        if let cat = d.category, let parsed = PostCategory(rawValue: cat) { category = parsed }
+        if let author = d.author, !author.isEmpty { self.author = author }
+        if let meta = d.metaTags { metaTags = meta }
+        if let feature = d.specialFeature { specialFeature = feature }
+        if let caption = d.imageCaption { imageCaption = caption }
+        if let url = d.imageURL, !url.isEmpty {
+            coverDataURL = url
+            coverPreview = nil
+        }
+        if let content = d.content, !content.isEmpty {
+            originalContentJSON = content
+            let decoded = EditorJSCodec.decode(content)
+            bodyText = decoded.text
+            bodyImageDataURLs = decoded.imageURLs
+            baselineBodyText = decoded.text
+            baselineImageURLs = decoded.imageURLs
+        }
+        if let at = d.publishAt, !at.isEmpty, let date = parsePublishAt(at) {
+            publishMode = .schedule
+            scheduleDate = date
+        } else if d.publishedFlag == false {
+            // Keep hold only when create; edit may already have mode from post.
+            if editingPost == nil { publishMode = .hold }
+        }
+    }
+
+    private func clearServerDraftAfterSave() async {
+        guard let id = serverDraftID else {
+            appState.drafts.clear()
+            return
+        }
+        do {
+            try await appState.api.deleteDraft(id: id)
+        } catch {
+            // Best-effort; local clear still happens.
+        }
+        serverDraftID = nil
+        draftStatus = nil
+        appState.drafts.clear()
     }
 
     private func bodyUnchanged() -> Bool {
@@ -719,6 +893,7 @@ struct EditorView: View {
             publishAt: publishAt,
             imageData: nil,
             imageURL: nil,
+            imageCaption: imageCaption.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty,
             expectedUpdatedAt: nil
         )
         if let coverDataURL, coverDataURL.hasPrefix("data:") {
@@ -744,6 +919,8 @@ struct EditorView: View {
         originalContentJSON = saved.content ?? content
         baselineBodyText = bodyText
         baselineImageURLs = bodyImageDataURLs
+        if let caption = saved.imageCaption { imageCaption = caption }
+        await clearServerDraftAfterSave()
     }
 
     private func appendMetaTag(_ tag: String) {

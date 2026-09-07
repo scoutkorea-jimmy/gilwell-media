@@ -1,4 +1,4 @@
-# BP Media Writer (macOS) v1.1.1
+# BP Media Writer (macOS) v1.1.2
 
 Korean-first SwiftUI macOS app for writing/editing BP Media posts via existing `https://bpmedia.net` APIs. No new web CMS.
 
@@ -39,7 +39,19 @@ defaults write net.bpmedia.writer bpmedia.turnstile.sitekey "YOUR_SITE_KEY"
 
 The login screen will show an embedded WKWebView widget when needed.
 
-## Features (v1.1)
+## Features (v1.1.2)
+
+### Save / CSRF (root cause)
+
+Save failed with `보안 검사에 실패했습니다. 페이지를 새로고침한 뒤 다시 시도해주세요.` — that exact string is from `functions/api/_middleware.js` `csrfReject`. Mutating requests that carry a **Cookie** (and are not Bearer-only) must pass same-origin Origin/Referer. Mac `URLSession.shared` can attach Safari cookies for `bpmedia.net` **plus** `Authorization: Bearer`, so CSRF ran and rejected missing/wrong Origin (403). Turnstile is a different message (`CAPTCHA 인증에 실패…`) — this was CSRF, not Turnstile.
+
+**Client fix:** ephemeral `URLSession` (no shared cookie store) + always send `Origin: https://bpmedia.net` / `Referer: https://bpmedia.net/admin.html`. Clearer Korean copy on CSRF 403. Optional server harden: Bearer is CSRF-exempt even when Cookie is present.
+
+### Body plain text ↔ Editor.js
+
+Mac writer maps TextEditor plain text to Editor.js like the web admin `_createParagraphBlocks`: blank lines (`\n\n`) become separate paragraph blocks; single newlines inside a paragraph become `<br>`. Decode reverses that for comfortable editing. Read-only detail shows paragraphs with spacing (not one cramped blob). Aim is parity with the site renderer (`GW.renderEditorInlineText` / `<p>` blocks).
+
+### Features
 
 - Login → Keychain token → `Authorization: Bearer`
 - Admin post list (`scope=admin`) with search, **category chips** (전체|Korea|APR|WOSM|People), published filter
@@ -54,9 +66,10 @@ The login screen will show an embedded WKWebView widget when needed.
 - Editor.js JSON content encoding from plain TextEditor + optional body images
 - Cover image via `NSOpenPanel` → compressed `image_data` data URL
 - Publish modes: immediate / schedule (`publish_at`, unpublished until due) / hold
-- Local draft autosave under Application Support `BPMediaWriter/local-draft.json` (create-only restore; never into create from an edit draft)
+- **Server drafts** via `/api/admin/drafts` (GET/POST/PUT/DELETE) — autosave ~1.2s debounce; source of truth when online (max 10 / 14-day TTL). Slim local backup under Application Support for offline
+- Cover **출처 / 캡션** (`image_caption`) — edit field after 대표 이미지; shown on read-only detail; included in post save + drafts
 - Korean UI · Scouting Purple brand
-- Editor field order matches web admin: 제목→카테고리→부제→스페셜 피처→특집 불러오기→대표 이미지→본문→본문 이미지→메타→작성자→공개 (필수/선택은 라벨 옆 칩)
+- Editor field order matches web admin: 제목→카테고리→부제→스페셜 피처→특집 불러오기→대표 이미지→출처/캡션→본문→본문 이미지→메타→작성자→공개 (필수/선택은 라벨 옆 칩)
 
 ## Stability notes
 

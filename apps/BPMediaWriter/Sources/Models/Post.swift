@@ -204,6 +204,7 @@ struct PostWritePayload: Encodable {
     var publishAt: String?
     var imageData: String?
     var imageURL: String?
+    var imageCaption: String?
     var expectedUpdatedAt: String?
 
     enum CodingKeys: String, CodingKey {
@@ -213,6 +214,7 @@ struct PostWritePayload: Encodable {
         case publishAt = "publish_at"
         case imageData = "image_data"
         case imageURL = "image_url"
+        case imageCaption = "image_caption"
         case expectedUpdatedAt = "expected_updated_at"
     }
 
@@ -229,6 +231,7 @@ struct PostWritePayload: Encodable {
         try c.encodeIfPresent(publishAt, forKey: .publishAt)
         try c.encodeIfPresent(imageData, forKey: .imageData)
         try c.encodeIfPresent(imageURL, forKey: .imageURL)
+        try c.encodeIfPresent(imageCaption, forKey: .imageCaption)
         try c.encodeIfPresent(expectedUpdatedAt, forKey: .expectedUpdatedAt)
     }
 }
@@ -244,9 +247,193 @@ struct LocalDraft: Codable, Equatable {
     var publishMode: String = PublishMode.immediate.rawValue
     var publishAt: String = ""
     var coverDataURL: String?
+    var imageCaption: String = ""
     var bodyImageDataURLs: [String] = []
     var editingPostID: Int?
     var expectedUpdatedAt: String?
+    /// Server `/api/admin/drafts` row id when online autosave succeeded.
+    var serverDraftID: Int?
+
+    enum CodingKeys: String, CodingKey {
+        case title, subtitle, category, bodyText, author, metaTags, specialFeature
+        case publishMode, publishAt, coverDataURL, imageCaption, bodyImageDataURLs
+        case editingPostID, expectedUpdatedAt, serverDraftID
+    }
+
+    init(
+        title: String = "",
+        subtitle: String = "",
+        category: String = PostCategory.korea.rawValue,
+        bodyText: String = "",
+        author: String = "Editor.A",
+        metaTags: String = "",
+        specialFeature: String = "",
+        publishMode: String = PublishMode.immediate.rawValue,
+        publishAt: String = "",
+        coverDataURL: String? = nil,
+        imageCaption: String = "",
+        bodyImageDataURLs: [String] = [],
+        editingPostID: Int? = nil,
+        expectedUpdatedAt: String? = nil,
+        serverDraftID: Int? = nil
+    ) {
+        self.title = title
+        self.subtitle = subtitle
+        self.category = category
+        self.bodyText = bodyText
+        self.author = author
+        self.metaTags = metaTags
+        self.specialFeature = specialFeature
+        self.publishMode = publishMode
+        self.publishAt = publishAt
+        self.coverDataURL = coverDataURL
+        self.imageCaption = imageCaption
+        self.bodyImageDataURLs = bodyImageDataURLs
+        self.editingPostID = editingPostID
+        self.expectedUpdatedAt = expectedUpdatedAt
+        self.serverDraftID = serverDraftID
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        title = try c.decodeIfPresent(String.self, forKey: .title) ?? ""
+        subtitle = try c.decodeIfPresent(String.self, forKey: .subtitle) ?? ""
+        category = try c.decodeIfPresent(String.self, forKey: .category) ?? PostCategory.korea.rawValue
+        bodyText = try c.decodeIfPresent(String.self, forKey: .bodyText) ?? ""
+        author = try c.decodeIfPresent(String.self, forKey: .author) ?? "Editor.A"
+        metaTags = try c.decodeIfPresent(String.self, forKey: .metaTags) ?? ""
+        specialFeature = try c.decodeIfPresent(String.self, forKey: .specialFeature) ?? ""
+        publishMode = try c.decodeIfPresent(String.self, forKey: .publishMode) ?? PublishMode.immediate.rawValue
+        publishAt = try c.decodeIfPresent(String.self, forKey: .publishAt) ?? ""
+        coverDataURL = try c.decodeIfPresent(String.self, forKey: .coverDataURL)
+        imageCaption = try c.decodeIfPresent(String.self, forKey: .imageCaption) ?? ""
+        bodyImageDataURLs = try c.decodeIfPresent([String].self, forKey: .bodyImageDataURLs) ?? []
+        editingPostID = try c.decodeIfPresent(Int.self, forKey: .editingPostID)
+        expectedUpdatedAt = try c.decodeIfPresent(String.self, forKey: .expectedUpdatedAt)
+        serverDraftID = try c.decodeIfPresent(Int.self, forKey: .serverDraftID)
+    }
+}
+
+// MARK: - Server drafts
+
+struct ServerDraft: Identifiable, Codable, Hashable {
+    let id: Int
+    var editingPostId: Int?
+    var title: String?
+    var subtitle: String?
+    var category: String?
+    var metaTags: String?
+    var author: String?
+    var publishAt: String?
+    var imageURL: String?
+    var imageCaption: String?
+    var specialFeature: String?
+    var content: String?
+    var publishedFlag: Bool?
+    var updatedAt: String?
+    var createdAt: String?
+
+    enum CodingKeys: String, CodingKey {
+        case id, title, subtitle, category, author, content
+        case editingPostId = "editing_post_id"
+        case metaTags = "meta_tags"
+        case publishAt = "publish_at"
+        case imageURL = "image_url"
+        case imageCaption = "image_caption"
+        case specialFeature = "special_feature"
+        case publishedFlag = "published_flag"
+        case updatedAt = "updated_at"
+        case createdAt = "created_at"
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decode(Int.self, forKey: .id)
+        title = try c.decodeIfPresent(String.self, forKey: .title)
+        subtitle = try c.decodeIfPresent(String.self, forKey: .subtitle)
+        category = try c.decodeIfPresent(String.self, forKey: .category)
+        metaTags = try c.decodeIfPresent(String.self, forKey: .metaTags)
+        author = try c.decodeIfPresent(String.self, forKey: .author)
+        publishAt = try c.decodeIfPresent(String.self, forKey: .publishAt)
+        imageURL = try c.decodeIfPresent(String.self, forKey: .imageURL)
+        imageCaption = try c.decodeIfPresent(String.self, forKey: .imageCaption)
+        specialFeature = try c.decodeIfPresent(String.self, forKey: .specialFeature)
+        content = try c.decodeIfPresent(String.self, forKey: .content)
+        updatedAt = try c.decodeIfPresent(String.self, forKey: .updatedAt)
+        createdAt = try c.decodeIfPresent(String.self, forKey: .createdAt)
+        if let b = try? c.decodeIfPresent(Bool.self, forKey: .publishedFlag) {
+            publishedFlag = b
+        } else if let i = try? c.decodeIfPresent(Int.self, forKey: .publishedFlag) {
+            publishedFlag = i == 1
+        } else {
+            publishedFlag = nil
+        }
+        if let i = try? c.decodeIfPresent(Int.self, forKey: .editingPostId) {
+            editingPostId = i
+        } else if let s = try? c.decodeIfPresent(String.self, forKey: .editingPostId), let i = Int(s) {
+            editingPostId = i
+        } else {
+            editingPostId = nil
+        }
+    }
+}
+
+struct ServerDraftListResponse: Codable {
+    let drafts: [ServerDraft]?
+    let maxDrafts: Int?
+    let ttlDays: Int?
+
+    enum CodingKeys: String, CodingKey {
+        case drafts
+        case maxDrafts = "max_drafts"
+        case ttlDays = "ttl_days"
+    }
+}
+
+struct ServerDraftEnvelope: Codable {
+    let draft: ServerDraft?
+}
+
+struct ServerDraftPayload: Encodable {
+    var editingPostId: Int?
+    var title: String
+    var subtitle: String?
+    var category: String
+    var metaTags: String?
+    var author: String?
+    var publishAt: String?
+    var imageURL: String?
+    var imageCaption: String?
+    var specialFeature: String?
+    var content: String
+    var publishedFlag: Bool
+
+    enum CodingKeys: String, CodingKey {
+        case title, subtitle, category, author, content
+        case editingPostId = "editing_post_id"
+        case metaTags = "meta_tags"
+        case publishAt = "publish_at"
+        case imageURL = "image_url"
+        case imageCaption = "image_caption"
+        case specialFeature = "special_feature"
+        case publishedFlag = "published_flag"
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encodeIfPresent(editingPostId, forKey: .editingPostId)
+        try c.encode(title, forKey: .title)
+        try c.encodeIfPresent(subtitle, forKey: .subtitle)
+        try c.encode(category, forKey: .category)
+        try c.encodeIfPresent(metaTags, forKey: .metaTags)
+        try c.encodeIfPresent(author, forKey: .author)
+        try c.encodeIfPresent(publishAt, forKey: .publishAt)
+        try c.encodeIfPresent(imageURL, forKey: .imageURL)
+        try c.encodeIfPresent(imageCaption, forKey: .imageCaption)
+        try c.encodeIfPresent(specialFeature, forKey: .specialFeature)
+        try c.encode(content, forKey: .content)
+        try c.encode(publishedFlag, forKey: .publishedFlag)
+    }
 }
 
 enum PublishMode: String, CaseIterable, Identifiable {
