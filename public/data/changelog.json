@@ -1,6 +1,21 @@
 {
   "items": [
   {
+    "version": "00.184.01",
+    "date": "2026-09-26",
+    "released_at": "2026-09-26 00:14:49 KST",
+    "summary": "일부 기사에서 연관글을 찾는 중 오류 화면이 나타나던 문제를 바로잡았다.",
+    "for_users": [
+      "긴 검색용 태그가 들어간 기사도 정상적으로 열리고 연관 기사를 표시합니다."
+    ],
+    "for_developers": [
+      "functions/_shared/related-posts.js — 공백으로 이어진 해시태그를 개별 검색어로 분리하고, SQLite LIKE 패턴에 들어가는 검색어를 2~64자로 제한하며 와일드카드 문자를 제거했다.",
+      "tests/related-posts.spec.ts — 긴 태그와 LIKE 와일드카드가 안전한 검색 토큰으로 정규화되는 회귀 테스트를 추가했다.",
+      "운영 로그에서 /post/385의 D1_ERROR: LIKE or GLOB pattern too complex를 확인했고, 전체 405개 공개 기사 감사에서 발견된 단일 실패를 대상으로 수정했다.",
+      "사이트 버전 00.184.00 → 00.184.01."
+    ]
+  },
+  {
     "version": "00.184.00",
     "date": "2026-09-25",
     "released_at": "2026-09-25 23:48:43 KST",

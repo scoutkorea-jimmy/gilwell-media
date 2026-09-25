@@ -27,7 +27,7 @@ export async function findManualRelatedPosts(env, basePost, limit = 5) {
 }
 
 async function findAutoRelatedPosts(env, basePost, limit, excludedIds) {
-  const anchorTagTerms = Array.from(extractTerms(basePost.tag, basePost.meta_tags)).slice(0, 6);
+  const anchorTagTerms = Array.from(extractRelatedTerms(basePost.tag, basePost.meta_tags)).slice(0, 6);
   const anchorTitleTerms = Array.from(extractTitleTerms(basePost.title)).slice(0, 8);
   const anchorTerms = anchorTagTerms.concat(anchorTitleTerms).slice(0, 10);
   let sql = `
@@ -66,7 +66,7 @@ async function findAutoRelatedPosts(env, basePost, limit, excludedIds) {
   const { results } = await env.DB.prepare(sql).bind(...bindings).all();
 
   const scored = (results || []).map((post) => {
-    const candidateTagTerms = extractTerms(post.tag, post.meta_tags);
+    const candidateTagTerms = extractRelatedTerms(post.tag, post.meta_tags);
     const candidateTitleTerms = extractTitleTerms(post.title);
     const tagOverlap = countOverlap(new Set(anchorTagTerms), candidateTagTerms);
     const titleOverlap = countOverlap(new Set(anchorTitleTerms), candidateTitleTerms);
@@ -129,13 +129,17 @@ function mapRelatedPost(post) {
   };
 }
 
-function extractTerms() {
+export function extractRelatedTerms() {
   const out = new Set();
   Array.from(arguments).forEach((value) => {
     String(value || '')
-      .split(',')
-      .map((item) => item.trim().toLowerCase())
-      .filter(Boolean)
+      .split(/[\s,]+/)
+      .map((item) => item.trim().toLowerCase().replace(/^#+/, ''))
+      // D1/SQLite rejects unusually complex LIKE patterns. Meta-tag fields can
+      // contain a whole space-separated hashtag sentence, so keep each search
+      // token bounded and remove LIKE wildcard characters before binding it.
+      .map((item) => item.replace(/[%_\\]/g, ''))
+      .filter((item) => item.length >= 2 && item.length <= 64)
       .forEach((item) => out.add(item));
   });
   return out;
