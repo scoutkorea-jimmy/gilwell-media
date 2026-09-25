@@ -116,6 +116,10 @@
   function reportHomepageIssue(code, detail) {
     var reportCode = String(code || '').trim();
     if (!reportCode || typeof fetch !== 'function') return;
+    // 운영 사이트를 대상으로 실행하는 Playwright 회귀 검사는 의도적으로
+    // API를 끊거나 페이지를 빠르게 전환한다. 이 자동화 중단을 실제 방문자
+    // 장애로 기록하면 P0 장부가 오염되므로 브라우저 자동화에서는 보고하지 않는다.
+    if (typeof navigator !== 'undefined' && navigator.webdriver === true) return;
     var fingerprint = getStableIssueFingerprint(reportCode, detail || {});
 
     // Per-tab dedup (existing behaviour — once per session).

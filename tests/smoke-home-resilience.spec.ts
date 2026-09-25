@@ -10,9 +10,20 @@ import { test, expect } from '@playwright/test';
 
 /** /api/home 을 죽인 채 홈을 연다. SSR HTML 과 정적 자산은 정상 제공된다. */
 async function gotoHomeWithDeadHomeApi(page: import('@playwright/test').Page) {
-  await page.route('**/api/home*', (route) => route.abort('failed'));
+  await page.route(/\/api\/home(?:\?.*)?$/, (route) => route.abort('failed'));
   await page.goto('/');
 }
+
+test('자동 브라우저의 의도적 홈 API 실패는 운영 이슈로 보고하지 않는다', async ({ page }) => {
+  let reportCount = 0;
+  await page.route('**/api/homepage-issues/report', (route) => {
+    reportCount += 1;
+    return route.fulfill({ status: 201, contentType: 'application/json', body: '{"ok":true}' });
+  });
+  await gotoHomeWithDeadHomeApi(page);
+  await page.waitForTimeout(1_000);
+  expect(reportCount).toBe(0);
+});
 
 test('상단 메뉴는 /api/home 이 실패해도 보인다', async ({ page }) => {
   await gotoHomeWithDeadHomeApi(page);

@@ -1,6 +1,20 @@
 {
   "items": [
   {
+    "version": "00.184.07",
+    "date": "2026-09-26",
+    "released_at": "2026-09-26 08:46:08 KST",
+    "summary": "자동 브라우저 검사의 의도적 네트워크 중단이 운영 장애로 기록되지 않게 분리했다.",
+    "for_users": [
+      "실제 방문자의 홈 데이터 오류와 운영 자동 검사의 페이지 전환 오류가 장애 기록에서 명확히 분리됩니다."
+    ],
+    "for_developers": [
+      "public/js/home-helpers.js — navigator.webdriver 환경에서는 홈페이지 운영 이슈 자동 보고를 생략한다.",
+      "tests/smoke-home-resilience.spec.ts — /api/home만 정확히 중단하고 자동화 중 이슈 보고가 0건인지 검증한다.",
+      "사이트 버전 00.184.06 → 00.184.07."
+    ]
+  },
+  {
     "version": "00.184.06",
     "date": "2026-09-26",
     "released_at": "2026-09-26 00:55:21 KST",
