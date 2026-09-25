@@ -55,8 +55,8 @@
   --md-sys-elevation-2: 0 2px 6px 2px rgb(32 26 33 / 0.08), 0 1px 2px rgb(32 26 33 / 0.12);
   --md-sys-elevation-3: 0 4px 8px 3px rgb(32 26 33 / 0.08), 0 1px 3px rgb(32 26 33 / 0.14);
 
-  --md-sys-type-display: clamp(2.5rem, 6vw, 4.5rem);
-  --md-sys-type-headline: clamp(1.75rem, 3.5vw, 2.75rem);
+  --md-sys-type-display: clamp(2.25rem, 5vw, 3.75rem);
+  --md-sys-type-headline: clamp(1.75rem, 3.1vw, 2.5rem);
   --md-sys-type-title: clamp(1.25rem, 2vw, 1.5rem);
   --md-sys-type-body: 1rem;
   --md-sys-type-label: 0.875rem;
@@ -123,7 +123,7 @@ body *:not(svg):not(path):not(circle):not(line):not(polyline):not(polygon):not(r
 }
 
 /* Controls */
-:where(button, .submit-btn, .cancel-btn, .memo-btn, .jam16-link-btn, .home-subscribe-btn, .post-like-btn) {
+:where(.submit-btn, .cancel-btn, .memo-btn, .jam16-link-btn, .home-subscribe-btn, .post-like-btn, .post-action-btn, .search-page-btn, .calendar-map-search-btn, .bw-btn) {
   border-radius: var(--md-sys-shape-full) !important;
   font-size: var(--md-sys-type-label);
   font-weight: 700;
@@ -131,7 +131,7 @@ body *:not(svg):not(path):not(circle):not(line):not(polyline):not(polygon):not(r
   transition: background-color var(--md-sys-motion-fast), color var(--md-sys-motion-fast), box-shadow var(--md-sys-motion-fast), transform var(--md-sys-motion-fast);
 }
 
-:where(button, .submit-btn, .cancel-btn, .memo-btn, .jam16-link-btn, .home-subscribe-btn, .post-like-btn):active {
+:where(.submit-btn, .cancel-btn, .memo-btn, .jam16-link-btn, .home-subscribe-btn, .post-like-btn, .post-action-btn, .search-page-btn, .calendar-map-search-btn, .bw-btn):active {
   transform: scale(.98);
 }
 
@@ -168,7 +168,7 @@ body *:not(svg):not(path):not(circle):not(line):not(polyline):not(polygon):not(r
 .calendar-category-badge,
 .calendar-status-badge,
 .calendar-target-chip {
-  border: 1px solid var(--md-sys-color-outline-variant) !important;
+  border: 0 !important;
   background: var(--md-sys-color-secondary-container) !important;
   color: var(--md-sys-color-on-secondary-container) !important;
 }
@@ -300,7 +300,7 @@ body *:not(svg):not(path):not(circle):not(line):not(polyline):not(polygon):not(r
 /* Home hero */
 .site-hero-slider {
   width: min(calc(100% - (var(--md-sys-gutter) * 2)), var(--md-sys-content-max));
-  min-height: clamp(420px, 56vw, 630px);
+  min-height: clamp(380px, 42vw, 520px);
   margin: 0 auto 32px !important;
   border-radius: 36px !important;
   overflow: hidden;
@@ -310,7 +310,7 @@ body *:not(svg):not(path):not(circle):not(line):not(polyline):not(polygon):not(r
 
 .site-hero,
 .site-hero-slide {
-  min-height: clamp(420px, 56vw, 630px);
+  min-height: clamp(380px, 42vw, 520px);
   border-radius: inherit;
   background:
     radial-gradient(circle at 82% 18%, rgb(130 230 222 / .28), transparent 30%),
@@ -325,7 +325,7 @@ body *:not(svg):not(path):not(circle):not(line):not(polyline):not(polygon):not(r
 .site-hero-content {
   width: min(92%, 780px);
   margin: 0 !important;
-  padding: clamp(40px, 7vw, 92px) !important;
+  padding: clamp(32px, 5vw, 64px) !important;
   align-items: flex-start !important;
   text-align: left !important;
 }
@@ -401,6 +401,16 @@ body *:not(svg):not(path):not(circle):not(line):not(polyline):not(polygon):not(r
   padding-bottom: 64px !important;
 }
 
+/* 페이지 래퍼와 내부 히어로가 각각 가로 패딩을 갖던 이중 여백을 제거한다. */
+.glossary-page-wrap,
+.members-page-wrap,
+.search-page-wrap,
+.memorabilia-page-wrap,
+.calendar-page-wrap,
+.jam16-wrapper {
+  padding: 24px 0 64px !important;
+}
+
 .home-section-title,
 .section-header,
 .home-col-header {
@@ -436,26 +446,52 @@ body *:not(svg):not(path):not(circle):not(line):not(polyline):not(polygon):not(r
   font-weight: 700;
 }
 
-:where(.home-lead-card, .home-rail-card, .mini-item, .article-card, .post-card, .sidebar-section, .about-box, .memo-card, .member-country-card, .calendar-event-card, .calendar-panel, .jam16-photo, .jam16-fact) {
-  border: 1px solid var(--md-sys-color-outline-variant) !important;
+:where(.home-lead-card, .article-card, .post-card, .about-box, .memo-card, .home-memo-card, .member-country-card, .member-country-child-card, .calendar-event-card, .calendar-map-result-card, .calendar-panel, .contributor-card, .memo-related-card, .search-result-card, .jam16-photo, .jam16-fact) {
+  border: 0 !important;
   border-radius: var(--md-sys-shape-extra-large) !important;
-  background: var(--md-sys-color-surface-container-lowest) !important;
+  background: var(--md-sys-color-surface-container-low) !important;
   box-shadow: none !important;
   overflow: hidden;
-  transition: transform var(--md-sys-motion-standard), box-shadow var(--md-sys-motion-standard), border-color var(--md-sys-motion-fast), background-color var(--md-sys-motion-fast);
+  transition: transform var(--md-sys-motion-standard), box-shadow var(--md-sys-motion-standard), background-color var(--md-sys-motion-fast);
 }
 
 @media (hover: hover) {
-  :where(.home-lead-card, .home-rail-card, .mini-item, .article-card, .post-card, .memo-card, .member-country-card, .calendar-event-card, .jam16-photo):hover {
+  :where(.home-lead-card, .article-card, .post-card, .memo-card, .home-memo-card, .member-country-card, .member-country-child-card, .calendar-event-card, .calendar-map-result-card, .contributor-card, .memo-related-card, .search-result-card, .jam16-photo):hover {
     transform: translateY(-3px);
-    border-color: var(--md-sys-color-outline) !important;
-    background: var(--md-sys-color-surface-container-low) !important;
+    background: var(--md-sys-color-surface-container) !important;
     box-shadow: var(--md-sys-elevation-2) !important;
   }
 }
 
 .home-lead-card {
   border-radius: 32px !important;
+}
+
+/* 반복 기사 목록은 바깥 박스 없이 행 구분선만 사용한다. */
+.home-rail-card {
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  overflow: visible !important;
+}
+
+.home-rail-card .mini-item {
+  border: 0 !important;
+  border-bottom: 1px solid var(--md-sys-color-outline-variant) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.home-rail-card .mini-item:last-child {
+  border-bottom: 0 !important;
+}
+
+.home-lead-footer,
+.home-rail-actions {
+  border-top: 0 !important;
 }
 
 .home-lead-body,
@@ -494,6 +530,11 @@ body *:not(svg):not(path):not(circle):not(line):not(polyline):not(polygon):not(r
   gap: clamp(16px, 2vw, 24px) !important;
 }
 
+.home-priority-main,
+.home-priority-side {
+  min-height: 560px !important;
+}
+
 .home-2col > *,
 .home-3col > *,
 .board-grid > *,
@@ -529,6 +570,27 @@ body *:not(svg):not(path):not(circle):not(line):not(polyline):not(polygon):not(r
     var(--md-sys-color-primary-container) !important;
   color: var(--md-sys-color-on-primary-container) !important;
   box-shadow: none !important;
+}
+
+.glossary-page-wrap .glossary-hero,
+.members-page-wrap .members-hero,
+.memorabilia-page-wrap .memo-hero,
+.calendar-page-wrap .calendar-hero,
+.jam16-wrapper .jam16-hero {
+  width: 100% !important;
+  margin: 0 0 28px !important;
+  padding: clamp(32px, 4vw, 48px) !important;
+}
+
+.search-page-wrap .search-page-header {
+  width: min(100%, 720px) !important;
+  margin: 0 auto 28px !important;
+  padding: clamp(32px, 4vw, 48px) !important;
+}
+
+.calendar-day,
+.calendar-week-bar {
+  border-radius: 0 !important;
 }
 
 .board-banner h2,
@@ -569,9 +631,9 @@ body *:not(svg):not(path):not(circle):not(line):not(polyline):not(polygon):not(r
 .memo-filters,
 .calendar-toolbar,
 .calendar-filter-panel {
-  border: 1px solid var(--md-sys-color-outline-variant) !important;
-  border-radius: var(--md-sys-shape-extra-large) !important;
-  background: var(--md-sys-color-surface-container-low) !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
   box-shadow: none !important;
 }
 
@@ -672,7 +734,11 @@ body *:not(svg):not(path):not(circle):not(line):not(polyline):not(polygon):not(r
 }
 
 .post-page-layout {
-  gap: clamp(28px, 5vw, 64px) !important;
+  gap: clamp(28px, 4vw, 48px) !important;
+}
+
+.post-page-wrap {
+  padding-top: 24px !important;
 }
 
 .post-page-main,
@@ -688,6 +754,10 @@ body *:not(svg):not(path):not(circle):not(line):not(polyline):not(polygon):not(r
   font-size: var(--md-sys-type-headline) !important;
   line-height: 1.14 !important;
   letter-spacing: -.035em !important;
+}
+
+.post-page-back {
+  margin-bottom: 18px !important;
 }
 
 .post-page-subtitle,
@@ -728,17 +798,57 @@ body *:not(svg):not(path):not(circle):not(line):not(polyline):not(polygon):not(r
   padding: 20px 24px !important;
 }
 
-.post-page-tags,
-.post-page-share,
 .post-related-surface,
-.pps-section,
 .static-page-section,
 .privacy-body section,
 .about-summary {
-  border: 1px solid var(--md-sys-color-outline-variant) !important;
+  border: 0 !important;
   border-radius: var(--md-sys-shape-extra-large) !important;
   background: var(--md-sys-color-surface-container-low) !important;
   padding: clamp(20px, 3vw, 32px) !important;
+}
+
+/* 기사 상단 동작은 콘텐츠 흐름에 붙이고 별도의 빈 카드로 감싸지 않는다. */
+.post-page-share {
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 0 !important;
+  margin: 12px 0 24px !important;
+}
+
+/* 태그는 박스 대신 한 줄 메타데이터 영역으로만 구분한다. */
+.post-page-tags {
+  border: 0 !important;
+  border-top: 1px solid var(--md-sys-color-outline-variant) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 18px 0 !important;
+}
+
+/* 보조 정보는 하나의 tonal surface 안에서 여백으로만 그룹화한다. */
+.post-page-sidebar {
+  padding: 8px 18px !important;
+  border: 0 !important;
+  border-radius: var(--md-sys-shape-extra-large) !important;
+  background: var(--md-sys-color-surface-container-low) !important;
+}
+
+.post-page-sidebar .pps-section {
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  padding: 16px 0 !important;
+  overflow: visible !important;
+}
+
+.post-page-sidebar .pps-section:first-child {
+  padding-top: 12px !important;
+}
+
+.post-page-sidebar .pps-section:last-child {
+  padding-bottom: 12px !important;
 }
 
 .static-page-section + .static-page-section,
@@ -838,6 +948,12 @@ footer a,
   color: var(--md-sys-color-on-primary) !important;
 }
 
+:root[data-theme='dark'] .home-lead-kicker,
+:root[data-theme='dark'] .board-pw-actions button:first-child {
+  background: var(--md-sys-color-primary) !important;
+  color: var(--md-sys-color-on-primary) !important;
+}
+
 :root[data-theme='dark'] body {
     background:
       radial-gradient(circle at 10% -10%, rgb(98 37 153 / .28), transparent 34rem),
@@ -896,18 +1012,20 @@ footer a,
   .nav a,
   .nav button {
     flex: 0 0 auto;
+    padding-inline: 12px !important;
+    font-size: .8125rem !important;
     scroll-snap-align: start;
   }
 
   .site-hero-slider,
   .site-hero,
   .site-hero-slide {
-    min-height: 500px;
+    min-height: 440px;
   }
 
   .site-hero-content {
     width: 100%;
-    padding: 48px !important;
+    padding: 36px !important;
   }
 
   .home-priority,
@@ -991,15 +1109,15 @@ footer a,
 
   .site-hero-slider {
     width: calc(100% - 24px);
-    height: 520px;
-    min-height: 520px;
+    height: 420px;
+    min-height: 420px;
     margin-bottom: 20px !important;
     border-radius: var(--md-sys-shape-extra-large) !important;
   }
 
   .site-hero,
   .site-hero-slide {
-    min-height: 520px;
+    min-height: 420px;
   }
 
   .site-hero::after,
@@ -1010,7 +1128,7 @@ footer a,
   .site-hero-content {
     min-height: 100%;
     justify-content: flex-end !important;
-    padding: 32px 24px 88px !important;
+    padding: 24px 20px 72px !important;
   }
 
   .site-hero-title {
@@ -1046,6 +1164,17 @@ footer a,
     border-radius: var(--md-sys-shape-extra-large) !important;
   }
 
+  .glossary-page-wrap .glossary-hero,
+  .members-page-wrap .members-hero,
+  .memorabilia-page-wrap .memo-hero,
+  .calendar-page-wrap .calendar-hero,
+  .jam16-wrapper .jam16-hero,
+  .search-page-wrap .search-page-header {
+    width: 100% !important;
+    margin-top: 0 !important;
+    padding: 28px 22px !important;
+  }
+
   .board-grid,
   .memo-grid,
   .members-cards,
@@ -1074,9 +1203,7 @@ footer a,
   }
 
   .post-page-tags,
-  .post-page-share,
   .post-related-surface,
-  .pps-section,
   .static-page-section,
   .privacy-body section,
   .about-summary {

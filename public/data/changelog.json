@@ -1,6 +1,27 @@
 {
   "items": [
   {
+    "version": "00.184.02",
+    "date": "2026-09-26",
+    "released_at": "2026-09-26 00:21:50 KST",
+    "summary": "공개 화면의 겹친 테두리와 불필요한 여백을 걷어내고 카드·목록·필터의 역할을 일관되게 정리했다.",
+    "for_users": [
+      "대표 콘텐츠는 채워진 카드, 반복 목록은 행 구분선, 필터는 외곽선 컨트롤로 구분해 한 화면에서 박스와 선이 겹쳐 보이지 않습니다.",
+      "홈의 열 시작·끝선, 기사 상단 동작과 보조 정보, 용어집·회원국·검색·기념품 화면의 이중 여백을 줄였습니다.",
+      "휴대전화·태블릿·데스크톱에서 히어로 높이와 콘텐츠 밀도를 다시 맞추고 캘린더 날짜 셀이 둥근 버튼처럼 보이던 문제를 바로잡았습니다."
+    ],
+    "for_developers": [
+      "public/css/m3-site.css — standalone filled card, linear list, filter control, data grid의 네 역할군을 분리하고 중첩 border/background/padding을 제거했다.",
+      "홈 priority 양쪽 열을 560px 기준으로 정렬하고 hero 최대 높이를 630px에서 520px로 줄였으며 compact/medium 높이도 420px/440px로 조정했다.",
+      "기사 .post-page-share는 무테·무배경 흐름으로, .post-page-sidebar는 단일 tonal surface로 통합하고 내부 .pps-section 외곽선을 제거했다.",
+      "glossary, members, search, memorabilia, calendar, jamboree 래퍼의 이중 가로 패딩을 제거하고 내부 hero를 동일한 32~48px 간격 규칙으로 통일했다.",
+      "전역 button pill 규칙을 역할별 버튼으로 제한하고 calendar-day/calendar-week-bar의 radius를 0으로 고정했다.",
+      "tests/m3-layout.spec.ts — 공개 18개 경로의 390·820·1440px 가로 넘침, 홈 열 정렬, 카드 역할, 기사 중첩 외곽선, 캘린더 셀 형태, 모바일 버튼 이름·최소 24px 크기를 검증한다.",
+      "dark theme의 .home-lead-kicker와 기사 로그인 확인 버튼은 primary/on-primary 역할 쌍으로 보정했다.",
+      "사이트 버전 00.184.01 → 00.184.02."
+    ]
+  },
+  {
     "version": "00.184.01",
     "date": "2026-09-26",
     "released_at": "2026-09-26 00:14:49 KST",
