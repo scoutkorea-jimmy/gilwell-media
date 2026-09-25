@@ -405,7 +405,8 @@ body *:not(svg):not(path):not(circle):not(line):not(polyline):not(polygon):not(r
 }
 
 .mini-share-link,
-.post-share-btn {
+.post-share-btn,
+.calendar-event-title-btn {
   min-width: 44px;
   min-height: 24px;
   display: inline-flex;
