@@ -1,6 +1,20 @@
 {
   "items": [
   {
+    "version": "00.184.06",
+    "date": "2026-09-26",
+    "released_at": "2026-09-26 00:55:21 KST",
+    "summary": "기사 갤러리 점과 태그 버튼의 클릭 영역을 시각 밀도 변화 없이 보강했다.",
+    "for_users": [
+      "기사 안의 이미지 갤러리 점과 하단 태그가 휴대전화에서도 안정적으로 눌립니다."
+    ],
+    "for_developers": [
+      "public/css/m3-site.css — content-gallery-dot은 8px 시각 크기와 24px hit area를 분리하고 post-page-tag-btn 최소 높이를 24px로 맞췄다.",
+      "운영 /post/385의 실제 갤러리와 태그 데이터로 모바일 버튼 전수 검사를 수행했다.",
+      "사이트 버전 00.184.05 → 00.184.06."
+    ]
+  },
+  {
     "version": "00.184.05",
     "date": "2026-09-26",
     "released_at": "2026-09-26 00:49:22 KST",

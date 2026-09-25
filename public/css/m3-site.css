@@ -414,6 +414,17 @@ body *:not(svg):not(path):not(circle):not(line):not(polyline):not(polygon):not(r
   justify-content: center;
 }
 
+.post-page-tag-btn {
+  min-height: 24px;
+}
+
+.content-gallery-dot {
+  width: 24px;
+  height: 24px;
+  padding: 8px;
+  background-clip: content-box;
+}
+
 /* Feed scaffold and reusable cards */
 .home-wrapper,
 .content-wrapper,
