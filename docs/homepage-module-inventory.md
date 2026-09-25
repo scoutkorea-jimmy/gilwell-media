@@ -32,11 +32,21 @@ KMS 디자인 탭은 이 인벤토리를 시각적으로 보여주는 시작 장
 
 ## 1. 디자인 모듈 인벤토리
 
+### Material 3 Editorial 공통 레이어 (2026-09-25)
+
+- 구현: `public/css/m3-site.css`를 공개 HTML 및 SSR 표면의 마지막 스타일시트로 로드한다.
+- 범위: 홈, 최신 글, 게시판 4종, 세계잼버리 특별관, 회원국, 용어집, 기여자, 소개, 검색, 캘린더, 기념품 도감, 정책, 404/500, 기사·기획·용어집 SSR.
+- 제외: Admin, KMS, Dreampath. 각 제품의 규칙과 시각 계약을 공개 사이트 레이어에 섞지 않는다.
+- Foundation: Scouting Purple seed 기반 M3 color roles, type scale, shape, elevation, state layer, motion.
+- Components: filled/tonal/outlined controls, chips, search field, elevated/filled cards, dialogs, feedback states.
+- Adaptive layout: compact `0–599px`, medium `600–839px`, expanded `840px+`; 한글 `keep-all`과 320px 가로 넘침 금지를 공통 계약으로 유지한다.
+- 참고: [Material 3 canonical layouts](https://m3.material.io/foundations/layout/canonical-examples/overview), [VibePrompts 카드 라이브러리](https://vibeprompts.dev/blog/blog-guide-library-with-difficulty-tags/), [VibePrompts 기사 end matter](https://vibeprompts.dev/blog/blog-article-end-matter-with-share-rail/).
+
 | 레이어 | 모듈 | 현재 주 사용 위치 | 공통화 상태 | 다음 조치 |
 | --- | --- | --- | --- | --- |
-| Foundation | Color tokens | `css/style.css`, category/tag colors, section gradients | 부분적 공통화 | 색상 토큰 이름과 사용처 맵 정리 |
-| Foundation | Typography scale | `css/style.css`, masthead, cards, meta | 암묵적 공통화 | 제목/본문/메타 scale 명시 상수화 |
-| Foundation | Spacing tokens | 홈 레일, 카드, 버튼, 칩 간격 | 암묵적 공통화 | spacing alias 문서화 및 CSS token 정리 |
+| Foundation | Color tokens | `css/style.css`, `css/m3-site.css`, category/tag colors, section gradients | M3 역할 토큰 적용 | KMS 프리뷰와 역할별 사용처 유지 |
+| Foundation | Typography scale | `css/m3-site.css`, masthead, cards, meta | M3 역할 스케일 적용 | 페이지별 예외를 역할 토큰으로 수렴 |
+| Foundation | Spacing tokens | `css/m3-site.css`, 홈 레일, 카드, 버튼, 칩 간격 | 공통 gutter 적용 | spacing alias를 점진적으로 공통 레이어로 이동 |
 | Foundation | State language | active, disabled, danger, empty, loading | 분산됨 | 공통 상태 명명 규칙 정리 |
 | Component | Category tag | 히어로, 카드, 보드, 검색 | 재사용 중 | 클래스와 색상 연결표 고정 |
 | Component | Post kicker | 카드, 상세, latest rail | 재사용 중 | 지역/NEW/feature 상태 변형 정리 |

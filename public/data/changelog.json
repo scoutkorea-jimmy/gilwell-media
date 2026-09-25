@@ -1,6 +1,39 @@
 {
   "items": [
   {
+    "version": "00.184.00",
+    "date": "2026-09-25",
+    "released_at": "2026-09-25 23:48:43 KST",
+    "summary": "모든 공개 홈페이지를 BP미디어의 정체성을 유지한 Material 3 기반의 일관된 화면으로 새로 정리했다.",
+    "for_users": [
+      "홈부터 게시판, 기사, 검색, 캘린더, 용어집, 회원국, 기념품 도감, 안내·오류 화면까지 같은 색상·모서리·버튼·카드 체계를 사용합니다.",
+      "휴대전화, 태블릿, 데스크톱에서 화면 밀도와 열 구성이 자연스럽게 바뀌고, 한글 줄바꿈과 키보드 포커스 표시를 강화했습니다.",
+      "기존 글·검색·필터·공유·로그인 기능과 콘텐츠 구조는 그대로 유지됩니다."
+    ],
+    "for_developers": [
+      "public/css/m3-site.css — Scouting Purple #622599 seed 기반 Material 3 color roles, type, shape, elevation, motion, state, compact/medium/expanded adaptive layout를 공개 Site 전용 후행 레이어로 추가.",
+      "공개 HTML 18개와 SSR 3개 표면에 m3-site.css를 마지막으로 연결하고 Admin·KMS·Dreampath는 제외했다.",
+      "scripts/sync_versions.sh 및 scripts/verify_release_metadata.sh에 M3 자산 cache-bust 동기화와 21개 표면 누락 검증을 추가했다.",
+      "rules/11-site-design.md와 docs/homepage-module-inventory.md에 Material 3 및 VibePrompts 참고 기준과 적용 범위를 기록했다.",
+      "사이트 버전 00.183.00 → 00.184.00."
+    ]
+  },
+  {
+    "version": "03.153.01",
+    "date": "2026-09-25",
+    "released_at": "2026-09-25 23:48:43 KST",
+    "summary": "관리자 2단계 인증을 한 뒤에도 민감 메뉴를 옮길 때마다 다시 인증하던 문제를 바로잡았다.",
+    "for_users": [
+      "2단계 인증에 성공하면 서버가 허용한 10분 동안 사용자 관리와 오류 기록 등 보호 메뉴를 이동해도 인증번호를 반복해서 묻지 않습니다.",
+      "인증 시간이 끝나거나 서버가 인증 만료를 알리면 그때만 다시 인증합니다."
+    ],
+    "for_developers": [
+      "public/js/admin-v3.js — /api/admin/totp의 otp_active와 sessionStorage gw_admin_otp 토큰 만료 시각을 _otpState에 반영해 _otpGate가 유효한 인증을 재사용하도록 수정했다.",
+      "OTP 확인·등록 성공 시 active 상태를 기억하고, 해제·otp_required 이벤트·토큰 만료 시 상태와 세션 토큰을 함께 폐기한다.",
+      "관리자 버전 03.153.00 → 03.153.01."
+    ]
+  },
+  {
     "version": "00.183.00",
     "date": "2026-08-27",
     "released_at": "2026-08-27 01:05:00 KST",

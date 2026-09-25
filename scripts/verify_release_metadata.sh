@@ -58,6 +58,30 @@ SITE_STYLE_FILES=(
   functions/glossary-raw.js
 )
 
+M3_STYLE_FILES=(
+  public/index.html
+  public/latest.html
+  public/jamboree16.html
+  public/korea.html
+  public/apr.html
+  public/wosm.html
+  public/wosm-members.html
+  public/people.html
+  public/glossary.html
+  public/contributors.html
+  public/about.html
+  public/search.html
+  public/calendar.html
+  public/memorabilia.html
+  public/privacy.html
+  public/editorial-policy.html
+  public/404.html
+  public/500.html
+  functions/post/'[id]'.js
+  functions/feature/'[category]'/'[slug]'.js
+  functions/glossary-raw.js
+)
+
 SITE_MAIN_JS_FILES=(
   public/index.html
   public/latest.html
@@ -109,6 +133,13 @@ BOARD_WRITE_JS_FILES=(
 for file in "${SITE_STYLE_FILES[@]}"; do
   grep -F "/css/style.css?v=${ASSET_VERSION_FILE}" "$file" >/dev/null || {
     echo "Missing site stylesheet version in $file"
+    exit 1
+  }
+done
+
+for file in "${M3_STYLE_FILES[@]}"; do
+  grep -F "/css/m3-site.css?v=${ASSET_VERSION_FILE}" "$file" >/dev/null || {
+    echo "Missing Material 3 stylesheet version in $file"
     exit 1
   }
 done

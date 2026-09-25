@@ -13,6 +13,8 @@ scope: project
 ## Design Rules
 
 - 기본 서체: `NixgonFont` (3중량 300 Light / 500 Medium / 700 Bold, `@font-face`는 `css/style.css` 최상단). 본문 기본 `font-weight: 500`, 제목·강조는 `700`, 메타·장식은 `300`
+- 공개 사이트의 공통 시각 레이어는 `css/m3-site.css`를 각 페이지 전용 CSS 뒤에 로드한다. 이 파일은 Google Material 3의 역할 기반 색상, shape, elevation, state, compact/medium/expanded 적응형 레이아웃을 BP미디어 콘텐츠 구조에 맞게 적용하며 Admin·KMS·Dreampath에는 연결하지 않는다.
+- M3 역할 토큰은 Scouting Purple `#622599`를 seed로 사용하되, 아래 APCA 기준을 통과하는 전경/배경 조합만 콘텐츠 텍스트에 사용한다.
 - 공개 메뉴: `data-managed-nav` — 초기 숨김 → 렌더 완료 후 노출 (flash 방지)
 - 버튼: 같은 계층이면 높이/패딩/폰트 통일
 - 한글: `word-break: keep-all`
@@ -20,6 +22,13 @@ scope: project
 
 > [!tip] Design Guide
 > KMS 디자인 탭 = 시각적 레퍼런스. 새 디자인 추가 시 KMS + Module Inventory + 이 문서 함께 갱신.
+
+### Material 3 Editorial 참고 기준
+
+- 공식 기준: [Material 3](https://m3.material.io/) 및 [Canonical layouts](https://m3.material.io/foundations/layout/canonical-examples/overview)
+- 콘텐츠 카드 참고: [VibePrompts · Blog Guide Library with Difficulty Tags](https://vibeprompts.dev/blog/blog-guide-library-with-difficulty-tags/)
+- 기사 상세 참고: [VibePrompts · Blog Article End Matter with Share Rail](https://vibeprompts.dev/blog/blog-article-end-matter-with-share-rail/)
+- 그대로 복제하지 않고 BP미디어의 masthead, board, post, glossary, calendar, members, memorabilia DOM·기능 계약에 맞춰 적응한다.
 
 ## Color Palette & Accessibility (WCAG 3.0 APCA)
 

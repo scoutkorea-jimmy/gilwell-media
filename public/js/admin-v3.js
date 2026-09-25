@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.153.00
+ * Version: 03.153.01
  *
  * Versioning:
  *   V3.aaa.bb
@@ -1630,8 +1630,8 @@
   var _accountPasswordBound = false;
   // ── 2단계 인증 (OTP / TOTP) ──────────────────────────────────────────────
   // 민감 메뉴(사용자 관리·프리셋 관리·사이트 히스토리·오류/이슈 기록·도감 댓글 승인·
-  // 개인정보 처리방침) 진입 시 등록된 계정에 한해 매번 6자리 OTP 를 확인한다.
-  var _otpState = { loaded: false, enrolled: false };
+  // 개인정보 처리방침) 진입 시 등록된 계정에 한해 10분짜리 OTP 표식을 확인한다.
+  var _otpState = { loaded: false, enrolled: false, active: false, activeUntil: 0 };
   var _otpJustPassed = false; // 모달 통과 직후 onOk→showPanel 재진입 1회 허용용
   var _otpLastPass = 0;       // 마지막 OTP 통과 시각 — 직후 도착하는 stale 401 무시용
   var _OTP_SENSITIVE_PANELS = {
@@ -1644,20 +1644,53 @@
     if (panel === 'settings' && section && _OTP_SENSITIVE_SECTIONS[section]) return true;
     return !!_OTP_SENSITIVE_PANELS[panel];
   }
+  function _otpTokenExpiry(token) {
+    try {
+      var body = String(token || '').split('.')[0];
+      if (!body) return 0;
+      body = body.replace(/-/g, '+').replace(/_/g, '/');
+      while (body.length % 4) body += '=';
+      var payload = JSON.parse(atob(body));
+      return Number(payload && payload.exp) || 0;
+    } catch (_) { return 0; }
+  }
+  function _otpRememberPass(token) {
+    var exp = _otpTokenExpiry(token);
+    _otpState.active = true;
+    _otpState.activeUntil = exp > Date.now() ? exp : Date.now() + (9 * 60 * 1000);
+    if (token) { try { sessionStorage.setItem('gw_admin_otp', token); } catch (_) {} }
+  }
+  function _otpHasActivePass() {
+    if (!_otpState.active) return false;
+    if (_otpState.activeUntil && _otpState.activeUntil <= Date.now()) {
+      _otpState.active = false;
+      _otpState.activeUntil = 0;
+      try { sessionStorage.removeItem('gw_admin_otp'); } catch (_) {}
+      return false;
+    }
+    return true;
+  }
   function _fetchOtpState() {
     return GW.apiFetch('/api/admin/totp').then(function (d) {
       _otpState.loaded = true;
       _otpState.enrolled = !!(d && d.enrolled);
+      var storedToken = '';
+      try { storedToken = sessionStorage.getItem('gw_admin_otp') || ''; } catch (_) {}
+      var storedExp = _otpTokenExpiry(storedToken);
+      _otpState.active = !!(d && d.otp_active) || storedExp > Date.now();
+      _otpState.activeUntil = storedExp > Date.now()
+        ? storedExp
+        : (_otpState.active ? Date.now() + (9 * 60 * 1000) : 0);
       return _otpState;
     }).catch(function () { _otpState.loaded = true; return _otpState; });
   }
 
-  // 민감 메뉴 진입 게이트 — 등록 계정은 진입할 때마다 OTP 확인('매번').
-  // 통과 시 _otpJustPassed 로 재진입 1회만 통과시키고, 해당 메뉴를 다시 눌러
-  // (showPanel + 패널 자체 로더까지) 데이터를 새로 불러온다.
+  // 민감 메뉴 진입 게이트 — 서버가 발급한 10분짜리 OTP 표식이 살아 있는 동안은
+  // 재입력을 요구하지 않는다. 서버가 otp_required 로 만료를 알리면 다시 인증한다.
   function _otpGate(panel, section) {
     if (!_otpIsSensitive(panel, section)) return true;
     if (!_otpState.enrolled) return true;
+    if (_otpHasActivePass()) return true;
     if (_otpJustPassed) { _otpJustPassed = false; return true; }
     _otpPromptModal(function () { _otpJustPassed = true; _otpReenter(panel, section); });
     return false;
@@ -1716,7 +1749,7 @@
         .then(function (d) {
           close();
           _otpLastPass = Date.now();
-          if (d && d.otp_token) { try { sessionStorage.setItem('gw_admin_otp', d.otp_token); } catch (_) {} }
+          _otpRememberPass(d && d.otp_token);
           if (d && d.used_backup && GW.showToast) GW.showToast('백업코드로 인증했습니다. 남은 코드를 잘 보관하세요.', 'success', 5000);
           onVerified();
         })
@@ -1739,6 +1772,8 @@
       .then(function (d) {
         _otpState.loaded = true;
         _otpState.enrolled = !!(d && d.enrolled);
+        _otpState.active = !!(d && d.otp_active);
+        if (!_otpState.active) _otpState.activeUntil = 0;
         if (_otpState.enrolled) _otpRenderEnabled(body);
         else _otpRenderSetupStart(body);
       })
@@ -1764,6 +1799,9 @@
     GW.apiFetch('/api/admin/totp', { method: 'DELETE', body: JSON.stringify({ code: String(code).trim() }) })
       .then(function () {
         _otpState.enrolled = false;
+        _otpState.active = false;
+        _otpState.activeUntil = 0;
+        try { sessionStorage.removeItem('gw_admin_otp'); } catch (_) {}
         if (GW.showToast) GW.showToast('2단계 인증을 해제했습니다.', 'success');
         _otpRenderSetupStart(body);
       })
@@ -1821,7 +1859,7 @@
       GW.apiFetch('/api/admin/totp/confirm', { method: 'POST', body: JSON.stringify({ code: code }) })
         .then(function (r) {
           _otpState.enrolled = true; _otpJustPassed = false;
-          if (r && r.otp_token) { try { sessionStorage.setItem('gw_admin_otp', r.otp_token); } catch (_) {} }
+          _otpRememberPass(r && r.otp_token);
           _otpRenderBackupCodes(body, (r && r.backup_codes) || []);
         })
         .catch(function (err) { cbtn.disabled = false; cerr.textContent = (err && err.data && err.data.reason) || '코드가 올바르지 않습니다.'; cinput.select(); });
@@ -1851,6 +1889,9 @@
   document.addEventListener('gw:admin-otp-required', function () {
     if (document.getElementById('otp-verify-overlay')) return; // 이미 모달 떠 있으면 중복 방지
     if (Date.now() - _otpLastPass < 5000) return;              // 방금 통과 직후 도착한 stale 401 무시
+    _otpState.active = false;
+    _otpState.activeUntil = 0;
+    try { sessionStorage.removeItem('gw_admin_otp'); } catch (_) {}
     _otpPromptModal(function () { _otpJustPassed = true; _otpReenter(_panel, _settingsSection); });
   });
 
