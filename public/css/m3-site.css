@@ -404,10 +404,13 @@ body *:not(svg):not(path):not(circle):not(line):not(polyline):not(polygon):not(r
   background: #ffffff;
 }
 
-.mini-share-link {
+.mini-share-link,
+.post-share-btn {
   min-width: 44px;
   min-height: 24px;
+  display: inline-flex;
   align-items: center;
+  justify-content: center;
 }
 
 /* Feed scaffold and reusable cards */
