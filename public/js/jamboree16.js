@@ -88,7 +88,7 @@
           '<div class="post-card-meta">' +
             GW.renderPostDateLabel(post) +
             (post.author ? ' &nbsp;·&nbsp; <span class="post-author">' + GW.escapeHtml(post.author) + '</span>' : '') +
-            ' &nbsp;<a class="post-permalink" href="/post/' + post.id + '" title="개별 페이지로 이동">↗</a>' +
+            ' &nbsp;<a class="post-permalink" href="/post/' + post.id + '" title="개별 페이지로 이동">기사 보기</a>' +
           '</div>' +
         '</div>' +
       '</div>';

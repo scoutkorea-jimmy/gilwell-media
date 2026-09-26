@@ -1005,7 +1005,7 @@ function ArticleImportModal({ open, onClose, tweaks, setTweak, setActive }) {
               <div style={{ width: 64, height: 48, flexShrink: 0, borderRadius: 8, overflow: 'hidden', background: '#eee', backgroundImage: a.image_url ? `url("${a.image_url}")` : 'none', backgroundSize: 'cover', backgroundPosition: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, color: '#aaa' }}>{a.image_url ? '' : '이미지 없음'}</div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontWeight: 600, fontSize: 13.5, color: 'var(--color-ink)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.title}</div>
-                <div style={{ fontSize: 11.5, color: '#999', marginTop: 2 }}>{(a.category || '').toUpperCase()} · ♥ {a.likes} · 👁 {a.views} · {String(a.publish_at).slice(0, 10)}</div>
+                <div style={{ fontSize: 11.5, color: '#999', marginTop: 2 }}>{(a.category || '').toUpperCase()} · 공감 {a.likes} · 조회 {a.views} · {String(a.publish_at).slice(0, 10)}</div>
               </div>
             </label>
           ))}

@@ -67,7 +67,7 @@
     'board.glossary.banner': { ko: '용어집', en: 'Glossary' },
     'board.glossary.title': { ko: '스카우트 용어집', en: 'Scout Glossary' },
     'board.glossary.desc': { ko: '스카우트 용어를 국문·영문·불어 3개 국어 기준으로 정리합니다.', en: 'A trilingual glossary of Scout terms in Korean, English, and French.' },
-    'write.btn': { ko: '✏ 글쓰기', en: '✏ Write' },
+    'write.btn': { ko: '글쓰기', en: 'Write' },
     'loadmore.btn': { ko: '더 보기', en: 'Load More' },
     'stat.korea': { ko: '한국소식', en: 'Korea' },
     'stat.apr': { ko: 'APR소식', en: 'APR' },
@@ -469,7 +469,7 @@
                 'data-nav-group-trigger="' + GW.escapeHtml(groupSlug) + '" ' +
                 'aria-haspopup="true" aria-expanded="false">' +
                 '<span data-i18n="' + GW.escapeHtml(item.key) + '">' + GW.escapeHtml(label) + '</span>' +
-                '<span class="nav-group-caret" aria-hidden="true">▾</span>' +
+                '<span class="nav-group-caret" aria-hidden="true"></span>' +
               '</button>' +
               '<div class="nav-group-panel" role="menu" aria-label="' + GW.escapeHtml(label) + '">' +
                 childrenHtml +

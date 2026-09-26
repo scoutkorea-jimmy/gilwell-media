@@ -394,7 +394,7 @@
         <div class="memo-card-body">
           <div class="memo-card-title">${escapeHtml(titleEn)}</div>
           ${titleKo ? `<div class="memo-card-title-ko">${escapeHtml(titleKo)}</div>` : ''}
-          ${Number(it.view_count || 0) > 0 ? `<div class="memo-card-views" aria-label="조회수">👁 ${Number(it.view_count)}</div>` : ''}
+          ${Number(it.view_count || 0) > 0 ? `<div class="memo-card-views" aria-label="조회수">조회 ${Number(it.view_count)}</div>` : ''}
         </div>
       </a>`;
     }).join('');
@@ -593,9 +593,9 @@
       <h1 class="memo-detail-title" lang="en">${escapeHtml(titleEn)}</h1>
       ${titleKo && titleKo !== titleEn ? `<div class="memo-detail-title-ko" lang="ko">${escapeHtml(titleKo)}</div>` : ''}
       <div class="memo-detail-actions">
-        <div class="memo-detail-views" aria-label="조회수">👁 <span data-role="view-count">${Number(item.view_count || 0)}</span></div>
+        <div class="memo-detail-views" aria-label="조회수">조회 <span data-role="view-count">${Number(item.view_count || 0)}</span></div>
         <button type="button" class="memo-btn memo-btn-outline memo-btn-sm memo-detail-share-btn" id="memo-detail-share-btn">
-          <span aria-hidden="true">🔗</span> 공유하기
+          공유하기
         </button>
       </div>
       ${meta.length ? `<div class="memo-detail-meta">${meta.join('')}</div>` : ''}
@@ -1151,8 +1151,8 @@
       const meta = $('#memo-images-meta');
       if (!meta) return;
       const label = customLabel || (done < total
-        ? `⬆ 업로드 중… ${done} / ${total}`
-        : `⬆ 업로드 중… ${total}장 준비`);
+        ? `업로드 중… ${done} / ${total}`
+        : `업로드 준비 · ${total}장`);
       const pct = total > 0 ? Math.round((done / total) * 100) : 0;
       meta.innerHTML = `<div class="memo-upload-bar">
         <span class="memo-upload-bar-label">${label}</span>
@@ -1873,7 +1873,7 @@
         <div class="memo-comment-content">${escapeHtml(c.content)}</div>
         <div class="memo-comment-actions">
           <button type="button" class="memo-comment-delete-btn memo-bilingual-inline" data-action="delete-comment" data-comment-id="${c.id}">
-            <span class="lang-en" lang="en">🔒 Delete</span>
+            <span class="lang-en" lang="en">Delete with password</span>
             <span class="lang-ko" lang="ko">비밀번호로 삭제</span>
           </button>
         </div>

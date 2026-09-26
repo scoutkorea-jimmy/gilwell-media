@@ -628,10 +628,10 @@
     var relatedLinks = '';
     (Array.isArray(item.related_posts) ? item.related_posts : []).forEach(function (related) {
       if (!related || !related.id) return;
-      relatedLinks += '<a class="calendar-event-link" href="/post/' + related.id + '">관련 기사 읽기 ↗</a>';
+      relatedLinks += '<a class="calendar-event-link" href="/post/' + related.id + '">관련 기사 읽기</a>';
     });
     if (item.link_url) {
-      relatedLinks += '<a class="calendar-event-link" href="' + escape(item.link_url) + '" target="_blank" rel="noopener">외부 링크 ↗</a>';
+      relatedLinks += '<a class="calendar-event-link" href="' + escape(item.link_url) + '" target="_blank" rel="noopener">외부 링크</a>';
     }
     var linkActions = relatedLinks;
     return '<article class="calendar-event-card' + cardClass + '">' +
@@ -679,10 +679,10 @@
     var relatedLinks = '';
     (Array.isArray(item.related_posts) ? item.related_posts : []).forEach(function (related) {
       if (!related || !related.id) return;
-      relatedLinks += '<a class="calendar-event-link" href="/post/' + related.id + '">관련 기사 읽기 ↗</a>';
+      relatedLinks += '<a class="calendar-event-link" href="/post/' + related.id + '">관련 기사 읽기</a>';
     });
     if (item.link_url) {
-      relatedLinks += '<a class="calendar-event-link" href="' + escape(item.link_url) + '" target="_blank" rel="noopener">외부 링크 ↗</a>';
+      relatedLinks += '<a class="calendar-event-link" href="' + escape(item.link_url) + '" target="_blank" rel="noopener">외부 링크</a>';
     }
     return '<article class="calendar-event-card calendar-event-card-detail' + (status.key === 'finished' ? ' is-finished' : '') + '">' +
       '<div class="calendar-event-card-head">' +

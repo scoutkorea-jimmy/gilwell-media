@@ -543,7 +543,7 @@
             var titleEn = GW.escapeHtml(uc(item.title_en || ''));
             var thumb = item.primary_image_url
               ? '<img src="' + GW.escapeHtml(item.primary_image_url) + '" alt="' + titleKo + '" loading="lazy" decoding="async">'
-              : '<div class="home-memo-card-noimg" aria-hidden="true">📦</div>';
+              : '<div class="home-memo-card-noimg" aria-hidden="true">이미지 없음</div>';
             return '<a class="home-memo-card" href="' + href + '">' +
                 '<div class="home-memo-card-thumb">' + thumb + '</div>' +
                 '<div class="home-memo-card-body">' +

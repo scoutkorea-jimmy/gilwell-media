@@ -226,7 +226,7 @@
     state.greeted = true;
     state.messages.push({
       kind: 'bot',
-      html: '안녕하세요! 스카우트 용어가 궁금하면 무엇이든 물어보세요. 한글·영어·불어 모두 검색할 수 있어요. 😊'
+      html: '안녕하세요! 스카우트 용어가 궁금하면 무엇이든 물어보세요. 한글·영어·불어 모두 검색할 수 있어요.'
     });
   }
 
@@ -276,7 +276,7 @@
     var displayName = nameKo || nameEn || '용어';
     state.messages.push({
       kind: 'bot',
-      html: '<strong>' + esc(displayName) + '</strong>에 대해 찾았어요. 👇'
+      html: '<strong>' + esc(displayName) + '</strong>에 대해 찾았어요.'
     });
     state.messages.push({ kind: 'card', term: primary });
     if (related.length) {

@@ -6,9 +6,9 @@
   'use strict';
 
   const GW = window.GW = {};
-  GW.APP_VERSION = '00.184.07';
+  GW.APP_VERSION = '00.185.00';
   GW.ADMIN_VERSION = '03.153.01';
-  GW.ASSET_VERSION = '20260925234636';
+  GW.ASSET_VERSION = '20260926000240';
   GW.PALETTE = {
     scoutingPurple: '#622599',
     canvasWhite: '#FFFFFF',
@@ -2279,7 +2279,7 @@
       var btn = document.createElement('button');
       btn.type = 'button';
       btn.className = 'editorjs-image-btn';
-      btn.textContent = '📷 이미지 업로드';
+      btn.textContent = '이미지 업로드';
       btn.addEventListener('click', function () { self._upload(); });
       this._wrapper.appendChild(btn);
       return this._wrapper;

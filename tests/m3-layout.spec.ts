@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { readFileSync } from 'node:fs';
 
 const PUBLIC_PATHS = [
   '/', '/latest', '/korea', '/apr', '/wosm', '/people', '/glossary',
@@ -102,7 +103,7 @@ test('캘린더 날짜 셀은 버튼 공통 pill 모양을 상속하지 않는�
 
 test('공개 화면의 보이는 버튼은 이름과 최소 터치 크기를 가진다', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  for (const path of ['/', '/korea', '/calendar', '/glossary', '/wosm-members', '/search?q=스카우트', '/post/385']) {
+  for (const path of PUBLIC_PATHS) {
     await page.goto(path, { waitUntil: 'domcontentloaded' });
     await page.waitForTimeout(800);
     const issues = await page.locator('button').evaluateAll((buttons) => buttons.flatMap((button) => {
@@ -118,4 +119,132 @@ test('공개 화면의 보이는 버튼은 이름과 최소 터치 크기를 가
     }));
     expect(issues, `${path} 버튼 문제`).toEqual([]);
   }
+});
+
+test('상단 메뉴와 드롭다운 메뉴는 가로·세로 중앙 정렬된다', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.goto('/');
+  await expect(page.locator('.nav[data-managed-nav]')).toHaveClass(/is-ready/);
+
+  const primary = await page.locator('.nav[data-managed-nav] > .nav-link, .nav[data-managed-nav] > .nav-group').evaluateAll((items) => items.map((item) => {
+    const target = item.matches('.nav-group') ? item.querySelector('.nav-group-trigger') as HTMLElement : item as HTMLElement;
+    const rect = target.getBoundingClientRect();
+    const style = getComputedStyle(target);
+    return {
+      top: Math.round(rect.top),
+      height: Math.round(rect.height),
+      display: style.display,
+      align: style.alignItems,
+      justify: style.justifyContent,
+      textAlign: style.textAlign,
+    };
+  }));
+
+  expect(new Set(primary.map((item) => item.top)).size).toBe(1);
+  expect(new Set(primary.map((item) => item.height)).size).toBe(1);
+  for (const item of primary) {
+    expect(item).toMatchObject({ display: 'flex', align: 'center', justify: 'center', textAlign: 'center' });
+  }
+
+  await page.locator('.nav-group').first().evaluate((group) => group.classList.add('is-open'));
+  const submenu = await page.locator('.nav-group.is-open .nav-sublink').evaluateAll((items) => items.map((item) => {
+    const rect = item.getBoundingClientRect();
+    const style = getComputedStyle(item);
+    return { height: Math.round(rect.height), display: style.display, align: style.alignItems, justify: style.justifyContent, textAlign: style.textAlign };
+  }));
+  expect(submenu.length).toBeGreaterThan(0);
+  for (const item of submenu) {
+    expect(item).toMatchObject({ height: 48, display: 'flex', align: 'center', justify: 'center', textAlign: 'center' });
+  }
+});
+
+test('기념품 검색과 필터는 한 겹 외곽선과 동일한 컨트롤 높이를 사용한다', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.goto('/memorabilia');
+  await page.waitForTimeout(800);
+
+  const result = await page.evaluate(() => {
+    const search = document.querySelector('.memo-search-bar') as HTMLElement;
+    const searchInput = document.querySelector('#memo-search-input') as HTMLInputElement;
+    const searchButton = document.querySelector('#memo-search-btn') as HTMLButtonElement;
+    const controls = [...document.querySelectorAll('.memo-filters > select, .memo-filters > input, .memo-filters > .memo-filter-year-range')] as HTMLElement[];
+    const yearRange = document.querySelector('.memo-filter-year-range') as HTMLElement;
+    const yearInputs = [...yearRange.querySelectorAll('input')] as HTMLInputElement[];
+    searchInput.focus();
+    const focusedStyle = getComputedStyle(searchInput);
+    const yearRect = yearRange.getBoundingClientRect();
+    return {
+      searchBorder: getComputedStyle(search).borderTopWidth,
+      searchInputHeight: Math.round(searchInput.getBoundingClientRect().height),
+      searchButtonHeight: Math.round(searchButton.getBoundingClientRect().height),
+      controlHeights: controls.map((el) => Math.round(el.getBoundingClientRect().height)),
+      yearInputsInside: yearInputs.every((el) => {
+        const rect = el.getBoundingClientRect();
+        return rect.top >= yearRect.top && rect.bottom <= yearRect.bottom;
+      }),
+      focusOutline: focusedStyle.outlineStyle,
+      focusShadow: focusedStyle.boxShadow,
+    };
+  });
+
+  expect(result.searchBorder).toBe('0px');
+  expect(result.searchInputHeight).toBe(56);
+  expect(result.searchButtonHeight).toBe(56);
+  expect(new Set(result.controlHeights)).toEqual(new Set([48]));
+  expect(result.yearInputsInside).toBe(true);
+  expect(result.focusOutline).toBe('none');
+  expect(result.focusShadow).toContain('inset');
+});
+
+test('잼버리 개요는 중첩 캡 없이 행 구분선만 사용한다', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.goto('/jamboree16');
+  const styles = await page.evaluate(() => {
+    const facts = getComputedStyle(document.querySelector('.jam16-facts') as Element);
+    const row = getComputedStyle(document.querySelector('.jam16-fact') as Element);
+    return {
+      outerBorder: facts.borderTopWidth,
+      outerRadius: facts.borderRadius,
+      outerBackground: facts.backgroundColor,
+      rowBorderTop: row.borderTopWidth,
+      rowBorderBottom: row.borderBottomWidth,
+      rowRadius: row.borderRadius,
+      rowBackground: row.backgroundColor,
+    };
+  });
+  expect(styles).toMatchObject({
+    outerBorder: '0px', outerRadius: '0px', outerBackground: 'rgba(0, 0, 0, 0)',
+    rowBorderTop: '0px', rowBorderBottom: '1px', rowRadius: '0px', rowBackground: 'rgba(0, 0, 0, 0)',
+  });
+});
+
+test('게시판 D-day는 별도 박스가 아닌 배경 오브제로 표시된다', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.goto('/korea');
+  await page.locator('.board-banner-total').evaluate((el) => {
+    el.classList.add('has-event');
+    el.innerHTML = '<span class="board-banner-total-label">제16회 한국잼버리</span><span class="board-banner-total-value">D+52</span>';
+  });
+  await expect(page.locator('.board-banner-total.has-event')).toBeVisible();
+  const style = await page.locator('.board-banner-total.has-event').evaluate((el) => {
+    const root = getComputedStyle(el);
+    const value = getComputedStyle(el.querySelector('.board-banner-total-value') as Element);
+    return { border: root.borderTopWidth, radius: root.borderRadius, background: root.backgroundColor, valueOpacity: value.opacity };
+  });
+  expect(style.border).toBe('0px');
+  expect(style.radius).toBe('0px');
+  expect(style.background).toBe('rgba(0, 0, 0, 0)');
+  expect(Number(style.valueOpacity)).toBeLessThanOrEqual(0.25);
+});
+
+test('공개 홈페이지 UI 소스에는 이모지 글리프를 사용하지 않는다', () => {
+  const files = [
+    'public/memorabilia.html', 'public/js/site-chrome.js', 'public/js/board-write.js',
+    'public/js/main.js', 'public/js/chatbot.js', 'public/js/home-runtime.js',
+    'public/js/board.js', 'public/js/jamboree16.js', 'public/js/calendar.js',
+    'public/js/memorabilia.js', 'public/card-news-app/app.jsx', 'functions/post/[id].js',
+  ];
+  const emoji = /[✏📷🖼✨💾😊👇📦👁🔗⬆🔒❤♥]/u;
+  const violations = files.filter((file) => emoji.test(readFileSync(file, 'utf8')));
+  expect(violations).toEqual([]);
 });

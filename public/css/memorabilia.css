@@ -1238,8 +1238,6 @@
   background: var(--color-fire-red, var(--fire-red-surface));
   color: var(--on-accent);
 }
-.memo-like-btn[aria-pressed="true"] .memo-like-icon::before { content: '♥'; }
-.memo-like-btn .memo-like-icon { font-size: var(--fs-title); line-height: 1; }
 .memo-like-btn .memo-like-count { font-variant-numeric: tabular-nums; }
 .memo-like-btn[disabled] { opacity: 0.6; cursor: not-allowed; }
 

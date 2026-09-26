@@ -124,9 +124,14 @@ body *:not(svg):not(path):not(circle):not(line):not(polyline):not(polygon):not(r
 
 /* Controls */
 :where(.submit-btn, .cancel-btn, .memo-btn, .jam16-link-btn, .home-subscribe-btn, .post-like-btn, .post-action-btn, .search-page-btn, .calendar-map-search-btn, .bw-btn) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
   border-radius: var(--md-sys-shape-full) !important;
   font-size: var(--md-sys-type-label);
   font-weight: 700;
+  line-height: 1.2;
   letter-spacing: .01em;
   transition: background-color var(--md-sys-motion-fast), color var(--md-sys-motion-fast), box-shadow var(--md-sys-motion-fast), transform var(--md-sys-motion-fast);
 }
@@ -150,6 +155,12 @@ body *:not(svg):not(path):not(circle):not(line):not(polyline):not(polygon):not(r
 
 :where(input:not([type='checkbox']):not([type='radio']), select, textarea):focus {
   border-color: var(--md-sys-color-primary) !important;
+}
+
+/* 입력 강조는 입력 외곽보다 커지는 이중 링을 만들지 않고 실제 필드 크기 안에 둔다. */
+:where(input:not([type='checkbox']):not([type='radio']), select, textarea):focus-visible {
+  outline: 0 !important;
+  box-shadow: inset 0 0 0 2px var(--md-sys-color-primary) !important;
 }
 
 :where(.category-tag, .post-kicker, .memo-tag-chip, .memo-filter-tag-chip, .post-page-tag, .calendar-filter-chip, .members-pill) {
@@ -257,6 +268,7 @@ body *:not(svg):not(path):not(circle):not(line):not(polyline):not(polygon):not(r
   min-height: 56px;
   margin: 0 auto 10px;
   padding: 4px !important;
+  align-items: stretch !important;
   border: 0 !important;
   border-radius: var(--md-sys-shape-extra-large) !important;
   background: var(--md-sys-color-surface-container) !important;
@@ -267,12 +279,63 @@ body *:not(svg):not(path):not(circle):not(line):not(polyline):not(polygon):not(r
 .nav button {
   min-height: 48px;
   padding: 0 16px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center !important;
+  line-height: 1.25 !important;
   border: 0 !important;
   border-radius: var(--md-sys-shape-full) !important;
   color: var(--md-sys-color-on-surface-variant) !important;
   font-size: var(--md-sys-type-label) !important;
   letter-spacing: 0 !important;
   text-transform: none !important;
+}
+
+.nav.nav-grouped > .nav-link,
+.nav.nav-grouped > .nav-group {
+  flex: 1 1 0;
+  min-width: 0;
+  align-self: stretch;
+}
+
+.nav-group-trigger {
+  width: 100%;
+  height: 100%;
+}
+
+.nav-group-panel {
+  padding: 8px !important;
+}
+
+.nav-sublink {
+  width: 100%;
+  min-height: 48px !important;
+  padding: 0 14px !important;
+}
+
+.mobile-nav-link,
+.mobile-nav-group-summary,
+.mobile-nav-sublink {
+  min-height: 48px;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center !important;
+}
+
+/* 텍스트 글리프 대신 CSS 선으로 그려 플랫폼별 이모지 렌더링을 방지한다. */
+.nav-group-caret {
+  width: 7px;
+  height: 7px;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: rotate(45deg) translateY(-2px);
+  transform-origin: center;
+}
+
+.nav-group.is-open .nav-group-caret {
+  transform: rotate(225deg) translate(-1px, -1px);
 }
 
 .nav a:hover,
@@ -663,6 +726,30 @@ body *:not(svg):not(path):not(circle):not(line):not(polyline):not(polygon):not(r
   color: var(--md-sys-color-on-primary-container) !important;
 }
 
+/* 행사 D-day는 정보 카드가 아니라 히어로 배경 오브제다. 별도 캡을 씌우지 않는다. */
+.board-banner-total.has-event {
+  min-width: clamp(180px, 22vw, 320px);
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  gap: 8px !important;
+  justify-content: center !important;
+}
+
+.board-banner-total.has-event .board-banner-total-label {
+  color: var(--md-sys-color-on-primary-container) !important;
+  opacity: .72;
+}
+
+.board-banner-total.has-event .board-banner-total-value {
+  color: var(--md-sys-color-primary) !important;
+  font-size: clamp(4.5rem, 8vw, 7.5rem) !important;
+  line-height: .78 !important;
+  opacity: .20;
+}
+
 .tag-filter-bar,
 .board-sort-bar,
 .board-period-bar,
@@ -677,6 +764,131 @@ body *:not(svg):not(path):not(circle):not(line):not(polyline):not(polygon):not(r
   border-radius: 0 !important;
   background: transparent !important;
   box-shadow: none !important;
+}
+
+/* 기념품 검색/필터는 외부 캡 없이 각 컨트롤 한 겹으로만 구분한다. */
+.memo-search-bar {
+  min-height: 56px;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) 56px;
+  align-items: stretch;
+  gap: 8px !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.memo-search-bar input {
+  width: 100%;
+  height: 56px;
+  min-height: 56px;
+  border: 1px solid var(--md-sys-color-outline) !important;
+  border-radius: var(--md-sys-shape-small) !important;
+  background: var(--md-sys-color-surface-container-lowest) !important;
+}
+
+.memo-search-bar button {
+  width: 56px;
+  height: 56px;
+  min-height: 56px;
+  padding: 0 !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--md-sys-shape-small) !important;
+}
+
+.memo-filters > select,
+.memo-filters > input,
+.memo-filters > .memo-filter-year-range {
+  height: 48px !important;
+  min-height: 48px !important;
+  margin: 0 !important;
+}
+
+.memo-filter-year-range {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: stretch !important;
+  gap: 0 !important;
+  padding: 0 !important;
+  overflow: hidden;
+}
+
+.memo-filter-year-range input {
+  width: 100%;
+  height: 100% !important;
+  min-height: 0 !important;
+  padding: 0 12px !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  text-align: center;
+}
+
+.memo-filter-year-range:focus-within {
+  border-color: var(--md-sys-color-primary) !important;
+  box-shadow: inset 0 0 0 2px var(--md-sys-color-primary) !important;
+}
+
+.memo-filter-year-range input:focus-visible {
+  box-shadow: none !important;
+}
+
+.memo-filter-year-range > span {
+  min-width: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 잼버리 개요는 중첩 캡 대신 한 줄씩 읽히는 선형 정의 목록으로 구분한다. */
+.jam16-facts {
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  overflow: visible !important;
+}
+
+.jam16-fact {
+  border: 0 !important;
+  border-bottom: 1px solid var(--md-sys-color-outline-variant) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 18px 4px !important;
+}
+
+.jam16-fact:last-child {
+  border-bottom: 0 !important;
+}
+
+.jam16-hero h1 {
+  color: var(--md-sys-color-on-primary) !important;
+}
+
+.home-memo-card-noimg {
+  font-size: .75rem !important;
+  font-weight: 700 !important;
+  letter-spacing: .02em;
+}
+
+/* 특정 기능 CSS의 높은 선택자 우선순위가 필드 밖에 이중 포커스 링을 만들지 않게 한다. */
+.board-search-input:focus-visible,
+.global-search-input:focus-visible,
+.glossary-search-input:focus-visible,
+.bw-textarea:focus-visible,
+.memo-form-row textarea:focus-visible,
+.memo-field textarea:focus-visible,
+.memo-image-credit-input:focus-visible,
+.gw-cp-input:focus-visible,
+.gw-mr-input:focus-visible,
+.memo-login-field:focus-visible,
+.gw-chatbot-input:focus-visible {
+  outline: 0 !important;
+  box-shadow: inset 0 0 0 2px var(--md-sys-color-primary) !important;
 }
 
 :where(.tag-filter-btn, .filter-btn, .board-sort-btn, .board-period-btn, .board-days-btn, .search-scope-btn, .glossary-letter-btn, .members-view-chip, .calendar-view-btn, .calendar-filter-chip) {
@@ -1059,6 +1271,16 @@ footer a,
     scroll-snap-align: start;
   }
 
+  .nav.nav-grouped > .nav-link,
+  .nav.nav-grouped > .nav-group {
+    flex: 0 0 auto;
+    min-width: max-content;
+  }
+
+  .nav-group-trigger {
+    width: auto;
+  }
+
   .site-hero-slider,
   .site-hero,
   .site-hero-slide {
@@ -1135,13 +1357,34 @@ footer a,
   }
 
   .nav {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 4px;
     margin-bottom: 8px;
+    overflow: visible !important;
+    scroll-snap-type: none;
   }
 
   .nav a,
   .nav button {
     min-height: 44px;
-    padding-inline: 14px !important;
+    padding: 8px 10px !important;
+    white-space: normal !important;
+    scroll-snap-align: none;
+  }
+
+  .nav.nav-grouped > .nav-link,
+  .nav.nav-grouped > .nav-group {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .nav.nav-grouped > :last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+  }
+
+  .nav-group-trigger {
+    width: 100%;
   }
 
   .ticker {

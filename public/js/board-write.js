@@ -18,7 +18,7 @@
     if (textEl) {
       var btn = document.createElement('button');
       btn.className = 'write-btn';
-      btn.textContent = '✏ 글쓰기';
+      btn.textContent = '글쓰기';
       btn.addEventListener('click', function () { self._showPasswordModal(); });
       textEl.appendChild(btn);
     }
@@ -140,7 +140,7 @@
             '<section class="bw-card">' +
               '<header class="bw-card-head">' +
                 '<h2 class="bw-card-title">대표 이미지 · 링크</h2>' +
-                '<button class="bw-btn bw-btn-outline bw-btn-sm" type="button" id="board-cover-btn">📷 대표 이미지 선택</button>' +
+                '<button class="bw-btn bw-btn-outline bw-btn-sm" type="button" id="board-cover-btn">대표 이미지 선택</button>' +
               '</header>' +
               '<div id="board-cover-wrap" class="bw-cover-wrap">' +
                 '<div id="board-cover-preview"></div>' +
@@ -169,7 +169,7 @@
             '<section class="bw-card">' +
               '<header class="bw-card-head">' +
                 '<h2 class="bw-card-title">슬라이드 이미지 <span class="bw-label-opt" id="board-gallery-count">0/10</span></h2>' +
-                '<button class="bw-btn bw-btn-outline bw-btn-sm" type="button" id="board-gallery-btn">🖼 이미지 추가</button>' +
+                '<button class="bw-btn bw-btn-outline bw-btn-sm" type="button" id="board-gallery-btn">이미지 추가</button>' +
               '</header>' +
               '<div id="board-gallery-preview" class="bw-gallery-preview gallery-upload-preview">' +
                 '<p class="gallery-upload-empty">슬라이드 전용 이미지를 올리면 기사 하단에 별도 슬라이드로 노출됩니다.</p>' +
@@ -268,7 +268,7 @@
             '<section class="bw-card bw-card-tight bw-card-scorer">' +
               '<div class="bw-scorer-head">' +
                 '<h2 class="bw-card-title bw-card-title-sm">AI 채점</h2>' +
-                '<button class="bw-btn bw-btn-primary bw-btn-sm board-write-scorer-btn" type="button" id="board-scorer-btn">✨ 채점</button>' +
+                '<button class="bw-btn bw-btn-primary bw-btn-sm board-write-scorer-btn" type="button" id="board-scorer-btn">채점</button>' +
               '</div>' +
               '<p class="bw-field-hint">BP미디어 표준 v2.1 기준 Title · Subtitle · Body · Tags · 문체를 자동 분석합니다.</p>' +
               '<div id="board-scorer-result" class="board-write-scorer-result bw-scorer-result" hidden></div>' +
@@ -289,7 +289,7 @@
           '<div class="bw-footer-left"><span class="bw-footer-hint">게재 전 반드시 미리보기를 확인하세요</span></div>' +
           '<div class="bw-footer-actions">' +
             '<button class="bw-btn bw-btn-ghost cancel-btn visible" type="button" id="board-write-cancel">취소</button>' +
-            '<button class="bw-btn bw-btn-outline cancel-btn visible" type="button" id="board-write-savedraft">💾 임시저장</button>' +
+            '<button class="bw-btn bw-btn-outline cancel-btn visible" type="button" id="board-write-savedraft">임시저장</button>' +
             '<button class="bw-btn bw-btn-primary bw-btn-submit submit-btn" type="button" id="board-write-submit">게재하기</button>' +
           '</div>' +
         '</footer>' +
@@ -1060,14 +1060,14 @@
         }),
       });
     }).then(function (data) {
-      if (btn) { btn.disabled = false; btn.textContent = origLabel || '✨ 현재 기사 채점'; }
+      if (btn) { btn.disabled = false; btn.textContent = origLabel || '현재 기사 채점'; }
       if (data && data.ok && data.result) {
         self._renderBoardScorerResult(data.result);
       } else {
         self._renderBoardScorerError((data && data.error) || 'AI 채점 실패');
       }
     }).catch(function (err) {
-      if (btn) { btn.disabled = false; btn.textContent = origLabel || '✨ 현재 기사 채점'; }
+      if (btn) { btn.disabled = false; btn.textContent = origLabel || '현재 기사 채점'; }
       self._renderBoardScorerError('채점 요청 실패: ' + ((err && err.message) || String(err)));
     });
   };
@@ -1112,7 +1112,7 @@
     }
     if (result.revision_suggestion) {
       html += '<div class="board-scorer-improvement board-scorer-revision">'
-        + '<strong>✏️ 수정 제안 <span class="board-scorer-revision-meta">약 300자</span></strong>'
+        + '<strong>수정 제안 <span class="board-scorer-revision-meta">약 300자</span></strong>'
         + '<p>' + GW.escapeHtml(result.revision_suggestion) + '</p>'
         + '</div>';
     }
