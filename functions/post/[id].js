@@ -104,8 +104,10 @@ export async function onRequestGet({ params, env, request }) {
   const desc     = escapeHtml(descText);
   const keywords = post.meta_tags ? escapeHtml(post.meta_tags) : '';
   const publicDateValue = post.publish_at || post.created_at;
-  const publishedIso = toIsoString(publicDateValue);
-  const modifiedIso = toIsoString(post.updated_at || post.created_at);
+  // publish_at = KST, created_at·updated_at = UTC. 수정 시각이 게시 시각보다 앞서지 않게 한다.
+  const publishedIso = post.publish_at ? toIsoString(post.publish_at) : toIsoUtc(post.created_at);
+  const modifiedRaw = toIsoUtc(post.updated_at || post.created_at);
+  const modifiedIso = modifiedRaw && publishedIso && modifiedRaw < publishedIso ? publishedIso : (modifiedRaw || publishedIso);
   // coverImage = 실제 페이지 본문에 표시되는 이미지 (LCP candidate). 글에 이미지가 있을 때만 채워짐.
   // ogImage = 공유 카드용 — coverImage가 비면 사이트 기본 OG로 fallback해 카카오/페북 카드가 비지 않게.
   // 두 값을 분리하는 이유: preload는 실제로 페이지에 보이는 이미지만 강제 다운로드해야 LCP가 줄어든다.
@@ -234,11 +236,11 @@ export async function onRequestGet({ params, env, request }) {
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png"/>
   <link rel="apple-touch-icon" href="/img/logo.png"/>
   <link rel="shortcut icon" href="/img/favicon-48.png"/>
-  <link rel="stylesheet" href="/css/style.css?v=20260926081226">
-  <link rel="stylesheet" href="/css/post.css?v=20260926081226">
-  <link rel="stylesheet" href="/css/chatbot.css?v=20260926081226">
-  <link rel="stylesheet" href="/css/dark-mode.css?v=20260926081226">
-  <link rel="stylesheet" href="/css/m3-site.css?v=20260926081226">
+  <link rel="stylesheet" href="/css/style.css?v=20260926083205">
+  <link rel="stylesheet" href="/css/post.css?v=20260926083205">
+  <link rel="stylesheet" href="/css/chatbot.css?v=20260926083205">
+  <link rel="stylesheet" href="/css/dark-mode.css?v=20260926083205">
+  <link rel="stylesheet" href="/css/m3-site.css?v=20260926083205">
 </head>
 <body class="post-page">
   <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
@@ -423,7 +425,7 @@ export async function onRequestGet({ params, env, request }) {
         <h4>관리자</h4>
         <a href="/admin.html">관리자 페이지 →</a>
         <a href="/glossary-raw">용어집 RAW로 보기 →</a>
-        <p class="footer-build">Site <span class="site-build-version">V00.189.01</span> · Admin <span class="admin-build-version">V03.153.01</span></p>
+        <p class="footer-build">Site <span class="site-build-version">V00.189.02</span> · Admin <span class="admin-build-version">V03.153.01</span></p>
       </div>
       <div class="footer-bottom">
         <p data-i18n="footer.copyright">© 2026 ${SITE_BRAND_NAME} · ${SITE_DOMAIN_LABEL}</p>
@@ -648,10 +650,10 @@ export async function onRequestGet({ params, env, request }) {
 
   <script>window.GW_BOOT_RUNTIME=${serializeForScript(publicRuntime)};window.GW_KAKAO_JS_KEY=${serializeForScript(String(publicRuntime.kakao_js_key || ''))};window.GW_POST_BOOT=${serializeForScript({ editPostId: id, sharePostUrl: postUrl, sharePostTitle: titleText, sharePostSubtitle: subtitleText, editSeed: JSON.parse(editSeed), visibleTags })};</script>
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.4/dist/purify.min.js" integrity="sha384-eEu5CTj3qGvu9PdJuS+YlkNi7d2XxQROAFYOr59zgObtlcux1ae1Il3u7jvdCSWu" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-  <script src="/js/main.js?v=20260926081226"></script>
-  <script src="/js/site-chrome.js?v=20260926081226"></script>
-  <script src="/js/chatbot.js?v=20260926081226" defer></script>
-  <script src="/js/post-page.js?v=20260926081226"></script>
+  <script src="/js/main.js?v=20260926083205"></script>
+  <script src="/js/site-chrome.js?v=20260926083205"></script>
+  <script src="/js/chatbot.js?v=20260926083205" defer></script>
+  <script src="/js/post-page.js?v=20260926083205"></script>
   <script async type="text/javascript" charset="utf-8" src="https://t1.kakaocdn.net/kas/static/ba.min.js"></script>
 </body>
 </html>`;
@@ -846,6 +848,16 @@ function formatDateShort(dateStr) {
   const mm = String(d.getMonth() + 1).padStart(2, '0');
   const dd = String(d.getDate()).padStart(2, '0');
   return `${yyyy}-${mm}-${dd}`;
+}
+
+// created_at·updated_at 은 SQLite datetime('now') 로 저장된 UTC naive 문자열이다.
+// publish_at 만 KST naive 이므로 두 종류를 같은 함수로 읽으면 9시간 어긋난다.
+function toIsoUtc(dateStr) {
+  if (!dateStr) return '';
+  const normalized = String(dateStr).replace(' ', 'T');
+  const withZone = /Z$|[+-]\d{2}:\d{2}$/.test(normalized) ? normalized : `${normalized}Z`;
+  const d = new Date(withZone);
+  return Number.isNaN(d.getTime()) ? '' : d.toISOString();
 }
 
 function toIsoString(dateStr) {
@@ -1159,7 +1171,8 @@ function isTransparentPng(value) {
 function buildArticleStructuredData(meta) {
   const siteOrigin = String(meta.siteUrl || '').replace(/\/+$/, '');
   const homeUrl = siteOrigin ? `${siteOrigin}/` : '';
-  const logoUrl = siteOrigin ? `${siteOrigin}/img/logo.svg` : '';
+  // 구글 기사 구조화 데이터는 발행처 로고로 SVG 를 받지 않는다 — 래스터(PNG) 사용.
+  const logoUrl = siteOrigin ? `${siteOrigin}/img/logo.png` : '';
   const authorName = meta.author || 'BP미디어';
   // author.url 은 넣지 않는다. 예전에는 `Editor.A` 같은 코드명 바이라인을
   // `/editor/<이름>` 으로 링크했는데 그 라우트가 존재한 적이 없어 구조화
@@ -1214,8 +1227,8 @@ function buildArticleStructuredData(meta) {
         logo: logoUrl ? {
           '@type': 'ImageObject',
           url: logoUrl,
-          width: 512,
-          height: 512,
+          width: 250,
+          height: 250,
         } : undefined,
       },
     },

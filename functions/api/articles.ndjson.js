@@ -70,8 +70,10 @@ export async function onRequestGet({ request, env }) {
 
   const lines = [JSON.stringify(meta)];
   for (const row of rows) {
-    const pubIso = toIsoString(row.publish_at || row.created_at);
-    const modIso = toIsoString(row.updated_at || row.publish_at || row.created_at);
+    // publish_at = KST, created_at·updated_at = UTC
+    const pubIso = row.publish_at ? toIsoString(row.publish_at) : toIsoString(row.created_at, true);
+    const modRaw = toIsoString(row.updated_at || row.created_at, true);
+    const modIso = modRaw && pubIso && modRaw < pubIso ? pubIso : (modRaw || pubIso);
     const entry = {
       id: row.id,
       url: `${origin}/post/${row.id}`,
@@ -123,10 +125,10 @@ function resolveImageUrl(origin, row) {
   return `${origin}/api/posts/${row.id}/image`;
 }
 
-function toIsoString(dateStr) {
+function toIsoString(dateStr, isUtc) {
   if (!dateStr) return null;
   const normalized = String(dateStr).replace(' ', 'T');
-  const withZone = /Z$|[+-]\d{2}:\d{2}$/.test(normalized) ? normalized : `${normalized}+09:00`;
+  const withZone = /Z$|[+-]\d{2}:\d{2}$/.test(normalized) ? normalized : `${normalized}${isUtc ? 'Z' : '+09:00'}`;
   const d = new Date(withZone);
   return Number.isNaN(d.getTime()) ? null : d.toISOString();
 }

@@ -8,6 +8,8 @@
  * site's structure without scraping the full HTML.
  */
 
+import { PUBLIC_DATE_EXPR } from './_shared/post-public-date.js';
+
 export async function onRequestGet({ request, env }) {
   const origin = new URL(request.url).origin;
 
@@ -17,10 +19,12 @@ export async function onRequestGet({ request, env }) {
   let recent = [];
   try {
     const rs = await env.DB.prepare(
-      `SELECT id, title, subtitle, category, COALESCE(publish_at, created_at) AS pubdate
+      // publish_at 은 KST, created_at 은 UTC 로 저장된다. 공용 식으로 둘 다 KST 로 맞춘 뒤 KST 현재 시각과 비교한다.
+      // (예전에는 KST 값을 UTC 현재 시각과 비교해 최근 9시간 안에 공개된 기사가 목록에서 빠졌다.)
+      `SELECT id, title, subtitle, category, ${PUBLIC_DATE_EXPR} AS pubdate
          FROM posts
          WHERE published = 1
-           AND COALESCE(publish_at, created_at) <= datetime('now')
+           AND ${PUBLIC_DATE_EXPR} <= datetime('now', '+9 hours')
          ORDER BY pubdate DESC
          LIMIT 20`
     ).all();
@@ -50,7 +54,8 @@ export async function onRequestGet({ request, env }) {
     `- [용어집 (Glossary)](${origin}/glossary): 스카우팅 한국어·영어·프랑스어 용어 사전. 기사 본문에서 참조되는 고유명사·약어·제도 용어의 공식 표기`,
     `- [세계연맹 회원국 현황 (WOSM Members)](${origin}/wosm-members): 170여 개 회원 연맹의 가입 연도·지역연맹·규모 등 구조화 데이터`,
     `- [편집 정책 (Editorial Policy)](${origin}/editorial-policy): 편집 원칙·출처 검증·AI 사용 범위·정정 절차`,
-    `- [도움말 (Help)](${origin}/help): 사이트 이용 안내`,
+    `- [운영 주체 (About)](${origin}/about): 운영 주체·공식 연맹과의 관계·저작권·재정 투명성`,
+    `- [도움을 주신 분들 (Contributors)](${origin}/contributors): 기록·편집에 참여한 사람들`,
     '',
     '## Feeds & data',
     '',

@@ -1,6 +1,24 @@
 {
   "items": [
   {
+    "version": "00.189.02",
+    "date": "2026-09-26",
+    "released_at": "2026-09-26 17:32:05 KST",
+    "summary": "검색엔진·AI 답변 엔진이 읽는 기사 시각·발행처 로고·뉴스 사이트맵·llms.txt의 오류를 바로잡았다.",
+    "for_users": [
+      "검색엔진과 RSS 구독기에 기사 게시·수정 시각이 9시간 이르게 전달되던 문제를 고쳤습니다.",
+      "AI 검색 도구가 읽는 사이트 안내(llms.txt)에 최근 9시간 안에 올라온 기사가 빠지던 문제를 고치고, 없는 도움말 페이지 링크를 운영 주체·도움을 주신 분들 페이지로 바꿨습니다.",
+      "구글이 발행처 로고로 받지 않는 SVG 대신 PNG 로고를 알리고, 뉴스 사이트맵에서 규격에 맞지 않는 장르 값을 뺐습니다."
+    ],
+    "for_developers": [
+      "functions/post/[id].js — created_at·updated_at 은 UTC(datetime(now))라 toIsoUtc 로 읽고 publish_at 만 KST. dateModified < datePublished 이면 datePublished 로 올림. publisher.logo /img/logo.png 250×250.",
+      "functions/rss.xml.js — pubDate 를 publish_at(KST) 우선, 없으면 created_at 을 UTC 로. functions/api/articles.ndjson.js — 같은 UTC/KST 구분.",
+      "functions/llms.txt.js — _shared/post-public-date.js PUBLIC_DATE_EXPR 로 KST 정규화 후 datetime(now,+9 hours)와 비교, /help(404) → /about·/contributors.",
+      "functions/sitemap-news.xml/index.js — news:genres(분류명은 허용 값 아님) 제거. functions/_shared/site-meta.js — Organization.logo PNG 250×250.",
+      "사이트 버전 00.189.01 → 00.189.02."
+    ]
+  },
+  {
     "version": "00.189.01",
     "date": "2026-09-26",
     "released_at": "2026-09-26 17:12:26 KST",

@@ -106,7 +106,6 @@ function renderNewsSitemap(origin, posts) {
     // toIso() 의 "naive = +09:00" 가정과 정확히 일치한다.
     const pubDate = toIso(p.public_date_kst);
     const title = xmlEscape(p.title || '');
-    const section = xmlEscape(categoryLabel(p.category));
     return [
       '  <url>',
       `    <loc>${xmlEscape(loc)}</loc>`,
@@ -117,7 +116,6 @@ function renderNewsSitemap(origin, posts) {
       '      </news:publication>',
       `      <news:publication_date>${xmlEscape(pubDate)}</news:publication_date>`,
       `      <news:title>${title}</news:title>`,
-      section ? `      <news:genres>${section}</news:genres>` : '',
       '    </news:news>',
       '  </url>',
     ].filter(Boolean).join('\n');

@@ -39,7 +39,9 @@ const PUBLISHER = {
   description: HOME_SEARCH_DESCRIPTION,
   logo: {
     '@type': 'ImageObject',
-    url: `${SITE_ORIGIN}/img/logo.svg`,
+    url: `${SITE_ORIGIN}/img/logo.png`,
+    width: 250,
+    height: 250,
   },
 };
 

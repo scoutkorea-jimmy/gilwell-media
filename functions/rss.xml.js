@@ -26,7 +26,8 @@ export async function onRequestGet({ request, env }) {
       const title = escapeXml(post.title || `post-${post.id}`);
       const link = `${origin}/post/${post.id}`;
       const description = escapeXml(buildDescription(post));
-      const pubDate = toRfc822(post.created_at || post.updated_at || post.publish_at);
+      // 공개 시각(publish_at, KST)을 우선한다. 없으면 created_at 은 UTC 로 읽는다.
+      const pubDate = post.publish_at ? toRfc822(post.publish_at) : toRfc822(post.created_at, true);
       const category = escapeXml(resolveCategoryLabel(navLabels, post.category));
       const tags = parseTags(post.tag);
       const guid = escapeXml(link);
@@ -119,10 +120,10 @@ function resolveCategoryLabel(navLabels, category) {
   return getCategoryMeta(navLabels, category, 'ko').label || 'BP미디어';
 }
 
-function toRfc822(value) {
+function toRfc822(value, isUtc) {
   if (!value) return '';
   const normalized = String(value).replace(' ', 'T');
-  const withZone = /Z$|[+-]\d{2}:\d{2}$/.test(normalized) ? normalized : `${normalized}+09:00`;
+  const withZone = /Z$|[+-]\d{2}:\d{2}$/.test(normalized) ? normalized : `${normalized}${isUtc ? 'Z' : '+09:00'}`;
   const date = new Date(withZone);
   return Number.isNaN(date.getTime()) ? '' : date.toUTCString();
 }
