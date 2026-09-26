@@ -187,6 +187,75 @@ test('상단 메뉴와 드롭다운 메뉴는 가로·세로 중앙 정렬된다
   }
 });
 
+test('상단 검색은 입력과 버튼을 한 surface와 한 포커스 링으로 묶는다', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.goto('/');
+  await page.locator('.mh-search-input').focus();
+  const result = await page.evaluate(() => {
+    const wrap = document.querySelector('.masthead-search') as HTMLElement;
+    const input = document.querySelector('.mh-search-input') as HTMLElement;
+    const button = document.querySelector('.mh-search-btn') as HTMLElement;
+    const wrapRect = wrap.getBoundingClientRect();
+    const inputRect = input.getBoundingClientRect();
+    const buttonRect = button.getBoundingClientRect();
+    const wrapStyle = getComputedStyle(wrap);
+    const inputStyle = getComputedStyle(input);
+    return {
+      wrapHeight: Math.round(wrapRect.height),
+      childrenTop: new Set([Math.round(inputRect.top), Math.round(buttonRect.top)]).size,
+      childrenBottom: new Set([Math.round(inputRect.bottom), Math.round(buttonRect.bottom)]).size,
+      inputShadow: inputStyle.boxShadow,
+      inputRadius: inputStyle.borderRadius,
+      wrapShadow: wrapStyle.boxShadow,
+      wrapRadius: wrapStyle.borderRadius,
+    };
+  });
+  expect(result.wrapHeight).toBe(48);
+  expect(result.childrenTop).toBe(1);
+  expect(result.childrenBottom).toBe(1);
+  expect(result.inputShadow).toBe('none');
+  expect(result.inputRadius).toBe('0px');
+  expect(result.wrapShadow).toContain('inset');
+  expect(result.wrapRadius).not.toBe('0px');
+});
+
+test('홈 히어로의 배지·제목·설명·동작은 같은 수평 중심축을 사용한다', async ({ page }) => {
+  for (const viewport of [{ width: 390, height: 844 }, { width: 1440, height: 1000 }]) {
+    await page.setViewportSize(viewport);
+    await page.goto('/');
+    await expect(page.locator('.site-hero-slide.active .site-hero-title')).toBeVisible({ timeout: 10_000 });
+    const result = await page.locator('.site-hero-slide.active').evaluate((hero) => {
+      const selectors = [
+        '.site-hero-content',
+        '.site-hero-labels',
+        '.site-hero-title',
+        '.site-hero-subtitle, .site-hero-sub',
+        '.site-hero-actions',
+      ];
+      const heroRect = hero.getBoundingClientRect();
+      const content = hero.querySelector('.site-hero-content') as HTMLElement;
+      const style = getComputedStyle(content);
+      return {
+        heroCenter: Math.round((heroRect.left + heroRect.right) / 2),
+        centers: selectors.flatMap((selector) => {
+          const element = hero.querySelector(selector) as HTMLElement | null;
+          if (!element) return [];
+          const rect = element.getBoundingClientRect();
+          return [Math.round((rect.left + rect.right) / 2)];
+        }),
+        align: style.alignItems,
+        textAlign: style.textAlign,
+      };
+    });
+    expect(result.centers.length).toBeGreaterThanOrEqual(3);
+    for (const center of result.centers) {
+      expect(Math.abs(center - result.heroCenter)).toBeLessThanOrEqual(1);
+    }
+    expect(result.align).toBe('center');
+    expect(result.textAlign).toBe('center');
+  }
+});
+
 test('기념품 검색과 필터는 한 겹 외곽선과 동일한 컨트롤 높이를 사용한다', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto('/memorabilia');

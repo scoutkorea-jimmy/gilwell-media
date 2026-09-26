@@ -239,6 +239,11 @@ body *:not(svg):not(path):not(circle):not(line):not(polyline):not(polygon):not(r
   border-radius: var(--md-sys-shape-full) !important;
   background: var(--md-sys-color-surface-container-high) !important;
   overflow: hidden;
+  transition: width var(--md-sys-motion-standard);
+}
+
+.masthead-search:focus-within {
+  box-shadow: inset 0 0 0 2px var(--md-sys-color-primary) !important;
 }
 
 .mh-search-input {
@@ -246,6 +251,13 @@ body *:not(svg):not(path):not(circle):not(line):not(polyline):not(polygon):not(r
   border: 0 !important;
   border-radius: 0 !important;
   background: transparent !important;
+}
+
+.mh-search-input:focus,
+.mh-search-input:focus-visible,
+.mh-search-btn:focus-visible {
+  outline: 0 !important;
+  box-shadow: none !important;
 }
 
 .mh-search-btn {
@@ -436,11 +448,13 @@ body *:not(svg):not(path):not(circle):not(line):not(polyline):not(polygon):not(r
 }
 
 .site-hero-content {
+  display: flex;
+  flex-direction: column;
   width: min(92%, 780px);
-  margin: 0 !important;
+  margin-inline: auto !important;
   padding: clamp(32px, 5vw, 64px) !important;
-  align-items: flex-start !important;
-  text-align: left !important;
+  align-items: center !important;
+  text-align: center !important;
 }
 
 .site-hero-eyebrow {
@@ -467,9 +481,15 @@ body *:not(svg):not(path):not(circle):not(line):not(polyline):not(polygon):not(r
 .site-hero-sub,
 .site-hero-subtitle {
   max-width: 58ch;
+  margin-inline: auto !important;
   color: rgb(255 255 255 / .88) !important;
   font-size: clamp(1rem, 1.8vw, 1.25rem) !important;
   line-height: 1.55 !important;
+  text-align: center !important;
+}
+
+.site-hero-actions {
+  justify-content: center !important;
 }
 
 .hero-pause-btn,
