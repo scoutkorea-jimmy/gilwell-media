@@ -44,25 +44,58 @@
   --md-sys-color-shadow: #000000;
   --md-sys-color-scrim: #000000;
 
+  /* M3 Expressive shape scale — 색을 제외한 형태 기준은 이 단계만 쓴다. */
   --md-sys-shape-extra-small: 4px;
   --md-sys-shape-small: 8px;
   --md-sys-shape-medium: 12px;
   --md-sys-shape-large: 16px;
+  --md-sys-shape-large-increased: 20px;
   --md-sys-shape-extra-large: 28px;
+  --md-sys-shape-extra-large-increased: 32px;
+  --md-sys-shape-extra-extra-large: 48px;
   --md-sys-shape-full: 999px;
 
+  /* M3 elevation level 1~5 (1/3/6/8/12dp) */
   --md-sys-elevation-1: 0 1px 2px rgb(32 26 33 / 0.12), 0 1px 3px 1px rgb(32 26 33 / 0.06);
   --md-sys-elevation-2: 0 2px 6px 2px rgb(32 26 33 / 0.08), 0 1px 2px rgb(32 26 33 / 0.12);
   --md-sys-elevation-3: 0 4px 8px 3px rgb(32 26 33 / 0.08), 0 1px 3px rgb(32 26 33 / 0.14);
+  --md-sys-elevation-4: 0 6px 10px 4px rgb(32 26 33 / 0.08), 0 2px 3px rgb(32 26 33 / 0.14);
+  --md-sys-elevation-5: 0 8px 12px 6px rgb(32 26 33 / 0.08), 0 4px 4px rgb(32 26 33 / 0.14);
 
-  --md-sys-type-display: clamp(2.25rem, 5vw, 3.75rem);
-  --md-sys-type-headline: clamp(1.75rem, 3.1vw, 2.5rem);
-  --md-sys-type-title: clamp(1.25rem, 2vw, 1.5rem);
-  --md-sys-type-body: 1rem;
-  --md-sys-type-label: 0.875rem;
+  /* M3 state layer opacity */
+  --md-sys-state-hover: 8%;
+  --md-sys-state-focus: 10%;
+  --md-sys-state-pressed: 10%;
+  --md-sys-state-dragged: 16%;
+
+  /* M3 type scale. 한글 가독성을 위해 본문 행간만 1.6 이상으로 둔다. */
+  --md-sys-typescale-display-large: 3.5625rem;   /* 57/64 */
+  --md-sys-typescale-display-medium: 2.8125rem;  /* 45/52 */
+  --md-sys-typescale-display-small: 2.25rem;     /* 36/44 */
+  --md-sys-typescale-headline-large: 2rem;       /* 32/40 */
+  --md-sys-typescale-headline-medium: 1.75rem;   /* 28/36 */
+  --md-sys-typescale-headline-small: 1.5rem;     /* 24/32 */
+  --md-sys-typescale-title-large: 1.375rem;      /* 22/28 */
+  --md-sys-typescale-title-medium: 1rem;         /* 16/24 */
+  --md-sys-typescale-title-small: .875rem;       /* 14/20 */
+  --md-sys-typescale-body-large: 1rem;           /* 16 */
+  --md-sys-typescale-body-medium: .875rem;       /* 14 */
+  --md-sys-typescale-body-small: .75rem;         /* 12 */
+  --md-sys-typescale-label-large: .875rem;       /* 14/20 */
+  --md-sys-typescale-label-medium: .75rem;       /* 12/16 */
+  --md-sys-typescale-label-small: .6875rem;      /* 11/16 */
+
+  --md-sys-type-display: var(--md-sys-typescale-display-medium);
+  --md-sys-type-headline: var(--md-sys-typescale-headline-large);
+  --md-sys-type-title: var(--md-sys-typescale-title-large);
+  --md-sys-type-body: var(--md-sys-typescale-body-large);
+  --md-sys-type-label: var(--md-sys-typescale-label-large);
+
+  /* M3 window size class: compact 16px / medium 이상 24px 여백 */
   --md-sys-content-max: 1280px;
   --md-sys-reading-max: 760px;
-  --md-sys-gutter: clamp(16px, 3vw, 32px);
+  --md-sys-gutter: 24px;
+  --md-sys-pane-gap: 24px;
   --md-sys-space-1: 4px;
   --md-sys-space-2: 8px;
   --md-sys-space-3: 12px;
@@ -71,8 +104,38 @@
   --md-sys-space-6: 32px;
   --md-sys-space-7: 48px;
   --md-sys-space-8: 64px;
-  --md-sys-motion-fast: 150ms cubic-bezier(.2, 0, 0, 1);
-  --md-sys-motion-standard: 300ms cubic-bezier(.2, 0, 0, 1);
+
+  /* M3 easing + Expressive spring 근사값 */
+  --md-sys-motion-easing-emphasized: cubic-bezier(.2, 0, 0, 1);
+  --md-sys-motion-easing-emphasized-decelerate: cubic-bezier(.05, .7, .1, 1);
+  --md-sys-motion-spring-fast-spatial: 350ms cubic-bezier(.42, 1.67, .21, .9);
+  --md-sys-motion-spring-default-spatial: 500ms cubic-bezier(.38, 1.21, .22, 1);
+  --md-sys-motion-spring-fast-effects: 150ms cubic-bezier(.31, .94, .34, 1);
+  --md-sys-motion-spring-default-effects: 200ms cubic-bezier(.34, .8, .34, 1);
+  --md-sys-motion-fast: var(--md-sys-motion-spring-fast-effects);
+  --md-sys-motion-standard: 300ms var(--md-sys-motion-easing-emphasized);
+
+  /* 컴포넌트 규격 — 필드 56 · 조밀 필드 48 · 버튼 40 · 칩 32 · 터치 목표 48 */
+  --md-comp-field-height: 56px;
+  --md-comp-field-height-dense: 48px;
+  --md-comp-field-padding: 16px;
+  --md-comp-button-height: 40px;
+  --md-comp-button-padding: 16px;
+  --md-comp-chip-height: 32px;
+  --md-comp-icon-button: 40px;
+  --md-comp-touch-target: 48px;
+  --md-comp-card-padding: 16px;
+  --md-comp-grid-gap: 16px;
+
+  /* 기존 사이트 토큰을 M3 최소 글자 크기와 컨트롤 규격에 연결한다(공개 화면 전용). */
+  --fs-micro: var(--md-sys-typescale-label-small);
+  --fs-meta: var(--md-sys-typescale-label-medium);
+  --fs-caption: var(--md-sys-typescale-body-small);
+  --fs-small: var(--md-sys-typescale-body-medium);
+  --fs-nav: var(--md-sys-typescale-label-large);
+  --btn-height-primary: var(--md-comp-button-height);
+  --btn-height-secondary: var(--md-comp-button-height);
+  --chip-height: var(--md-comp-chip-height);
 
   /* 모든 공개 화면이 같은 8px 계열 수직 리듬을 공유한다. */
   --home-section-gap: var(--md-sys-space-5);
@@ -101,9 +164,25 @@
   --radius-sm: var(--md-sys-shape-small);
   --radius-md: var(--md-sys-shape-medium);
   --radius-lg: var(--md-sys-shape-large);
-  --radius-xl: 20px;
+  --radius-xl: var(--md-sys-shape-large-increased);
   --radius-2xl: var(--md-sys-shape-extra-large);
   --radius-pill: var(--md-sys-shape-full);
+}
+
+@media (min-width: 600px) {
+  :root {
+    --md-comp-card-padding: 24px;
+    --md-comp-grid-gap: 24px;
+  }
+}
+
+/* 터치 입력에서는 보이는 컨트롤 자체를 M3 최소 터치 목표(48)에 맞춘다. */
+@media (pointer: coarse) {
+  :root {
+    --md-comp-button-height: 48px;
+    --md-comp-chip-height: 40px;
+    --md-comp-icon-button: 48px;
+  }
 }
 
 html {
@@ -116,7 +195,7 @@ body {
     var(--md-sys-color-surface) !important;
   color: var(--md-sys-color-on-surface) !important;
   font-size: var(--md-sys-type-body);
-  line-height: 1.68;
+  line-height: 1.6;
 }
 
 body,
@@ -130,37 +209,131 @@ body *:not(svg):not(path):not(circle):not(line):not(polyline):not(polygon):not(r
   color: var(--md-sys-color-on-primary-container);
 }
 
+/* M3 focus indicator: 3px 두께, 2px 간격 */
 :where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
   outline: 3px solid var(--md-sys-color-tertiary) !important;
-  outline-offset: 3px !important;
+  outline-offset: 2px !important;
   box-shadow: 0 0 0 5px var(--md-sys-color-surface) !important;
 }
 
-/* Controls */
-:where(.submit-btn, .cancel-btn, .memo-btn, .jam16-link-btn, .home-subscribe-btn, .post-like-btn, .post-action-btn, .search-page-btn, .calendar-map-search-btn, .bw-btn) {
+/* Common buttons — M3 Expressive small button: 높이 40(터치 48), 좌우 16, label-large */
+:where(.submit-btn, .cancel-btn, .memo-btn, .jam16-link-btn, .home-subscribe-btn, .post-like-btn, .post-action-btn, .search-page-btn, .calendar-map-search-btn, .bw-btn, .write-btn, .calendar-manage-btn, .calendar-today-btn, .calendar-current-month-btn, .glossary-admin-toggle-btn, .glossary-description-toggle, .member-country-toggle, #board-pw-submit, #board-pw-cancel, #post-login-submit-btn, #post-login-cancel-btn, #calendar-login-submit-btn) {
+  min-height: var(--md-comp-button-height) !important;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: 8px;
+  padding-block: 0 !important;
+  padding-inline: var(--md-comp-button-padding) !important;
   text-align: center;
   border-radius: var(--md-sys-shape-full) !important;
-  font-size: var(--md-sys-type-label);
-  font-weight: 700;
-  line-height: 1.2;
-  letter-spacing: .01em;
-  transition: background-color var(--md-sys-motion-fast), color var(--md-sys-motion-fast), box-shadow var(--md-sys-motion-fast), transform var(--md-sys-motion-fast);
+  font-size: var(--md-sys-typescale-label-large) !important;
+  font-weight: 500 !important;
+  line-height: 1.43;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+  transition:
+    background-color var(--md-sys-motion-spring-fast-effects),
+    color var(--md-sys-motion-spring-fast-effects),
+    box-shadow var(--md-sys-motion-spring-fast-effects),
+    border-radius var(--md-sys-motion-spring-fast-spatial);
 }
 
-:where(.submit-btn, .cancel-btn, .memo-btn, .jam16-link-btn, .home-subscribe-btn, .post-like-btn, .post-action-btn, .search-page-btn, .calendar-map-search-btn, .bw-btn):active {
-  transform: scale(.98);
+/* 상태 레이어: 배경색과 무관하게 현재 글자색을 8%(hover)·10%(pressed) 겹친다. */
+@media (hover: hover) {
+  :where(.submit-btn, .cancel-btn, .memo-btn, .jam16-link-btn, .home-subscribe-btn, .post-like-btn, .post-action-btn, .search-page-btn, .calendar-map-search-btn, .bw-btn, .write-btn, .calendar-manage-btn, .calendar-today-btn, .calendar-current-month-btn, .calendar-nav-btn, .glossary-admin-toggle-btn, .glossary-description-toggle, .member-country-toggle, .tag-filter-btn, .filter-btn, .board-sort-btn, .board-period-btn, .board-days-btn, .search-scope-btn, .glossary-letter-btn, .members-view-chip, .calendar-view-btn, .calendar-filter-chip, .post-page-tag, .board-page-btn):hover:not(:disabled) {
+    box-shadow: inset 0 0 0 999px color-mix(in srgb, currentColor var(--md-sys-state-hover), transparent);
+  }
 }
 
-:where(input:not([type='checkbox']):not([type='radio']), select, textarea) {
-  min-height: 48px;
-  border: 1px solid var(--md-sys-color-outline) !important;
+:where(.submit-btn, .cancel-btn, .memo-btn, .jam16-link-btn, .home-subscribe-btn, .post-like-btn, .post-action-btn, .search-page-btn, .calendar-map-search-btn, .bw-btn, .write-btn, .calendar-manage-btn, .calendar-today-btn, .calendar-current-month-btn, .calendar-nav-btn, .glossary-admin-toggle-btn, .glossary-description-toggle, .member-country-toggle, .tag-filter-btn, .filter-btn, .board-sort-btn, .board-period-btn, .board-days-btn, .search-scope-btn, .glossary-letter-btn, .members-view-chip, .calendar-view-btn, .calendar-filter-chip, .post-page-tag, .board-page-btn):active:not(:disabled) {
+  box-shadow: inset 0 0 0 999px color-mix(in srgb, currentColor var(--md-sys-state-pressed), transparent);
+}
+
+/* Expressive shape morph: 둥근 버튼은 누르는 동안 모서리가 small로 좁아진다. */
+:where(.submit-btn, .cancel-btn, .memo-btn, .jam16-link-btn, .home-subscribe-btn, .post-like-btn, .search-page-btn, .calendar-map-search-btn, .bw-btn, .write-btn, .calendar-manage-btn, .calendar-today-btn, .glossary-admin-toggle-btn, .member-country-toggle):active:not(:disabled) {
   border-radius: var(--md-sys-shape-small) !important;
+}
+
+:where(button, [role='button']):disabled {
+  opacity: .38;
+  cursor: not-allowed;
+}
+
+/* Outlined icon button — 캘린더 이전·다음 */
+.calendar-nav-btn {
+  width: var(--md-comp-icon-button) !important;
+  min-width: var(--md-comp-icon-button) !important;
+  height: var(--md-comp-icon-button) !important;
+  min-height: var(--md-comp-icon-button) !important;
+  padding: 0 !important;
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid var(--md-sys-color-outline-variant) !important;
+  border-radius: var(--md-sys-shape-full) !important;
+  background: transparent !important;
+  color: var(--md-sys-color-on-surface-variant) !important;
+}
+
+/* Outlined button — 보조 동작 */
+.calendar-today-btn,
+.calendar-current-month-btn,
+.calendar-manage-btn,
+.glossary-admin-toggle-btn,
+.glossary-description-toggle,
+.member-country-toggle,
+#board-pw-cancel,
+#post-login-cancel-btn {
+  border: 1px solid var(--md-sys-color-outline-variant) !important;
+  background: transparent !important;
+  color: var(--md-sys-color-on-surface-variant) !important;
+}
+
+.calendar-current-month-btn {
+  border-color: transparent !important;
+  color: var(--md-sys-color-on-surface) !important;
+  font-size: var(--md-sys-typescale-title-large) !important;
+  font-weight: 700 !important;
+}
+
+/*
+ * Text fields — M3 outlined text field
+ * 높이 56 · 좌우 16 · extra-small(4px) 모서리 · body-large 16px.
+ * 16px 글자는 iOS Safari가 입력 시 화면을 확대하는 문제도 막는다.
+ */
+:where(input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']):not([type='color']):not(.calendar-month-picker), select, textarea) {
+  min-height: var(--md-comp-field-height) !important;
+  box-sizing: border-box;
+  border: 1px solid var(--md-sys-color-outline) !important;
+  border-radius: var(--md-sys-shape-extra-small) !important;
   background: var(--md-sys-color-surface-container-lowest) !important;
   color: var(--md-sys-color-on-surface) !important;
-  padding-inline: 16px;
+  padding-left: var(--md-comp-field-padding) !important;
+  padding-right: var(--md-comp-field-padding);
+  font-size: var(--md-sys-typescale-body-large) !important;
+  line-height: 1.5;
+  letter-spacing: 0 !important;
+  transition: border-color var(--md-sys-motion-spring-fast-effects), box-shadow var(--md-sys-motion-spring-fast-effects);
+}
+
+:where(input:not([type='checkbox']):not([type='radio']), select, textarea)::placeholder {
+  color: var(--md-sys-color-on-surface-variant);
+  opacity: 1;
+}
+
+textarea {
+  padding-block: 16px !important;
+}
+
+/* 필터·편집 폼처럼 여러 필드가 한 화면에 모이는 곳은 M3 density −2(48px)를 쓴다. */
+:where(.search-filter-input, .calendar-filter-select, .calendar-date-input, .memo-filters > select, .memo-filters > input, .bw-input, .bw-select, #board-pw-username, #board-pw-input, #post-login-pw, #calendar-login-username, #calendar-login-pw, [id^='calendar-modal-'][id$='-input'], #calendar-modal-related-post-query, #calendar-modal-geo-query):not(textarea) {
+  min-height: var(--md-comp-field-height-dense) !important;
+  height: var(--md-comp-field-height-dense) !important;
+  padding-block: 0 !important;
+}
+
+select {
+  padding-right: 40px !important;
 }
 
 :where(input:not([type='checkbox']):not([type='radio']), select, textarea):hover {
@@ -177,14 +350,24 @@ body *:not(svg):not(path):not(circle):not(line):not(polyline):not(polygon):not(r
   box-shadow: inset 0 0 0 2px var(--md-sys-color-primary) !important;
 }
 
-:where(.category-tag, .post-kicker, .memo-tag-chip, .memo-filter-tag-chip, .post-page-tag, .calendar-filter-chip, .members-pill) {
-  min-height: 28px;
+/* M3 checkbox — 18px 상자, 48px 줄 높이 */
+input[type='checkbox'],
+input[type='radio'] {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  accent-color: var(--md-sys-color-primary);
+}
+
+:where(.category-tag, .post-kicker, .memo-tag-chip, .memo-filter-tag-chip, .members-pill) {
+  min-height: 24px;
   border-radius: var(--md-sys-shape-small) !important;
   display: inline-flex;
   align-items: center;
-  padding: 4px 10px;
-  font-size: .75rem;
-  font-weight: 700;
+  padding: 2px 8px;
+  font-size: var(--md-sys-typescale-label-medium);
+  font-weight: 500;
+  letter-spacing: 0;
 }
 
 /* 카테고리의 의미는 라벨로 유지하고, 작은 글자의 대비는 M3 tonal chip으로 통일 */
@@ -233,8 +416,8 @@ body *:not(svg):not(path):not(circle):not(line):not(polyline):not(polygon):not(r
 }
 
 .masthead-search {
-  min-width: min(270px, 28vw);
-  height: 48px;
+  min-width: min(280px, 28vw);
+  height: 56px;
   border: 0 !important;
   border-radius: var(--md-sys-shape-full) !important;
   background: var(--md-sys-color-surface-container-high) !important;
@@ -247,7 +430,9 @@ body *:not(svg):not(path):not(circle):not(line):not(polyline):not(polygon):not(r
 }
 
 .mh-search-input {
-  min-height: 48px !important;
+  min-height: 56px !important;
+  height: 56px !important;
+  padding-left: 20px !important;
   border: 0 !important;
   border-radius: 0 !important;
   background: transparent !important;
@@ -261,8 +446,9 @@ body *:not(svg):not(path):not(circle):not(line):not(polyline):not(polygon):not(r
 }
 
 .mh-search-btn {
-  width: 48px;
-  min-height: 48px;
+  width: 56px;
+  height: 56px;
+  min-height: 56px;
   border: 0 !important;
   border-radius: 50% !important;
   color: var(--md-sys-color-on-surface-variant) !important;
@@ -409,16 +595,16 @@ body *:not(svg):not(path):not(circle):not(line):not(polyline):not(polygon):not(r
 .home-renewal-title {
   margin: 0;
   color: inherit;
-  font-size: clamp(1.4rem, 2.2vw, 2rem);
-  line-height: 1.24;
-  letter-spacing: -.025em;
+  font-size: var(--md-sys-typescale-headline-small);
+  line-height: 1.34;
+  letter-spacing: 0;
 }
 
 .home-renewal-copy {
   max-width: 68ch;
   margin: 10px 0 0;
   color: color-mix(in srgb, var(--md-sys-color-on-secondary-container) 76%, transparent);
-  font-size: clamp(.9375rem, 1.4vw, 1.0625rem);
+  font-size: var(--md-sys-typescale-body-large);
   line-height: 1.6;
 }
 
@@ -427,7 +613,7 @@ body *:not(svg):not(path):not(circle):not(line):not(polyline):not(polygon):not(r
   width: min(calc(100% - (var(--md-sys-gutter) * 2)), var(--md-sys-content-max));
   min-height: clamp(380px, 42vw, 520px);
   margin: 0 auto 32px !important;
-  border-radius: 36px !important;
+  border-radius: var(--md-sys-shape-extra-large) !important;
   overflow: hidden;
   background: var(--md-sys-color-primary-container) !important;
   box-shadow: var(--md-sys-elevation-2);
@@ -471,11 +657,12 @@ body *:not(svg):not(path):not(circle):not(line):not(polyline):not(polygon):not(r
 
 .site-hero-title {
   max-width: 16ch;
-  margin-top: 18px !important;
+  margin-top: 16px !important;
   color: #ffffff !important;
-  font-size: var(--md-sys-type-display) !important;
-  line-height: 1.06 !important;
-  letter-spacing: -.045em !important;
+  font-size: var(--md-sys-typescale-display-medium) !important;
+  line-height: 1.16 !important;
+  letter-spacing: -.01em !important;
+  text-wrap: balance;
 }
 
 .site-hero-sub,
@@ -483,8 +670,8 @@ body *:not(svg):not(path):not(circle):not(line):not(polyline):not(polygon):not(r
   max-width: 58ch;
   margin-inline: auto !important;
   color: rgb(255 255 255 / .88) !important;
-  font-size: clamp(1rem, 1.8vw, 1.25rem) !important;
-  line-height: 1.55 !important;
+  font-size: var(--md-sys-typescale-body-large) !important;
+  line-height: 1.6 !important;
   text-align: center !important;
 }
 
@@ -582,9 +769,6 @@ body *:not(svg):not(path):not(circle):not(line):not(polyline):not(polygon):not(r
   background: transparent !important;
 }
 
-.post-page-tag-btn {
-  min-height: 24px;
-}
 
 .content-gallery-dot {
   width: 24px;
@@ -601,9 +785,11 @@ body *:not(svg):not(path):not(circle):not(line):not(polyline):not(polygon):not(r
 .glossary-page-wrap,
 .members-page-wrap,
 .calendar-page-wrap,
+.calendar-page,
 .memorabilia-page-wrap,
 .jam16-wrapper {
   width: min(calc(100% - (var(--md-sys-gutter) * 2)), var(--md-sys-content-max)) !important;
+  max-width: none !important;
   margin-inline: auto !important;
 }
 
@@ -617,6 +803,7 @@ body *:not(svg):not(path):not(circle):not(line):not(polyline):not(polygon):not(r
 .search-page-wrap,
 .memorabilia-page-wrap,
 .calendar-page-wrap,
+.calendar-page,
 .jam16-wrapper {
   padding: 24px 0 64px !important;
 }
@@ -635,8 +822,14 @@ body *:not(svg):not(path):not(circle):not(line):not(polyline):not(polygon):not(r
   margin-bottom: var(--md-sys-space-3) !important;
 }
 
-.home-col-header h3 {
+.home-section-title :is(h2, h3),
+.section-header h2 {
   color: var(--md-sys-color-on-surface) !important;
+  font-size: var(--md-sys-typescale-title-large) !important;
+  font-weight: 700 !important;
+  line-height: 1.27 !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
 }
 
 .home-col-header .home-section-more {
@@ -652,8 +845,8 @@ body *:not(svg):not(path):not(circle):not(line):not(polyline):not(polygon):not(r
   min-height: 40px;
   display: inline-flex;
   align-items: center;
-  padding: 0 8px;
-  border-radius: var(--md-sys-shape-small);
+  padding: 0 12px;
+  border-radius: var(--md-sys-shape-full);
   color: var(--md-sys-color-primary) !important;
   font-size: var(--md-sys-type-label) !important;
   font-weight: 700;
@@ -661,32 +854,31 @@ body *:not(svg):not(path):not(circle):not(line):not(polyline):not(polygon):not(r
 
 :where(.home-lead-card, .article-card, .post-card, .about-box, .memo-card, .home-memo-card, .member-country-card, .member-country-child-card, .calendar-event-card, .calendar-map-result-card, .calendar-panel, .contributor-card, .memo-related-card, .search-result-card, .jam16-photo, .jam16-fact) {
   border: 0 !important;
-  border-radius: var(--md-sys-shape-extra-large) !important;
+  border-radius: var(--md-sys-shape-medium) !important;
   background: var(--md-sys-color-surface-container-low) !important;
   box-shadow: none !important;
   overflow: hidden;
-  transition: transform var(--md-sys-motion-standard), box-shadow var(--md-sys-motion-standard), background-color var(--md-sys-motion-fast);
+  transition: box-shadow var(--md-sys-motion-spring-default-effects), background-color var(--md-sys-motion-spring-fast-effects);
 }
 
 @media (hover: hover) {
   :where(.home-lead-card, .article-card, .post-card, .memo-card, .home-memo-card, .member-country-card, .member-country-child-card, .calendar-event-card, .calendar-map-result-card, .contributor-card, .memo-related-card, .search-result-card, .jam16-photo):hover {
-    transform: translateY(-3px);
     background: var(--md-sys-color-surface-container) !important;
-    box-shadow: var(--md-sys-elevation-2) !important;
+    box-shadow: var(--md-sys-elevation-1) !important;
   }
 }
 
 .home-lead-card {
-  border-radius: 32px !important;
+  border-radius: var(--md-sys-shape-medium) !important;
 }
 
 /* 반복 기사 목록은 하나의 tonal surface 안에서 여백으로 구분한다. */
 .home-rail-card {
   border: 0 !important;
-  border-radius: var(--md-sys-shape-extra-large) !important;
+  border-radius: var(--md-sys-shape-medium) !important;
   background: var(--md-sys-color-surface-container-low) !important;
   box-shadow: none !important;
-  padding: 12px 18px !important;
+  padding: 8px var(--md-comp-card-padding) !important;
   overflow: hidden !important;
 }
 
@@ -711,7 +903,7 @@ body *:not(svg):not(path):not(circle):not(line):not(polyline):not(polygon):not(r
 .article-card,
 .memo-card-body,
 .member-country-card {
-  padding: clamp(18px, 2.4vw, 28px) !important;
+  padding: var(--md-comp-card-padding) !important;
 }
 
 .post-card-body {
@@ -750,7 +942,8 @@ body *:not(svg):not(path):not(circle):not(line):not(polyline):not(polygon):not(r
 .mini-item h4,
 .memo-card-title {
   color: var(--md-sys-color-on-surface) !important;
-  letter-spacing: -.018em !important;
+  letter-spacing: -.005em !important;
+  line-height: 1.4 !important;
 }
 
 .home-lead-excerpt,
@@ -769,7 +962,7 @@ body *:not(svg):not(path):not(circle):not(line):not(polyline):not(polygon):not(r
 .memo-grid,
 .members-cards,
 .jam16-gallery-grid {
-  gap: clamp(16px, 2vw, 24px) !important;
+  gap: var(--md-comp-grid-gap) !important;
 }
 
 .home-priority-main,
@@ -810,9 +1003,9 @@ body *:not(svg):not(path):not(circle):not(line):not(polyline):not(polygon):not(r
 .jam16-hero {
   width: min(calc(100% - (var(--md-sys-gutter) * 2)), var(--md-sys-content-max)) !important;
   margin: 24px auto 28px !important;
-  padding: clamp(28px, 5vw, 64px) !important;
+  padding: clamp(24px, 4vw, 48px) !important;
   border: 0 !important;
-  border-radius: 32px !important;
+  border-radius: var(--md-sys-shape-extra-large) !important;
   background:
     radial-gradient(circle at 85% 8%, rgb(130 230 222 / .30), transparent 26rem),
     var(--md-sys-color-primary-container) !important;
@@ -846,11 +1039,13 @@ body *:not(svg):not(path):not(circle):not(line):not(polyline):not(polygon):not(r
 .members-hero h2,
 .memo-hero h2,
 .search-page-header h1,
-.jam16-hero h1 {
+.jam16-hero h1,
+.calendar-page-head h2 {
   color: var(--md-sys-color-on-primary-container) !important;
-  font-size: var(--md-sys-type-headline) !important;
-  line-height: 1.14 !important;
-  letter-spacing: -.035em !important;
+  font-size: var(--md-sys-typescale-headline-large) !important;
+  line-height: 1.25 !important;
+  letter-spacing: 0 !important;
+  text-wrap: balance;
 }
 
 .board-banner p,
@@ -929,7 +1124,7 @@ body *:not(svg):not(path):not(circle):not(line):not(polyline):not(polygon):not(r
 .board-sort-bar {
   gap: var(--md-sys-space-4) var(--md-sys-space-5) !important;
   padding: 20px 24px 8px !important;
-  border-radius: var(--md-sys-shape-extra-large) var(--md-sys-shape-extra-large) 0 0 !important;
+  border-radius: var(--md-sys-shape-large) var(--md-sys-shape-large) 0 0 !important;
 }
 
 .board-control-group {
@@ -988,7 +1183,7 @@ body *:not(svg):not(path):not(circle):not(line):not(polyline):not(polygon):not(r
 .board-search-wrap {
   margin: 0 0 var(--md-sys-space-5) !important;
   padding: 8px 24px 20px !important;
-  border-radius: 0 0 var(--md-sys-shape-extra-large) var(--md-sys-shape-extra-large) !important;
+  border-radius: 0 0 var(--md-sys-shape-large) var(--md-sys-shape-large) !important;
   background: var(--md-sys-color-surface-container-low) !important;
 }
 
@@ -1078,9 +1273,9 @@ body *:not(svg):not(path):not(circle):not(line):not(polyline):not(polygon):not(r
 /* 잼버리 개요는 한 개의 tonal surface 안에서 여백만으로 그룹화한다. */
 .jam16-facts {
   border: 0 !important;
-  border-radius: var(--md-sys-shape-extra-large) !important;
+  border-radius: var(--md-sys-shape-large) !important;
   background: var(--md-sys-color-surface-container-low) !important;
-  padding: 10px 24px !important;
+  padding: 8px var(--md-comp-card-padding) !important;
   overflow: hidden !important;
 }
 
@@ -1117,20 +1312,111 @@ body *:not(svg):not(path):not(circle):not(line):not(polyline):not(polygon):not(r
   box-shadow: inset 0 0 0 2px var(--md-sys-color-primary) !important;
 }
 
-:where(.tag-filter-btn, .filter-btn, .board-sort-btn, .board-period-btn, .board-days-btn, .search-scope-btn, .glossary-letter-btn, .members-view-chip, .calendar-view-btn, .calendar-filter-chip) {
-  min-height: 40px;
+/*
+ * Filter chips — M3: 높이 32(터치 40) · small(8px) 모서리 · 좌우 16 · label-large.
+ * 선택 전은 outline-variant 외곽선, 선택 후는 secondary-container + 체크 표시로
+ * 색에만 의존하지 않고 상태를 전달한다.
+ */
+:where(.tag-filter-btn, .filter-btn, .glossary-letter-btn, .calendar-filter-chip, .calendar-tag-preset, .post-page-tag) {
+  min-height: var(--md-comp-chip-height) !important;
+  height: auto !important;
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 16px !important;
+  border: 1px solid var(--md-sys-color-outline-variant) !important;
+  border-radius: var(--md-sys-shape-small) !important;
+  background: transparent !important;
+  color: var(--md-sys-color-on-surface-variant) !important;
+  font-size: var(--md-sys-typescale-label-large) !important;
+  font-weight: 500 !important;
+  line-height: 1.43 !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+  white-space: nowrap;
+  transition: background-color var(--md-sys-motion-spring-fast-effects), color var(--md-sys-motion-spring-fast-effects);
+}
+
+/* 기사 태그는 운영자가 입력한 긴 문자열일 수 있다. 칩 폭 안에서 줄바꿈해 본문 폭을 밀지 않는다. */
+.post-page-tag {
+  max-width: 100%;
+  padding-block: 6px !important;
+  white-space: normal !important;
+  overflow-wrap: anywhere;
+  text-align: left;
+}
+
+:where(.tag-filter-btn, .filter-btn, .glossary-letter-btn, .calendar-filter-chip, .calendar-tag-preset):is(.active, .is-active, [aria-pressed='true']) {
+  padding-left: 8px !important;
+  border-color: transparent !important;
+  background: var(--md-sys-color-secondary-container) !important;
+  color: var(--md-sys-color-on-secondary-container) !important;
+}
+
+:where(.tag-filter-btn, .filter-btn, .glossary-letter-btn, .calendar-filter-chip, .calendar-tag-preset):is(.active, .is-active, [aria-pressed='true'])::before {
+  content: '';
+  flex: 0 0 auto;
+  width: 5px;
+  height: 10px;
+  margin: -3px 3px 0 5px;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(45deg);
+}
+
+/*
+ * Connected button group — M3 Expressive: 버튼 사이 2px, 바깥 모서리 full,
+ * 안쪽 모서리 small. 선택된 버튼은 완전한 원형으로 바뀌어 모양과 색 두 가지로 구분된다.
+ */
+:where(.board-sort-toggle, .board-period-bar, .board-days-bar, .search-scope-row, .calendar-view-toggle, .members-view-chips) {
+  display: inline-flex !important;
+  flex-wrap: nowrap;
+  align-items: stretch !important;
+  gap: 2px !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  overflow: visible !important;
+}
+
+:where(.board-sort-btn, .board-period-btn, .board-days-btn, .search-scope-btn, .members-view-chip, .calendar-view-btn) {
+  min-height: var(--md-comp-button-height) !important;
+  height: auto !important;
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  padding: 0 16px !important;
   border: 0 !important;
   border-radius: var(--md-sys-shape-small) !important;
   background: var(--md-sys-color-surface-container-high) !important;
   color: var(--md-sys-color-on-surface-variant) !important;
-  padding-inline: 14px !important;
+  font-size: var(--md-sys-typescale-label-large) !important;
+  font-weight: 500 !important;
+  line-height: 1.43 !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+  white-space: nowrap;
+  transition: background-color var(--md-sys-motion-spring-fast-effects), color var(--md-sys-motion-spring-fast-effects), border-radius var(--md-sys-motion-spring-fast-spatial);
 }
 
-:where(.tag-filter-btn, .filter-btn, .board-sort-btn, .board-period-btn, .board-days-btn, .search-scope-btn, .glossary-letter-btn, .members-view-chip, .calendar-view-btn, .calendar-filter-chip).active,
-:where(.tag-filter-btn, .filter-btn, .board-sort-btn, .board-period-btn, .board-days-btn, .search-scope-btn, .glossary-letter-btn, .members-view-chip, .calendar-view-btn, .calendar-filter-chip)[aria-pressed='true'] {
-  border-color: transparent !important;
+:where(.board-sort-btn, .board-period-btn, .board-days-btn, .search-scope-btn, .members-view-chip, .calendar-view-btn):first-child {
+  border-top-left-radius: var(--md-sys-shape-full) !important;
+  border-bottom-left-radius: var(--md-sys-shape-full) !important;
+}
+
+:where(.board-sort-btn, .board-period-btn, .board-days-btn, .search-scope-btn, .members-view-chip, .calendar-view-btn):last-child {
+  border-top-right-radius: var(--md-sys-shape-full) !important;
+  border-bottom-right-radius: var(--md-sys-shape-full) !important;
+}
+
+:where(.board-sort-btn, .board-period-btn, .board-days-btn, .search-scope-btn, .members-view-chip, .calendar-view-btn):is(.active, .is-active, [aria-pressed='true']) {
+  border-radius: var(--md-sys-shape-full) !important;
   background: var(--md-sys-color-secondary-container) !important;
   color: var(--md-sys-color-on-secondary-container) !important;
+  font-weight: 700 !important;
 }
 
 .search-page-btn,
@@ -1193,7 +1479,7 @@ body *:not(svg):not(path):not(circle):not(line):not(polyline):not(polygon):not(r
 .calendar-year-month,
 .memo-detail-inner {
   border: 1px solid var(--md-sys-color-outline-variant) !important;
-  border-radius: var(--md-sys-shape-extra-large) !important;
+  border-radius: var(--md-sys-shape-large) !important;
   background: var(--md-sys-color-surface-container-lowest) !important;
   overflow: hidden;
 }
@@ -1225,16 +1511,17 @@ body *:not(svg):not(path):not(circle):not(line):not(polyline):not(polygon):not(r
 .post-page-main,
 .static-page,
 .privacy-body {
-  border-radius: 32px;
+  border-radius: var(--md-sys-shape-extra-large);
 }
 
 .post-page-title,
 .static-page-head h1,
 .privacy-wrap h1 {
   color: var(--md-sys-color-on-surface) !important;
-  font-size: var(--md-sys-type-headline) !important;
-  line-height: 1.14 !important;
-  letter-spacing: -.035em !important;
+  font-size: var(--md-sys-typescale-display-small) !important;
+  line-height: 1.22 !important;
+  letter-spacing: -.01em !important;
+  text-wrap: balance;
 }
 
 .post-page-back {
@@ -1282,9 +1569,9 @@ body *:not(svg):not(path):not(circle):not(line):not(polyline):not(polygon):not(r
 .post-related-surface,
 .about-summary {
   border: 0 !important;
-  border-radius: var(--md-sys-shape-extra-large) !important;
+  border-radius: var(--md-sys-shape-large) !important;
   background: var(--md-sys-color-surface-container-low) !important;
-  padding: clamp(20px, 3vw, 32px) !important;
+  padding: var(--md-comp-card-padding) !important;
 }
 
 /* 장문 페이지의 장(chapter)은 카드가 아니다. 제목과 40px 리듬으로만 나눈다. */
@@ -1309,16 +1596,16 @@ body *:not(svg):not(path):not(circle):not(line):not(polyline):not(polygon):not(r
 /* 태그는 선 대신 하나의 tonal metadata surface로 구분한다. */
 .post-page-tags {
   border: 0 !important;
-  border-radius: var(--md-sys-shape-large) !important;
+  border-radius: var(--md-sys-shape-medium) !important;
   background: var(--md-sys-color-surface-container-low) !important;
-  padding: 14px 16px !important;
+  padding: 16px !important;
 }
 
 /* 보조 정보는 하나의 tonal surface 안에서 여백으로만 그룹화한다. */
 .post-page-sidebar {
-  padding: 8px 18px !important;
+  padding: 8px var(--md-comp-card-padding) !important;
   border: 0 !important;
-  border-radius: var(--md-sys-shape-extra-large) !important;
+  border-radius: var(--md-sys-shape-large) !important;
   background: var(--md-sys-color-surface-container-low) !important;
 }
 
@@ -1398,6 +1685,154 @@ footer a,
 
 .footer-bottom {
   border-color: color-mix(in srgb, var(--md-sys-color-inverse-on-surface) 24%, transparent) !important;
+}
+
+/* FAB — M3: 56px, large(16px) 모서리, elevation 3 */
+.gw-chatbot-fab,
+.global-scroll-top-btn {
+  width: 56px !important;
+  height: 56px !important;
+  border-radius: var(--md-sys-shape-large) !important;
+  box-shadow: var(--md-sys-elevation-3) !important;
+  transition: box-shadow var(--md-sys-motion-spring-default-effects), border-radius var(--md-sys-motion-spring-fast-spatial) !important;
+}
+
+@media (hover: hover) {
+  .gw-chatbot-fab:hover,
+  .global-scroll-top-btn:hover {
+    transform: none !important;
+    box-shadow: var(--md-sys-elevation-4) !important;
+  }
+}
+
+.gw-chatbot-fab:active,
+.global-scroll-top-btn:active {
+  border-radius: var(--md-sys-shape-medium) !important;
+}
+
+/* 4열 레일의 열 제목은 M3 title-medium 한 줄로 두어 열마다 카드 시작선이 같다. */
+.home-col-header h3 {
+  overflow: hidden;
+  font-size: var(--md-sys-typescale-title-medium) !important;
+  font-weight: 700 !important;
+  line-height: 1.5 !important;
+  letter-spacing: 0 !important;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* 통계 문구는 나중에 채워진다. 두 줄 높이를 미리 잡아 마스트헤드가 늘어나며 본문을 밀지 않게 한다. */
+.masthead-stats {
+  min-height: calc(2 * 1.5 * var(--fs-micro));
+}
+
+/* 히어로 안 검색 카드는 히어로 여백을 그대로 쓰고 자기 여백을 더하지 않는다. */
+.glossary-hero .glossary-search-card,
+.members-hero .members-search-card {
+  padding: 0 !important;
+}
+
+/* 검색 범위 체크박스는 상자 대신 M3 체크박스 + 라벨 한 줄(48px 목표)로 둔다. */
+.glossary-search-options {
+  gap: 4px 16px !important;
+  margin: 8px 0 0 !important;
+}
+
+.glossary-search-check {
+  min-height: var(--md-comp-touch-target);
+  gap: 12px !important;
+  padding: 0 12px 0 4px !important;
+  border: 0 !important;
+  border-radius: var(--md-sys-shape-full) !important;
+  background: transparent !important;
+  color: inherit !important;
+  font-size: var(--md-sys-typescale-body-large) !important;
+  cursor: pointer;
+}
+
+.glossary-search-card label:not(.glossary-search-check),
+.members-search-card label:not(.glossary-search-check),
+.glossary-toolbar-title,
+.board-control-label {
+  font-size: var(--md-sys-typescale-label-large) !important;
+  font-weight: 500 !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+}
+
+.glossary-search-help {
+  font-size: var(--md-sys-typescale-body-medium) !important;
+  line-height: 1.5 !important;
+}
+
+/* 캘린더 머리도 다른 공개 화면과 같은 primary-container 히어로 surface를 쓴다. */
+.calendar-page .calendar-page-head {
+  margin: 0 0 28px !important;
+  padding: clamp(24px, 4vw, 48px) !important;
+  border-radius: var(--md-sys-shape-extra-large) !important;
+  background:
+    radial-gradient(circle at 85% 8%, rgb(130 230 222 / .30), transparent 26rem),
+    var(--md-sys-color-primary-container) !important;
+  color: var(--md-sys-color-on-primary-container) !important;
+}
+
+.calendar-page-head p {
+  color: color-mix(in srgb, var(--md-sys-color-on-primary-container) 82%, transparent) !important;
+}
+
+.calendar-page-kicker {
+  min-height: 32px !important;
+  padding: 0 12px !important;
+  border: 0 !important;
+  border-radius: var(--md-sys-shape-small) !important;
+  font-size: var(--md-sys-typescale-label-medium) !important;
+  letter-spacing: .04em !important;
+}
+
+.calendar-page-head-actions {
+  gap: 8px !important;
+}
+
+/* 검색 필터 격자의 필드는 칸 폭을 넘지 않는다(날짜 입력의 고유 폭이 격자를 밀어내지 않게). */
+.search-filter-grid > *,
+.search-filter-grid :is(input, select),
+.memo-filters > * {
+  min-width: 0 !important;
+  max-width: 100%;
+  width: 100% !important;
+}
+
+.board-search-input,
+.search-page-input,
+.glossary-search-input {
+  font-size: var(--md-sys-typescale-body-large) !important;
+}
+
+/* 기사 목록 카드의 보조 메타는 M3 body-small 이상으로 읽힌다. */
+.post-share-btn,
+.mini-share-link,
+.post-card-meta,
+.mini-item .meta,
+.home-lead-meta,
+.memo-card-meta,
+.search-result-card .meta {
+  font-size: var(--md-sys-typescale-body-small) !important;
+  letter-spacing: 0 !important;
+}
+
+/* Medium window (600–839): 제목은 headline-large, 여백 24 */
+@media (min-width: 600px) and (max-width: 839px) {
+  .post-page-title,
+  .static-page-head h1,
+  .privacy-wrap h1 {
+    font-size: var(--md-sys-typescale-headline-large) !important;
+    line-height: 1.25 !important;
+  }
+
+  .site-hero-title {
+    font-size: var(--md-sys-typescale-display-small) !important;
+    line-height: 1.22 !important;
+  }
 }
 
 /* Dark M3 roles — 기존 사이트 계약대로 사용자 옵트인일 때만 적용 */
@@ -1490,13 +1925,10 @@ footer a,
     display: none !important;
   }
 
+  /* 접힌 원형 검색은 빈 입력에서 누를 곳이 없다. medium 폭에서도 검색 바를 그대로 보인다. */
   .masthead-search {
-    min-width: 48px;
-    width: 48px;
-  }
-
-  .masthead-search:focus-within {
-    width: min(52vw, 320px);
+    min-width: 0;
+    width: min(240px, 36vw);
   }
 
   .nav {
@@ -1841,9 +2273,8 @@ footer a,
 
   .home-renewal-banner {
     width: calc(100% - 32px);
-    margin-bottom: 12px;
-    padding: 22px 20px;
-    border-radius: var(--md-sys-shape-large);
+    margin-bottom: 16px;
+    padding: 24px 20px;
   }
 
   .home-renewal-kicker {
@@ -1852,12 +2283,12 @@ footer a,
   }
 
   .home-renewal-title {
-    font-size: 1.45rem;
+    font-size: var(--md-sys-typescale-title-large);
   }
 
   .home-renewal-copy {
     margin-top: 8px;
-    font-size: .9375rem;
+    font-size: var(--md-sys-typescale-body-medium);
   }
 
   .site-hero-slider {
@@ -1886,7 +2317,8 @@ footer a,
 
   .site-hero-title {
     max-width: 13ch;
-    font-size: clamp(2.2rem, 11vw, 3.2rem) !important;
+    font-size: var(--md-sys-typescale-display-small) !important;
+    line-height: 1.22 !important;
   }
 
   .home-wrapper,
@@ -1896,6 +2328,7 @@ footer a,
   .glossary-page-wrap,
   .members-page-wrap,
   .calendar-page-wrap,
+  .calendar-page,
   .memorabilia-page-wrap,
   .jam16-wrapper,
   .post-page-wrap,
@@ -1920,8 +2353,8 @@ footer a,
   .search-page-header,
   .jam16-hero {
     width: calc(100% - 32px) !important;
-    margin-top: 12px !important;
-    padding: 28px 22px !important;
+    margin-top: 16px !important;
+    padding: 24px 20px !important;
     border-radius: var(--md-sys-shape-extra-large) !important;
   }
 
@@ -1933,7 +2366,7 @@ footer a,
   .search-page-wrap .search-page-header {
     width: 100% !important;
     margin-top: 0 !important;
-    padding: 28px 22px !important;
+    padding: 24px 20px !important;
   }
 
   .board-grid,
@@ -1982,6 +2415,28 @@ footer a,
     white-space: normal;
   }
 
+  /* 연결 버튼 그룹은 줄바꿈하지 않고 화면 폭을 균등하게 나눈다. */
+  .search-scope-row,
+  .calendar-view-toggle,
+  .members-view-chips {
+    display: grid !important;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(0, 1fr);
+    width: 100%;
+  }
+
+  .search-scope-btn,
+  .calendar-view-btn,
+  .members-view-chip {
+    min-width: 0;
+    padding-inline: 8px !important;
+    white-space: normal !important;
+  }
+
+  .calendar-page-head-actions {
+    width: 100%;
+  }
+
   .tag-filter-bar {
     overflow-x: auto !important;
     scrollbar-width: none;
@@ -2008,9 +2463,12 @@ footer a,
     z-index: 1;
     display: inline-flex;
     align-items: center;
-    min-height: 32px;
-    padding-right: 8px;
+    align-self: stretch;
+    min-height: var(--md-comp-chip-height);
+    margin-left: -16px;
+    padding: 0 12px 0 16px;
     background: var(--md-sys-color-surface-container-low);
+    box-shadow: 8px 0 8px -4px var(--md-sys-color-surface-container-low);
   }
 
   .tag-filter-bar .tag-filter-btn {
@@ -2024,13 +2482,25 @@ footer a,
   }
 
   .post-card-body {
-    padding: 20px !important;
+    padding: var(--md-comp-card-padding) !important;
   }
 
   .post-page-title,
   .static-page-head h1,
   .privacy-wrap h1 {
-    font-size: clamp(2rem, 9vw, 2.75rem) !important;
+    font-size: var(--md-sys-typescale-headline-medium) !important;
+    line-height: 1.29 !important;
+  }
+
+  .board-banner h2,
+  .glossary-hero h2,
+  .members-hero h2,
+  .memo-hero h2,
+  .search-page-header h1,
+  .jam16-hero h1,
+  .calendar-page-head h2 {
+    font-size: var(--md-sys-typescale-headline-medium) !important;
+    line-height: 1.29 !important;
   }
 
   .post-page-body {
@@ -2038,11 +2508,9 @@ footer a,
     line-height: 1.78 !important;
   }
 
-  .post-page-tags,
   .post-related-surface,
   .about-summary {
-    border-radius: var(--md-sys-shape-large) !important;
-    padding: 18px !important;
+    padding: var(--md-comp-card-padding) !important;
   }
 
   .modal,

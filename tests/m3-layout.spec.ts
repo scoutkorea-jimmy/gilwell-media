@@ -210,7 +210,7 @@ test('상단 검색은 입력과 버튼을 한 surface와 한 포커스 링으�
       wrapRadius: wrapStyle.borderRadius,
     };
   });
-  expect(result.wrapHeight).toBe(48);
+  expect(result.wrapHeight).toBe(56);
   expect(result.childrenTop).toBe(1);
   expect(result.childrenBottom).toBe(1);
   expect(result.inputShadow).toBe('none');
@@ -563,4 +563,40 @@ test('공개 홈페이지 UI 소스에는 이모지 글리프를 사용하지 �
   const emoji = /[✏📷🖼✨💾😊👇📦👁🔗⬆🔒❤♥]/u;
   const violations = files.filter((file) => emoji.test(readFileSync(file, 'utf8')));
   expect(violations).toEqual([]);
+});
+
+test('입력 필드·칩·연결 버튼은 M3 규격(56/48 필드, 16px 입력, 32 칩)을 지킨다', async ({ page }) => {
+  test.setTimeout(90_000);
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  for (const path of ['/korea', '/search?q=스카우트', '/glossary', '/memorabilia', '/wosm-members', '/calendar']) {
+    await page.goto(path, { waitUntil: 'domcontentloaded' });
+    await page.waitForTimeout(1_200);
+    const result = await page.evaluate(() => {
+      const visible = (el: Element) => {
+        const rect = el.getBoundingClientRect();
+        const style = getComputedStyle(el);
+        return rect.width > 8 && rect.height > 8 && style.visibility !== 'hidden' && style.display !== 'none';
+      };
+      const fields = [...document.querySelectorAll('input:not([type=checkbox]):not([type=radio]):not([type=hidden]), select')]
+        .filter(visible)
+        .filter((el) => !el.closest('.memo-filter-year-range, .masthead-search'))
+        .map((el) => ({ id: el.id || el.className, height: Math.round(el.getBoundingClientRect().height), font: parseFloat(getComputedStyle(el).fontSize) }));
+      const chips = [...document.querySelectorAll('.tag-filter-btn, .glossary-letter-btn')]
+        .filter(visible)
+        .map((el) => ({ height: Math.round(el.getBoundingClientRect().height), font: parseFloat(getComputedStyle(el).fontSize) }));
+      const groups = [...document.querySelectorAll('.board-sort-toggle, .search-scope-row, .calendar-view-toggle, .members-view-chips')]
+        .filter(visible)
+        .map((el) => getComputedStyle(el).columnGap);
+      return { fields, chips, groups };
+    });
+    for (const field of result.fields) {
+      expect([48, 56], `${path} ${field.id} 필드 높이`).toContain(field.height);
+      expect(field.font, `${path} ${field.id} 입력 글자`).toBeGreaterThanOrEqual(16);
+    }
+    for (const chip of result.chips) {
+      expect(chip.height, `${path} 칩 높이`).toBe(32);
+      expect(chip.font, `${path} 칩 글자`).toBeGreaterThanOrEqual(14);
+    }
+    for (const gap of result.groups) expect(gap, `${path} 연결 버튼 간격`).toBe('2px');
+  }
 });

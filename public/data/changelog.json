@@ -1,6 +1,26 @@
 {
   "items": [
   {
+    "version": "00.188.00",
+    "date": "2026-09-26",
+    "released_at": "2026-09-26 15:59:44 KST",
+    "summary": "공개 홈페이지의 글자 크기·입력칸·버튼·칩·모서리·여백을 색을 제외한 Material 3 최신 규격으로 통일하고 모바일·PC 안정성을 바로잡았다.",
+    "for_users": [
+      "검색·필터 입력칸 높이를 주 입력 56px, 필터 48px 두 단계로 정리하고 입력 글자를 16px로 맞춰 휴대전화에서 입력할 때 화면이 확대되지 않습니다.",
+      "10~11px로 작던 버튼·필터 글자를 14px로 키우고, 선택한 필터에는 체크 표시를 붙여 색이 아니어도 선택 상태를 알 수 있습니다.",
+      "정렬·기간·보기 방식 버튼을 하나로 이어진 버튼 묶음으로 바꾸고, 휴대전화에서는 줄이 꺾이지 않고 화면 폭을 고르게 나눕니다.",
+      "카드·패널·배너의 모서리와 안쪽 여백을 휴대전화 16px, 태블릿·PC 24px 기준으로 통일했습니다.",
+      "게시판 주제 칩이 라벨 뒤로 잘리던 문제, 검색 화면의 날짜 칸이 밖으로 넘치던 문제, 태블릿에서 상단 검색창이 잘려 접히던 문제를 고쳤습니다."
+    ],
+    "for_developers": [
+      "public/css/m3-site.css — M3 Expressive shape(4/8/12/16/20/28/32/48)·elevation 1~5·state layer(8/10/16%)·type scale·spring motion 토큰 추가, 공개 전용으로 --fs-micro/meta/caption/small/nav, --btn-height-*, --chip-height 재매핑.",
+      "public/css/m3-site.css — outlined text field 56px(조밀 48px)·4px·16px 패딩·16px 글자, filter chip 32px(coarse 40)+선택 체크, connected button group(gap 2px, 바깥 full·안쪽 8px, 선택 시 full), 버튼 40px(coarse 48)+pressed shape morph, FAB 56px/16px, 카드 12px·패딩 16/24.",
+      "public/css/m3-site.css — .post-page-tag 줄바꿈 허용(긴 태그가 본문을 1,664px로 밀던 회귀 차단), .home-col-header h3 title-medium 한 줄(4열 카드 높이 일치), .masthead-stats 두 줄 높이 예약(CLS), medium 폭 검색 바 비접힘, .calendar-page 히어로 surface·폭 규칙.",
+      "tests/m3-layout.spec.ts — 상단 검색 높이 기대값 56으로 갱신, 필드(48/56·16px)·칩(32px·14px)·연결 버튼 간격(2px) 규격 검사 추가. 공개 검사 52개 통과(라이브에 로컬 CSS 주입).",
+      "사이트 버전 00.187.02 → 00.188.00."
+    ]
+  },
+  {
     "version": "00.187.02",
     "date": "2026-09-26",
     "released_at": "2026-09-26 14:55:25 KST",
