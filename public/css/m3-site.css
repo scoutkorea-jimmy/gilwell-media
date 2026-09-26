@@ -907,14 +907,69 @@ input[type='radio'] {
   }
 }
 
-/* 반복 기사는 M3 list divider(1px outline-variant)로 행 단위를 구분한다. */
+/*
+ * 홈 기사 목록 — M3 list item.
+ * 행은 카드 가장자리까지 채우고(구분선도 전체 폭), 누를 수 있는 영역 전체에 상태 레이어를 준다.
+ * 칩은 한 줄(24px)만 예약하고 넘치는 태그는 "+N"(home-helpers.js MINI_LABEL_MAX_ROWS=1).
+ */
+.home-rail-card .mini-item {
+  margin-inline: calc(-1 * var(--md-comp-card-padding)) !important;
+  padding: 16px var(--md-comp-card-padding) !important;
+  transition: background-color var(--md-sys-motion-spring-fast-effects);
+}
+
 .home-rail-card .mini-item + .mini-item {
   margin-top: 0;
   border-top: 1px solid var(--md-sys-color-outline-variant) !important;
 }
 
-.home-rail-card .mini-item {
-  padding-block: 16px !important;
+@media (hover: hover) {
+  .home-rail-card .mini-item:hover {
+    background: color-mix(in srgb, var(--md-sys-color-on-surface) var(--md-sys-state-hover), transparent) !important;
+  }
+}
+
+.home-rail-card .mini-item-row {
+  margin-top: 0 !important;
+  align-items: flex-start;
+}
+
+.home-rail-card .mini-item-labels {
+  --mini-label-row-h: 24px;
+  min-height: var(--mini-label-row-h) !important;
+  max-height: var(--mini-label-row-h) !important;
+  margin-bottom: 8px !important;
+}
+
+/* 좁은 열에서도 "+N" 배지가 같은 줄에 남도록 카테고리 칩은 배지 자리를 비우고 말줄임한다. */
+.home-rail-card .mini-item-labels > .category-tag {
+  display: inline-block !important;
+  max-width: calc(100% - 48px);
+  height: 24px;
+  min-height: 0 !important;
+  padding-block: 0 !important;
+  overflow: hidden;
+  line-height: 24px !important;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.home-rail-card .mini-item h4 {
+  margin: 0 0 6px !important;
+  color: var(--md-sys-color-on-surface) !important;
+  font-weight: 700 !important;
+}
+
+.home-rail-card .mini-item-link {
+  color: inherit !important;
+}
+
+.home-rail-card .mini-meta {
+  color: var(--md-sys-color-on-surface-variant) !important;
+}
+
+.home-rail-card .mini-item-actions {
+  margin-top: 0 !important;
 }
 
 .home-lead-footer,

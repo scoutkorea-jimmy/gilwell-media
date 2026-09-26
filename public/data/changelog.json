@@ -1,6 +1,23 @@
 {
   "items": [
   {
+    "version": "00.188.03",
+    "date": "2026-09-26",
+    "released_at": "2026-09-26 16:33:30 KST",
+    "summary": "메인 화면 기사 목록에서 기사 제목과 기사 영역이 또렷이 구분되도록 하고, 칩과 제목 사이의 넓던 여백을 줄였다.",
+    "for_users": [
+      "메인 화면 기사 목록의 태그 칩을 한 줄로 줄이고 넘치는 태그는 +숫자로 보여 주어, 칩과 제목 사이의 빈 여백이 약 30px에서 8px로 줄었습니다.",
+      "기사 제목을 굵게 하고, 기사 사이 구분선을 카드 끝까지 이어 기사 한 건 한 건이 분명하게 나뉩니다.",
+      "마우스를 올리면 기사 영역 전체가 옅게 강조되어 어디까지가 한 기사인지 알 수 있습니다."
+    ],
+    "for_developers": [
+      "public/js/home-helpers.js — MINI_LABEL_MAX_ROWS 2 → 1.",
+      "public/css/m3-site.css — .home-rail-card .mini-item 전체 폭(음수 margin-inline + card padding)·패딩 16·hover state layer 8%, .mini-item-labels 24px 한 줄·하단 8px, h4 700·하단 6px, 레일 카테고리 칩 24px 고정·배지 자리(48px) 남기고 말줄임.",
+      "공개 검사 54개 통과(라이브에 로컬 CSS·JS 주입, 1512/1024/390 칩 넘침 0).",
+      "사이트 버전 00.188.02 → 00.188.03."
+    ]
+  },
+  {
     "version": "00.188.02",
     "date": "2026-09-26",
     "released_at": "2026-09-26 16:22:16 KST",

@@ -224,7 +224,8 @@
   // 이어진다(실측: 열별 카드 높이 635~791px). 칩 폭이 카테고리명 길이에 따라
   // 크게 달라 개수 기준으로는 행 수를 보장할 수 없으므로 렌더 후 실제 위치를
   // 재서 넘치는 칩만 숨기고 "+N" 으로 대체한다.
-  var MINI_LABEL_MAX_ROWS = 2;
+  // 00.188.03: 두 줄 예약이 칩 한 줄짜리 기사에 빈칸을 만들어 한 줄로 줄였다(m3-site.css 와 짝).
+  var MINI_LABEL_MAX_ROWS = 1;
 
   function clampMiniLabelRows(scope) {
     var root = scope && scope.querySelectorAll ? scope : document;
