@@ -72,11 +72,11 @@ async function renderFeaturePage({ params, request, env }, headOnly = false) {
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png">
   <link rel="apple-touch-icon" href="/img/logo.png">
   <link rel="shortcut icon" href="/img/favicon-48.png">
-  <link rel="stylesheet" href="/css/style.css?v=20260926101504">
-  <link rel="stylesheet" href="/css/post.css?v=20260926101504">
-  <link rel="stylesheet" href="/css/chatbot.css?v=20260926101504">
-  <link rel="stylesheet" href="/css/dark-mode.css?v=20260926101504">
-  <link rel="stylesheet" href="/css/m3-site.css?v=20260926101504">
+  <link rel="stylesheet" href="/css/style.css?v=20260926102118">
+  <link rel="stylesheet" href="/css/post.css?v=20260926102118">
+  <link rel="stylesheet" href="/css/chatbot.css?v=20260926102118">
+  <link rel="stylesheet" href="/css/dark-mode.css?v=20260926102118">
+  <link rel="stylesheet" href="/css/m3-site.css?v=20260926102118">
   <style>
     .feature-page {
       background:
@@ -504,9 +504,9 @@ async function renderFeaturePage({ params, request, env }, headOnly = false) {
     </div>
   </footer>
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.4/dist/purify.min.js" integrity="sha384-eEu5CTj3qGvu9PdJuS+YlkNi7d2XxQROAFYOr59zgObtlcux1ae1Il3u7jvdCSWu" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-  <script src="/js/main.js?v=20260926101504"></script>
-  <script src="/js/site-chrome.js?v=20260926101504"></script>
-  <script src="/js/chatbot.js?v=20260926101504" defer></script>
+  <script src="/js/main.js?v=20260926102118"></script>
+  <script src="/js/site-chrome.js?v=20260926102118"></script>
+  <script src="/js/chatbot.js?v=20260926102118" defer></script>
   <script>GW.bootstrapStandardPage();</script>
   <script async type="text/javascript" charset="utf-8" src="https://t1.kakaocdn.net/kas/static/ba.min.js"></script>
 </body>

@@ -3,4 +3,4 @@
 // files instead and run ./scripts/sync_versions.sh.
 export const SITE_VERSION = '00.191.01';
 export const ADMIN_VERSION = '03.153.02';
-export const ASSET_VERSION = '20260926101504';
+export const ASSET_VERSION = '20260926102118';
