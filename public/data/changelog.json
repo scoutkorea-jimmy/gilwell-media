@@ -1,6 +1,20 @@
 {
   "items": [
   {
+    "version": "00.186.01",
+    "date": "2026-09-26",
+    "released_at": "2026-09-26 13:18:00 KST",
+    "summary": "메인 화면에 전체 디자인 리뉴얼을 알리는 감사 배너를 추가했다.",
+    "for_users": [
+      "메인 상단에서 새로워진 BP미디어를 찾아주신 분들께 감사 인사를 전하고 이번 리뉴얼의 방향을 간결하게 안내합니다."
+    ],
+    "for_developers": [
+      "public/index.html과 public/css/m3-site.css — 히어로와 동일한 1280px 축, 단일 tonal surface, compact 12px gutter 규칙의 home-renewal-banner를 추가했다.",
+      "tests/m3-layout.spec.ts — 390px와 1440px에서 배너·히어로의 x축과 너비, 무테두리 단일 surface를 검증한다.",
+      "사이트 버전 00.186.00 → 00.186.01."
+    ]
+  },
+  {
     "version": "00.186.00",
     "date": "2026-09-26",
     "released_at": "2026-09-26 13:07:00 KST",

@@ -360,6 +360,42 @@ body *:not(svg):not(path):not(circle):not(line):not(polyline):not(polygon):not(r
   overflow: hidden;
 }
 
+.home-renewal-banner {
+  width: min(calc(100% - (var(--md-sys-gutter) * 2)), var(--md-sys-content-max));
+  margin: 0 auto 20px;
+  padding: clamp(22px, 3vw, 32px) clamp(24px, 4vw, 48px);
+  border: 0;
+  border-radius: var(--md-sys-shape-extra-large);
+  background:
+    radial-gradient(circle at 92% 18%, rgb(103 80 164 / .14), transparent 32%),
+    var(--md-sys-color-secondary-container);
+  color: var(--md-sys-color-on-secondary-container);
+}
+
+.home-renewal-kicker {
+  margin: 0 0 8px;
+  color: var(--md-sys-color-primary);
+  font-size: var(--md-sys-type-label);
+  font-weight: 800;
+  letter-spacing: .08em;
+}
+
+.home-renewal-title {
+  margin: 0;
+  color: inherit;
+  font-size: clamp(1.4rem, 2.2vw, 2rem);
+  line-height: 1.24;
+  letter-spacing: -.025em;
+}
+
+.home-renewal-copy {
+  max-width: 68ch;
+  margin: 10px 0 0;
+  color: color-mix(in srgb, var(--md-sys-color-on-secondary-container) 76%, transparent);
+  font-size: clamp(.9375rem, 1.4vw, 1.0625rem);
+  line-height: 1.6;
+}
+
 /* Home hero */
 .site-hero-slider {
   width: min(calc(100% - (var(--md-sys-gutter) * 2)), var(--md-sys-content-max));
@@ -1590,6 +1626,27 @@ footer a,
   .ticker {
     width: calc(100% - 24px);
     margin-block: 12px;
+  }
+
+  .home-renewal-banner {
+    width: calc(100% - 24px);
+    margin-bottom: 12px;
+    padding: 22px 20px;
+    border-radius: var(--md-sys-shape-large);
+  }
+
+  .home-renewal-kicker {
+    margin-bottom: 6px;
+    font-size: .75rem;
+  }
+
+  .home-renewal-title {
+    font-size: 1.45rem;
+  }
+
+  .home-renewal-copy {
+    margin-top: 8px;
+    font-size: .9375rem;
   }
 
   .site-hero-slider {

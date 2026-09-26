@@ -69,6 +69,30 @@ test('홈 카드 역할은 대표 surface와 tonal 목록으로 명확히 분리
   expect(result.row.borderBottom).toBe('0px');
 });
 
+test('홈 리뉴얼 감사 배너는 히어로와 같은 축의 한 겹 surface를 사용한다', async ({ page }) => {
+  for (const viewport of [{ width: 390, height: 844 }, { width: 1440, height: 1000 }]) {
+    await page.setViewportSize(viewport);
+    await page.goto('/');
+    const layout = await page.evaluate(() => {
+      const banner = document.querySelector('.home-renewal-banner') as HTMLElement;
+      const hero = document.querySelector('.site-hero-slider') as HTMLElement;
+      const bannerRect = banner.getBoundingClientRect();
+      const heroRect = hero.getBoundingClientRect();
+      const style = getComputedStyle(banner);
+      return {
+        bannerX: Math.round(bannerRect.x), bannerWidth: Math.round(bannerRect.width),
+        heroX: Math.round(heroRect.x), heroWidth: Math.round(heroRect.width),
+        border: style.borderTopWidth, radius: style.borderRadius, background: style.backgroundColor,
+      };
+    });
+    expect(layout.bannerX).toBe(layout.heroX);
+    expect(layout.bannerWidth).toBe(layout.heroWidth);
+    expect(layout.border).toBe('0px');
+    expect(layout.radius).not.toBe('0px');
+    expect(layout.background).not.toBe('rgba(0, 0, 0, 0)');
+  }
+});
+
 test('기사 상단과 보조 정보는 중첩 외곽선을 만들지 않는다', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto('/post/385');
