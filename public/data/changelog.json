@@ -1,6 +1,24 @@
 {
   "items": [
   {
+    "version": "00.188.01",
+    "date": "2026-09-26",
+    "released_at": "2026-09-26 16:09:15 KST",
+    "summary": "메인 화면의 섹션 제목을 또렷하게 키우고, 기사 목록에 행 구분선을 넣어 기사 단위를 쉽게 구분하도록 했다.",
+    "for_users": [
+      "메인 스토리·최신 소식·인기 소식·에디터 추천 제목을 22px 굵은 제목으로 키워 섹션이 한눈에 보입니다.",
+      "한국·아시아태평양·세계·인물 네 열의 제목이 배경에 묻혀 거의 보이지 않던 문제를 고쳤습니다.",
+      "메인 화면의 기사 목록 사이에 얇은 구분선을 넣고 위아래 간격을 16px로 맞춰 기사 하나하나가 분명히 나뉩니다.",
+      "메인 스토리 요약문이 줄 중간에서 잘리지 않고 끝부분이 자연스럽게 흐려집니다."
+    ],
+    "for_developers": [
+      "public/css/m3-site.css — .home-section-title 자체에 title-large(22px/700) 적용(기존 선택자는 하위 h2만 대상이라 미적용), .home-col-header h3 에 on-surface 색 복구(00.188.00 회귀).",
+      "public/css/m3-site.css — .home-rail-card .mini-item + .mini-item 에 1px outline-variant 구분선, .mini-item 상하 16px, ≥840px .home-lead-excerpt 하단 mask 페이드.",
+      "공개 검사 52개 통과(라이브에 로컬 CSS 주입).",
+      "사이트 버전 00.188.00 → 00.188.01."
+    ]
+  },
+  {
     "version": "00.188.00",
     "date": "2026-09-26",
     "released_at": "2026-09-26 15:59:44 KST",

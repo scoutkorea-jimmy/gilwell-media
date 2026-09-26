@@ -822,6 +822,7 @@ input[type='radio'] {
   margin-bottom: var(--md-sys-space-3) !important;
 }
 
+.home-section-title,
 .home-section-title :is(h2, h3),
 .section-header h2 {
   color: var(--md-sys-color-on-surface) !important;
@@ -889,8 +890,22 @@ input[type='radio'] {
   box-shadow: none !important;
 }
 
+/* 대표 기사 요약은 카드 높이에 맞춰 줄어든다. 줄 중간에서 잘리지 않고 끝이 흐려지게 한다. */
+@media (min-width: 840px) {
+  .home-lead-excerpt {
+    -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 3.4em), transparent);
+    mask-image: linear-gradient(to bottom, #000 calc(100% - 3.4em), transparent);
+  }
+}
+
+/* 반복 기사는 M3 list divider(1px outline-variant)로 행 단위를 구분한다. */
 .home-rail-card .mini-item + .mini-item {
-  margin-top: 8px;
+  margin-top: 0;
+  border-top: 1px solid var(--md-sys-color-outline-variant) !important;
+}
+
+.home-rail-card .mini-item {
+  padding-block: 16px !important;
 }
 
 .home-lead-footer,
@@ -1713,6 +1728,7 @@ footer a,
 /* 4열 레일의 열 제목은 M3 title-medium 한 줄로 두어 열마다 카드 시작선이 같다. */
 .home-col-header h3 {
   overflow: hidden;
+  color: var(--md-sys-color-on-surface) !important;
   font-size: var(--md-sys-typescale-title-medium) !important;
   font-weight: 700 !important;
   line-height: 1.5 !important;
