@@ -69,6 +69,18 @@ scope: project
 > - 즉시 해소: `ASSET_VERSION` 재발급 후 재배포. 다만 전파 중 그 URL 이 조회되면
 >   재오염되므로, 배포 후 최소 45초는 아무도 새 토큰 URL 을 건드리지 않게 한다.
 
+> [!important] 오염 방지 가드 (2026-09-26, 00.191.01) — 지우지 말 것
+> 방문자는 배포 직후에도 새 토큰 URL 을 조회하므로 "45초 기다리기"만으로는 막을 수 없다
+> (실측: HKG 가 새 토큰에 옛 main.js 를 480초째 반환 → "새 버전" 배너 반복).
+> [`functions/_middleware.js`](../functions/_middleware.js) `guardVersionedAsset()` 가
+> `/js/*`·`/css/*` 의 `?v=` 가 **자기 배포의 `ASSET_VERSION` 과 다르면 `no-store`** 로 응답해,
+> 전파 중인 옛 배포본이 새 토큰 주소에 옛 파일을 캐시하지 못하게 한다.
+> - 확인: 응답 헤더 `X-Asset-Version: served=…; requested=…` 가 붙으면 가드가 작동한 것이다.
+> - 가드는 "옛 배포본"이 가드를 가진 뒤부터 효과가 있다. 가드를 처음 넣거나 바꾼 배포 직후에는
+>   `ASSET_VERSION` 만 재발급해 한 번 더 배포한다.
+> - `public/js/main.js` 는 페이지 토큰 = 서버 `asset_version` 인데 `APP_VERSION` 만 다르면
+>   배너를 띄우지 않는다(새로고침으로 못 고치는 상태). KMS 13.1.9 참조.
+
 > [!warning] Cloudflare 커밋 메시지 제한
 > `./deploy.sh` 가 `Invalid commit message` 로 실패하면 커밋 메시지를 **ASCII 전용 · 약 1.2KB 미만**으로 amend 한 뒤 재시도한다.
 

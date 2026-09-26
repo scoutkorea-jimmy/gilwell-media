@@ -1583,6 +1583,18 @@ GW.apiFetch('/api/posts/42', { method: 'DELETE' });
 
 **상세 포스트모템**: \`docs/working-notes.md\` §14 (publish_at KST/UTC).
 
+**재발 (2026-09-26, 00.189.02)**: 반대 방향 오류. \`created_at\`·\`updated_at\`(UTC, \`datetime('now')\`)을 KST 로 읽어 기사 JSON-LD \`dateModified\` 가 \`datePublished\` 보다 9시간 앞서고, RSS \`pubDate\`·\`/api/articles.ndjson\` 도 9시간 이르게 나갔다. \`/llms.txt\` 는 KST \`publish_at\` 을 UTC \`datetime('now')\` 와 비교해 최근 9시간 공개 기사가 빠졌다. 해결 — UTC 컬럼은 \`Z\`, \`publish_at\` 만 \`+09:00\` 으로 해석, SQL 비교는 \`PUBLIC_DATE_EXPR <= datetime('now','+9 hours')\`.
+
+### 13.1.9 새 버전 배너 반복 — 버전 자산 엣지 캐시 오염 (2026-09-26, 00.191.01)
+
+#### 기능 세부 설명
+증상: 배포 뒤 일부 방문자에게 \`새 버전이 배포되었습니다\` 배너(13.1.6)가 새로고침해도 계속 떴다. 실측: HKG POP 이 \`/js/main.js?v=<새 ASSET_VERSION>\` 에 **옛 파일(00.190.00)** 을 \`age 480s HIT\` 로 반환, NRT·KIX 는 새 파일. 원인: HTML 은 \`no-cache\` 라 즉시 새 토큰을 가리키지만, 배포 전파 중 아직 옛 배포본을 서빙하는 POP 에 새 토큰 요청이 도착하면 옛 파일이 새 토큰 주소로 엣지에 캐시된다(\`/js/*\` \`max-age=3600\`). 방문자는 새 HTML + 옛 \`APP_VERSION\` 조합이 되어 배너가 뜨고, 새로고침해도 같은 캐시를 받아 최대 1시간 반복된다(03-deploy 의 2026-07-21·22 오염과 같은 구조).
+
+해결 (00.191.01):
+- \`functions/_middleware.js\` \`guardVersionedAsset()\` — \`/js/*\`·\`/css/*\` 요청의 \`?v=\` 가 이 배포의 \`ASSET_VERSION\`(\`functions/_shared/build-version.js\`)과 다르면 응답을 \`Cache-Control: no-store\` + \`CDN-Cache-Control: no-store\` 로 바꾸고 \`X-Asset-Version: served=…; requested=…\` 를 붙인다. 옛 배포본이 새 토큰 주소에 옛 파일을 캐시하지 못한다. 일치하거나 토큰이 없으면 기존 캐시 유지. \`/dreampath/*\` 는 대상 아님.
+- \`public/js/main.js\` — 페이지의 \`main.js?v=\` 토큰이 \`/api/version\` 의 \`asset_version\` 과 같은데 \`APP_VERSION\` 만 다르면(=엣지 오염) 배너 대신 \`console.warn\`. 새로고침으로 못 고치는 상태에서 배너를 반복하지 않는다.
+- 보호는 **이 미들웨어가 '옛 배포본'이 되는 다음 배포부터** 작동한다. 그래서 가드 배포 직후 \`ASSET_VERSION\` 만 재발급해 한 번 더 배포했다.
+
 ### 13.2 스모크 체크 기준
 
 #### 기능 세부 설명
@@ -1626,6 +1638,8 @@ GW.apiFetch('/api/posts/42', { method: 'DELETE' });
 - **배포 "성공"은 출력이 아니라 라이브로 검증** — \`curl .../VERSION\` + 대상 엔드포인트 응답으로 확인 (13.1.7).
 - **순서 의존 단계(D1 마이그레이션 → commit → push → deploy)는 순차 실행** — 병렬 배치 시 앞 단계 실패가 뒤를 취소시킨다 (13.1.7).
 - **게시글 시각을 KST로 표시·집계한다면 \`publish_at\`(타임존 없으면 KST)과 \`created_at\`(UTC)을 같은 규칙으로 취급하지 않았는가** (13.1.8) — SQL은 \`PUBLIC_DATE_EXPR\`, 클라는 \`GW.getPostPublicDate\`를 거친다. raw \`publish_at\`에 \`+9h\`/\`+00:00\` 가정 금지. CSP 변경은 \`_headers\`와 \`_middleware.js buildCsp\` 두 곳을 함께 확인.
+- **DB 시각을 ISO·RFC822 로 내보낸다면 \`created_at\`·\`updated_at\` 은 UTC(\`Z\`), \`publish_at\` 만 KST(\`+09:00\`)로 해석했는가** (13.1.8 재발, 00.189.02) — JSON-LD \`dateModified ≥ datePublished\` 인지 라이브로 확인.
+- **배포 뒤 '새 버전' 배너가 반복되면 엣지 캐시 오염부터 의심했는가** (13.1.9) — \`curl -sD- .../js/main.js?v=$(cat public/ASSET_VERSION)\` 을 여러 번 돌려 \`cf-ray\` POP 별 \`APP_VERSION\`·\`age\`·\`X-Asset-Version\` 을 대조한다. 오염 시 \`ASSET_VERSION\` 재발급 후 재배포, \`_middleware.js guardVersionedAsset\` 를 지우지 않는다.
 
 ### 14.3 각주
 

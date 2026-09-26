@@ -19,6 +19,8 @@
  * API latency and static asset caching are unaffected.
  */
 
+import { ASSET_VERSION } from './_shared/build-version.js';
+
 export async function onRequest(context) {
   const { request, next } = context;
 
@@ -41,6 +43,16 @@ export async function onRequest(context) {
 
   const response = await next();
   const pathname = getPathname(request);
+
+  // [버전 자산 캐시 오염 방지] 배포 전파 중에는 새 HTML 이 가리키는 `/js/main.js?v=<새 토큰>`
+  // 요청이 아직 옛 배포본을 서빙하는 POP 에 도착할 수 있다. 그 POP 은 옛 파일을 새 토큰
+  // 주소로 엣지에 캐시하고(max-age=3600), 방문자는 새로고침해도 옛 main.js 를 받아
+  // "새 버전이 배포되었습니다" 배너가 반복된다(2026-09-26 HKG 실측: age 480s, 00.190.00).
+  // 요청 토큰이 이 배포의 ASSET_VERSION 과 다르면 내용이 그 토큰의 파일이 아니므로
+  // 캐시 금지로 내보낸다. /dreampath/* 는 자체 버전 체계라 대상이 아니다.
+  if (/^\/(js|css)\//.test(pathname)) {
+    return guardVersionedAsset(request, response);
+  }
 
   // [card-news] /card-news/:id 는 "자체 포함형 단일 HTML 앱"(인라인 unpacker +
   // Blob + 문서 전체 교체)을 R2 에서 서빙한다. 라우트가 직접 완화 CSP +
@@ -282,4 +294,15 @@ function appendVary(existing, extra) {
   const list = String(existing || '').split(',').map((s) => s.trim()).filter(Boolean);
   if (!list.includes(extra)) list.push(extra);
   return list.join(', ');
+}
+
+function guardVersionedAsset(request, response) {
+  let requested = '';
+  try { requested = new URL(request.url).searchParams.get('v') || ''; } catch { requested = ''; }
+  if (!requested || requested === ASSET_VERSION || !response.ok) return response;
+  const headers = new Headers(response.headers);
+  headers.set('Cache-Control', 'no-store');
+  headers.set('CDN-Cache-Control', 'no-store');
+  headers.set('X-Asset-Version', `served=${ASSET_VERSION}; requested=${requested}`);
+  return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
 }

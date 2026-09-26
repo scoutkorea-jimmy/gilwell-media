@@ -6,9 +6,9 @@
   'use strict';
 
   const GW = window.GW = {};
-  GW.APP_VERSION = '00.191.00';
-  GW.ADMIN_VERSION = '03.153.01';
-  GW.ASSET_VERSION = '20260926100258';
+  GW.APP_VERSION = '00.191.01';
+  GW.ADMIN_VERSION = '03.153.02';
+  GW.ASSET_VERSION = '20260926101504';
   GW.PALETTE = {
     scoutingPurple: '#622599',
     canvasWhite: '#FFFFFF',
@@ -1014,6 +1014,16 @@
     requestAnimationFrame(function () { el.classList.add('is-visible'); });
   }
 
+  function _readPageAssetToken() {
+    try {
+      var script = document.querySelector('script[src*="/js/main.js?v="]');
+      var match = script && script.getAttribute('src').match(/[?&]v=([^&#]+)/);
+      return match ? match[1] : '';
+    } catch (_) {
+      return '';
+    }
+  }
+
   function _checkVersionOnce() {
     var opts = GW._versionBannerOpts;
     if (!opts || !opts.target) return;
@@ -1036,6 +1046,14 @@
         }
         GW._versionBannerNewVersion = serverVer;
         if (serverVer === _readDismissedVersion(opts.target)) return; // user dismissed this exact one
+        // 페이지(HTML)는 이미 최신 자산 토큰을 가리키는데 main.js 만 낡았다면, 엣지가 옛 파일을
+        // 새 토큰 주소로 캐시한 상태다. 새로고침해도 같은 파일을 받으므로 배너를 띄우면
+        // 끝없이 반복된다. 이 경우는 배너 대신 콘솔에만 남긴다.
+        var pageAssetToken = _readPageAssetToken();
+        if (opts.target === 'site' && data.asset_version && pageAssetToken && pageAssetToken === String(data.asset_version)) {
+          console.warn('[version] stale cached main.js under current asset token; banner suppressed', loadedVer, '→', serverVer);
+          return;
+        }
         _showVersionBanner(serverVer);
       })
       .catch(function (err) { console.warn('[version] poll failed:', err && err.message || err); });
