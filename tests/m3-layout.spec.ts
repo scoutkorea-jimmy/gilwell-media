@@ -69,11 +69,11 @@ test('홈 카드 역할은 대표 surface와 tonal 목록으로 명확히 분리
   expect(result.row.borderBottom).toBe('0px');
 });
 
-test('홈 리뉴얼 감사 인사는 첫 방문에 M3 대화상자로 한 번만 뜬다', async ({ page }) => {
+test('홈 리뉴얼 감사 인사는 M3 대화상자로 뜨고 닫기·오늘 그만 보기를 지킨다', async ({ page }) => {
   for (const viewport of [{ width: 390, height: 844 }, { width: 1440, height: 1000 }]) {
     await page.setViewportSize(viewport);
     await page.goto('/');
-    await page.evaluate(() => { localStorage.removeItem('gw_renewal_thanks_seen'); sessionStorage.removeItem('gw_renewal_thanks_seen'); });
+    await page.evaluate(() => { localStorage.removeItem('gw_renewal_thanks_hidden_until'); sessionStorage.removeItem('gw_renewal_thanks_dismissed'); });
     await page.reload();
     const dialog = page.locator('.gw-thanks-dialog[role="dialog"]');
     await expect(dialog).toBeVisible({ timeout: 10_000 });
@@ -87,8 +87,19 @@ test('홈 리뉴얼 감사 인사는 첫 방문에 M3 대화상자로 한 번만
     expect(box.radius).toBe('28px');
     expect(box.padding).toBe('24px');
     expect(Math.abs(box.left - box.right)).toBeLessThanOrEqual(1);
+    // 닫기 = 이번 방문(세션) 동안 다시 뜨지 않는다
     await page.locator('.gw-thanks-ok').click();
     await expect(dialog).toHaveCount(0);
+    await page.reload();
+    await page.waitForTimeout(2_000);
+    await expect(page.locator('.gw-thanks-dialog')).toHaveCount(0);
+    // 오늘 그만 보기 = 새 방문(세션 초기화)에도 오늘은 뜨지 않는다
+    await page.evaluate(() => sessionStorage.clear());
+    await page.reload();
+    await expect(dialog).toBeVisible({ timeout: 10_000 });
+    await page.locator('.gw-thanks-today').click();
+    await expect(dialog).toHaveCount(0);
+    await page.evaluate(() => sessionStorage.clear());
     await page.reload();
     await page.waitForTimeout(2_000);
     await expect(page.locator('.gw-thanks-dialog')).toHaveCount(0);

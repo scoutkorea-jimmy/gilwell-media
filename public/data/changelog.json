@@ -1,6 +1,22 @@
 {
   "items": [
   {
+    "version": "00.189.01",
+    "date": "2026-09-26",
+    "released_at": "2026-09-26 17:12:26 KST",
+    "summary": "리뉴얼 감사 팝업을 9월 30일까지만 띄우고 오늘 그만 보기 버튼을 추가했다.",
+    "for_users": [
+      "리뉴얼 감사 팝업은 9월 30일 밤 12시(한국 시간)까지만 보이고 10월 1일부터는 더 이상 뜨지 않습니다.",
+      "팝업에 오늘 그만 보기 버튼을 추가했습니다. 닫기는 이번 방문 동안, 오늘 그만 보기는 오늘 자정까지 팝업을 숨깁니다."
+    ],
+    "for_developers": [
+      "public/js/home-banner.js — THANKS_UNTIL=Date.UTC(2026,8,30,15)(=10/1 00:00 KST) 이후 renderThanks 중단, 닫기=sessionStorage gw_renewal_thanks_dismissed, 오늘 그만 보기=localStorage gw_renewal_thanks_hidden_until(KST 날짜), 두 버튼 사이 Tab 포커스 가둠.",
+      "public/css/m3-site.css — .gw-thanks-today M3 text button, 동작 영역 gap 8px·줄바꿈 허용.",
+      "tests/m3-layout.spec.ts — 닫기(세션)·오늘 그만 보기(새 세션에도 미노출) 검증 추가.",
+      "사이트 버전 00.189.00 → 00.189.01."
+    ]
+  },
+  {
     "version": "00.189.00",
     "date": "2026-09-26",
     "released_at": "2026-09-26 16:54:02 KST",

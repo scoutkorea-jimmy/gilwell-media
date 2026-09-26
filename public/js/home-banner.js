@@ -167,27 +167,31 @@
   }
 
   // ── 리뉴얼 감사 팝업 (2026-09-26) ───────────────────────────
-  // 관리자 팝업 배너가 없을 때만 한 번 띄운다. 닫으면 다시 뜨지 않는다.
-  // 두 팝업이 겹치지 않도록 관리자 배너가 있으면 이 팝업은 쉰다.
-  var THANKS_KEY = 'gw_renewal_thanks_seen';
-  var THANKS_VERSION = '2026-09-renewal';
+  // 관리자 팝업 배너가 없을 때만 띄운다. 두 팝업이 겹치지 않도록 관리자 배너가 있으면 쉰다.
+  // 닫기 규칙은 관리자 배너와 같다: 닫기 = 이번 방문만, 오늘 그만 보기 = KST 자정까지.
+  var THANKS_SESSION_KEY = 'gw_renewal_thanks_dismissed';
+  var THANKS_DAY_KEY = 'gw_renewal_thanks_hidden_until';
+  // 2026-09-30 23:59 KST 까지만 노출한다 (10월 1일 0시 KST = 2026-09-30T15:00Z).
+  var THANKS_UNTIL = Date.UTC(2026, 8, 30, 15, 0, 0);
 
   function thanksSeen() {
     try {
-      if (localStorage.getItem(THANKS_KEY) === THANKS_VERSION) return true;
-      if (sessionStorage.getItem(THANKS_KEY) === THANKS_VERSION) return true;
-    } catch (e) { /* 저장소 차단 환경 — 이번 방문 동안만 기억한다 */ }
+      if (localStorage.getItem(THANKS_DAY_KEY) === todayKst()) return true;
+      if (sessionStorage.getItem(THANKS_SESSION_KEY) === '1') return true;
+    } catch (e) { /* 저장소 차단 환경 — 이 페이지에서만 기억한다 */ }
     return !!window.__gwThanksShown;
   }
 
-  function rememberThanks() {
+  function rememberThanks(allDay) {
     window.__gwThanksShown = true;
-    try { localStorage.setItem(THANKS_KEY, THANKS_VERSION); } catch (e) {
-      try { sessionStorage.setItem(THANKS_KEY, THANKS_VERSION); } catch (e2) { /* 무시 */ }
-    }
+    try {
+      if (allDay) localStorage.setItem(THANKS_DAY_KEY, todayKst());
+      else sessionStorage.setItem(THANKS_SESSION_KEY, '1');
+    } catch (e) { /* 무시 */ }
   }
 
   function renderThanks() {
+    if (Date.now() >= THANKS_UNTIL) return;
     if (thanksSeen() || document.querySelector('.gw-banner-overlay, .gw-thanks-overlay')) return;
     var previousFocus = document.activeElement;
     var overlay = el('div', 'gw-thanks-overlay');
@@ -199,8 +203,11 @@
     var copy = el('p', 'gw-thanks-copy', { id: 'gw-thanks-copy' });
     copy.textContent = '더 편안한 읽기와 명확한 탐색을 위해 모든 공개 화면을 새롭게 다듬었습니다.';
     var actions = el('div', 'gw-thanks-actions');
+    var today = el('button', 'gw-thanks-today', { type: 'button' });
+    today.textContent = '오늘 그만 보기';
     var ok = el('button', 'gw-thanks-ok', { type: 'button' });
-    ok.textContent = '확인';
+    ok.textContent = '닫기';
+    actions.appendChild(today);
     actions.appendChild(ok);
     dialog.appendChild(kicker);
     dialog.appendChild(title);
@@ -208,20 +215,24 @@
     dialog.appendChild(actions);
     overlay.appendChild(dialog);
 
-    function close() {
-      rememberThanks();
+    function close(allDay) {
+      rememberThanks(allDay);
       document.removeEventListener('keydown', onKey, true);
       overlay.remove();
       document.body.classList.remove('gw-banner-open');
       if (previousFocus && previousFocus.focus) previousFocus.focus();
     }
     function onKey(e) {
-      if (e.key === 'Escape') { e.preventDefault(); close(); return; }
-      if (e.key === 'Tab') { e.preventDefault(); ok.focus(); }   // 누를 수 있는 요소가 하나뿐이다
+      if (e.key === 'Escape') { e.preventDefault(); close(false); return; }
+      if (e.key !== 'Tab') return;
+      // 포커스를 두 버튼 사이에 가둔다
+      e.preventDefault();
+      (document.activeElement === ok ? today : ok).focus();
     }
 
-    ok.addEventListener('click', close);
-    overlay.addEventListener('click', function (e) { if (e.target === overlay) close(); });
+    ok.addEventListener('click', function () { close(false); });
+    today.addEventListener('click', function () { close(true); });
+    overlay.addEventListener('click', function (e) { if (e.target === overlay) close(false); });
     document.addEventListener('keydown', onKey, true);
     document.body.appendChild(overlay);
     document.body.classList.add('gw-banner-open');
