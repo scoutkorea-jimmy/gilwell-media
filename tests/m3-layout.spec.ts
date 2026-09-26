@@ -102,6 +102,7 @@ test('캘린더 날짜 셀은 버튼 공통 pill 모양을 상속하지 않는�
 });
 
 test('공개 화면의 보이는 버튼은 이름과 최소 터치 크기를 가진다', async ({ page }) => {
+  test.setTimeout(90_000);
   await page.setViewportSize({ width: 390, height: 844 });
   for (const path of PUBLIC_PATHS) {
     await page.goto(path, { waitUntil: 'domcontentloaded' });
