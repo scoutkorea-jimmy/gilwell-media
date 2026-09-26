@@ -613,3 +613,18 @@ test('입력 필드·칩·버튼 그룹은 M3 규격(56/48 필드, 16px 입력, 
     for (const gap of result.groups) expect(gap, `${path} 버튼 그룹 간격`).toBe('8px');
   }
 });
+
+test('공개 화면은 보이는 H1 이 하나이고, 로고는 홈에서만 H1 이다', async ({ page }) => {
+  test.setTimeout(90_000);
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  for (const path of PUBLIC_PATHS) {
+    await page.goto(path, { waitUntil: 'domcontentloaded' });
+    await page.waitForTimeout(800);
+    const result = await page.evaluate(() => ({
+      visible: [...document.querySelectorAll('h1')].filter((h) => h.getClientRects().length > 0).map((h) => (h.textContent || '').trim().slice(0, 20)),
+      logoIsH1: !!document.querySelector('.masthead-logo h1'),
+    }));
+    expect(result.visible, `${path} 보이는 H1`).toHaveLength(1);
+    expect(result.logoIsH1, `${path} 로고 H1`).toBe(path === '/');
+  }
+});

@@ -236,11 +236,11 @@ export async function onRequestGet({ params, env, request }) {
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png"/>
   <link rel="apple-touch-icon" href="/img/logo.png"/>
   <link rel="shortcut icon" href="/img/favicon-48.png"/>
-  <link rel="stylesheet" href="/css/style.css?v=20260926083205">
-  <link rel="stylesheet" href="/css/post.css?v=20260926083205">
-  <link rel="stylesheet" href="/css/chatbot.css?v=20260926083205">
-  <link rel="stylesheet" href="/css/dark-mode.css?v=20260926083205">
-  <link rel="stylesheet" href="/css/m3-site.css?v=20260926083205">
+  <link rel="stylesheet" href="/css/style.css?v=20260926093039">
+  <link rel="stylesheet" href="/css/post.css?v=20260926093039">
+  <link rel="stylesheet" href="/css/chatbot.css?v=20260926093039">
+  <link rel="stylesheet" href="/css/dark-mode.css?v=20260926093039">
+  <link rel="stylesheet" href="/css/m3-site.css?v=20260926093039">
 </head>
 <body class="post-page">
   <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
@@ -274,7 +274,7 @@ export async function onRequestGet({ params, env, request }) {
         <a href="/">
           <div class="masthead-logo-row">
             <img src="/img/logo.svg" alt="" class="masthead-logo-img" aria-hidden="true">
-            <h1>BP미디어</h1>
+            <p class="masthead-wordmark">BP미디어</p>
           </div>
           <div class="sub">${SITE_DOMAIN_LABEL}</div>
         </a>
@@ -425,7 +425,7 @@ export async function onRequestGet({ params, env, request }) {
         <h4>관리자</h4>
         <a href="/admin.html">관리자 페이지 →</a>
         <a href="/glossary-raw">용어집 RAW로 보기 →</a>
-        <p class="footer-build">Site <span class="site-build-version">V00.189.02</span> · Admin <span class="admin-build-version">V03.153.01</span></p>
+        <p class="footer-build">Site <span class="site-build-version">V00.190.00</span> · Admin <span class="admin-build-version">V03.153.01</span></p>
       </div>
       <div class="footer-bottom">
         <p data-i18n="footer.copyright">© 2026 ${SITE_BRAND_NAME} · ${SITE_DOMAIN_LABEL}</p>
@@ -462,7 +462,7 @@ export async function onRequestGet({ params, env, request }) {
           <span class="bw-cat-badge" id="post-edit-category-chip" style="background:${cat.color};">${escapeHtml(cat.label)}</span>
           <span class="bw-header-hint">기사 수정 · 저장 시 즉시 반영</span>
         </div>
-        <h1 class="bw-title" id="post-edit-title">기사 수정</h1>
+        <h2 class="bw-title" id="post-edit-title">기사 수정</h2>
         <button class="bw-close" id="post-edit-close-x" type="button" aria-label="수정 모달 닫기">
           <svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="3" y1="3" x2="13" y2="13"/><line x1="13" y1="3" x2="3" y2="13"/></svg>
         </button>
@@ -650,10 +650,10 @@ export async function onRequestGet({ params, env, request }) {
 
   <script>window.GW_BOOT_RUNTIME=${serializeForScript(publicRuntime)};window.GW_KAKAO_JS_KEY=${serializeForScript(String(publicRuntime.kakao_js_key || ''))};window.GW_POST_BOOT=${serializeForScript({ editPostId: id, sharePostUrl: postUrl, sharePostTitle: titleText, sharePostSubtitle: subtitleText, editSeed: JSON.parse(editSeed), visibleTags })};</script>
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.4/dist/purify.min.js" integrity="sha384-eEu5CTj3qGvu9PdJuS+YlkNi7d2XxQROAFYOr59zgObtlcux1ae1Il3u7jvdCSWu" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-  <script src="/js/main.js?v=20260926083205"></script>
-  <script src="/js/site-chrome.js?v=20260926083205"></script>
-  <script src="/js/chatbot.js?v=20260926083205" defer></script>
-  <script src="/js/post-page.js?v=20260926083205"></script>
+  <script src="/js/main.js?v=20260926093039"></script>
+  <script src="/js/site-chrome.js?v=20260926093039"></script>
+  <script src="/js/chatbot.js?v=20260926093039" defer></script>
+  <script src="/js/post-page.js?v=20260926093039"></script>
   <script async type="text/javascript" charset="utf-8" src="https://t1.kakaocdn.net/kas/static/ba.min.js"></script>
 </body>
 </html>`;

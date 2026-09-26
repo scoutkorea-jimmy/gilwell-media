@@ -590,7 +590,7 @@
           </div>` : ''}
         </div>
       ` : ''}
-      <h1 class="memo-detail-title" lang="en">${escapeHtml(titleEn)}</h1>
+      <h2 class="memo-detail-title" lang="en">${escapeHtml(titleEn)}</h2>
       ${titleKo && titleKo !== titleEn ? `<div class="memo-detail-title-ko" lang="ko">${escapeHtml(titleKo)}</div>` : ''}
       <div class="memo-detail-actions">
         <div class="memo-detail-views" aria-label="조회수">조회 <span data-role="view-count">${Number(item.view_count || 0)}</span></div>

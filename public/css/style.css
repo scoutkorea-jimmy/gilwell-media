@@ -41,7 +41,7 @@ h1, h2, h3, h4, h5, h6,
 strong, b,
 .post-page-title, .post-page-subtitle,
 .hero-main h2, .hero-side-item h3,
-.board-banner h2, .home-section-title,
+.board-banner :is(h1, h2), .home-section-title,
 .bw-title, .v3-card-title {
   font-variation-settings: 'wght' 700, 'opsz' auto;
   font-size-adjust: 0.50;
@@ -213,8 +213,8 @@ label,
 .hero-main h2,
 .hero-side-item h3,
 .section-header h2,
-.board-banner-text h2,
-.glossary-hero-copy h2,
+.board-banner-text :is(h1, h2),
+.glossary-hero-copy :is(h1, h2),
 .article-item h4,
 .admin-header-copy,
 .admin-sidebar-btn-label,
@@ -733,7 +733,7 @@ body[data-home-bootstrap] .masthead {
   color:           inherit;
 }
 
-.masthead-logo h1 {
+.masthead-logo :is(h1, .masthead-wordmark) {
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size:      var(--fs-display);
   font-weight:    700;
@@ -2643,7 +2643,7 @@ body[data-home-bootstrap] .lang-btn:hover {
   gap:           var(--gap-section);
 }
 
-.board-banner-text h2 {
+.board-banner-text :is(h1, h2) {
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size:      var(--fs-display-lg);
   font-weight:    700;
@@ -4919,7 +4919,7 @@ footer a:hover { color: var(--on-accent); }
    ════════════════════════════════════════════════════════════ */
 @media (max-width: 900px) {
   .masthead-top       { padding: var(--gap-card) var(--gap-section); grid-template-columns: minmax(120px, 1fr) auto minmax(120px, 1fr); }
-  .masthead-logo h1   { font-size: var(--fs-headline); }
+  .masthead-logo :is(h1, .masthead-wordmark)   { font-size: var(--fs-headline); }
   .masthead-date      { min-width: 120px; font-size: var(--fs-meta); }
   .masthead-right     { min-width: 120px; }
   .nav                { padding: 0 var(--gap-section); }
@@ -5154,7 +5154,7 @@ footer a:hover { color: var(--on-accent); }
     padding-bottom: 2px;
   }
   .masthead-logo-row { gap: var(--gap-micro); }
-  .masthead-logo h1   { font-size: calc(26px * var(--mobile-user-scale)); }
+  .masthead-logo :is(h1, .masthead-wordmark)   { font-size: calc(26px * var(--mobile-user-scale)); }
   .masthead-logo .sub { font-size: var(--fs-micro); letter-spacing: 0.1em; margin-top: 1px; }
   .masthead-logo-img  { width: 42px; height: 42px; }
   .masthead-type-controls {
@@ -5327,7 +5327,7 @@ footer a:hover { color: var(--on-accent); }
 
   /* Board banner on phone */
   .board-banner       { padding: 20px var(--gap-card); }
-  .board-banner h2    { font-size: var(--mobile-fs-section); line-height: 1.2; }
+  .board-banner :is(h1, h2)    { font-size: var(--mobile-fs-section); line-height: 1.2; }
   .board-banner p     { font-size: var(--mobile-fs-body); line-height: var(--mobile-lh-copy); }
 
   /* Ticker on phone */
@@ -6633,7 +6633,7 @@ footer a:hover { color: var(--on-accent); }
   align-items: start;
   margin-bottom: 28px;
 }
-.glossary-hero-copy h2 {
+.glossary-hero-copy :is(h1, h2) {
   margin: 0 0 var(--gap-element);
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size: var(--fs-display-lg);
@@ -6821,7 +6821,7 @@ footer a:hover { color: var(--on-accent); }
     gap: var(--gap-card);
     margin-bottom: 20px;
   }
-  .glossary-hero-copy h2 { font-size: var(--fs-headline); line-height: 1.15; margin-bottom: 10px; }
+  .glossary-hero-copy :is(h1, h2) { font-size: var(--fs-headline); line-height: 1.15; margin-bottom: 10px; }
   .glossary-hero-copy p {
     font-size: var(--fs-body);
     line-height: 1.65;

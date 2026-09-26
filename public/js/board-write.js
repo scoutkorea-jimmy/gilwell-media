@@ -70,7 +70,7 @@
             '<span class="bw-cat-badge" style="background:' + cat.color + '">' + GW.escapeHtml(cat.label) + '</span>' +
             '<span class="bw-header-hint">BP미디어 표준 v2.1 · 공식 원고 작성 도구</span>' +
           '</div>' +
-          '<h1 class="bw-title" id="board-write-heading">새 게시글 작성</h1>' +
+          '<h2 class="bw-title" id="board-write-heading">새 게시글 작성</h2>' +
           '<button class="bw-close" id="board-write-close" aria-label="닫기" type="button">' +
             '<svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="3" y1="3" x2="13" y2="13"/><line x1="13" y1="3" x2="3" y2="13"/></svg>' +
           '</button>' +

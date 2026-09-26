@@ -18,7 +18,7 @@ body.wosm-members-page #main-content {
   border: none;
   background: transparent;
 }
-.members-hero-copy h2 {
+.members-hero-copy :is(h1, h2) {
   margin: 0 0 var(--gap-element);
 }
 .members-hero-copy p {

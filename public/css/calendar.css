@@ -52,7 +52,7 @@
   background: rgba(92, 42, 157, 0.1);
   color: var(--scouting-purple-text);
 }
-.calendar-page-head h2 {
+.calendar-page-head :is(h1, h2) {
   margin: 14px 0 10px;
   font-size: clamp(28px, 4vw, 48px);
   line-height: 1.05;

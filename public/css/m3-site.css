@@ -405,7 +405,9 @@ input[type='radio'] {
   border-radius: var(--md-sys-shape-large);
 }
 
-.masthead-logo h1 {
+/* 홈에서만 로고가 H1 이다. 다른 페이지는 같은 모양의 p.masthead-wordmark 로 두고 페이지 제목을 H1 으로 쓴다. */
+.masthead-logo :is(h1, .masthead-wordmark) {
+  margin: 0;
   color: var(--md-sys-color-primary) !important;
   letter-spacing: -.045em !important;
 }
@@ -1211,13 +1213,13 @@ input[type='radio'] {
   border-radius: 0 !important;
 }
 
-.board-banner h2,
-.glossary-hero h2,
-.members-hero h2,
-.memo-hero h2,
-.search-page-header h1,
+.board-banner :is(h1, h2),
+.glossary-hero :is(h1, h2),
+.members-hero :is(h1, h2),
+.memo-hero :is(h1, h2),
+.search-page-header :is(h1, h2),
 .jam16-hero h1,
-.calendar-page-head h2 {
+.calendar-page-head :is(h1, h2) {
   color: var(--md-sys-color-on-primary-container) !important;
   font-size: var(--md-sys-typescale-headline-large) !important;
   line-height: 1.25 !important;
@@ -1893,6 +1895,11 @@ footer a,
 /* 통계 문구는 나중에 채워진다. 두 줄 높이를 미리 잡아 마스트헤드가 늘어나며 본문을 밀지 않게 한다. */
 .masthead-stats {
   min-height: calc(2 * 1.5 * var(--fs-micro));
+}
+
+/* 검색 제목이 H1 이 되며 M3 제목 규칙을 받는다. 아래 동작과 붙지 않게 간격을 둔다. */
+.search-page-header :is(h1, h2) {
+  margin: 0 0 16px !important;
 }
 
 /* 히어로 안 검색 카드는 히어로 여백을 그대로 쓰고 자기 여백을 더하지 않는다. */
@@ -2641,13 +2648,13 @@ footer a,
     line-height: 1.29 !important;
   }
 
-  .board-banner h2,
-  .glossary-hero h2,
-  .members-hero h2,
-  .memo-hero h2,
-  .search-page-header h1,
+  .board-banner :is(h1, h2),
+  .glossary-hero :is(h1, h2),
+  .members-hero :is(h1, h2),
+  .memo-hero :is(h1, h2),
+  .search-page-header :is(h1, h2),
   .jam16-hero h1,
-  .calendar-page-head h2 {
+  .calendar-page-head :is(h1, h2) {
     font-size: var(--md-sys-typescale-headline-medium) !important;
     line-height: 1.29 !important;
   }

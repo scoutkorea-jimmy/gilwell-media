@@ -26,7 +26,7 @@
   flex-wrap: wrap;
   gap: var(--gap-element);
 }
-.memo-hero h2 {
+.memo-hero :is(h1, h2) {
   margin: 0;
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size: var(--fs-display-lg);
@@ -350,7 +350,7 @@
   font-weight: normal;
 }
 
-.memo-detail h1.memo-detail-title {
+.memo-detail .memo-detail-title {
   margin: 0 0 4px;
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size: var(--fs-display-lg); font-weight: 700;
@@ -1397,9 +1397,9 @@
 /* ── Mobile ───────────────────────────────────────────────────────────── */
 @media (max-width: 768px) {
   .memorabilia-page-wrap { padding: 24px 20px 60px; }
-  .memo-hero h2 { font-size: var(--fs-display); }
+  .memo-hero :is(h1, h2) { font-size: var(--fs-display); }
   .memo-grid { grid-template-columns: repeat(2, 1fr); gap: var(--gap-element); }
-  .memo-detail h1.memo-detail-title { font-size: var(--fs-document); }
+  .memo-detail .memo-detail-title { font-size: var(--fs-document); }
   .memo-detail-title-ko { font-size: var(--fs-title); }
   .memo-detail-meta { grid-template-columns: 1fr; gap: var(--gap-micro) 0; padding: 14px; }
   .memo-detail-meta .memo-meta-label { margin-top: 8px; }

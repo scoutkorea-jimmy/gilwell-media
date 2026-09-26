@@ -1,6 +1,24 @@
 {
   "items": [
   {
+    "version": "00.190.00",
+    "date": "2026-09-26",
+    "released_at": "2026-09-26 18:30:39 KST",
+    "summary": "검색엔진과 AI가 각 페이지의 주제를 정확히 읽도록 제목 구조(H1)를 정리하고, 게시판·목록 페이지의 검색 제목과 설명을 구체적으로 다시 썼다.",
+    "for_users": [
+      "모든 페이지에서 로고 대신 실제 페이지 제목(예: 한국스카우트연맹 소식, 스카우트 용어집)이 가장 큰 제목으로 인식되도록 정리했습니다. 홈은 사이트 이름이 제목입니다.",
+      "게시판·용어집·회원국 현황·캘린더 등 9개 페이지의 검색 결과 제목과 설명을 연맹 정식 명칭과 페이지 내용이 드러나도록 구체적으로 바꿨습니다(예: Korea · BP미디어 → 한국스카우트연맹 소식 · BP미디어).",
+      "검색 페이지 제목이 다른 페이지와 같은 모양으로 보입니다."
+    ],
+    "for_developers": [
+      "public/*.html(홈 제외 15개)·functions/post/[id].js·functions/feature/[category]/[slug].js — 로고 <h1>BP미디어</h1> → <p class=\"masthead-wordmark\">. 게시판 5종·glossary·search·calendar·wosm-members·memorabilia·contributors 제목 h2 → h1. 글쓰기(board-write.js)·기사 수정·기념품 상세(memorabilia.js) 창 제목 h1 → h2.",
+      "public/css/{style,m3-site,calendar,memorabilia,wosm-members}.css — 태그 의존 선택자를 :is(h1, h2)·:is(h1, .masthead-wordmark)로 확장해 모양 유지(캘린더·모바일 게시판 픽셀 차이 0).",
+      "functions/_shared/site-meta.js 기본값 + D1 settings.site_meta(관리자 저장값) — latest·korea·apr·wosm·people·wosm_members·glossary·contributors·calendar title/description 갱신(설명 67~89자). 이전 값 백업 보관.",
+      "tests/m3-layout.spec.ts — 공개 화면 보이는 H1 1개·로고 H1 은 홈만 검증 추가.",
+      "사이트 버전 00.189.02 → 00.190.00."
+    ]
+  },
+  {
     "version": "00.189.02",
     "date": "2026-09-26",
     "released_at": "2026-09-26 17:32:05 KST",
