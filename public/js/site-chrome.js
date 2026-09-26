@@ -1145,3 +1145,99 @@
     GW.initContentGalleries(document);
   });
 })();
+
+/*
+ * Material 3 모션 (2026-09-26) — 공개 화면 전용(m3-site.css 가 있을 때만).
+ *  1) 누름 물결(ripple): 누른 지점에서 state layer 가 퍼진다.
+ *  2) 콘텐츠 등장: 카드·목록 행이 화면에 처음 들어올 때 아래에서 살짝 올라오며 나타난다.
+ * 기기에서 '동작 줄이기'를 켠 사용자에게는 둘 다 쓰지 않는다.
+ * 레이아웃에 영향이 없도록 transform·opacity 만 쓰고, 스크립트가 실패하면 콘텐츠는 그대로 보인다.
+ */
+(function () {
+  'use strict';
+  if (!document.querySelector('link[href*="/css/m3-site.css"]')) return;
+  var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)');
+  if (reduce && reduce.matches) return;
+
+  var RIPPLE_SEL = [
+    'button:not(:disabled)', '.nav a', '.mobile-nav-link', '.mobile-nav-sublink',
+    '.home-section-more', '.write-btn', '.home-subscribe-btn', '.jam16-link-btn',
+    '.mini-item', '.post-card', '.memo-card', '.search-result-card', '.home-memo-card',
+    '.member-country-card', '.contributor-card', '.memo-related-card'
+  ].join(',');
+  var RIPPLE_SKIP = '.hero-dot, .gw-chatbot-panel *, .calendar-day, .calendar-week-bar, .mh-search-btn';
+
+  function ripple(event) {
+    if (event.button !== undefined && event.button !== 0) return;
+    var host = event.target.closest && event.target.closest(RIPPLE_SEL);
+    if (!host || host.matches(RIPPLE_SKIP)) return;
+    var rect = host.getBoundingClientRect();
+    if (!rect.width || !rect.height) return;
+    if (getComputedStyle(host).position === 'static') host.classList.add('m3-ripple-host');
+    var layer = document.createElement('span');
+    layer.className = 'm3-ripple-layer';
+    layer.setAttribute('aria-hidden', 'true');
+    var wave = document.createElement('span');
+    wave.className = 'm3-ripple';
+    var size = Math.hypot(rect.width, rect.height) * 2;
+    wave.style.width = wave.style.height = size + 'px';
+    wave.style.left = (event.clientX - rect.left - size / 2) + 'px';
+    wave.style.top = (event.clientY - rect.top - size / 2) + 'px';
+    layer.appendChild(wave);
+    host.appendChild(layer);
+    function release() {
+      layer.classList.add('is-released');
+      setTimeout(function () { layer.remove(); }, 450);
+      window.removeEventListener('pointerup', release, true);
+      window.removeEventListener('pointercancel', release, true);
+    }
+    window.addEventListener('pointerup', release, true);
+    window.addEventListener('pointercancel', release, true);
+  }
+  document.addEventListener('pointerdown', ripple, { passive: true, capture: true });
+
+  var ENTER_SEL = '.home-lead-card, .mini-item, .post-card, .article-card, .memo-card, .home-memo-card, .search-result-card, .member-country-card, .calendar-event-card, .contributor-card, .memo-related-card, .jam16-photo';
+  if (!('IntersectionObserver' in window)) return;
+  var bootAt = Date.now();
+  var seen = typeof WeakSet === 'function' ? new WeakSet() : null;
+  var batch = 0;
+  var batchTimer = null;
+  var io = new IntersectionObserver(function (entries) {
+    entries.forEach(function (entry) {
+      if (!entry.isIntersecting) return;
+      var el = entry.target;
+      io.unobserve(el);
+      // 같은 순간 들어온 항목끼리 40ms 씩 순서대로(최대 240ms) 나타난다.
+      el.style.transitionDelay = Math.min(batch * 40, 240) + 'ms';
+      batch += 1;
+      clearTimeout(batchTimer);
+      batchTimer = setTimeout(function () { batch = 0; }, 120);
+      requestAnimationFrame(function () { el.classList.add('is-in'); });
+      setTimeout(function () { el.style.transitionDelay = ''; el.classList.remove('m3-enter', 'is-in'); }, 900);
+    });
+  }, { rootMargin: '0px 0px -40px 0px', threshold: 0.05 });
+
+  function watch(root) {
+    var list = root.matches && root.matches(ENTER_SEL) ? [root] : [];
+    if (root.querySelectorAll) list = list.concat(Array.prototype.slice.call(root.querySelectorAll(ENTER_SEL)));
+    list.forEach(function (el) {
+      if (seen && seen.has(el)) return;
+      if (seen) seen.add(el);
+      var r = el.getBoundingClientRect();
+      // 첫 로드 뒤 화면 안에서 다시 그려지는 목록(최신 소식 새로고침 등)은 깜빡이지 않게 그대로 둔다.
+      if (Date.now() - bootAt > 2500 && r.top < innerHeight && r.bottom > 0) return;
+      el.classList.add('m3-enter');
+      io.observe(el);
+    });
+  }
+  function start() {
+    watch(document.body);
+    new MutationObserver(function (records) {
+      records.forEach(function (rec) {
+        Array.prototype.forEach.call(rec.addedNodes, function (n) { if (n.nodeType === 1) watch(n); });
+      });
+    }).observe(document.body, { childList: true, subtree: true });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
+  else start();
+})();

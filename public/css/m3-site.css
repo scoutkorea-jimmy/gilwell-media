@@ -26,9 +26,10 @@
   --md-sys-color-on-error: #ffffff;
   --md-sys-color-error-container: #ffdad6;
   --md-sys-color-on-error-container: #410002;
-  --md-sys-color-surface: #fff9ff;
+  /* 페이지 배경은 브랜드 Canvas White(--gw-canvas-white). 카드·패널은 아래 surface-container 단계로 구분한다. */
+  --md-sys-color-surface: #ffffff;
   --md-sys-color-surface-dim: #e0d7e0;
-  --md-sys-color-surface-bright: #fff9ff;
+  --md-sys-color-surface-bright: #ffffff;
   --md-sys-color-surface-container-lowest: #ffffff;
   --md-sys-color-surface-container-low: #faf2fb;
   --md-sys-color-surface-container: #f4ecf5;
@@ -190,9 +191,7 @@ html {
 }
 
 body {
-  background:
-    radial-gradient(circle at 10% -10%, rgb(242 218 255 / .48), transparent 34rem),
-    var(--md-sys-color-surface) !important;
+  background: var(--md-sys-color-surface) !important;
   color: var(--md-sys-color-on-surface) !important;
   font-size: var(--md-sys-type-body);
   line-height: 1.6;
@@ -936,13 +935,17 @@ input[type='radio'] {
   background: var(--md-sys-color-surface-container-low) !important;
   box-shadow: none !important;
   overflow: hidden;
-  transition: box-shadow var(--md-sys-motion-spring-default-effects), background-color var(--md-sys-motion-spring-fast-effects);
+  transition:
+    transform var(--md-sys-motion-spring-default-spatial),
+    box-shadow var(--md-sys-motion-spring-default-effects),
+    background-color var(--md-sys-motion-spring-fast-effects);
 }
 
 @media (hover: hover) {
   :where(.home-lead-card, .article-card, .post-card, .memo-card, .home-memo-card, .member-country-card, .member-country-child-card, .calendar-event-card, .calendar-map-result-card, .contributor-card, .memo-related-card, .search-result-card, .jam16-photo):hover {
     background: var(--md-sys-color-surface-container) !important;
-    box-shadow: var(--md-sys-elevation-1) !important;
+    box-shadow: var(--md-sys-elevation-2) !important;
+    transform: translateY(-2px);
   }
 }
 
@@ -2010,6 +2013,153 @@ footer a,
     line-height: 1.22 !important;
   }
 }
+
+/* ─────────────────────────────────────────────────────────────
+ * Material 3 motion
+ * 스프링(spatial) 은 위치·모양, effects 는 색·투명도에 쓴다. 전부 transform·opacity 기반이라
+ * 레이아웃을 밀지 않는다. 동작 줄이기 설정은 파일 끝 prefers-reduced-motion 규칙이 끈다.
+ * ───────────────────────────────────────────────────────────── */
+
+/* 1) 누름 물결 — js/site-chrome.js 가 누른 지점에 만든다 */
+.m3-ripple-host { position: relative; }
+
+.m3-ripple-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+.m3-ripple {
+  position: absolute;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: .12;
+  transform: scale(0);
+  animation: m3-ripple-grow 450ms var(--md-sys-motion-easing-emphasized-decelerate) forwards;
+}
+
+.m3-ripple-layer.is-released .m3-ripple {
+  opacity: 0;
+  transition: opacity 300ms linear;
+}
+
+@keyframes m3-ripple-grow { to { transform: scale(1); } }
+
+/* 목록 행·카드는 글자색이 아니라 표면 위 on-surface 로 번진다 */
+:is(.mini-item, .post-card, .memo-card, .search-result-card, .home-memo-card, .member-country-card, .contributor-card, .memo-related-card) > .m3-ripple-layer {
+  color: var(--md-sys-color-on-surface);
+}
+
+/* 3) 콘텐츠 등장 — 화면에 처음 들어올 때 12px 아래에서 올라온다.
+ *    예전 fadeUp(페이지를 열 때 화면 밖 카드까지 한꺼번에 재생되고 최종 transform 을 붙잡아
+ *    hover 떠오름을 막던 애니메이션)은 이 스크롤 등장으로 대체한다. */
+.post-card,
+.article-card {
+  animation: none !important;
+}
+
+.m3-enter {
+  opacity: 0;
+  transform: translateY(12px);
+}
+
+.m3-enter.is-in {
+  opacity: 1;
+  transform: none;
+  transition:
+    opacity 400ms var(--md-sys-motion-easing-emphasized-decelerate),
+    transform 500ms var(--md-sys-motion-easing-emphasized-decelerate);
+}
+
+@media print {
+  .m3-enter { opacity: 1 !important; transform: none !important; }
+}
+
+/* 4) 선택 전환 — 칩 체크는 그려지듯, 버튼 그룹은 스프링으로 모양이 바뀐다 */
+:where(.tag-filter-btn, .filter-btn, .glossary-letter-btn, .calendar-filter-chip, .calendar-tag-preset):is(.active, .is-active, [aria-pressed='true'])::before {
+  animation: m3-check-draw 350ms var(--md-sys-motion-spring-fast-spatial) both;
+}
+
+@keyframes m3-check-draw {
+  from { opacity: 0; transform: rotate(45deg) scale(.2); }
+  to { opacity: 1; transform: rotate(45deg) scale(1); }
+}
+
+:where(.board-sort-btn, .board-period-btn, .board-days-btn, .search-scope-btn, .members-view-chip, .calendar-view-btn):is(.active, .is-active, [aria-pressed='true']) {
+  animation: m3-select-pop var(--md-sys-motion-spring-fast-spatial) both;
+}
+
+@keyframes m3-select-pop {
+  from { transform: scale(.94); }
+  to { transform: scale(1); }
+}
+
+/* 상단 메뉴 현재 위치 표시(active indicator)가 가운데에서 펼쳐진다 */
+html body .nav a.active,
+html body .nav button.active,
+html body .nav [aria-current='page'],
+html body .mobile-nav-link.active,
+html body .mobile-nav-sublink.active {
+  background-color: transparent !important;
+  background-image: linear-gradient(var(--m3-indicator, var(--md-sys-color-secondary-container)), var(--m3-indicator, var(--md-sys-color-secondary-container))) !important;
+  background-repeat: no-repeat !important;
+  background-position: center !important;
+  animation: m3-indicator-grow 500ms var(--md-sys-motion-spring-default-spatial) both;
+}
+
+html body .mobile-nav-link.active,
+html body .mobile-nav-sublink.active {
+  --m3-indicator: var(--md-sys-color-primary-container);
+}
+
+@keyframes m3-indicator-grow {
+  from { background-size: 32% 100%; }
+  to { background-size: 100% 100%; }
+}
+
+/* 5) 모바일 메뉴 — 닫힘 상태를 display:none 대신 visibility 로 두어 여닫는 전환이 실제로 재생되게 한다 */
+@media (max-width: 900px) {
+  .mobile-compact-overlay {
+    display: block !important;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 200ms linear, visibility 0s linear 200ms;
+  }
+
+  body.mobile-compact-drawer-open .mobile-compact-overlay {
+    opacity: 1;
+    visibility: visible;
+    transition: opacity 250ms linear;
+  }
+
+  .mobile-compact-drawer {
+    display: block !important;
+    visibility: hidden;
+    transform: translateX(-104%) !important;
+    transition: transform 250ms cubic-bezier(.3, 0, .8, .15), visibility 0s linear 250ms !important;
+  }
+
+  body.mobile-compact-drawer-open .mobile-compact-drawer {
+    visibility: visible;
+    transform: none !important;
+    transition: transform 400ms var(--md-sys-motion-easing-emphasized-decelerate) !important;
+  }
+}
+
+/* 감사 팝업 닫힘 — 들어올 때의 반대 방향으로 짧게 사라진다 */
+.gw-thanks-overlay.is-closing {
+  animation: gw-thanks-scrim-out 200ms linear forwards;
+}
+
+.gw-thanks-overlay.is-closing .gw-thanks-dialog {
+  animation: gw-thanks-exit 200ms cubic-bezier(.3, 0, .8, .15) forwards;
+}
+
+@keyframes gw-thanks-scrim-out { to { opacity: 0; } }
+@keyframes gw-thanks-exit { to { opacity: 0; transform: translateY(8px) scale(.98); } }
 
 /* Dark M3 roles — 기존 사이트 계약대로 사용자 옵트인일 때만 적용 */
 :root[data-theme='dark'] {

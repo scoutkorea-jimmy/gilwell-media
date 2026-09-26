@@ -1,6 +1,25 @@
 {
   "items": [
   {
+    "version": "00.191.00",
+    "date": "2026-09-26",
+    "released_at": "2026-09-26 19:02:58 KST",
+    "summary": "공개 화면 배경을 흰색으로 바꾸고, 누름 물결·카드 떠오름·스크롤 등장·선택 전환·메뉴 여닫기 등 Material 3 모션을 더했다.",
+    "for_users": [
+      "공개 화면의 바탕을 연분홍빛에서 흰색으로 바꿨습니다. 카드와 패널은 옅은 회보라 면으로 구분됩니다.",
+      "버튼·칩·기사 카드를 누르면 누른 자리에서 물결이 퍼지고, 카드에 마우스를 올리면 살짝 떠오릅니다.",
+      "기사 카드와 목록은 화면에 들어올 때 아래에서 부드럽게 올라오며 나타나고, 필터 체크 표시·정렬 버튼·상단 메뉴의 현재 위치 표시가 스프링처럼 바뀝니다.",
+      "휴대전화 메뉴가 실제로 옆에서 밀려 들어오고 닫힐 때도 부드럽게 빠집니다. 기기에서 동작 줄이기를 켜면 이 움직임은 모두 꺼집니다."
+    ],
+    "for_developers": [
+      "public/css/m3-site.css — 밝은 모드 --md-sys-color-surface/-bright #ffffff(Canvas White), body 방사형 그라데이션 제거. 다크 모드 무변경.",
+      "public/js/site-chrome.js — m3-site.css 가 있을 때만: pointerdown ripple(.m3-ripple-layer, 450ms emphasized-decelerate), IntersectionObserver+MutationObserver 등장(.m3-enter→.is-in, 40ms 순차·최대 240ms, 로드 2.5초 뒤 화면 안 재렌더는 생략). prefers-reduced-motion 이면 비활성.",
+      "public/css/m3-site.css — 카드 hover elevation-2 + translateY(-2px) spring, 칩 체크 draw·버튼 그룹 select-pop·nav active indicator background-size 32%→100% spring, 모바일 drawer 를 display 대신 visibility 로 닫아 slide·scrim 전환 실제 재생, .post-card/.article-card 의 옛 fadeUp(최종 transform 고정으로 hover 방해) 제거, 인쇄 시 등장 대기 요소 노출.",
+      "public/js/home-banner.js — 감사 팝업 닫힘 모션 200ms 후 제거.",
+      "공개 검사 55개 통과. 사이트 버전 00.190.00 → 00.191.00."
+    ]
+  },
+  {
     "version": "00.190.00",
     "date": "2026-09-26",
     "released_at": "2026-09-26 18:30:39 KST",

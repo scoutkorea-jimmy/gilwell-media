@@ -216,11 +216,14 @@
     overlay.appendChild(dialog);
 
     function close(allDay) {
+      if (overlay.classList.contains('is-closing')) return;
       rememberThanks(allDay);
       document.removeEventListener('keydown', onKey, true);
-      overlay.remove();
       document.body.classList.remove('gw-banner-open');
       if (previousFocus && previousFocus.focus) previousFocus.focus();
+      // 닫힘 모션(200ms)을 보여 준 뒤 제거한다. 동작 줄이기 환경에서는 애니메이션이 0 에 가깝다.
+      overlay.classList.add('is-closing');
+      setTimeout(function () { overlay.remove(); }, 220);
     }
     function onKey(e) {
       if (e.key === 'Escape') { e.preventDefault(); close(false); return; }
