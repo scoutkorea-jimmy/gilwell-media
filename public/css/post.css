@@ -719,6 +719,51 @@
   background: transparent;
   min-height: 280px;
 }
+/* 수정 창은 게시판 작성 창과 같은 카드 구조를 쓴다. 기사 페이지에는 board.css 가
+   로드되지 않으므로, 작성 창의 보조 열·접이식 카드 규칙(board.css)을 수정 창 범위로만 옮겨 둔다. */
+.post-edit-box .bw-side {
+  display: flex;
+  flex-direction: column;
+  gap: var(--bw-gap-sm);
+  position: sticky;
+  top: 0;
+  align-self: start;
+}
+.post-edit-box .bw-card-tight { padding: var(--bw-gap-md); }
+.post-edit-box .bw-card-title-sm { font-size: var(--fs-caption); margin-bottom: 10px; }
+.post-edit-box .bw-label-req { color: var(--shade-red-1); font-weight: 700; margin-left: 2px; }
+.post-edit-box .bw-card-collapsible { padding: 0; }
+.post-edit-box .bw-details { padding: 0; }
+.post-edit-box .bw-card-head-summary {
+  list-style: none;
+  cursor: pointer;
+  margin: 0;
+  padding: var(--bw-gap-lg);
+  border-radius: var(--bw-radius);
+  transition: background 0.15s;
+}
+.post-edit-box .bw-card-head-summary::-webkit-details-marker { display: none; }
+.post-edit-box .bw-card-head-summary:hover { background: var(--bw-canvas); }
+.post-edit-box .bw-chevron { font-size: var(--fs-small); color: var(--bw-text-m); transition: transform 0.2s; }
+.post-edit-box .bw-details[open] > .bw-card-head-summary .bw-chevron { transform: rotate(180deg); }
+.post-edit-box .bw-card-body {
+  padding: 0 var(--bw-gap-lg) var(--bw-gap-lg);
+  border-top: 1px solid var(--bw-border);
+  padding-top: var(--bw-gap-md);
+}
+.post-edit-box .bw-shortcut-hint {
+  font-size: var(--fs-micro);
+  color: var(--bw-text-l);
+  text-align: center;
+  padding: 8px 0 0;
+}
+@media (max-width: 1100px) {
+  .post-edit-box .bw-side { position: static; }
+}
+@media (max-width: 760px) {
+  .post-edit-box .bw-card-collapsible .bw-card-head-summary { padding: var(--bw-gap-md); }
+  .post-edit-box .bw-card-body { padding: 0 var(--bw-gap-md) var(--bw-gap-md); }
+}
 @media (max-width: 760px) {
   .post-page-meta { gap: var(--gap-tight); font-size: var(--fs-caption); }
   .post-page-date { font-size: var(--fs-caption); }

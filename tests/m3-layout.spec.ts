@@ -565,7 +565,7 @@ test('공개 홈페이지 UI 소스에는 이모지 글리프를 사용하지 �
   expect(violations).toEqual([]);
 });
 
-test('입력 필드·칩·연결 버튼은 M3 규격(56/48 필드, 16px 입력, 32 칩)을 지킨다', async ({ page }) => {
+test('입력 필드·칩·버튼 그룹은 M3 규격(56/48 필드, 16px 입력, 32 칩)을 지킨다', async ({ page }) => {
   test.setTimeout(90_000);
   await page.setViewportSize({ width: 1440, height: 1000 });
   for (const path of ['/korea', '/search?q=스카우트', '/glossary', '/memorabilia', '/wosm-members', '/calendar']) {
@@ -597,6 +597,6 @@ test('입력 필드·칩·연결 버튼은 M3 규격(56/48 필드, 16px 입력, 
       expect(chip.height, `${path} 칩 높이`).toBe(32);
       expect(chip.font, `${path} 칩 글자`).toBeGreaterThanOrEqual(14);
     }
-    for (const gap of result.groups) expect(gap, `${path} 연결 버튼 간격`).toBe('2px');
+    for (const gap of result.groups) expect(gap, `${path} 버튼 그룹 간격`).toBe('8px');
   }
 });

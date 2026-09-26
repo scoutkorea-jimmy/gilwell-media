@@ -393,6 +393,7 @@ input[type='radio'] {
 }
 
 .masthead-top {
+  border-bottom: 0 !important;
   width: min(calc(100% - (var(--md-sys-gutter) * 2)), var(--md-sys-content-max));
   min-height: 88px;
   margin-inline: auto;
@@ -416,7 +417,10 @@ input[type='radio'] {
 }
 
 .masthead-search {
-  min-width: min(280px, 28vw);
+  display: flex !important;
+  align-items: center;
+  width: min(360px, 30vw);
+  min-width: 240px;
   height: 56px;
   border: 0 !important;
   border-radius: var(--md-sys-shape-full) !important;
@@ -430,6 +434,9 @@ input[type='radio'] {
 }
 
 .mh-search-input {
+  flex: 1 1 auto;
+  width: auto !important;
+  min-width: 0 !important;
   min-height: 56px !important;
   height: 56px !important;
   padding-left: 20px !important;
@@ -446,9 +453,11 @@ input[type='radio'] {
 }
 
 .mh-search-btn {
+  flex: 0 0 56px;
   width: 56px;
   height: 56px;
   min-height: 56px;
+  margin-left: auto;
   border: 0 !important;
   border-radius: 50% !important;
   color: var(--md-sys-color-on-surface-variant) !important;
@@ -1381,14 +1390,15 @@ input[type='radio'] {
 }
 
 /*
- * Connected button group — M3 Expressive: 버튼 사이 2px, 바깥 모서리 full,
- * 안쪽 모서리 small. 선택된 버튼은 완전한 원형으로 바뀌어 모양과 색 두 가지로 구분된다.
+ * Standard button group — M3 Expressive: 모든 버튼이 같은 full 모서리, 사이 간격 8px.
+ * (연결형은 선택되지 않은 버튼 한쪽만 각져 보여 따로 노는 모양이 되어 쓰지 않는다.)
+ * 선택 상태는 secondary-container 색 + 굵은 글자로 구분한다.
  */
 :where(.board-sort-toggle, .board-period-bar, .board-days-bar, .search-scope-row, .calendar-view-toggle, .members-view-chips) {
   display: inline-flex !important;
   flex-wrap: nowrap;
   align-items: stretch !important;
-  gap: 2px !important;
+  gap: 8px !important;
   padding: 0 !important;
   border: 0 !important;
   border-radius: 0 !important;
@@ -1405,7 +1415,7 @@ input[type='radio'] {
   justify-content: center;
   padding: 0 16px !important;
   border: 0 !important;
-  border-radius: var(--md-sys-shape-small) !important;
+  border-radius: var(--md-sys-shape-full) !important;
   background: var(--md-sys-color-surface-container-high) !important;
   color: var(--md-sys-color-on-surface-variant) !important;
   font-size: var(--md-sys-typescale-label-large) !important;
@@ -1415,16 +1425,6 @@ input[type='radio'] {
   text-transform: none !important;
   white-space: nowrap;
   transition: background-color var(--md-sys-motion-spring-fast-effects), color var(--md-sys-motion-spring-fast-effects), border-radius var(--md-sys-motion-spring-fast-spatial);
-}
-
-:where(.board-sort-btn, .board-period-btn, .board-days-btn, .search-scope-btn, .members-view-chip, .calendar-view-btn):first-child {
-  border-top-left-radius: var(--md-sys-shape-full) !important;
-  border-bottom-left-radius: var(--md-sys-shape-full) !important;
-}
-
-:where(.board-sort-btn, .board-period-btn, .board-days-btn, .search-scope-btn, .members-view-chip, .calendar-view-btn):last-child {
-  border-top-right-radius: var(--md-sys-shape-full) !important;
-  border-bottom-right-radius: var(--md-sys-shape-full) !important;
 }
 
 :where(.board-sort-btn, .board-period-btn, .board-days-btn, .search-scope-btn, .members-view-chip, .calendar-view-btn):is(.active, .is-active, [aria-pressed='true']) {
@@ -2419,7 +2419,7 @@ footer a,
     display: grid !important;
     grid-auto-flow: column;
     grid-auto-columns: minmax(0, 1fr);
-    gap: var(--md-sys-space-1) !important;
+    gap: var(--md-sys-space-2) !important;
     width: 100%;
   }
 
@@ -2431,7 +2431,7 @@ footer a,
     white-space: normal;
   }
 
-  /* 연결 버튼 그룹은 줄바꿈하지 않고 화면 폭을 균등하게 나눈다. */
+  /* 버튼 그룹은 줄바꿈하지 않고 화면 폭을 균등하게 나눈다. */
   .search-scope-row,
   .calendar-view-toggle,
   .members-view-chips {
