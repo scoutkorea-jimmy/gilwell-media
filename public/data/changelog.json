@@ -1,6 +1,23 @@
 {
   "items": [
   {
+    "version": "00.188.04",
+    "date": "2026-09-26",
+    "released_at": "2026-09-26 16:45:02 KST",
+    "summary": "메인 화면의 인기 소식·에디터 추천과 분류별 소식 네 열이 같은 모양으로 보이던 것을 강조 단계에 맞게 구분했다.",
+    "for_users": [
+      "인기 소식·에디터 추천은 채워진 카드와 큰 제목으로, 그 아래 분류별 네 열은 테두리만 있는 카드와 한 단계 작은 제목으로 바꿔 두 영역의 중요도가 한눈에 구분됩니다.",
+      "인기 소식·에디터 추천에서 태그 칩과 제목 사이가 넓게 벌어지던 문제를 고쳤습니다.",
+      "나란히 놓인 인기 소식과 에디터 추천 카드의 아래 끝을 맞췄습니다."
+    ],
+    "for_developers": [
+      "public/css/m3-site.css — .home-3col .home-rail-card 를 outlined card(surface + inset 1px outline-variant)로, 제목 title-medium 16px·min-height 3em. .home-2col 제목 min-height 0, .home-rail-card h4 align-items flex-start(두 줄 예약 안 한 줄 제목 세로 가운데 뜸 해소).",
+      "public/css/m3-site.css — .home-2col > div flex column + 카드 flex:1 로 2열 카드 바닥선 일치(1512/1024/820 실측 일치).",
+      "공개 검사 54개 통과.",
+      "사이트 버전 00.188.03 → 00.188.04."
+    ]
+  },
+  {
     "version": "00.188.03",
     "date": "2026-09-26",
     "released_at": "2026-09-26 16:33:30 KST",
