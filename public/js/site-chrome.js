@@ -601,13 +601,13 @@
           '<img src="/img/logo.svg" alt="" class="mobile-compact-brand-mark" aria-hidden="true">' +
           '<span class="mobile-compact-brand-text">BP미디어</span>' +
         '</a>' +
-        '<a href="/search" class="mobile-compact-search" aria-label="검색">⌕</a>' +
+        '<a href="/search" class="mobile-compact-search" aria-label="검색"></a>' +
       '</div>' +
       '<div class="mobile-compact-overlay" id="mobile-compact-overlay" hidden></div>' +
       '<aside class="mobile-compact-drawer" id="mobile-compact-drawer" aria-hidden="true">' +
         '<div class="mobile-compact-drawer-head">' +
           '<strong class="mobile-compact-drawer-title">메뉴</strong>' +
-          '<button type="button" class="mobile-compact-drawer-close" id="mobile-compact-drawer-close" aria-label="메뉴 닫기">×</button>' +
+          '<button type="button" class="mobile-compact-drawer-close" id="mobile-compact-drawer-close" aria-label="메뉴 닫기"></button>' +
         '</div>' +
         '<nav class="mobile-compact-nav" id="mobile-compact-nav" aria-label="모바일 메뉴"></nav>' +
       '</aside>';
@@ -707,9 +707,10 @@
     }
 
     function updateVisibility() {
-      // 햄버거 헤더는 모바일 한정 + .nav 가 viewport 위로 사라진 뒤에만 노출.
-      // 페이지 최상단(.nav 가 보이는 상태) 에서는 햄버거 숨김 — 사용자 요청 (2026-05-27).
+      // compact(599px 이하)는 큰 masthead를 CSS로 숨기므로 전용 헤더를 항상 노출한다.
+      // 600–900px 구간에서는 기존처럼 desktop nav가 viewport 위로 사라진 뒤에만 노출한다.
       var isMobile = window.matchMedia && window.matchMedia('(max-width: 900px)').matches;
+      var isCompact = window.matchMedia && window.matchMedia('(max-width: 599px)').matches;
       var navEl = document.querySelector('.masthead .nav, .nav');
       var navHidden = false;
       if (navEl) {
@@ -717,7 +718,7 @@
         // nav 의 하단이 viewport 위로 올라간 상태 = 스크롤로 nav 가 사라짐
         navHidden = rect.bottom <= 0;
       }
-      var shouldShow = isMobile && navHidden;
+      var shouldShow = isCompact || (isMobile && navHidden);
       refs.header.classList.toggle('is-visible', shouldShow);
       refs.header.setAttribute('aria-hidden', shouldShow ? 'false' : 'true');
       if (!isMobile && document.body.classList.contains('mobile-compact-drawer-open')) {

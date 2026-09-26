@@ -30,7 +30,7 @@ for (const viewport of [
   });
 }
 
-test('홈 카드 역할은 대표 박스와 선형 목록으로 명확히 분리된다', async ({ page }) => {
+test('홈 카드 역할은 대표 surface와 tonal 목록으로 명확히 분리된다', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto('/');
   await page.waitForTimeout(3_000);
@@ -45,6 +45,8 @@ test('홈 카드 역할은 대표 박스와 선형 목록으로 명확히 분리
         bottom: Math.round(rect.bottom),
         borderTop: style.borderTopWidth,
         borderLeft: style.borderLeftWidth,
+        borderBottom: style.borderBottomWidth,
+        radius: style.borderRadius,
         background: style.backgroundColor,
       };
     };
@@ -60,9 +62,11 @@ test('홈 카드 역할은 대표 박스와 선형 목록으로 명확히 분리
   expect(result.lead.borderTop).toBe('0px');
   expect(result.lead.background).not.toBe('rgba(0, 0, 0, 0)');
   expect(result.rail.borderTop).toBe('0px');
-  expect(result.rail.background).toBe('rgba(0, 0, 0, 0)');
+  expect(result.rail.background).not.toBe('rgba(0, 0, 0, 0)');
+  expect(result.rail.radius).not.toBe('0px');
   expect(result.row.borderTop).toBe('0px');
   expect(result.row.borderLeft).toBe('0px');
+  expect(result.row.borderBottom).toBe('0px');
 });
 
 test('기사 상단과 보조 정보는 중첩 외곽선을 만들지 않는다', async ({ page }) => {
@@ -197,7 +201,7 @@ test('기념품 검색과 필터는 한 겹 외곽선과 동일한 컨트롤 높
   expect(result.focusShadow).toContain('inset');
 });
 
-test('잼버리 개요는 중첩 캡 없이 행 구분선만 사용한다', async ({ page }) => {
+test('잼버리 개요는 이중 캡이나 구분선 없이 하나의 tonal surface를 사용한다', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto('/jamboree16');
   const styles = await page.evaluate(() => {
@@ -214,9 +218,87 @@ test('잼버리 개요는 중첩 캡 없이 행 구분선만 사용한다', asyn
     };
   });
   expect(styles).toMatchObject({
-    outerBorder: '0px', outerRadius: '0px', outerBackground: 'rgba(0, 0, 0, 0)',
-    rowBorderTop: '0px', rowBorderBottom: '1px', rowRadius: '0px', rowBackground: 'rgba(0, 0, 0, 0)',
+    outerBorder: '0px',
+    rowBorderTop: '0px', rowBorderBottom: '0px', rowRadius: '0px', rowBackground: 'rgba(0, 0, 0, 0)',
   });
+  expect(styles.outerRadius).not.toBe('0px');
+  expect(styles.outerBackground).not.toBe('rgba(0, 0, 0, 0)');
+});
+
+test('홈과 기사 페이지는 같은 1280px 외곽 축을 사용하고 기사 본문은 본문 열을 채운다', async ({ page }) => {
+  await page.setViewportSize({ width: 1920, height: 1000 });
+  await page.goto('/');
+  const home = await page.locator('.home-wrapper').evaluate((el) => {
+    const rect = el.getBoundingClientRect();
+    return { x: Math.round(rect.x), width: Math.round(rect.width) };
+  });
+
+  await page.goto('/post/385');
+  const post = await page.evaluate(() => {
+    const read = (selector: string) => {
+      const rect = (document.querySelector(selector) as HTMLElement).getBoundingClientRect();
+      return { x: Math.round(rect.x), width: Math.round(rect.width) };
+    };
+    return { wrap: read('.post-page-wrap'), main: read('.post-page-main'), body: read('.post-page-body') };
+  });
+
+  expect(post.wrap).toEqual(home);
+  expect(post.body.x).toBe(post.main.x);
+  expect(post.body.width).toBe(post.main.width);
+});
+
+test('compact 화면은 큰 4단 메뉴 대신 64px 상단바와 중앙 정렬 드로어를 사용한다', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/korea');
+  const header = page.locator('#mobile-compact-header');
+  await expect(header).toBeVisible();
+  await expect(page.locator('body > .masthead')).toBeHidden();
+
+  const headerRect = await header.evaluate((el) => {
+    const rect = el.getBoundingClientRect();
+    return { top: Math.round(rect.top), height: Math.round(rect.height) };
+  });
+  expect(headerRect).toEqual({ top: 0, height: 64 });
+
+  await page.locator('#mobile-compact-toggle').click();
+  await expect(page.locator('#mobile-compact-drawer')).toBeVisible();
+  const alignment = await page.locator('.mobile-nav-link, .mobile-nav-group-summary, .mobile-nav-sublink').evaluateAll((items) => items.filter((item) => {
+    const rect = item.getBoundingClientRect();
+    return rect.width > 0 && rect.height > 0;
+  }).map((item) => {
+    const style = getComputedStyle(item);
+    return { align: style.alignItems, justify: style.justifyContent, textAlign: style.textAlign };
+  }));
+  expect(alignment.length).toBeGreaterThan(0);
+  for (const item of alignment) {
+    expect(item).toEqual({ align: 'center', justify: 'center', textAlign: 'center' });
+  }
+});
+
+test('compact 기사 화면도 64px 상단바와 양축 중앙 정렬 메뉴를 사용한다', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/post/385');
+  const header = page.locator('.post-mobile-header');
+  const bar = page.locator('.post-mobile-header-bar');
+  await expect(header).toBeVisible();
+  await expect(page.locator('body.post-page > .masthead')).toBeHidden();
+
+  const geometry = await bar.evaluate((el) => {
+    const rect = el.getBoundingClientRect();
+    const brand = (el.querySelector('.post-mobile-brand') as HTMLElement).getBoundingClientRect();
+    return { height: Math.round(rect.height), brandCenter: Math.round(brand.left + brand.width / 2) };
+  });
+  expect(geometry.height).toBe(64);
+  expect(geometry.brandCenter).toBe(195);
+
+  const alignment = await page.locator('.post-mobile-quicknav a').evaluateAll((items) => items.map((item) => {
+    const style = getComputedStyle(item);
+    return { align: style.alignItems, justify: style.justifyContent, textAlign: style.textAlign };
+  }));
+  expect(alignment.length).toBeGreaterThan(0);
+  for (const item of alignment) {
+    expect(item).toEqual({ align: 'center', justify: 'center', textAlign: 'center' });
+  }
 });
 
 test('게시판 D-day는 별도 박스가 아닌 배경 오브제로 표시된다', async ({ page }) => {
