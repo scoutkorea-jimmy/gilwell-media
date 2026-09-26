@@ -72,11 +72,11 @@ async function renderFeaturePage({ params, request, env }, headOnly = false) {
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png">
   <link rel="apple-touch-icon" href="/img/logo.png">
   <link rel="shortcut icon" href="/img/favicon-48.png">
-  <link rel="stylesheet" href="/css/style.css?v=20260926074502">
-  <link rel="stylesheet" href="/css/post.css?v=20260926074502">
-  <link rel="stylesheet" href="/css/chatbot.css?v=20260926074502">
-  <link rel="stylesheet" href="/css/dark-mode.css?v=20260926074502">
-  <link rel="stylesheet" href="/css/m3-site.css?v=20260926074502">
+  <link rel="stylesheet" href="/css/style.css?v=20260926075402">
+  <link rel="stylesheet" href="/css/post.css?v=20260926075402">
+  <link rel="stylesheet" href="/css/chatbot.css?v=20260926075402">
+  <link rel="stylesheet" href="/css/dark-mode.css?v=20260926075402">
+  <link rel="stylesheet" href="/css/m3-site.css?v=20260926075402">
   <style>
     .feature-page {
       background:
@@ -375,7 +375,7 @@ async function renderFeaturePage({ params, request, env }, headOnly = false) {
             <img src="/img/logo.svg" alt="" class="masthead-logo-img" aria-hidden="true">
             <h1>BP미디어</h1>
           </div>
-          <div class="sub">The BP Post · ${footerDomain}</div>
+          <div class="sub">The BP Media · ${footerDomain}</div>
         </a>
       </div>
       <div class="masthead-right">
@@ -414,7 +414,7 @@ async function renderFeaturePage({ params, request, env }, headOnly = false) {
       &nbsp;&nbsp;&nbsp;<span class="ticker-diamond">◆</span>&nbsp;&nbsp;&nbsp;
       한국스카우트연맹 및 세계스카우트연맹 소식을 전합니다
       &nbsp;&nbsp;&nbsp;<span class="ticker-diamond">◆</span>&nbsp;&nbsp;&nbsp;
-      The BP Post · ${footerDomain}
+      The BP Media · ${footerDomain}
     </div>
   </div>
 
@@ -495,7 +495,7 @@ async function renderFeaturePage({ params, request, env }, headOnly = false) {
         <h4>바로가기</h4>
         <a href="/${category}">${escapeHtml(categoryMeta.label)} 목록 →</a>
         <a href="/latest">최신 기사 보기 →</a>
-        <p class="footer-build">Site <span class="site-build-version">V00.188.04</span> · Admin <span class="admin-build-version">V03.153.01</span></p>
+        <p class="footer-build">Site <span class="site-build-version">V00.189.00</span> · Admin <span class="admin-build-version">V03.153.01</span></p>
       </div>
       <div class="footer-bottom">
         <p>© 2026 ${footerTitle} · ${footerDomain}</p>
@@ -504,9 +504,9 @@ async function renderFeaturePage({ params, request, env }, headOnly = false) {
     </div>
   </footer>
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.4/dist/purify.min.js" integrity="sha384-eEu5CTj3qGvu9PdJuS+YlkNi7d2XxQROAFYOr59zgObtlcux1ae1Il3u7jvdCSWu" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-  <script src="/js/main.js?v=20260926074502"></script>
-  <script src="/js/site-chrome.js?v=20260926074502"></script>
-  <script src="/js/chatbot.js?v=20260926074502" defer></script>
+  <script src="/js/main.js?v=20260926075402"></script>
+  <script src="/js/site-chrome.js?v=20260926075402"></script>
+  <script src="/js/chatbot.js?v=20260926075402" defer></script>
   <script>GW.bootstrapStandardPage();</script>
   <script async type="text/javascript" charset="utf-8" src="https://t1.kakaocdn.net/kas/static/ba.min.js"></script>
 </body>

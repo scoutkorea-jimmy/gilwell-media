@@ -581,41 +581,85 @@ input[type='radio'] {
   overflow: hidden;
 }
 
-.home-renewal-banner {
-  width: min(calc(100% - (var(--md-sys-gutter) * 2)), var(--md-sys-content-max));
-  margin: 0 auto 20px;
-  padding: clamp(22px, 3vw, 32px) clamp(24px, 4vw, 48px);
-  border: 0;
-  border-radius: var(--md-sys-shape-extra-large);
-  background:
-    radial-gradient(circle at 92% 18%, rgb(103 80 164 / .14), transparent 32%),
-    var(--md-sys-color-secondary-container);
-  color: var(--md-sys-color-on-secondary-container);
+/* 리뉴얼 감사 팝업 — M3 basic dialog (모서리 28, 여백 24, 폭 280~560, scrim 32%) */
+.gw-thanks-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10050;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgb(0 0 0 / .32);
+  animation: gw-thanks-scrim var(--md-sys-motion-spring-default-effects) both;
 }
 
-.home-renewal-kicker {
+.gw-thanks-dialog {
+  width: min(100%, 560px);
+  min-width: min(100%, 280px);
+  padding: 24px;
+  border-radius: var(--md-sys-shape-extra-large);
+  background: var(--md-sys-color-surface-container-high);
+  color: var(--md-sys-color-on-surface);
+  box-shadow: var(--md-sys-elevation-3);
+  animation: gw-thanks-enter 400ms var(--md-sys-motion-easing-emphasized-decelerate) both;
+}
+
+.gw-thanks-kicker {
   margin: 0 0 8px;
   color: var(--md-sys-color-primary);
-  font-size: var(--md-sys-type-label);
-  font-weight: 800;
-  letter-spacing: .08em;
+  font-size: var(--md-sys-typescale-label-large);
+  font-weight: 700;
 }
 
-.home-renewal-title {
+.gw-thanks-title {
   margin: 0;
-  color: inherit;
+  color: var(--md-sys-color-on-surface);
   font-size: var(--md-sys-typescale-headline-small);
+  font-weight: 700;
   line-height: 1.34;
   letter-spacing: 0;
+  text-wrap: balance;
 }
 
-.home-renewal-copy {
-  max-width: 68ch;
-  margin: 10px 0 0;
-  color: color-mix(in srgb, var(--md-sys-color-on-secondary-container) 76%, transparent);
-  font-size: var(--md-sys-typescale-body-large);
+.gw-thanks-copy {
+  margin: 16px 0 0;
+  color: var(--md-sys-color-on-surface-variant);
+  font-size: var(--md-sys-typescale-body-medium);
   line-height: 1.6;
 }
+
+.gw-thanks-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 24px;
+}
+
+.gw-thanks-ok {
+  min-width: 64px;
+  min-height: var(--md-comp-button-height);
+  padding: 0 24px;
+  border: 0;
+  border-radius: var(--md-sys-shape-full);
+  background: var(--md-sys-color-primary);
+  color: var(--md-sys-color-on-primary);
+  font-size: var(--md-sys-typescale-label-large);
+  font-weight: 500;
+  cursor: pointer;
+  transition: border-radius var(--md-sys-motion-spring-fast-spatial), box-shadow var(--md-sys-motion-spring-fast-effects);
+}
+
+@media (hover: hover) {
+  .gw-thanks-ok:hover {
+    box-shadow: inset 0 0 0 999px color-mix(in srgb, currentColor var(--md-sys-state-hover), transparent);
+  }
+}
+
+.gw-thanks-ok:active {
+  border-radius: var(--md-sys-shape-small);
+}
+
+@keyframes gw-thanks-scrim { from { opacity: 0; } }
+@keyframes gw-thanks-enter { from { opacity: 0; transform: translateY(12px) scale(.98); } }
 
 /* Home hero */
 .site-hero-slider {
@@ -2372,26 +2416,6 @@ footer a,
   .ticker {
     width: calc(100% - 32px);
     margin-block: 12px;
-  }
-
-  .home-renewal-banner {
-    width: calc(100% - 32px);
-    margin-bottom: 16px;
-    padding: 24px 20px;
-  }
-
-  .home-renewal-kicker {
-    margin-bottom: 6px;
-    font-size: .75rem;
-  }
-
-  .home-renewal-title {
-    font-size: var(--md-sys-typescale-title-large);
-  }
-
-  .home-renewal-copy {
-    margin-top: 8px;
-    font-size: var(--md-sys-typescale-body-medium);
   }
 
   .site-hero-slider {

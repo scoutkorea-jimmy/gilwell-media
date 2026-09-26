@@ -69,27 +69,29 @@ test('홈 카드 역할은 대표 surface와 tonal 목록으로 명확히 분리
   expect(result.row.borderBottom).toBe('0px');
 });
 
-test('홈 리뉴얼 감사 배너는 히어로와 같은 축의 한 겹 surface를 사용한다', async ({ page }) => {
+test('홈 리뉴얼 감사 인사는 첫 방문에 M3 대화상자로 한 번만 뜬다', async ({ page }) => {
   for (const viewport of [{ width: 390, height: 844 }, { width: 1440, height: 1000 }]) {
     await page.setViewportSize(viewport);
     await page.goto('/');
-    const layout = await page.evaluate(() => {
-      const banner = document.querySelector('.home-renewal-banner') as HTMLElement;
-      const hero = document.querySelector('.site-hero-slider') as HTMLElement;
-      const bannerRect = banner.getBoundingClientRect();
-      const heroRect = hero.getBoundingClientRect();
-      const style = getComputedStyle(banner);
-      return {
-        bannerX: Math.round(bannerRect.x), bannerWidth: Math.round(bannerRect.width),
-        heroX: Math.round(heroRect.x), heroWidth: Math.round(heroRect.width),
-        border: style.borderTopWidth, radius: style.borderRadius, background: style.backgroundColor,
-      };
+    await page.evaluate(() => { localStorage.removeItem('gw_renewal_thanks_seen'); sessionStorage.removeItem('gw_renewal_thanks_seen'); });
+    await page.reload();
+    const dialog = page.locator('.gw-thanks-dialog[role="dialog"]');
+    await expect(dialog).toBeVisible({ timeout: 10_000 });
+    await expect(page.locator('.home-renewal-banner')).toHaveCount(0);
+    const box = await dialog.evaluate((el) => {
+      const rect = el.getBoundingClientRect();
+      const style = getComputedStyle(el);
+      return { width: Math.round(rect.width), radius: style.borderTopLeftRadius, padding: style.paddingTop, left: Math.round(rect.left), right: Math.round(innerWidth - rect.right) };
     });
-    expect(layout.bannerX).toBe(layout.heroX);
-    expect(layout.bannerWidth).toBe(layout.heroWidth);
-    expect(layout.border).toBe('0px');
-    expect(layout.radius).not.toBe('0px');
-    expect(layout.background).not.toBe('rgba(0, 0, 0, 0)');
+    expect(box.width).toBeLessThanOrEqual(560);
+    expect(box.radius).toBe('28px');
+    expect(box.padding).toBe('24px');
+    expect(Math.abs(box.left - box.right)).toBeLessThanOrEqual(1);
+    await page.locator('.gw-thanks-ok').click();
+    await expect(dialog).toHaveCount(0);
+    await page.reload();
+    await page.waitForTimeout(2_000);
+    await expect(page.locator('.gw-thanks-dialog')).toHaveCount(0);
   }
 });
 

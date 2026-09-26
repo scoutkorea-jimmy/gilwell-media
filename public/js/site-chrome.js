@@ -914,7 +914,7 @@
     var list = (items && items.length) ? items : (fallbackItems.length ? fallbackItems : [
       '길웰 미디어는 스카우트 운동의 소식을 기록하는 미디어입니다',
       '한국스카우트연맹 및 세계스카우트연맹 소식을 전합니다',
-      'The BP Post · bpmedia.net',
+      'The BP Media · bpmedia.net',
     ]);
     var sep = '&nbsp;&nbsp;&nbsp;<span class="ticker-diamond">◆</span>&nbsp;&nbsp;&nbsp;';
     var pieces = list.map(function (text) { return GW.escapeHtml(text); });

@@ -366,7 +366,7 @@ function buildWebsiteStructuredData(imageUrl) {
     '@type': 'WebSite',
     '@id': `${SITE_ORIGIN}/#website`,
     name: 'BP미디어',
-    alternateName: ['비피미디어', 'The BP Post', 'bpmedia.net'],
+    alternateName: ['비피미디어', 'The BP Media', 'bpmedia.net'],
     url: `${SITE_ORIGIN}/`,
     inLanguage: 'ko-KR',
     description: HOME_SEARCH_DESCRIPTION,
@@ -497,7 +497,7 @@ function getPageTopic(pageKey) {
 
 function getPageKeywords(pageKey) {
   const keywords = {
-    home: 'BP미디어, 비피미디어, BPmedia, The BP Post, bpmedia.net, 스카우트 뉴스, 스카우트 미디어, WOSM, APR, 한국스카우트연맹',
+    home: 'BP미디어, 비피미디어, BPmedia, The BP Media, bpmedia.net, 스카우트 뉴스, 스카우트 미디어, WOSM, APR, 한국스카우트연맹',
     latest: '최신 소식, 최신 스카우트 뉴스, BP미디어',
     jamboree16: '제16회 한국잼버리, 한국잼버리, 16th Korea National Jamboree, 2026 한국잼버리, 세계잼버리수련장, 한국스카우트연맹, BP미디어',
     korea: 'Korea, 한국스카우트연맹, BP미디어',

@@ -166,6 +166,68 @@
     closeBtn.focus();
   }
 
+  // ── 리뉴얼 감사 팝업 (2026-09-26) ───────────────────────────
+  // 관리자 팝업 배너가 없을 때만 한 번 띄운다. 닫으면 다시 뜨지 않는다.
+  // 두 팝업이 겹치지 않도록 관리자 배너가 있으면 이 팝업은 쉰다.
+  var THANKS_KEY = 'gw_renewal_thanks_seen';
+  var THANKS_VERSION = '2026-09-renewal';
+
+  function thanksSeen() {
+    try {
+      if (localStorage.getItem(THANKS_KEY) === THANKS_VERSION) return true;
+      if (sessionStorage.getItem(THANKS_KEY) === THANKS_VERSION) return true;
+    } catch (e) { /* 저장소 차단 환경 — 이번 방문 동안만 기억한다 */ }
+    return !!window.__gwThanksShown;
+  }
+
+  function rememberThanks() {
+    window.__gwThanksShown = true;
+    try { localStorage.setItem(THANKS_KEY, THANKS_VERSION); } catch (e) {
+      try { sessionStorage.setItem(THANKS_KEY, THANKS_VERSION); } catch (e2) { /* 무시 */ }
+    }
+  }
+
+  function renderThanks() {
+    if (thanksSeen() || document.querySelector('.gw-banner-overlay, .gw-thanks-overlay')) return;
+    var previousFocus = document.activeElement;
+    var overlay = el('div', 'gw-thanks-overlay');
+    var dialog = el('div', 'gw-thanks-dialog', { role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': 'gw-thanks-title', 'aria-describedby': 'gw-thanks-copy' });
+    var kicker = el('p', 'gw-thanks-kicker');
+    kicker.textContent = 'BP미디어 전체 디자인 리뉴얼';
+    var title = el('h2', 'gw-thanks-title', { id: 'gw-thanks-title' });
+    title.textContent = '새로워진 BP미디어를 찾아주셔서 감사합니다.';
+    var copy = el('p', 'gw-thanks-copy', { id: 'gw-thanks-copy' });
+    copy.textContent = '더 편안한 읽기와 명확한 탐색을 위해 모든 공개 화면을 새롭게 다듬었습니다.';
+    var actions = el('div', 'gw-thanks-actions');
+    var ok = el('button', 'gw-thanks-ok', { type: 'button' });
+    ok.textContent = '확인';
+    actions.appendChild(ok);
+    dialog.appendChild(kicker);
+    dialog.appendChild(title);
+    dialog.appendChild(copy);
+    dialog.appendChild(actions);
+    overlay.appendChild(dialog);
+
+    function close() {
+      rememberThanks();
+      document.removeEventListener('keydown', onKey, true);
+      overlay.remove();
+      document.body.classList.remove('gw-banner-open');
+      if (previousFocus && previousFocus.focus) previousFocus.focus();
+    }
+    function onKey(e) {
+      if (e.key === 'Escape') { e.preventDefault(); close(); return; }
+      if (e.key === 'Tab') { e.preventDefault(); ok.focus(); }   // 누를 수 있는 요소가 하나뿐이다
+    }
+
+    ok.addEventListener('click', close);
+    overlay.addEventListener('click', function (e) { if (e.target === overlay) close(); });
+    document.addEventListener('keydown', onKey, true);
+    document.body.appendChild(overlay);
+    document.body.classList.add('gw-banner-open');
+    ok.focus();
+  }
+
   function init() {
     var boot = window.GW_BOOT_HOME;
     var banners = boot && boot.banners;
@@ -176,8 +238,9 @@
       .then(function (j) {
         var list = j && j.banners;
         if (Array.isArray(list) && list.length) render(list.slice(0, 2));
+        else renderThanks();
       })
-      .catch(function () { /* 배너는 부가 기능 — 실패해도 홈은 정상 */ });
+      .catch(function () { renderThanks(); /* 배너는 부가 기능 — 실패해도 홈은 정상 */ });
   }
 
   if (document.readyState === 'loading') {
