@@ -252,9 +252,12 @@ test('잼버리 개요는 이중 캡이나 구분선 없이 하나의 tonal surf
 test('홈과 기사 페이지는 같은 1280px 외곽 축을 사용하고 기사 본문은 본문 열을 채운다', async ({ page }) => {
   await page.setViewportSize({ width: 1920, height: 1000 });
   await page.goto('/');
-  const home = await page.locator('.home-wrapper').evaluate((el) => {
-    const rect = el.getBoundingClientRect();
-    return { x: Math.round(rect.x), width: Math.round(rect.width) };
+  const home = await page.evaluate(() => {
+    const read = (selector: string) => {
+      const rect = (document.querySelector(selector) as HTMLElement).getBoundingClientRect();
+      return { x: Math.round(rect.x), width: Math.round(rect.width) };
+    };
+    return { wrap: read('.home-wrapper'), hero: read('.site-hero-slider'), content: read('.home-priority') };
   });
 
   await page.goto('/post/385');
@@ -266,9 +269,30 @@ test('홈과 기사 페이지는 같은 1280px 외곽 축을 사용하고 기사
     return { wrap: read('.post-page-wrap'), main: read('.post-page-main'), body: read('.post-page-body') };
   });
 
-  expect(post.wrap).toEqual(home);
+  expect(home.wrap).toEqual(home.hero);
+  expect(home.content).toEqual(home.hero);
+  expect(post.wrap).toEqual(home.wrap);
   expect(post.body.x).toBe(post.main.x);
   expect(post.body.width).toBe(post.main.width);
+});
+
+test('태블릿 홈은 목록 역할을 2열로 합쳐 불필요한 세로 길이를 만들지 않는다', async ({ page }) => {
+  await page.setViewportSize({ width: 820, height: 1000 });
+  await page.goto('/');
+  await expect(page.locator('.home-3col')).toBeVisible({ timeout: 10_000 });
+  const layout = await page.evaluate(() => {
+    const two = getComputedStyle(document.querySelector('.home-2col') as Element);
+    const four = getComputedStyle(document.querySelector('.home-3col') as Element);
+    const wrapper = (document.querySelector('.home-wrapper') as HTMLElement).getBoundingClientRect();
+    return {
+      twoColumns: two.gridTemplateColumns.split(' ').length,
+      fourColumns: four.gridTemplateColumns.split(' ').length,
+      wrapperHeight: Math.round(wrapper.height),
+    };
+  });
+  expect(layout.twoColumns).toBe(2);
+  expect(layout.fourColumns).toBe(2);
+  expect(layout.wrapperHeight).toBeLessThan(5_500);
 });
 
 test('compact 화면은 큰 4단 메뉴 대신 64px 상단바와 중앙 정렬 드로어를 사용한다', async ({ page }) => {
@@ -342,6 +366,108 @@ test('게시판 D-day는 별도 박스가 아닌 배경 오브제로 표시된�
   expect(style.radius).toBe('0px');
   expect(style.background).toBe('rgba(0, 0, 0, 0)');
   expect(Number(style.valueOpacity)).toBeLessThanOrEqual(0.25);
+});
+
+test('게시판 필터는 히어로·검색·카드와 같은 축의 한 기능 surface를 사용한다', async ({ page }) => {
+  for (const viewport of [{ width: 390, height: 844 }, { width: 1440, height: 1000 }]) {
+    await page.setViewportSize(viewport);
+    await page.goto('/latest');
+    await expect(page.locator('.board-sort-bar')).toBeVisible({ timeout: 10_000 });
+    await expect(page.locator('.tag-filter-btn').first()).toBeVisible({ timeout: 10_000 });
+    await expect(page.locator('.board-search-wrap')).toBeVisible({ timeout: 10_000 });
+
+    const layout = await page.evaluate(() => {
+      const read = (selector: string) => {
+        const el = document.querySelector(selector) as HTMLElement;
+        const rect = el.getBoundingClientRect();
+        const style = getComputedStyle(el);
+        return {
+          x: Math.round(rect.x), width: Math.round(rect.width), top: Math.round(rect.top), bottom: Math.round(rect.bottom),
+          background: style.backgroundColor, radius: style.borderRadius,
+        };
+      };
+      return {
+        hero: read('.board-banner'), sort: read('.board-sort-bar'), tags: read('.tag-filter-bar'),
+        search: read('.board-search-wrap'), grid: read('.board-grid'),
+      };
+    });
+
+    for (const item of [layout.sort, layout.tags, layout.search, layout.grid]) {
+      expect(item.x).toBe(layout.hero.x);
+      expect(item.width).toBe(layout.hero.width);
+    }
+    expect(layout.sort.bottom).toBe(layout.tags.top);
+    expect(layout.tags.bottom).toBe(layout.search.top);
+    expect(layout.sort.background).not.toBe('rgba(0, 0, 0, 0)');
+    expect(layout.tags.background).toBe(layout.sort.background);
+    expect(layout.search.background).toBe(layout.sort.background);
+  }
+});
+
+test('게시판 정렬 용어는 의미를 설명하고 모바일 주제 행은 한 줄을 유지한다', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/apr');
+  await expect(page.locator('.board-sort-bar')).toBeVisible({ timeout: 10_000 });
+  await expect(page.locator('.tag-filter-btn').first()).toBeVisible({ timeout: 10_000 });
+
+  const labels = await page.locator('.board-sort-btn').allTextContents();
+  expect(labels).toEqual(['추천 기사', '많이 본 기사']);
+  const tagRow = await page.locator('.tag-filter-bar').evaluate((el) => ({
+    height: Math.round(el.getBoundingClientRect().height),
+    pageOverflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+    railOverflow: el.scrollWidth - el.clientWidth,
+    touchAction: getComputedStyle(el).touchAction,
+  }));
+  expect(tagRow.height).toBeLessThanOrEqual(48);
+  expect(tagRow.pageOverflow).toBeLessThanOrEqual(1);
+  expect(tagRow.railOverflow).toBeGreaterThan(0);
+  expect(tagRow.touchAction).toBe('pan-x');
+});
+
+test('게시판 카드 콘텐츠는 카드 안에 끝나고 공유는 비강조 텍스트 동작이다', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.goto('/latest');
+  await expect(page.locator('.post-card').first()).toBeVisible({ timeout: 10_000 });
+  const result = await page.locator('.post-card').first().evaluate((card) => {
+    const cardRect = card.getBoundingClientRect();
+    const body = card.querySelector('.post-card-body') as HTMLElement;
+    const share = card.querySelector('.post-card-share-btn') as HTMLElement;
+    const bodyRect = body.getBoundingClientRect();
+    const style = getComputedStyle(share);
+    return {
+      bodyBottom: Math.round(bodyRect.bottom), cardBottom: Math.round(cardRect.bottom),
+      shareBackground: style.backgroundColor, shareBorder: style.borderTopWidth, shareRadius: style.borderRadius,
+    };
+  });
+  expect(result.bodyBottom).toBeLessThanOrEqual(result.cardBottom);
+  expect(result.shareBackground).toBe('rgba(0, 0, 0, 0)');
+  expect(result.shareBorder).toBe('0px');
+  expect(result.shareRadius).toBe('0px');
+});
+
+test('홈 섹션 제목과 장문 페이지 장은 별도 카드로 중첩되지 않는다', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.goto('/');
+  await expect(page.locator('.home-section-title').first()).toBeVisible({ timeout: 10_000 });
+  const home = await page.locator('.home-section-title').first().evaluate((el) => {
+    const style = getComputedStyle(el);
+    const rect = el.getBoundingClientRect();
+    const next = el.nextElementSibling as HTMLElement;
+    const nextRect = next.getBoundingClientRect();
+    return {
+      border: style.borderTopWidth, radius: style.borderRadius, background: style.backgroundColor,
+      gap: Math.round(nextRect.top - rect.bottom),
+    };
+  });
+  expect(home).toMatchObject({ border: '0px', radius: '0px', background: 'rgba(0, 0, 0, 0)' });
+  expect(home.gap).toBeLessThanOrEqual(12);
+
+  await page.goto('/editorial-policy');
+  const chapter = await page.locator('.static-page-section').first().evaluate((el) => {
+    const style = getComputedStyle(el);
+    return { border: style.borderTopWidth, radius: style.borderRadius, background: style.backgroundColor, padding: style.paddingTop };
+  });
+  expect(chapter).toEqual({ border: '0px', radius: '0px', background: 'rgba(0, 0, 0, 0)', padding: '0px' });
 });
 
 test('공개 홈페이지 UI 소스에는 이모지 글리프를 사용하지 않는다', () => {

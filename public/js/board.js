@@ -166,7 +166,7 @@
         var tags = data.tags || [];
         if (!tags.length) return;
 
-        var html = '<div class="tag-filter-bar-inner"><button class="tag-filter-btn active" data-tag="">전체</button>';
+        var html = '<div class="tag-filter-bar-inner"><span class="board-control-label board-tag-label">주제</span><button class="tag-filter-btn active" data-tag="">전체</button>';
         tags.forEach(function (t) {
           html += '<button class="tag-filter-btn" data-tag="' + GW.escapeHtml(t) + '">' + GW.escapeHtml(t) + '</button>';
         });
@@ -651,7 +651,7 @@
   };
 
   // ── Sort & period controls ────────────────────────────────
-  // UI: "기본" (manual/latest, current behaviour) ↔ "인기순" + period chips.
+  // UI: 페이지 의미에 맞는 "최신 기사/추천 기사" ↔ "많이 본 기사" + 기간 controls.
   // Popular ranks by (window views) + (window likes × 3); "전체" falls back to
   // cumulative views + likes × 3. State is mirrored to the URL as
   // ?sort=popular&period=7d so links are shareable.
@@ -685,24 +685,34 @@
     // latest 페이지는 인기 윈도우 칩 대신 publish-date 필터 토글을 노출한다.
     // 다른 카테고리 보드는 그 반대 (인기 윈도우 칩만, publish 필터는 없음).
     var isLatest = this.category === 'latest';
+    var defaultSortLabel = isLatest ? '최신 기사' : '추천 기사';
 
     var bar = document.createElement('div');
     bar.className = 'board-sort-bar';
     bar.innerHTML =
-      '<div class="board-sort-toggle" role="tablist" aria-label="정렬 방식">' +
-        '<button type="button" class="board-sort-btn" data-sort="default" role="tab" aria-selected="false">기본</button>' +
-        '<button type="button" class="board-sort-btn" data-sort="popular" role="tab" aria-selected="false">인기순</button>' +
+      '<div class="board-control-group board-sort-group">' +
+        '<span class="board-control-label">정렬</span>' +
+        '<div class="board-sort-toggle" role="tablist" aria-label="정렬 방식">' +
+          '<button type="button" class="board-sort-btn" data-sort="default" role="tab" aria-selected="false">' + defaultSortLabel + '</button>' +
+          '<button type="button" class="board-sort-btn" data-sort="popular" role="tab" aria-selected="false">많이 본 기사</button>' +
+        '</div>' +
       '</div>' +
       (isLatest
-        ? '<div class="board-days-bar" role="group" aria-label="기간 선택">' +
-            VALID_DAYS_FILTER.map(function (n) {
-              return '<button type="button" class="board-days-btn" data-days="' + n + '">' + DAYS_FILTER_LABELS[n] + '</button>';
-            }).join('') +
+        ? '<div class="board-control-group board-days-group">' +
+            '<span class="board-control-label">게시 기간</span>' +
+            '<div class="board-days-bar" role="group" aria-label="게시 기간 선택">' +
+              VALID_DAYS_FILTER.map(function (n) {
+                return '<button type="button" class="board-days-btn" data-days="' + n + '">' + DAYS_FILTER_LABELS[n] + '</button>';
+              }).join('') +
+            '</div>' +
           '</div>'
-        : '<div class="board-period-bar" role="group" aria-label="기간 선택" hidden>' +
-            VALID_PERIODS.map(function (key) {
-              return '<button type="button" class="board-period-btn" data-period="' + key + '">' + PERIOD_LABELS[key] + '</button>';
-            }).join('') +
+        : '<div class="board-control-group board-period-group" hidden>' +
+            '<span class="board-control-label">집계 기간</span>' +
+            '<div class="board-period-bar" role="group" aria-label="인기 집계 기간 선택">' +
+              VALID_PERIODS.map(function (key) {
+                return '<button type="button" class="board-period-btn" data-period="' + key + '">' + PERIOD_LABELS[key] + '</button>';
+              }).join('') +
+            '</div>' +
           '</div>');
 
     if (tagBar && tagBar.parentNode) {
@@ -757,10 +767,10 @@
       btn.classList.toggle('active', active);
       btn.setAttribute('aria-selected', active ? 'true' : 'false');
     });
-    var periodBar = this._sortBarEl.querySelector('.board-period-bar');
-    if (periodBar) {
-      if (mode === 'popular') periodBar.removeAttribute('hidden');
-      else periodBar.setAttribute('hidden', '');
+    var periodGroup = this._sortBarEl.querySelector('.board-period-group');
+    if (periodGroup) {
+      if (mode === 'popular') periodGroup.removeAttribute('hidden');
+      else periodGroup.setAttribute('hidden', '');
     }
     this._sortBarEl.querySelectorAll('.board-period-btn').forEach(function (btn) {
       btn.classList.toggle('active', btn.getAttribute('data-period') === period);
