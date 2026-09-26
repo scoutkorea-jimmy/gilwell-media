@@ -841,12 +841,21 @@ body *:not(svg):not(path):not(circle):not(line):not(polyline):not(polygon):not(r
   color: color-mix(in srgb, var(--md-sys-color-on-primary-container) 82%, transparent) !important;
 }
 
-.board-banner-total,
 .board-banner-count {
   border: 0 !important;
   border-radius: var(--md-sys-shape-large) !important;
   background: color-mix(in srgb, var(--md-sys-color-surface-container-lowest) 72%, transparent) !important;
   color: var(--md-sys-color-on-primary-container) !important;
+}
+
+/* 큰 총계는 상태 칩이 아니라 히어로의 숫자 오브제다. 별도 배경 캡을 만들지 않는다. */
+.board-banner-total {
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: var(--md-sys-color-primary) !important;
 }
 
 /* 행사 D-day는 정보 카드가 아니라 히어로 배경 오브제다. 별도 캡을 씌우지 않는다. */

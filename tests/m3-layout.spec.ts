@@ -352,6 +352,20 @@ test('compact 기사 화면도 64px 상단바와 양축 중앙 정렬 메뉴를 
 test('게시판 D-day는 별도 박스가 아닌 배경 오브제로 표시된다', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto('/korea');
+  const total = await page.locator('.board-banner-total').evaluate((el) => {
+    const style = getComputedStyle(el);
+    return {
+      border: style.borderTopWidth,
+      radius: style.borderRadius,
+      background: style.backgroundColor,
+      padding: style.paddingTop,
+      shadow: style.boxShadow,
+    };
+  });
+  expect(total).toEqual({
+    border: '0px', radius: '0px', background: 'rgba(0, 0, 0, 0)', padding: '0px', shadow: 'none',
+  });
+
   await page.locator('.board-banner-total').evaluate((el) => {
     el.classList.add('has-event');
     el.innerHTML = '<span class="board-banner-total-label">제16회 한국잼버리</span><span class="board-banner-total-value">D+52</span>';

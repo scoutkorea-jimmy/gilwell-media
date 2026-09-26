@@ -1,6 +1,20 @@
 {
   "items": [
   {
+    "version": "00.187.01",
+    "date": "2026-09-26",
+    "released_at": "2026-09-26 14:23:17 KST",
+    "summary": "게시판 히어로의 큰 기사 수를 배지가 아닌 배경 숫자 오브제로 바로잡았다.",
+    "for_users": [
+      "히어로 오른쪽의 큰 기사 수에서 흰색 배경과 둥근 캡을 제거해 화면 배경과 자연스럽게 어우러지도록 정리했습니다."
+    ],
+    "for_developers": [
+      "public/css/m3-site.css — board-banner-total과 board-banner-count의 결합 규칙을 분리하고 큰 총계에 transparent background, zero radius, zero padding을 적용했다.",
+      "tests/m3-layout.spec.ts — 일반 총계와 D-day 양쪽이 별도 캡을 만들지 않는지 자동 검증한다.",
+      "사이트 버전 00.187.00 → 00.187.01."
+    ]
+  },
+  {
     "version": "00.187.00",
     "date": "2026-09-26",
     "released_at": "2026-09-26 13:46:44 KST",
