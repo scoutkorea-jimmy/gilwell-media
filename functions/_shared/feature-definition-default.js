@@ -1225,27 +1225,32 @@ h1, h2, h3, h4, h5, h6, strong, b {
 - \`sort\` : \`latest\`(기본) / \`oldest\` / \`views\` / \`relevance\`
 - \`start_date\` / \`end_date\` : \`YYYY-MM-DD\` 범위 필터
 
-### 11.4 검색 유입 키워드 분석 (2026-04-19 신설)
+### 11.4 검색 유입 키워드 분석 (2026-04-19 신설, 2026-10-01 집계 기준 수정)
 
 #### 기능 세부 설명
-- 관리자 → 방문 분석 패널 하단 \`v3-search-keywords-card\`에 검색엔진 유입 키워드 집계를 표시한다.
-- 원천 데이터: \`site_visits.referrer_url\` 컬럼 (기존 방문 추적에 이미 저장 중).
-- 엔드포인트: \`GET /api/admin/search-keywords?days=N\` 또는 \`?start=&end=\` (Full admin). 반환: \`{ range, total_visits, total_unique, by_engine[], keywords[] }\`.
-- 상단 방문 분석 기간 필터(v3-period-bar)와 **동일 범위 공유**. 30초 자동 새로고침 루프에 합류.
-- 지원 검색엔진 12종(\`functions/api/admin/search-keywords.js SEARCH_ENGINES\`):
-  - Google · Naver · Daum · Bing · Yahoo · DuckDuckGo · Baidu · Yandex · Ecosia · Zum · Nate
-  - 파라미터 매핑: \`q\` (Google/Bing/Daum/DuckDuckGo/Ecosia) · \`query\` (Naver/Zum) · \`p\` (Yahoo) · \`wd\`/\`word\` (Baidu) · \`text\` (Yandex)
-- 노이즈 필터: 키워드 2자 미만, 100자 초과는 제외. 대소문자 정규화 후 병합.
+- 관리자 → 방문 분석 패널 하단 \`v3-search-keywords-card\`에 검색엔진 유입 기록과 전달된 검색어를 구분해 표시한다.
+- 원천 데이터: \`site_visits.referrer_host\`로 검색엔진 유입을 식별하고, \`referrer_url\`에 검색어 파라미터가 있을 때만 검색어를 추출한다. 둘 다 기존 방문 추적에 저장된다.
+- 엔드포인트: \`GET /api/admin/search-keywords?days=N\` 또는 \`?start=&end=\` (\`view:analytics-visits\`). 반환: \`{ range, total_visits, known_visits, hidden_visits, total_unique, by_engine[], keywords[] }\`. 이 API의 방문 수는 \`site_visits\` 기록 수이며 순방문자 수가 아니다.
+- 상단 방문 분석 기간 필터와 동일 범위를 공유한다. 최근 일수·사용자 지정 날짜는 KST 날짜 경계로 집계한다. 30초 자동 새로고침 루프에 합류한다.
+- 지원 검색엔진: Google · Naver · Daum · Bing · Yahoo · DuckDuckGo · Baidu · Yandex · Ecosia · Zum · Nate. 파라미터 매핑: \`q\` (Google/Bing/Daum/DuckDuckGo/Ecosia) · \`query\` (Naver/Zum) · \`p\` (Yahoo) · \`wd\`/\`word\` (Baidu) · \`text\` (Yandex).
+- 노이즈 필터: 검색어 2자 미만, 100자 초과는 제외. 대소문자 정규화 후 병합.
 
 #### UI 구성
-1. **3-stat 요약**: 기간 · 검색 유입 방문 수 · 고유 키워드 수.
-2. **엔진별 pill 배지**: \`Naver 12 · Daum 5 · Google 3\` 식으로 병렬 표시.
-3. **키워드 리스트(상위 100)**: 키워드 / 엔진 / 방문수 3열. 키워드 클릭 시 \`/search?q=...\` 새 탭으로 사이트 내 검색 결과 확인.
+1. **3-stat 요약**: 기간 · 검색엔진 유입 기록 · 검색어 확인/미제공 기록과 고유 검색어 수.
+2. **엔진별 pill 배지**: 검색어 노출 여부와 관계없이 검색엔진에서 온 기록 수를 표시한다.
+3. **검색어 리스트(상위 100)**: 실제 전달된 검색어 / 엔진 / 기록수 3열. 검색어 클릭 시 \`/search?q=...\` 새 탭으로 사이트 내 검색 결과 확인.
+4. 검색엔진 유입이 있지만 검색어가 없을 때는 검색어 미제공 상태를 명시한다.
 
 #### 한계 (운영자 이해 필수)
-- **Google은 대부분의 HTTPS referer에서 검색어를 마스킹**한다. 유입이 있어도 키워드 파싱이 안 될 수 있음.
-- **Naver · Daum은 기본적으로 referer에 query 파라미터 노출** → 국내 유입 키워드 파악에 특히 유효.
-- \`site_visits.referrer_url\`이 수집돼 있어야 하므로 \`functions/[[path]].js\` 미들웨어의 방문 기록 로직을 건드리지 말 것.
+- 검색엔진이 \`referer\`에 검색어를 전달하지 않으면 사이트는 실제 검색어를 복원할 수 없다. Google·Naver·Daum을 포함한 모든 검색엔진에서 이런 상태가 가능하다. 참조 정보 자체가 없으면 직접 방문으로 기록될 수 있다.
+- 검색어 성과는 검색엔진의 검색 성과 도구에서 별도로 확인한다. 검색 성과 도구의 클릭 수와 \`site_visits\` 기록 수는 수집 기준이 달라 일치하지 않을 수 있다.
+- \`site_visits.referrer_host\`와 \`referrer_url\` 기록 경로를 변경할 때 검색 유입 집계를 함께 검증한다.
+
+#### 2026-10-01 사례: 검색어가 없는 유입을 0건으로 보인 오류
+- 증상: 최근 30일 원격 D1에는 검색엔진 유입 기록 21건(Naver 17, Google 2, Bing 2)이 있었으나, 검색어 파라미터는 0건이었다. 이전 화면은 파싱 성공 건만 “검색 유입 방문”으로 표시해 유입 자체가 없는 것으로 오해하게 했다.
+- 원인: 검색엔진 유입 여부와 검색어 공개 여부를 같은 조건으로 세었다. Naver·Daum 검색어가 기본 노출된다는 안내도 보장되지 않았다.
+- 조치: 검색엔진 호스트 기준 전체와 검색어 확인/미제공 수를 분리하고, 화면 라벨과 빈 상태를 수정했다. 혼합 참조 URL을 이용한 단일 회귀 검사를 추가했다.
+- 재발 방지: 검색어 0건을 검색엔진 유입 0건으로 해석하지 말고, \`total_visits = known_visits + hidden_visits\`를 확인한다. 라이브 검증 시 원격 D1 집계와 관리자 화면을 함께 비교한다.
 
 ### 11.4.1 방문 분석 추세 라인 차트 (2026-04-30, 03.106.00~02 / 03.107.00 / 03.114.01)
 
@@ -1640,6 +1645,8 @@ GW.apiFetch('/api/posts/42', { method: 'DELETE' });
 - **게시글 시각을 KST로 표시·집계한다면 \`publish_at\`(타임존 없으면 KST)과 \`created_at\`(UTC)을 같은 규칙으로 취급하지 않았는가** (13.1.8) — SQL은 \`PUBLIC_DATE_EXPR\`, 클라는 \`GW.getPostPublicDate\`를 거친다. raw \`publish_at\`에 \`+9h\`/\`+00:00\` 가정 금지. CSP 변경은 \`_headers\`와 \`_middleware.js buildCsp\` 두 곳을 함께 확인.
 - **DB 시각을 ISO·RFC822 로 내보낸다면 \`created_at\`·\`updated_at\` 은 UTC(\`Z\`), \`publish_at\` 만 KST(\`+09:00\`)로 해석했는가** (13.1.8 재발, 00.189.02) — JSON-LD \`dateModified ≥ datePublished\` 인지 라이브로 확인.
 - **배포 뒤 '새 버전' 배너가 반복되면 엣지 캐시 오염부터 의심했는가** (13.1.9) — \`curl -sD- .../js/main.js?v=$(cat public/ASSET_VERSION)\` 을 여러 번 돌려 \`cf-ray\` POP 별 \`APP_VERSION\`·\`age\`·\`X-Asset-Version\` 을 대조한다. 오염 시 \`ASSET_VERSION\` 재발급 후 재배포, \`_middleware.js guardVersionedAsset\` 를 지우지 않는다.
+
+- **검색 유입 분석에서 검색어 0건을 유입 0건으로 표시하지 않았는가** (11.4) — \`referrer_host\` 기준 전체, 검색어 확인/미제공 수를 분리하고 \`total_visits = known_visits + hidden_visits\`를 확인한다.
 
 ### 14.3 각주
 

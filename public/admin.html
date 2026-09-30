@@ -10,8 +10,8 @@
   <link rel="icon" type="image/svg+xml" href="/img/favicon.svg">
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png">
   <link rel="shortcut icon" href="/img/favicon-48.png">
-  <link rel="stylesheet" href="/css/admin-v3.css?v=20260926102118">
-  <link rel="stylesheet" href="/css/memorabilia.css?v=20260926102118">
+  <link rel="stylesheet" href="/css/admin-v3.css?v=20260930170910">
+  <link rel="stylesheet" href="/css/memorabilia.css?v=20260930170910">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H" crossorigin="anonymous" referrerpolicy="no-referrer">
   <style>
     #v3-login[style*="display: none"] { pointer-events: none !important; }
@@ -94,9 +94,9 @@
     <button class="v3-login-btn" id="v3-login-btn" type="button" onclick="window.__gwAdminFallbackLogin && window.__gwAdminFallbackLogin(event)">관리자 입장</button>
     <div class="v3-login-err" id="v3-login-err"></div>
     <div class="v3-login-ver">
-      Admin <span class="v3-ver-str v3-ver-admin admin-build-version">V03.153.02</span>
+      Admin <span class="v3-ver-str v3-ver-admin admin-build-version">V03.154.00</span>
       &nbsp;·&nbsp;
-      Site <span class="v3-ver-str v3-ver-site site-build-version">V00.191.01</span>
+      Site <span class="v3-ver-str v3-ver-site site-build-version">V00.191.02</span>
     </div>
   </div>
 </div>
@@ -109,8 +109,8 @@
   <!-- ── Sidebar ─────────────────────────────────────────── -->
   <aside id="v3-sidebar">
     <div id="v3-sidebar-logo">
-      <div class="v3-logo-mark">BP미디어 <span class="v3-logo-version v3-ver-str v3-ver-admin admin-build-version">V03.153.02</span></div>
-      <div class="v3-logo-sub">운영 콘솔 &nbsp;<span class="v3-logo-sub-site">Site <span class="v3-ver-site site-build-version">V00.191.01</span></span></div>
+      <div class="v3-logo-mark">BP미디어 <span class="v3-logo-version v3-ver-str v3-ver-admin admin-build-version">V03.154.00</span></div>
+      <div class="v3-logo-sub">운영 콘솔 &nbsp;<span class="v3-logo-sub-site">Site <span class="v3-ver-site site-build-version">V00.191.02</span></span></div>
     </div>
 
     <!-- ── 세션 타이머 ── -->
@@ -1133,7 +1133,7 @@
           <div class="v3-card-head">
             <div>
               <h2 class="v3-card-title">검색 유입 키워드 <span class="v3-label-opt v3-label-opt-inline">Google · Naver · Daum · Bing · Yahoo 등</span></h2>
-              <p class="v3-text-m v3-text-s">방문자가 어떤 검색어로 이 사이트에 도달했는지 집계합니다. 기간은 상단 필터를 공유합니다.</p>
+              <p class="v3-text-m v3-text-s">검색엔진 유입 중 전달된 검색어와 제공되지 않은 건을 구분합니다. 기간은 상단 필터를 공유합니다.</p>
             </div>
             <button type="button" class="v3-btn v3-btn-ghost v3-btn-sm" id="search-keywords-refresh-btn">새로고침</button>
           </div>
@@ -1142,7 +1142,7 @@
           </div>
           <div class="v3-search-keywords-engines" id="search-keywords-engines"></div>
           <div class="v3-search-keywords-list" id="search-keywords-list"></div>
-          <p class="v3-text-m v3-text-s v3-mt-8">* HTTPS 환경에서 대부분의 검색엔진이 `referer`에 검색어 파라미터를 실어 보내지 않을 수 있어, 수집되는 건은 제한적입니다. (Google은 대부분 마스킹, Naver/Daum은 기본적으로 노출)</p>
+          <p class="v3-text-m v3-text-s v3-mt-8">검색어는 검색엔진이 방문 시 전달한 경우에만 표시됩니다. Google·Naver·Daum을 포함한 검색엔진은 검색어를 숨길 수 있습니다. 전체 검색어 성과는 각 검색엔진의 검색 성과 도구에서 확인하세요.</p>
         </div>
       </div>
 
@@ -3454,14 +3454,14 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" integrity="sha384-vtjasyidUo0kW94K5MXDXntzOJpQgBKXmE7e2Ga4LG0skTTLeBi97eFAXsqewJjw" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha384-cxOPjt7s7Iz04uaHJceBmS+qpjv2JkIHNVcuOrM+YHwZOmJGBXI00mdUXEq65HTH" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.4/dist/purify.min.js" integrity="sha384-eEu5CTj3qGvu9PdJuS+YlkNi7d2XxQROAFYOr59zgObtlcux1ae1Il3u7jvdCSWu" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-<script src="/js/main.js?v=20260926102118"></script>
-<script src="/js/shared-country-name-ko.js?v=20260926102118"></script>
-<script src="/js/memorabilia-shared.js?v=20260926102118"></script>
-<script src="/js/admin-v3.js?v=20260926102118"></script>
-<script src="/js/admin-account.js?v=20260926102118"></script>
-<script src="/js/admin-memorabilia.js?v=20260926102118"></script>
-<script src="/js/admin-cardnews.js?v=20260926102118"></script>
-<script src="/js/admin-memorabilia-comments.js?v=20260926102118"></script>
+<script src="/js/main.js?v=20260930170910"></script>
+<script src="/js/shared-country-name-ko.js?v=20260930170910"></script>
+<script src="/js/memorabilia-shared.js?v=20260930170910"></script>
+<script src="/js/admin-v3.js?v=20260930170910"></script>
+<script src="/js/admin-account.js?v=20260930170910"></script>
+<script src="/js/admin-memorabilia.js?v=20260930170910"></script>
+<script src="/js/admin-cardnews.js?v=20260930170910"></script>
+<script src="/js/admin-memorabilia-comments.js?v=20260930170910"></script>
 <script>
   (function () {
     function toggleReveal(visible) {

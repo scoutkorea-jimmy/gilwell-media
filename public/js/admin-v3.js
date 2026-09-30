@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.153.02
+ * Version: 03.154.00
  *
  * Versioning:
  *   V3.aaa.bb
@@ -5278,6 +5278,8 @@
     var listEl    = document.getElementById('search-keywords-list');
     if (!summaryEl || !enginesEl || !listEl) return;
     var visits = Number(data && data.total_visits || 0);
+    var known = Number(data && data.known_visits || 0);
+    var hidden = Number(data && data.hidden_visits || 0);
     var unique = Number(data && data.total_unique || 0);
     var range = (data && data.range) || {};
     var rangeLabel = range.days ? ('최근 ' + range.days + '일') :
@@ -5290,14 +5292,14 @@
         '<span class="v3-sk-stat-sub">상단 방문 분석 필터와 공유</span>' +
       '</div>' +
       '<div class="v3-sk-stat">' +
-        '<span class="v3-sk-stat-label">검색 유입 방문</span>' +
+        '<span class="v3-sk-stat-label">검색엔진 유입 기록</span>' +
         '<span class="v3-sk-stat-value">' + visits.toLocaleString('ko-KR') + '</span>' +
-        '<span class="v3-sk-stat-sub">referer에서 키워드 파싱 성공 건</span>' +
+        '<span class="v3-sk-stat-sub">검색엔진에서 전달된 유입 정보</span>' +
       '</div>' +
       '<div class="v3-sk-stat">' +
-        '<span class="v3-sk-stat-label">고유 키워드</span>' +
-        '<span class="v3-sk-stat-value">' + unique.toLocaleString('ko-KR') + '</span>' +
-        '<span class="v3-sk-stat-sub">중복 제거 후</span>' +
+        '<span class="v3-sk-stat-label">검색어 확인 / 미제공</span>' +
+        '<span class="v3-sk-stat-value">' + known.toLocaleString('ko-KR') + ' / ' + hidden.toLocaleString('ko-KR') + '</span>' +
+        '<span class="v3-sk-stat-sub">확인된 고유 검색어 ' + unique.toLocaleString('ko-KR') + '개</span>' +
       '</div>';
 
     var engines = Array.isArray(data && data.by_engine) ? data.by_engine : [];
@@ -5312,13 +5314,15 @@
 
     var keywords = Array.isArray(data && data.keywords) ? data.keywords : [];
     if (!keywords.length) {
-      listEl.innerHTML = '<div class="v3-sk-empty">수집된 검색 유입 키워드가 없습니다. Google은 대부분 referer 키워드를 마스킹하므로 Naver / Daum 유입이 있을 때 표시됩니다.</div>';
+      listEl.innerHTML = '<div class="v3-sk-empty">' + (visits
+        ? '검색엔진 유입은 있으나 검색어가 전달되지 않았습니다. 검색엔진의 검색 성과 도구에서 실제 검색어를 확인해 주세요.'
+        : '선택한 기간에 확인된 검색엔진 유입이 없습니다.') + '</div>';
       return;
     }
     var rows = '<div class="v3-sk-row is-head">' +
         '<span>키워드</span>' +
         '<span>엔진</span>' +
-        '<span>방문수</span>' +
+        '<span>기록수</span>' +
       '</div>';
     rows += keywords.map(function (k) {
       var q = encodeURIComponent(k.keyword);

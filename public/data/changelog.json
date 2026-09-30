@@ -1,6 +1,35 @@
 {
   "items": [
   {
+    "version": "00.191.02",
+    "date": "2026-10-01",
+    "released_at": "2026-10-01 02:08:23 KST",
+    "summary": "검색 유입 집계 기준과 재발 방지 내용을 운영 기준에 반영했다.",
+    "for_users": [
+      "검색어가 전달되지 않은 방문도 검색엔진 유입으로 세도록 운영 기준을 정리했습니다."
+    ],
+    "for_developers": [
+      "D1 settings.feature_definition 11.4와 Section 14 체크리스트 갱신 후 scripts/sync_kms_snapshot.mjs 로 docs/feature-definition.md·functions/_shared/feature-definition-default.js 재생성, --check 통과.",
+      "Dreampath 영향: 없음. 변경된 공유 파일은 KMS 기능 정의 fallback 전용이며 Dreampath에서 참조하지 않음.",
+      "사이트 버전 00.191.01 → 00.191.02."
+    ]
+  },
+  {
+    "version": "03.154.00",
+    "date": "2026-10-01",
+    "released_at": "2026-10-01 02:04:56 KST",
+    "summary": "검색 유입 분석에서 검색어가 숨겨진 방문도 구분해 볼 수 있도록 바로잡았다.",
+    "for_users": [
+      "검색엔진에서 들어온 기록 전체, 검색어 확인 건, 검색어 미제공 건을 나누어 보여줍니다.",
+      "검색어가 전달되지 않은 경우에도 유입 자체가 없었던 것처럼 보이지 않으며, 검색엔진별 기록을 확인할 수 있습니다."
+    ],
+    "for_developers": [
+      "functions/api/admin/search-keywords.js — referrer_host 기준 전체 검색 유입을 집계하고 URL 검색어가 있는 기록만 별도 집계. DB에서 URL·호스트별 COUNT 집계 후 처리; 최근 일수는 KST 날짜 경계 사용.",
+      "public/js/admin-v3.js·public/admin.html — 전체·확인·미제공 수 분리, 검색어 없는 경우 안내 및 검색엔진별 설명 수정. tests/search-keywords.test.mjs 로 혼합 유입 집계 확인. KMS 11.4 기준과 함께 갱신.",
+      "관리자 버전 03.153.02 → 03.154.00."
+    ]
+  },
+  {
     "version": "00.191.01",
     "date": "2026-09-26",
     "released_at": "2026-09-26 19:15:04 KST",

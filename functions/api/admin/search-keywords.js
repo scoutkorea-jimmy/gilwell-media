@@ -1,4 +1,3 @@
-import { extractToken, verifyTokenRole } from '../../_shared/auth.js';
 import { gateMenuAccess } from '../../_shared/admin-permissions.js';
 
 const json = (data, status = 200) =>
@@ -10,19 +9,21 @@ const json = (data, status = 200) =>
 /**
  * GET /api/admin/search-keywords
  *
- * site_visits.referrer_url에서 주요 검색엔진 referer를 찾아 검색어 파라미터를
- * 파싱·집계한다. 기간: ?days=30 (기본 30, 최대 365) 또는 ?start=YYYY-MM-DD&end=YYYY-MM-DD.
+ * site_visits의 검색엔진 유입을 집계하고, referer URL에 남은 검색어만 추출한다.
+ * 기간: ?days=30 (기본 30, 최대 365) 또는 ?start=YYYY-MM-DD&end=YYYY-MM-DD.
  *
  * 반환:
  *   {
  *     range: { start, end, days },
- *     total_visits:        <검색엔진에서 유입된 총 방문>,
+ *     total_visits:        <검색엔진 유입 기록>,
+ *     known_visits:        <검색어가 확인된 기록>,
+ *     hidden_visits:       <검색어가 제공되지 않은 기록>,
  *     total_unique:        <고유 검색어 개수>,
  *     by_engine:           [{ engine, visits }],
  *     keywords:            [{ keyword, engine, visits }],  // 상위 100
  *   }
  *
- * 주의: referrer_url이 NULL이거나 검색엔진 호스트가 아니면 제외.
+ * 주의: 검색엔진 호스트는 referrer_host에서도 식별한다.
  *       검색어 길이 2자 미만·100자 초과는 노이즈 필터.
  */
 
@@ -71,6 +72,42 @@ function extractKeyword(referrerUrl) {
   return null;
 }
 
+export function summarizeSearchRows(rows, limit = 100) {
+  const keywordCounts = new Map();
+  const engineCounts = new Map();
+  let totalVisits = 0;
+  let knownVisits = 0;
+
+  (rows || []).forEach((row) => {
+    const referrerHost = String(row.referrer_host || '').toLowerCase();
+    const info = extractKeyword(row.referrer_url);
+    let engine = detectEngine(referrerHost);
+    if (!engine && row.referrer_url) {
+      try { engine = detectEngine(new URL(row.referrer_url).hostname); }
+      catch (_) { /* 기존의 잘못된 URL은 제외 */ }
+    }
+    if (!engine) return;
+    const visits = Number(row.visits) || 0;
+    totalVisits += visits;
+    engineCounts.set(engine.engine, (engineCounts.get(engine.engine) || 0) + visits);
+    if (!info) return;
+    knownVisits += visits;
+    const normalizedKey = info.keyword.toLowerCase();
+    const existing = keywordCounts.get(normalizedKey);
+    if (existing) existing.visits += visits;
+    else keywordCounts.set(normalizedKey, { keyword: info.keyword, engine: info.engine, visits });
+  });
+
+  return {
+    total_visits: totalVisits,
+    known_visits: knownVisits,
+    hidden_visits: totalVisits - knownVisits,
+    total_unique: keywordCounts.size,
+    by_engine: Array.from(engineCounts.entries()).map(([engine, visits]) => ({ engine, visits })).sort((a, b) => b.visits - a.visits),
+    keywords: Array.from(keywordCounts.values()).sort((a, b) => b.visits - a.visits || a.keyword.localeCompare(b.keyword, 'ko')).slice(0, limit),
+  };
+}
+
 function resolveRange(searchParams) {
   const start = searchParams.get('start');
   const end   = searchParams.get('end');
@@ -92,59 +129,27 @@ export async function onRequestGet({ request, env }) {
     let sql, args;
     if (range.start && range.end) {
       sql = `
-        SELECT referrer_url, referrer_host
+        SELECT referrer_url, referrer_host, COUNT(*) AS visits
           FROM site_visits
-         WHERE referrer_url IS NOT NULL AND referrer_url <> ''
-           AND date(visited_at) >= date(?)
-           AND date(visited_at) <= date(?)
+         WHERE datetime(visited_at) >= datetime(?, '-9 hours')
+           AND datetime(visited_at) < datetime(?, '+1 day', '-9 hours')
+         GROUP BY referrer_url, referrer_host
       `;
       args = [range.start, range.end];
     } else {
       sql = `
-        SELECT referrer_url, referrer_host
+        SELECT referrer_url, referrer_host, COUNT(*) AS visits
           FROM site_visits
-         WHERE referrer_url IS NOT NULL AND referrer_url <> ''
-           AND datetime(visited_at) >= datetime('now', ?)
+         WHERE datetime(visited_at) >= datetime('now', '+9 hours', 'start of day', ?, '-9 hours')
+         GROUP BY referrer_url, referrer_host
       `;
-      args = [`-${range.days} days`];
+      args = [`-${range.days - 1} days`];
     }
     const { results } = await env.DB.prepare(sql).bind(...args).all();
 
-    const keywordCounts = new Map();
-    const engineCounts  = new Map();
-    let totalVisits = 0;
-
-    (results || []).forEach((row) => {
-      const info = extractKeyword(row.referrer_url);
-      if (!info) return;
-      totalVisits++;
-      engineCounts.set(info.engine, (engineCounts.get(info.engine) || 0) + 1);
-      const normalizedKey = info.keyword.toLowerCase();
-      const existing = keywordCounts.get(normalizedKey);
-      if (existing) {
-        existing.visits++;
-      } else {
-        keywordCounts.set(normalizedKey, {
-          keyword: info.keyword,
-          engine: info.engine,
-          visits: 1,
-        });
-      }
-    });
-
-    const keywords = Array.from(keywordCounts.values())
-      .sort((a, b) => b.visits - a.visits || a.keyword.localeCompare(b.keyword, 'ko'))
-      .slice(0, limit);
-    const by_engine = Array.from(engineCounts.entries())
-      .map(([engine, visits]) => ({ engine, visits }))
-      .sort((a, b) => b.visits - a.visits);
-
     return json({
       range,
-      total_visits: totalVisits,
-      total_unique: keywordCounts.size,
-      by_engine,
-      keywords,
+      ...summarizeSearchRows(results, limit),
     });
   } catch (err) {
     console.error('GET /api/admin/search-keywords error:', err);
