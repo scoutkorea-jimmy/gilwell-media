@@ -1,3 +1,5 @@
+import { SCOUT_TOPICS } from '../topics/[slug].js';
+
 export async function onRequestGet(context) {
   return buildSitemapResponse(context, false);
 }
@@ -13,6 +15,7 @@ async function buildSitemapResponse({ request, env }, headOnly) {
     console.error('GET /sitemap.xml auto publish error:', err);
   });
   const staticPages = [
+    ...SCOUT_TOPICS.map(topic => ({ path: `/topics/${topic.slug}`, priority: '0.8', category: null })),
     { path: '/', priority: '1.0', category: null },
     { path: '/latest', priority: '0.9', category: null },
     { path: '/jamboree16', priority: '0.8', category: null },

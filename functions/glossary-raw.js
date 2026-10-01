@@ -1,3 +1,4 @@
+import { renderTopicLinks } from './topics/[slug].js';
 import { buildShareMetaBlock, getResolvedShareImage, loadSiteMeta } from './_shared/site-meta.js';
 
 const BUCKETS = ['가', '나', '다', '라', '마', '바', '사', '아', '자', '차', '카', '타', '파', '하'];
@@ -46,9 +47,10 @@ async function renderGlossaryRawPage({ request, env }, headOnly = false) {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${escapeHtml(title)}</title>
   ${metaBlock}
-  <link rel="stylesheet" href="/css/style.css?v=20261001011130">
-  <link rel="stylesheet" href="/css/glossary.css?v=20261001011130">
-  <link rel="stylesheet" href="/css/m3-site.css?v=20261001011130">
+  <link rel="stylesheet" href="/css/style.css?v=20261001131208">
+  <link rel="stylesheet" href="/css/glossary.css?v=20261001131208">
+  <link rel="stylesheet" href="/css/m3-site.css?v=20261001131208">
+  <link rel="stylesheet" href="/css/topics.css?v=20261001131208">
   <style>
     body.glossary-raw-page {
       margin: 0;
@@ -175,6 +177,7 @@ async function renderGlossaryRawPage({ request, env }, headOnly = false) {
       <p>검색엔진과 사람, 그리고 외부 도구가 용어집의 원문을 한 번에 읽을 수 있도록 만든 공개 색인 페이지입니다. 한국어·영어·프랑스어 용어와 한국어 설명을 그대로 모아 보여줍니다.</p>
       <div class="glossary-raw-meta">총 ${items.length}개 용어 · 공개 데이터 원문 보기 · 업데이트 ${escapeHtml(new Date().toISOString().slice(0, 10))}</div>
       <div class="glossary-raw-links">
+        ${renderTopicLinks()}
         <a href="/glossary">일반 용어집 보기</a>
         <a href="/api/glossary">공개 JSON API</a>
         <a href="/api/glossary/bot?format=text">텍스트 내보내기</a>

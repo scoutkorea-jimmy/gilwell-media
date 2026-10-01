@@ -1,6 +1,22 @@
 {
   "items": [
   {
+    "version": "00.192.00",
+    "date": "2026-10-01",
+    "released_at": "2026-10-01 22:12:08 KST",
+    "summary": "스카우트 활동 단계별 설명과 최신 소식을 함께 찾아볼 수 있도록 주제 페이지를 추가했습니다.",
+    "for_users": [
+      "컵스카우트·스카우트·벤처스카우트·로버스카우트의 뜻과 활동 특징을 관련 기사와 함께 읽을 수 있습니다.",
+      "홈·용어집·관련 기사에서 각 주제로 이동할 수 있습니다."
+    ],
+    "for_developers": [
+      "functions/topics/[slug].js: 4개 SSR 주제 페이지, 공개 기사 최신순 조회, canonical·OG·ItemList·503 응답 처리.",
+      "functions/sitemap.xml/index.js와 기사·용어집·홈 연결, public/css/topics.css 반응형 3/2/1열 적용.",
+      "Dreampath 영향: 공용 build-version.js의 Site·asset 토큰만 갱신하며 Dreampath 기능·인증·CSP 변경 없음.",
+      "사이트 버전 00.191.03 → 00.192.00."
+    ]
+  },
+  {
     "version": "00.191.03",
     "date": "2026-10-01",
     "released_at": "2026-10-01 10:11:16 KST",
