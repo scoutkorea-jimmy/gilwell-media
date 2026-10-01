@@ -1,6 +1,22 @@
 {
   "items": [
   {
+    "version": "00.191.03",
+    "date": "2026-10-01",
+    "released_at": "2026-10-01 10:11:16 KST",
+    "summary": "홈 첫 화면의 중복 데이터 요청과 불필요한 레이아웃 계산을 줄였다.",
+    "for_users": [
+      "홈 콘텐츠와 팝업 배너가 같은 데이터를 함께 사용하도록 해 첫 방문의 중복 요청을 줄였습니다.",
+      "카드가 나타나는 동안 필요한 초기 화면 계산을 줄여 좁은 화면과 느린 기기에서의 반응을 다듬었습니다."
+    ],
+    "for_developers": [
+      "public/js/home-runtime.js·home-banner.js — 초기 /api/home 응답 Promise 공유. 실제 홈 로드에서 중복 요청 2회→1회, 배너 표시 회귀 검사 1건 통과.",
+      "public/js/site-chrome.js — 첫 로드 카드 관찰에서 getBoundingClientRect 호출 생략. 모바일 4x CPU 비교에서 레이아웃 계산 72~75회→49~51회. 320/360/390px 가로 넘침 없음.",
+      "D1 settings.feature_definition 5.5·14.2에 원인과 재발 방지 기록 후 KMS 스냅샷 동기화 검증. Dreampath 영향: 없음(변경된 공유 fallback은 KMS에서만 참조).",
+      "사이트 버전 00.191.02 → 00.191.03."
+    ]
+  },
+  {
     "version": "00.191.02",
     "date": "2026-10-01",
     "released_at": "2026-10-01 02:08:23 KST",

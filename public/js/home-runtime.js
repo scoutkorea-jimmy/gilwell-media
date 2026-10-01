@@ -612,6 +612,7 @@
         .then(function (data) {
           applyData(data);
           try { if (typeof GW.writeCachedPayload === 'function') GW.writeCachedPayload(homeCacheKey(), data); } catch (_) {}
+          return data;
         })
         .catch(function (err) {
           // 캐시로 이미 콘텐츠를 그렸다면 네트워크 실패해도 빈 화면 대신 stale 유지.
@@ -638,7 +639,8 @@
     return {
       init: init,
       applyData: applyData,
-      refreshHomeData: refreshHomeData
+      refreshHomeData: refreshHomeData,
+      initialData: function () { return homeRefreshPromise; }
     };
   })();
 })();

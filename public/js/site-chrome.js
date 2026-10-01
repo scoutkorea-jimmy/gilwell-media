@@ -1223,9 +1223,11 @@
     list.forEach(function (el) {
       if (seen && seen.has(el)) return;
       if (seen) seen.add(el);
-      var r = el.getBoundingClientRect();
       // 첫 로드 뒤 화면 안에서 다시 그려지는 목록(최신 소식 새로고침 등)은 깜빡이지 않게 그대로 둔다.
-      if (Date.now() - bootAt > 2500 && r.top < innerHeight && r.bottom > 0) return;
+      if (Date.now() - bootAt > 2500) {
+        var r = el.getBoundingClientRect();
+        if (r.top < innerHeight && r.bottom > 0) return;
+      }
       el.classList.add('m3-enter');
       io.observe(el);
     });

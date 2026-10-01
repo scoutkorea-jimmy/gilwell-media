@@ -246,9 +246,10 @@
     var boot = window.GW_BOOT_HOME;
     var banners = boot && boot.banners;
     if (Array.isArray(banners) && banners.length) { render(banners.slice(0, 2)); return; }
-    // 부트 데이터에 없으면 API 로 한 번 더 시도 (SSR 폴백 경로)
-    fetch('/api/home', { cache: 'no-store' })
-      .then(function (r) { return r.ok ? r.json() : null; })
+    // 홈 본문이 이미 요청 중인 데이터를 공유한다. 런타임이 없을 때만 직접 요청한다.
+    var pending = window.GW && window.GW.HomePage &&
+      typeof window.GW.HomePage.initialData === 'function' && window.GW.HomePage.initialData();
+    (pending || fetch('/api/home', { cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : null; }))
       .then(function (j) {
         var list = j && j.banners;
         if (Array.isArray(list) && list.length) render(list.slice(0, 2));
@@ -257,7 +258,7 @@
       .catch(function () { renderThanks(); /* 배너는 부가 기능 — 실패해도 홈은 정상 */ });
   }
 
-  if (document.readyState === 'loading') {
+  if (document.readyState !== 'complete') {
     document.addEventListener('DOMContentLoaded', init);
   } else {
     init();
