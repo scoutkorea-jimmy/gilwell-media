@@ -237,12 +237,12 @@ export async function onRequestGet({ params, env, request }) {
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png"/>
   <link rel="apple-touch-icon" href="/img/logo.png"/>
   <link rel="shortcut icon" href="/img/favicon-48.png"/>
-  <link rel="stylesheet" href="/css/style.css?v=20261001131208">
-  <link rel="stylesheet" href="/css/post.css?v=20261001131208">
-  <link rel="stylesheet" href="/css/chatbot.css?v=20261001131208">
-  <link rel="stylesheet" href="/css/dark-mode.css?v=20261001131208">
-  <link rel="stylesheet" href="/css/m3-site.css?v=20261001131208">
-  <link rel="stylesheet" href="/css/topics.css?v=20261001131208">
+  <link rel="stylesheet" href="/css/style.css?v=20261002132659">
+  <link rel="stylesheet" href="/css/post.css?v=20261002132659">
+  <link rel="stylesheet" href="/css/chatbot.css?v=20261002132659">
+  <link rel="stylesheet" href="/css/dark-mode.css?v=20261002132659">
+  <link rel="stylesheet" href="/css/m3-site.css?v=20261002132659">
+  <link rel="stylesheet" href="/css/topics.css?v=20261002132659">
 </head>
 <body class="post-page">
   <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
@@ -340,6 +340,7 @@ export async function onRequestGet({ params, env, request }) {
         <div class="post-page-meta">
           <span class="category-tag" style="background:${cat.color};">${cat.label}</span>
           ${isNew ? `<span class="post-kicker post-kicker-new">NEW</span>` : ''}
+          ${(post.tag || '').split(',').map(tag => tag.trim()).filter(Boolean).map(tag => `<span class="post-kicker ${cat.tagClass}-kicker">${escapeHtml(tag)}</span>`).join('')}
           <time class="post-page-date" datetime="${escapeHtml(post.publish_at || post.created_at || '')}">${dateStr}</time>
         </div>
         <div class="post-page-share">
@@ -428,7 +429,7 @@ export async function onRequestGet({ params, env, request }) {
         <h4>관리자</h4>
         <a href="/admin.html">관리자 페이지 →</a>
         <a href="/glossary-raw">용어집 RAW로 보기 →</a>
-        <p class="footer-build">Site <span class="site-build-version">V00.192.00</span> · Admin <span class="admin-build-version">V03.154.00</span></p>
+        <p class="footer-build">Site <span class="site-build-version">V00.192.01</span> · Admin <span class="admin-build-version">V03.154.00</span></p>
       </div>
       <div class="footer-bottom">
         <p data-i18n="footer.copyright">© 2026 ${SITE_BRAND_NAME} · ${SITE_DOMAIN_LABEL}</p>
@@ -653,10 +654,10 @@ export async function onRequestGet({ params, env, request }) {
 
   <script>window.GW_BOOT_RUNTIME=${serializeForScript(publicRuntime)};window.GW_KAKAO_JS_KEY=${serializeForScript(String(publicRuntime.kakao_js_key || ''))};window.GW_POST_BOOT=${serializeForScript({ editPostId: id, sharePostUrl: postUrl, sharePostTitle: titleText, sharePostSubtitle: subtitleText, editSeed: JSON.parse(editSeed), visibleTags })};</script>
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.4/dist/purify.min.js" integrity="sha384-eEu5CTj3qGvu9PdJuS+YlkNi7d2XxQROAFYOr59zgObtlcux1ae1Il3u7jvdCSWu" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-  <script src="/js/main.js?v=20261001131208"></script>
-  <script src="/js/site-chrome.js?v=20261001131208"></script>
-  <script src="/js/chatbot.js?v=20261001131208" defer></script>
-  <script src="/js/post-page.js?v=20261001131208"></script>
+  <script src="/js/main.js?v=20261002132659"></script>
+  <script src="/js/site-chrome.js?v=20261002132659"></script>
+  <script src="/js/chatbot.js?v=20261002132659" defer></script>
+  <script src="/js/post-page.js?v=20261002132659"></script>
   <script async type="text/javascript" charset="utf-8" src="https://t1.kakaocdn.net/kas/static/ba.min.js"></script>
 </body>
 </html>`;
