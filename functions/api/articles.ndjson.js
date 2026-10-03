@@ -1,3 +1,4 @@
+import { publicAuthor } from '../_shared/post-author.js';
 import { PUBLIC_DATE_EXPR } from '../_shared/post-public-date.js';
 
 /**
@@ -80,7 +81,7 @@ export async function onRequestGet({ request, env }) {
       category: row.category,
       title: row.title || '',
       subtitle: row.subtitle || '',
-      author_code: row.author || null,
+      author_code: publicAuthor(row.author),
       ai_assisted: !!row.ai_assisted,
       keywords: parseCsvList(row.meta_tags),
       tags: parseCsvList(row.tag),

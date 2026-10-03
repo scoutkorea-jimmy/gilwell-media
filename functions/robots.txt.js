@@ -29,6 +29,10 @@ const DISALLOW_PATHS = [
 // robots.txt 는 "가장 구체적인 규칙 우선"이라 Allow 가 Disallow 를 이긴다.
 // 경로를 좁게 끊어 이미지 엔드포인트만 열고 나머지 API 는 그대로 막는다.
 const ALLOW_PATHS = [
+  '/api/articles.ndjson',
+  '/api/glossary$',
+  '/api/glossary?',
+  '/api/glossary/bot',
   '/api/images/',
   '/api/og-image/',
   '/api/posts/*/image',

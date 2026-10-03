@@ -1,3 +1,4 @@
+import { BOARD_KEYS, loadPublicPage, applyPublicParts, pageNumber } from './_shared/public-page-ssr.js';
 import { buildShareMetaBlock, getResolvedShareImage, getSitePageKey, loadSiteMeta } from './_shared/site-meta.js';
 import { selectHomeRailIds, hydrateByIds } from './_shared/home-rails.js';
 import { serializePostImage } from './_shared/images.js';
@@ -47,11 +48,14 @@ export async function onRequest(context) {
     navLabelsPromise,
   ]);
   const pageMeta = siteMeta.pages[pageKey] || siteMeta.pages.home;
-  const canonicalPath = getCanonicalPath(url.pathname, pageKey);
-  const itemListElements = await loadPageItemList(env, url.origin, pageKey);
+  const publicPage = await loadPublicPage(env, url, pageKey, request).catch(err => { console.error('Public SSR failed:', pageKey, err); return null; });
+  const page = pageNumber(url);
+  const canonicalPath = getCanonicalPath(url.pathname, pageKey) + (BOARD_KEYS.includes(pageKey) && page > 1 ? '?page=' + page : '');
+  const itemListElements = publicPage?.posts ? publicPage.posts.map(post => ({url: `${url.origin}/post/${post.id}`, title: post.title})) : await loadPageItemList(env, url.origin, pageKey);
+  const resolvedTitle = pageMeta.title + (BOARD_KEYS.includes(pageKey) && page > 1 ? ' · '+page+'페이지' : '');
   const shareMeta = buildShareMetaBlock({
     pageKey,
-    title: pageMeta.title,
+    title: resolvedTitle,
     description: pageMeta.description,
     url: url.origin + canonicalPath,
     imageUrl: getResolvedShareImage(siteMeta, url.origin),
@@ -60,14 +64,14 @@ export async function onRequest(context) {
     itemListElements,
   });
 
-  const updated = html
-    .replace(/<title>[\s\S]*?<\/title>/, `<title>${escapeHtml(pageMeta.title)}</title>`)
+  const updated = applyPublicParts(html, publicPage)
+    .replace(/<title>[\s\S]*?<\/title>/, `<title>${escapeHtml(resolvedTitle)}</title>`)
     .replace('<!-- SHARE_META -->', shareMeta + pageExtraSchema);
 
   const headers = new Headers(response.headers);
   headers.set('Content-Type', 'text/html; charset=UTF-8');
   let baseResponse = new Response(updated, {
-    status: response.status,
+    status: publicPage?.status || response.status,
     statusText: response.statusText,
     headers,
   });
@@ -177,7 +181,7 @@ async function buildWosmMembersSchema(env, origin) {
   let memberCount = 0;
   try {
     const row = await env.DB.prepare(
-      `SELECT value FROM settings WHERE key = 'wosm_members_items'`
+      `SELECT value FROM settings WHERE key = 'wosm_members'`
     ).first();
     if (row && row.value) {
       const parsed = JSON.parse(row.value);

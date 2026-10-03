@@ -1,3 +1,4 @@
+import { isPlaceholderAuthor, publicAuthor } from '../../_shared/post-author.js';
 /**
  * Gilwell Media · Single Post
  *
@@ -66,7 +67,7 @@ export async function onRequestGet({ params, env, request }) {
     post.special_feature_posts = specialFeaturePosts;
 
     const origin = new URL(request.url).origin;
-    return json({ post: isAdmin ? post : sanitizePublicPost(serializePostImage(post, origin)) });
+    return json({ post: isAdmin ? post : sanitizePublicPost(serializePostImage({...post, author: publicAuthor(post.author)}, origin)) });
   } catch (err) {
     console.error('GET /api/posts/:id error:', err);
     return json({ error: 'Database error' }, 500);
@@ -189,6 +190,7 @@ export async function onRequestPut({ params, request, env }) {
   if (!safeTagInput.ok) return json({ error: safeTagInput.error }, 400);
   const safeAuthorInput = optionalTrimmedString(author, '작성자', 60);
   if (!safeAuthorInput.ok) return json({ error: safeAuthorInput.error }, 400);
+  if (isPlaceholderAuthor(safeAuthorInput.value)) return json({ error: '작성자 불러오기가 끝난 뒤 다시 저장해주세요.' }, 400);
   const safeSortOrderInput = optionalIntegerOrNull(sort_order, '정렬 순서');
   if (!safeSortOrderInput.ok) return json({ error: safeSortOrderInput.error }, 400);
   const safeAiAssistedInput = optionalBooleanFlag(ai_assisted);

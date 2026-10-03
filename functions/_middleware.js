@@ -23,6 +23,12 @@ import { ASSET_VERSION } from './_shared/build-version.js';
 
 export async function onRequest(context) {
   const { request, next } = context;
+  const requestUrl = new URL(request.url);
+  if (requestUrl.hostname === 'www.bpmedia.net') {
+    requestUrl.hostname = 'bpmedia.net';
+    requestUrl.protocol = 'https:';
+    return Response.redirect(requestUrl.toString(), 301);
+  }
 
   // [내부 파일 차단] `wrangler pages deploy .` 는 저장소 루트를 통째로 업로드하므로
   // 개발·운영 파일(규칙 문서, DB 스키마, 배포 스크립트, wrangler.toml 의 D1

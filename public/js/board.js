@@ -46,28 +46,20 @@
     this.modalEl  = document.getElementById(opts.modalId  || 'post-modal');
     this.bannerInfo = { event_name: '', event_date: '' };
 
-    this.page          = 1;
+    this.page          = Math.min(100000, Math.max(1, parseInt(new URL(window.location.href).searchParams.get('page'), 10) || 1));
     this.pageSize      = 16;
     this.totalPages    = 1;
     this.total         = 0;
     this.loading       = false;
-    this._searchQuery  = '';
-    this._selectedTag  = null;
+    this._searchQuery  = new URL(window.location.href).searchParams.get('q') || '';
+    this._selectedTag  = new URL(window.location.href).searchParams.get('tag') || null;
     this._loginTurnstileWidgetId = null;
     this._loginTurnstileToken = '';
     this._galleryImages = [];
   }
 
-  // 4줄(row) 단위 페이지네이션. 뷰포트별 grid-template-columns와 맞춘다.
-  //   ≥901px : 4 cols → 16 / 페이지
-  //   481~900: 2 cols → 8  / 페이지
-  //   ≤480px : 1 col  → 4  / 페이지
-  Board.prototype._getPageSize = function () {
-    var w = window.innerWidth;
-    if (w <= 480) return 4;
-    if (w <= 900) return 8;
-    return 16;
-  };
+  // Keep page contents stable across devices and server rendering.
+  Board.prototype._getPageSize = function () { return 16; };
 
   // ── Initialise ────────────────────────────────────────────
   Board.prototype.init = function () {
@@ -166,9 +158,9 @@
         var tags = data.tags || [];
         if (!tags.length) return;
 
-        var html = '<div class="tag-filter-bar-inner"><span class="board-control-label board-tag-label">주제</span><button class="tag-filter-btn active" data-tag="">전체</button>';
+        var html = '<div class="tag-filter-bar-inner"><span class="board-control-label board-tag-label">주제</span><button class="tag-filter-btn' + (self._selectedTag ? '' : ' active') + '" data-tag="">전체</button>';
         tags.forEach(function (t) {
-          html += '<button class="tag-filter-btn" data-tag="' + GW.escapeHtml(t) + '">' + GW.escapeHtml(t) + '</button>';
+          html += '<button class="tag-filter-btn' + (self._selectedTag === t ? ' active' : '') + '" data-tag="' + GW.escapeHtml(t) + '">' + GW.escapeHtml(t) + '</button>';
         });
         html += '</div>';
         barEl.innerHTML = html;
@@ -187,6 +179,11 @@
 
   Board.prototype._resetAndLoad = function () {
     this.page    = 1;
+    var stateUrl = new URL(window.location.href);
+    stateUrl.searchParams.delete('page');
+    if (this._searchQuery) stateUrl.searchParams.set('q', this._searchQuery); else stateUrl.searchParams.delete('q');
+    if (this._selectedTag) stateUrl.searchParams.set('tag', this._selectedTag); else stateUrl.searchParams.delete('tag');
+    window.history.replaceState(null, '', stateUrl.pathname + stateUrl.search);
     this.total   = 0;
     this.totalPages = 1;
     this.loading = false;
@@ -203,7 +200,7 @@
     var self = this;
     var silent = !!(opts && opts.silent);
     this.loading = true;
-    if (!silent) this._showLoading();
+    if (!silent && !this.gridEl.querySelector('.post-card')) this._showLoading();
     this.pageSize = this._getPageSize();
 
     var searchParam = this._searchQuery ? '&q=' + encodeURIComponent(this._searchQuery) : '';
@@ -232,7 +229,7 @@
       })
       .catch(function (err) {
         console.error('[board] load failed:', err);
-        if (!silent) { try { self._showError(); } catch (_) {} }
+        if (!silent && !self.gridEl.querySelector('.post-card')) { try { self._showError(); } catch (_) {} }
       })
       .finally(function () {
         self.loading = false;
@@ -257,48 +254,19 @@
 
   // 4줄 단위 번호 페이지네이션 (이전/1/2/3/…/다음)
   Board.prototype._renderPagination = function () {
-    var self = this;
     if (!this.paginationEl) return;
-    if (this.totalPages <= 1) {
-      this.paginationEl.innerHTML = '';
-      return;
-    }
-
-    var currentPage = this.page;
-    var totalPages  = this.totalPages;
-    var start = Math.max(1, currentPage - 2);
-    var end   = Math.min(totalPages, start + 4);
-    start = Math.max(1, end - 4);
-    var html = '';
-
-    if (currentPage > 1) {
-      html += '<button type="button" class="board-page-btn board-page-nav" data-page="' + (currentPage - 1) + '" aria-label="이전 페이지">이전</button>';
-    }
-    if (start > 1) {
-      html += '<button type="button" class="board-page-btn" data-page="1">1</button>';
-      if (start > 2) html += '<span class="board-page-ellipsis" aria-hidden="true">…</span>';
-    }
-    for (var page = start; page <= end; page++) {
-      html += '<button type="button" class="board-page-btn' + (page === currentPage ? ' active' : '') + '"' +
-              ' data-page="' + page + '"' + (page === currentPage ? ' aria-current="page"' : '') + '>' + page + '</button>';
-    }
-    if (end < totalPages) {
-      if (end < totalPages - 1) html += '<span class="board-page-ellipsis" aria-hidden="true">…</span>';
-      html += '<button type="button" class="board-page-btn" data-page="' + totalPages + '">' + totalPages + '</button>';
-    }
-    if (currentPage < totalPages) {
-      html += '<button type="button" class="board-page-btn board-page-nav" data-page="' + (currentPage + 1) + '" aria-label="다음 페이지">다음</button>';
-    }
-    this.paginationEl.innerHTML = html;
-    this.paginationEl.querySelectorAll('[data-page]').forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        var nextPage = parseInt(btn.getAttribute('data-page') || '1', 10);
-        if (!Number.isFinite(nextPage) || nextPage < 1 || nextPage > self.totalPages || nextPage === self.page) return;
-        self.page = nextPage;
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-        self._load();
-      });
+    if (this.totalPages <= 1) { this.paginationEl.innerHTML = ''; return; }
+    var current = this.page, total = this.totalPages;
+    var pages = [1, current - 2, current - 1, current, current + 1, current + 2, total];
+    var seen = {}, html = '';
+    pages.sort(function (a,b) { return a-b; }).forEach(function (page) {
+      if (page < 1 || page > total || seen[page]) return;
+      seen[page] = true;
+      var url = new URL(window.location.href);
+      if (page === 1) url.searchParams.delete('page'); else url.searchParams.set('page', page);
+      html += '<a class="board-page-btn' + (page === current ? ' active' : '') + '" href="' + GW.escapeHtml(url.pathname + url.search) + '"' + (page === current ? ' aria-current="page"' : '') + ' aria-label="' + page + '페이지">' + page + '</a>';
     });
+    this.paginationEl.innerHTML = html;
   };
 
   Board.prototype._buildCard = function (post, idx) {
@@ -625,6 +593,8 @@
     var input  = document.getElementById('board-search-input');
     var clear  = document.getElementById('board-search-clear');
     var timer  = null;
+    input.value = this._searchQuery;
+    clear.style.display = this._searchQuery ? 'block' : 'none';
 
     input.addEventListener('input', function () {
       var q = input.value.trim();
@@ -643,6 +613,11 @@
   Board.prototype._search = function (q) {
     this._searchQuery = q;
     this.page    = 1;
+    var stateUrl = new URL(window.location.href);
+    stateUrl.searchParams.delete('page');
+    if (this._searchQuery) stateUrl.searchParams.set('q', this._searchQuery); else stateUrl.searchParams.delete('q');
+    if (this._selectedTag) stateUrl.searchParams.set('tag', this._selectedTag); else stateUrl.searchParams.delete('tag');
+    window.history.replaceState(null, '', stateUrl.pathname + stateUrl.search);
     this.total   = 0;
     this.totalPages = 1;
     this.loading = false;

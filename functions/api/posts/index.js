@@ -1,3 +1,4 @@
+import { isPlaceholderAuthor, publicAuthor } from '../../_shared/post-author.js';
 /**
  * Gilwell Media · Posts Collection
  *
@@ -210,7 +211,7 @@ export async function onRequestGet({ request, env }) {
     const total = countRows[0]?.total ?? 0;
     const effectivePageSize = allRequested && isAdmin ? total : pageSize;
 
-    const hydrated = (posts || []).map((post) => serializePostImage(post, origin));
+    const hydrated = (posts || []).map((post) => serializePostImage(isAdmin ? post : {...post, author: publicAuthor(post.author)}, origin));
     return json(
       { posts: hydrated, total, page, pageSize: effectivePageSize },
       200,
@@ -284,6 +285,7 @@ export async function onRequestPost({ request, env }) {
     ? { ok: true, provided: false, value: null }
     : optionalTrimmedString(body.author, '작성자', 60);
   if (!safeAuthorInput.ok) return json({ error: safeAuthorInput.error }, 400);
+  if (isPlaceholderAuthor(safeAuthorInput.value)) return json({ error: '작성자 불러오기가 끝난 뒤 다시 저장해주세요.' }, 400);
   const safePublishedInput = optionalBooleanFlag(body.published);
   if (!safePublishedInput.ok) return json({ error: safePublishedInput.error }, 400);
   const safeFeaturedInput = optionalBooleanFlag(body.featured);

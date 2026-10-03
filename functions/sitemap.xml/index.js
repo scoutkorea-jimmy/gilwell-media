@@ -1,3 +1,5 @@
+import { postLastmod } from '../_shared/seo-dates.js';
+import { slugifySpecialFeature } from '../_shared/special-features.js';
 import { SCOUT_TOPICS } from '../topics/[slug].js';
 
 export async function onRequestGet(context) {
@@ -40,7 +42,7 @@ async function buildSitemapResponse({ request, env }, headOnly) {
   try {
     const [postResult, lastmodResult, glossaryLastmodResult] = await Promise.all([
       env.DB.prepare(
-        `SELECT id, updated_at, publish_at, created_at
+        `SELECT id, category, special_feature, updated_at, publish_at, created_at
            FROM posts
           WHERE published = 1
           ORDER BY datetime(COALESCE(publish_at, created_at)) DESC, id DESC`
@@ -67,11 +69,21 @@ async function buildSitemapResponse({ request, env }, headOnly) {
   }
 
   const urls = staticPages.map((page) => {
-    const lastmod = page.category ? staticLastmods[page.category] : staticLastmods.home;
+    const lastmod = page.category === 'glossary' ? staticLastmods.glossary : page.category ? posts.filter(post => post.category === page.category).map(postLastmod).sort().at(-1) : null;
     return xmlUrl(`${origin}${page.path}`, lastmod, page.priority);
   }).concat(posts.map((post) => {
-    return xmlUrl(`${origin}/post/${post.id}`, post.updated_at || post.publish_at || post.created_at, '0.8');
+    return xmlUrl(`${origin}/post/${post.id}`, postLastmod(post), '0.8');
   }));
+
+  const features = new Map();
+  for (const post of posts) {
+    if (!['korea','apr','wosm','people'].includes(post.category) || !post.special_feature) continue;
+    const path = `/feature/${post.category}/${slugifySpecialFeature(post.special_feature)}`;
+    const modified = postLastmod(post);
+    if (!features.has(path) || modified > features.get(path)) features.set(path, modified);
+  }
+  for (const [path, modified] of features) urls.push(xmlUrl(origin + path, modified, '0.8'));
+  urls.push(xmlUrl(origin + '/help', null, '0.4'));
 
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
