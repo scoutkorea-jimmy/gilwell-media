@@ -41,7 +41,16 @@ test('robots.txt and sitemap.xml are reachable', async ({ request }) => {
   const robotsBody = await robots.text();
   expect(robotsBody).toContain('Sitemap');
 
-  const sitemap = await request.get('/sitemap.xml');
-  expect(sitemap.ok()).toBeTruthy();
-  expect((await sitemap.text()).length).toBeGreaterThan(100);
+  for (const path of ['/sitemap.xml', '/sitemap-news.xml']) {
+    const sitemap = await request.get(path);
+    expect(sitemap.ok()).toBeTruthy();
+    expect(sitemap.headers()['content-type']).toMatch(/^application\/xml/);
+    const xml = await sitemap.text();
+    expect(xml).toMatch(/^<\?xml /);
+    expect(xml).toContain('<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"');
+    expect(xml).not.toMatch(/<!doctype html|<html/i);
+    const head = await request.head(path);
+    expect(head.ok()).toBeTruthy();
+    expect(head.headers()['content-type']).toMatch(/^application\/xml/);
+  }
 });

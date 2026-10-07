@@ -26,7 +26,7 @@ function database(data = rows) {
 import sqlite3,json,sys
 data=json.load(sys.stdin)
 db=sqlite3.connect(':memory:'); db.row_factory=sqlite3.Row
-db.executescript('CREATE TABLE posts(id INTEGER, title TEXT, content TEXT, published INTEGER, subtitle TEXT, tag TEXT, meta_tags TEXT, category TEXT, created_at TEXT, publish_at TEXT, updated_at TEXT); CREATE TABLE glossary_terms(created_at TEXT, updated_at TEXT);')
+db.executescript('CREATE TABLE posts(id INTEGER, title TEXT, content TEXT, published INTEGER, subtitle TEXT, tag TEXT, meta_tags TEXT, category TEXT, special_feature TEXT, created_at TEXT, publish_at TEXT, updated_at TEXT); CREATE TABLE glossary_terms(created_at TEXT, updated_at TEXT);')
 for row in data['rows']:
  db.execute('INSERT INTO posts ('+','.join(row)+') VALUES ('+','.join('?' for _ in row)+')',list(row.values()))
 print(json.dumps([dict(row) for row in db.execute(data['sql'],data['params'])]))
@@ -77,7 +77,12 @@ try {
 } finally { console.error = originalError; }
 assert.ok(renderTopicLinks('컵 스카우트 이야기').includes('/topics/cub-scouts'));
 assert.ok(!renderTopicLinks('컵 스카우트 이야기').includes('/topics/rover-scouts'));
-const xml = await (await sitemap({ request: new Request('https://bpmedia.net/sitemap.xml'), env: { DB: database() } })).text();
+const sitemapResponse = await sitemap({ request: new Request('https://bpmedia.net/sitemap.xml'), env: { DB: database() } });
+assert.match(sitemapResponse.headers.get('content-type'), /^application\/xml/);
+const xml = await sitemapResponse.text();
+assert.ok(xml.includes('<loc>https://bpmedia.net/post/1</loc>'));
+assert.ok(!xml.includes('<loc>https://bpmedia.net/post/4</loc>'));
+assert.ok(!/<html|<!doctype html/i.test(xml));
 for (const topic of SCOUT_TOPICS) {
   assert.ok(xml.includes(`<loc>https://bpmedia.net/topics/${topic.slug}</loc>`));
   for (const file of ['public/index.html', 'public/glossary.html']) assert.ok(readFileSync(file, 'utf8').includes(`/topics/${topic.slug}`));

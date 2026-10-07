@@ -1499,7 +1499,7 @@ input[type='radio'] {
  * 선택 전은 outline-variant 외곽선, 선택 후는 secondary-container + 체크 표시로
  * 색에만 의존하지 않고 상태를 전달한다.
  */
-:where(.tag-filter-btn, .filter-btn, .glossary-letter-btn, .calendar-filter-chip, .calendar-tag-preset, .post-page-tag) {
+:where(.tag-filter-btn, .filter-btn, .glossary-letter-btn, .calendar-filter-chip, .calendar-tag-preset, .post-page-tag, .scout-topic-entry .topic-links a) {
   min-height: var(--md-comp-chip-height) !important;
   height: auto !important;
   display: inline-flex !important;

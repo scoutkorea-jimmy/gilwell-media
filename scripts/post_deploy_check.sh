@@ -82,6 +82,16 @@ echo "$BOARD_LAYOUT" | grep -F '"gap_px":' >/dev/null
 echo "$POSTS_JSON" | grep -F '"publish_at":' >/dev/null
 echo "$ROBOTS_TXT" | grep -F "Sitemap: ${BASE_URL}/sitemap.xml" >/dev/null
 echo "$SITEMAP_XML" | grep -F "<loc>${BASE_URL}/</loc>" >/dev/null
+# HTTP 200 alone can hide an HTML fallback or challenge page.
+for SITEMAP_PATH in sitemap.xml sitemap-news.xml; do
+  SITEMAP_TYPE="$(curl -fsSL -o /dev/null -w '%{content_type}' "${BASE_URL}/${SITEMAP_PATH}")"
+  [[ "$SITEMAP_TYPE" == application/xml* ]]
+  curl -fsSL "${BASE_URL}/${SITEMAP_PATH}" | python3 -c '
+import sys, xml.etree.ElementTree as ET
+root = ET.parse(sys.stdin).getroot()
+assert root.tag == "{http://www.sitemaps.org/schemas/sitemap/0.9}urlset", root.tag
+'
+done
 echo "$RSS_XML" | grep -F '<bpmedia:created>' >/dev/null
 echo "$RSS_XML" | grep -F '<category domain="tag">' >/dev/null
 test "$ADMIN_SESSION_STATUS" = "401"

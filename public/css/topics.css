@@ -2,7 +2,7 @@
 .topic-page { color: var(--md-sys-color-on-surface); background: var(--md-sys-color-surface); }
 .topic-page p { line-height: 1.85; }
 .topic-page h1, .topic-page h2, .topic-page h3, .topic-page p { word-break: keep-all; overflow-wrap: break-word; }
-.topic-page a, .scout-topic-entry a { color: var(--md-sys-color-primary); text-decoration: underline; text-underline-offset: 4px; }
+.topic-page a { color: var(--md-sys-color-primary); text-decoration: underline; text-underline-offset: 4px; }
 .topic-header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; border-bottom: 1px solid var(--md-sys-color-outline-variant); }
 .topic-brand { font-size: 26px; font-weight: 700; }
 .topic-links { display: flex; flex-wrap: wrap; gap: 8px 20px; }
@@ -23,9 +23,14 @@
 .topic-news-card p { margin: 0 0 12px; }
 .topic-read { margin-top: auto; min-height: 44px; display: inline-flex; align-items: center; }
 .topic-footer { margin-top: 32px; border-top: 1px solid var(--md-sys-color-outline-variant); }
-.scout-topic-entry { margin: 24px 0; padding: 24px; border-radius: var(--md-sys-shape-large); background: var(--md-sys-color-surface-container-low); color: var(--md-sys-color-on-surface); }
-.scout-topic-entry h2 { font-size: 22px; margin: 0 0 12px; }
-.scout-topic-entry p { line-height: 1.7; margin-bottom: 12px; word-break: keep-all; }
+.scout-topic-entry { margin: var(--md-sys-space-5) 0; color: var(--md-sys-color-on-surface); }
+.scout-topic-entry p { font-size: var(--md-sys-typescale-body-medium); line-height: 1.7; margin: var(--md-sys-space-3) 0; word-break: keep-all; overflow-wrap: break-word; }
+.scout-topic-entry .topic-links { gap: var(--md-sys-space-2); margin-bottom: var(--md-sys-space-3); }
+.scout-topic-entry .topic-links a { min-height: 44px !important; text-decoration: none; }
+.scout-topic-entry .topic-links svg { flex-shrink: 0; }
+.scout-topic-entry .topic-links a:hover { background: var(--md-sys-color-surface-container) !important; }
 .topic-page a:focus-visible, .scout-topic-entry a:focus-visible { outline: 3px solid var(--md-sys-color-primary); outline-offset: 4px; border-radius: 4px; }
 @media (max-width: 900px) { .topic-news-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 600px) { .topic-news-grid { grid-template-columns: 1fr; } .topic-news-card { padding: 20px; } }
+
+@media (max-width: 600px) { .scout-topic-entry .topic-links { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); } .scout-topic-entry .topic-links a { padding-inline: 8px !important; } }

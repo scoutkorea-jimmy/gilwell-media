@@ -21,3 +21,21 @@ test('home API returns ok within 5s', async ({ request }) => {
   expect(body).toHaveProperty('site_meta');
   expect(body).toHaveProperty('latest');
 });
+
+
+test('scout topic buttons keep icons, touch targets and keyboard focus', async ({ page }) => {
+  for (const width of [1440, 390, 320]) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto('/');
+    const links = page.locator('.scout-topic-entry .topic-links a');
+    await expect(links).toHaveCount(4);
+    await expect(links.locator('svg[aria-hidden="true"]')).toHaveCount(4);
+    for (const link of await links.all()) {
+      expect((await link.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+      await expect(link).toHaveCSS('text-decoration-line', 'none');
+    }
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    await links.first().focus();
+    await expect(links.first()).toHaveCSS('outline-width', '3px');
+  }
+});
