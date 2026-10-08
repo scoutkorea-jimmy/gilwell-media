@@ -6,11 +6,11 @@ import { SCOUT_TOPICS, onRequestGet, onRequestHead, renderTopicLinks } from '../
 import { onRequestGet as sitemap } from '../functions/sitemap.xml/index.js';
 
 const rows = [
-  { id: 1, title: '컵 스카우트 캠프', content: '', published: 1 },
+  { id: 1, title: '컵 스카우트 캠프', content: '', published: 1, image_url: 'https://example.org/a.jpg', image_frame: '{"x":30,"y":70}' },
   { id: 2, title: '지역 소식', content: 'Venture Scouts 활동', published: 1 },
   { id: 3, title: '로버무트 안내', content: '', published: 1 },
   { id: 4, title: '컵스카우트 비공개 초안', content: '', published: 0 },
-  { id: 5, title: '컵스카우트 <script>evil</script>', content: '', published: 1 },
+  { id: 5, title: '컵스카우트 <script>evil</script>', content: '', published: 1, image_url: 'data:image/png;base64,AA' },
   { id: 6, title: '컵스카우트 최신 기사', content: '', published: 1 },
   { id: 7, title: 'Venture Scouts 초안', content: '', published: 0 },
 ].map(row => ({ ...row, created_at: '2026-09-01 01:00:00', publish_at: row.id === 6 ? '2026-10-01 10:00:00' : null }));
@@ -26,7 +26,7 @@ function database(data = rows) {
 import sqlite3,json,sys
 data=json.load(sys.stdin)
 db=sqlite3.connect(':memory:'); db.row_factory=sqlite3.Row
-db.executescript('CREATE TABLE posts(id INTEGER, title TEXT, content TEXT, published INTEGER, subtitle TEXT, tag TEXT, meta_tags TEXT, category TEXT, special_feature TEXT, created_at TEXT, publish_at TEXT, updated_at TEXT); CREATE TABLE glossary_terms(created_at TEXT, updated_at TEXT);')
+db.executescript('CREATE TABLE posts(id INTEGER, title TEXT, content TEXT, published INTEGER, image_url TEXT, image_frame TEXT, subtitle TEXT, tag TEXT, meta_tags TEXT, category TEXT, special_feature TEXT, created_at TEXT, publish_at TEXT, updated_at TEXT); CREATE TABLE glossary_terms(created_at TEXT, updated_at TEXT);')
 for row in data['rows']:
  db.execute('INSERT INTO posts ('+','.join(row)+') VALUES ('+','.join('?' for _ in row)+')',list(row.values()))
 print(json.dumps([dict(row) for row in db.execute(data['sql'],data['params'])]))
@@ -50,6 +50,10 @@ for (const topic of SCOUT_TOPICS) {
   assert.ok(html.includes(`<link rel="canonical" href="https://bpmedia.net/topics/${topic.slug}"`));
   assert.ok(html.includes('index,follow'));
   assert.ok(html.includes(ages[topic.slug]));
+  assert.equal((html.match(/class="topic-stage-card"/g)||[]).length,4);
+  assert.equal((html.match(/class="topic-activity-card"/g)||[]).length,3);
+  assert.ok(html.includes('활동의 분위기를 담은 AI 일러스트'));
+  assert.ok(html.includes(`/img/topics/${topic.slug}.webp`));
   assert.ok(html.includes('class="masthead"') && html.includes('data-managed-nav'));
   assert.ok(html.includes('GW.bootstrapStandardPage()'));
   assert.ok(html.indexOf('/css/topics.css') < html.indexOf('/css/m3-site.css'));
@@ -60,6 +64,10 @@ for (const topic of SCOUT_TOPICS) {
   for (const script of html.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)) JSON.parse(script[1]);
   if (topic.slug === 'cub-scouts') {
     assert.ok(html.includes('/post/1')); // spaced Korean name
+    assert.ok(html.includes('src="https://example.org/a.jpg"'));
+    assert.ok(html.includes('object-position:30% 70%'));
+    assert.ok(html.includes('https://bpmedia.net/api/posts/5/image'));
+    assert.ok(!html.includes('src="data:image'));
     assert.ok(html.includes('&lt;script&gt;evil&lt;/script&gt;'));
     assert.ok(!html.includes('<script>evil</script>'));
     assert.ok(html.indexOf('/post/6') < html.indexOf('/post/1'));

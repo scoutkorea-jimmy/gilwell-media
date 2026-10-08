@@ -1,9 +1,13 @@
 import { buildShareMetaBlock, getResolvedShareImage, loadSiteMeta } from '../_shared/site-meta.js';
+import { resolvePostImageUrl } from '../_shared/images.js';
+import { normalizeImageFrame } from '../_shared/image-frame.js';
 import { ASSET_VERSION, SITE_VERSION, ADMIN_VERSION } from '../_shared/build-version.js';
 
 export const SCOUT_TOPICS = [
   {
     slug: 'cub-scouts', name: '컵스카우트', english: 'Cub Scouts',
+    age: '6~12세', tagline: '함께 놀며 배우는 첫 모험', lead: '친구와 함께 발견하고, 작은 도전으로 자신감을 키워요.',
+    activities: [["협동과 배려", "단체 활동에서 친구의 생각을 듣고 함께 힘을 모읍니다."], ["모험과 발견", "새로운 환경을 탐색하며 호기심을 활동으로 이어갑니다."], ["진급과 취미장", "관심 있는 과제에 도전하며 성취를 하나씩 쌓습니다."]],
     aliases: ['컵스카우트', 'Cub Scout'],
     intro: '컵스카우트는 한국스카우트연맹 부문별 소개 기준 6~12세 어린이를 위한 단계입니다. 단체 활동과 모험, 진급·취미장 활동을 통해 협동심과 성취감을 기릅니다.',
     focus: '친구들과 함께 도전하고 서로 돕는 경험을 쌓습니다. 배려와 소통, 자기 발전, 모험과 봉사 등 다양한 교육 목표를 활동에 담습니다.',
@@ -12,6 +16,8 @@ export const SCOUT_TOPICS = [
   },
   {
     slug: 'scouts', name: '스카우트', english: 'Scouts',
+    age: '12~15세', tagline: '함께 계획하고 실천하는 성장', lead: '나의 관심과 개성을 살리고, 함께하는 활동으로 세상을 배워요.',
+    activities: [["대원이 중심인 활동", "자신의 관심을 표현하고 프로그램에 주도적으로 참여합니다."], ["개성과 협력", "서로 다른 강점을 발견하고 친구들과 힘을 모읍니다."], ["지역사회 봉사", "공동체에 필요한 일을 실천하며 기여하는 기쁨을 배웁니다."]],
     aliases: ['스카우트', 'Scout'],
     intro: '스카우트는 한국스카우트연맹 부문별 소개 기준 12~15세 청소년을 위한 단계입니다. 대원이 중심이 되는 프로그램과 사회봉사로 개성을 살리고 공동체에 기여합니다.',
     focus: '자신의 관심을 활동으로 연결하고 친구들과 함께 실천합니다. 사회봉사에 참여하며 성취감을 얻고 각자의 개성을 발전시킵니다.',
@@ -20,6 +26,8 @@ export const SCOUT_TOPICS = [
   },
   {
     slug: 'venture-scouts', name: '벤처스카우트', english: 'Venture Scouts',
+    age: '15~18세', tagline: '스스로 선택하고 이끄는 도전', lead: '내가 세운 목표를 직접 계획하고 실행하며 책임감을 키워요.',
+    activities: [["자율적인 계획", "목표와 관심에 맞는 프로그램을 선택하고 구상합니다."], ["자기관리와 리더십", "시간·계획·체력을 관리하며 주변의 모범이 되는 경험을 쌓습니다."], ["환경과 사회공헌", "환경보전과 봉사를 활동에 연결해 변화를 실천합니다."]],
     aliases: ['벤처스카우트', 'Venture Scout', 'Venturer'],
     intro: '벤처스카우트는 한국스카우트연맹 부문별 소개 기준 15~18세 청소년을 위한 단계입니다. 관심과 목표에 따라 활동을 선택하고 직접 구상하며 자율성과 책임감을 기릅니다.',
     focus: '대원이 프로그램을 선택하고 계획합니다. 자기관리, 리더십, 환경과 사회공헌 등을 진급과제와 연결하며 활동의 준비부터 실행까지 참여합니다.',
@@ -28,6 +36,8 @@ export const SCOUT_TOPICS = [
   },
   {
     slug: 'rover-scouts', name: '로버스카우트', english: 'Rover Scouts',
+    age: '18~24세', tagline: '봉사와 탐험으로 넓히는 세계', lead: '사회에 기여하고 새로운 도전에 나서며 나만의 길을 만들어 가요.',
+    activities: [["사회에 대한 봉사", "공동체에 필요한 역할을 찾아 적극적으로 참여합니다."], ["챌린지와 탐험", "낯선 도전과 어려움을 스스로 극복하는 경험을 쌓습니다."], ["진취적인 삶의 준비", "봉사와 도전에서 얻은 경험을 앞으로의 삶에 연결합니다."]],
     aliases: ['로버스카우트', 'Rover Scout', 'Rover Moot', 'Rovermoot', '로버무트'],
     intro: '로버스카우트는 한국스카우트연맹 부문별 소개 기준 18~24세 청년층을 안내하는 부문입니다. 사회봉사와 챌린지·탐험활동으로 공동체에 기여하고 진취적인 삶을 준비합니다.',
     focus: '한국스카우트연맹은 로버스카우트를 지도자 소개에서 설명합니다. 봉사를 실천하고 도전과 탐험을 통해 스스로 어려움을 극복하는 경험을 쌓습니다.',
@@ -59,7 +69,7 @@ async function renderTopicPage({ params, request, env }, headOnly = false) {
   const searchable = "replace(COALESCE(title,'') || ' ' || COALESCE(subtitle,'') || ' ' || COALESCE(tag,'') || ' ' || COALESCE(meta_tags,'') || ' ' || COALESCE(content,''), ' ', '')";
   let posts, siteMeta;
   try {
-    const result = await env.DB.prepare(`SELECT id, title, subtitle, publish_at, created_at FROM posts
+    const result = await env.DB.prepare(`SELECT id, title, subtitle, image_url, image_frame, publish_at, created_at FROM posts
       WHERE published = 1 AND (${topic.aliases.map(() => `${searchable} LIKE ?`).join(' OR ')})
       ORDER BY datetime(COALESCE(NULLIF(publish_at, ''), created_at)) DESC, id DESC LIMIT 18`)
       .bind(...topic.aliases.map(alias => `%${alias.replace(/\s+/g, '')}%`)).all();
@@ -136,28 +146,36 @@ async function renderTopicPage({ params, request, env }, headOnly = false) {
     </nav>
   </header>
   <main id="main-content" class="topic-wrap">
-    <nav aria-label="스카우트 활동 단계" class="topic-links">${renderTopicLinks('', topic.slug)}</nav>
+    <nav aria-label="스카우트 활동 단계" class="topic-stage-grid">${SCOUT_TOPICS.map(item => `<a class="topic-stage-card" href="/topics/${item.slug}"${item.slug === topic.slug ? ' aria-current="page"' : ''}>
+      <img src="/img/topics/${item.slug}.webp?v=${ASSET_VERSION}" alt="" width="1536" height="1024" decoding="async">
+      <span class="topic-stage-body"><span class="topic-stage-heading">${item.name}<span class="topic-age">${item.age}</span></span><span class="topic-stage-caption">${item.tagline}</span><span class="topic-stage-state">${item.slug === topic.slug ? '지금 보고 있어요' : '활동 알아보기'} <span aria-hidden="true">↗</span></span></span>
+    </a>`).join('')}</nav>
     <section class="topic-intro" aria-labelledby="topic-title">
-      <p class="topic-eyebrow">스카우트 활동 안내 · ${topic.english}</p>
-      <h1 id="topic-title">${topic.name}</h1><p>${topic.intro}</p>
-      <div class="topic-links"><a href="#topic-news">관련 소식 읽기 ↓</a><a href="/glossary">스카우트 용어집 →</a></div>
+      <div class="topic-intro-copy"><p class="topic-eyebrow">스카우트 활동 안내 · ${topic.english}</p>
+      <h1 id="topic-title">${topic.name}</h1><p class="topic-lead">${topic.lead}</p>
+      <p class="topic-intro-summary">${topic.intro}</p>
+      <div class="topic-links"><a href="#topic-activities">활동 살펴보기 ↓</a><a href="#topic-news">관련 소식 읽기 ↓</a></div></div>
+      <figure class="topic-hero-art"><img src="/img/topics/${topic.slug}.webp?v=${ASSET_VERSION}" width="1536" height="1024" alt="${topic.tagline}을 표현한 일러스트" fetchpriority="high" decoding="async"><figcaption>활동의 분위기를 담은 AI 일러스트</figcaption></figure>
     </section>
     <div class="topic-guide">
-      <section><h2>${topic.name}의 활동과 성장</h2><p>${topic.focus}</p></section>
-      <section><h2>${topic.question}</h2><p>${topic.answer}</p></section>
-      <section><h2>가입과 참가 조건은 어떻게 확인하나요?</h2>
-        <p>국내 가입은 한국스카우트연맹 가입 상담을 통해 거주 지역의 단위대와 활동 일정을 확인하세요. 등록 대상과 신청 절차는 연맹 안내를, 국내외 행사 참가 조건은 주최 측 공고를 확인하면 됩니다.</p>
-        <p><a href="https://scout.or.kr/intro/scouts">한국스카우트연맹 부문별 공식 소개 ↗</a> · <a href="https://www.scout.or.kr/login">한국스카우트연맹 가입 상담 안내 ↗</a></p>
-        <p class="topic-note">설명 자료: 한국스카우트연맹 부문별 소개${topic.slug === 'rover-scouts' ? ' · <a href="https://www.scout.org/what-we-do/world-scout-events/world-scout-moot">WOSM 세계스카우트무트 안내</a>' : ''} · 확인일 2026년 10월 8일. 연령은 부문별 소개의 안내 기준이며, 등록과 행사 참가 조건은 해당 공고를 따릅니다. BP미디어는 독립 미디어이며 연맹의 공식 가입 접수처가 아닙니다.</p>
+      <section id="topic-activities" aria-labelledby="activities-heading"><p class="topic-eyebrow">활동으로 배우고, 경험으로 성장해요</p><h2 id="activities-heading">${topic.name}의 활동과 성장</h2><p class="topic-section-copy">${topic.focus}</p>
+        <div class="topic-activity-grid">${topic.activities.map(([heading,copy],i)=>`<article class="topic-activity-card"><span class="topic-step" aria-hidden="true">0${i+1}</span><h3>${heading}</h3><p>${copy}</p></article>`).join('')}</div>
       </section>
+      <div class="topic-practical-grid"><section class="topic-question"><p class="topic-eyebrow">궁금한 이야기</p><h2>${topic.question}</h2><p>${topic.answer}</p><a href="/glossary">스카우트 용어집에서 더 알아보기 →</a></section>
+      <section class="topic-join"><p class="topic-eyebrow">첫 활동을 준비한다면</p><h2>참여 전, 이렇게 확인하세요</h2>
+        <ol><li><strong>나에게 맞는 부문 찾기</strong><span>이 페이지에서 연령 안내와 활동의 특징을 살펴보세요.</span></li><li><strong>지역의 단위대와 일정 확인하기</strong><span>한국스카우트연맹 가입 상담으로 거주 지역의 활동과 신청 절차를 확인하세요.</span></li><li><strong>행사별 참가 조건 확인하기</strong><span>국내외 행사는 주최 측의 연령·일정·준비물 안내를 따르세요.</span></li></ol>
+        <a href="https://www.scout.or.kr/login">한국스카우트연맹 가입 상담 안내 ↗</a>
+      </section></div>
+      <aside class="topic-source"><strong>안내 기준과 참고 자료</strong><p><a href="https://scout.or.kr/intro/scouts">한국스카우트연맹 부문별 공식 소개 ↗</a>${topic.slug === 'rover-scouts' ? ' · <a href="https://www.scout.org/what-we-do/world-scout-events/world-scout-moot">WOSM 세계스카우트무트 안내 ↗</a>' : ''}</p><p class="topic-note">확인일 2026년 10월 8일. 연령은 부문별 소개의 안내 기준이며, 등록과 행사 참가 조건은 해당 공고를 따릅니다.${topic.slug === 'rover-scouts' ? ' 한국스카우트연맹은 로버스카우트를 지도자 소개에서 설명합니다.' : ''} BP미디어는 독립 미디어이며 연맹의 공식 가입 접수처가 아닙니다.</p></aside>
     </div>
     <section id="topic-news" aria-labelledby="news-heading"><h2 id="news-heading">${topic.name} 관련 최신 소식</h2>
       <p>국내외 기사에서 이 주제를 언급한 소식을 최신순으로 모았습니다. 행사 일정과 참가 대상은 기사 원문에서 확인하세요.</p>
       <div class="topic-news-grid">${posts.length ? posts.map(post => `<article class="topic-news-card">
-        <p class="topic-note">${escapeHtml(formatPublicDate(post))}</p>
+        ${resolvePostImageUrl(origin,post.id,post.image_url) ? `<a class="topic-news-image" href="/post/${post.id}" tabindex="-1" aria-hidden="true"><img src="${escapeHtml(resolvePostImageUrl(origin,post.id,post.image_url))}" alt="" width="640" height="400" loading="lazy" decoding="async" style="object-position:${normalizeImageFrame(post.image_frame)?.x ?? 50}% ${normalizeImageFrame(post.image_frame)?.y ?? 50}%"></a>` : ''}
+        <div class="topic-news-body"><p class="topic-note">${escapeHtml(formatPublicDate(post))}</p>
         <h3><a href="/post/${post.id}">${escapeHtml(post.title)}</a></h3>
         ${post.subtitle ? `<p>${escapeHtml(post.subtitle)}</p>` : ''}
-        <a href="/post/${post.id}" class="topic-read">기사 읽기 →</a>
+        <a href="/post/${post.id}" class="topic-read">기사 읽기 →</a></div>
       </article>`).join('') : '<p>아직 관련 기사가 없습니다. 새로운 소식이 올라오면 여기에 표시됩니다.</p>'}</div>
       <p><a href="/search?q=${encodeURIComponent(topic.name)}">${topic.name} 기사 더 찾아보기 →</a></p>
     </section>
