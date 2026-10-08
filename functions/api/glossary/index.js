@@ -1,7 +1,7 @@
 import { gateMenuAccess } from '../../_shared/admin-permissions.js';
 import {
   MISC_BUCKET, UNMATCHED_BUCKET, BUCKETS,
-  normalizeTermValue, isMiscTerm, isUnmatchedTerm, inferBucket,
+  normalizeTermValue, isMiscTerm, isUnmatchedTerm, inferBucket, storageBucket,
 } from '../../_shared/glossary-buckets.mjs';
 
 export async function onRequestGet({ request, env }) {
@@ -69,14 +69,14 @@ export async function onRequestPost({ request, env }) {
       VALUES (?, ?, ?, ?, ?, ?)
       RETURNING id, bucket, term_ko, term_en, term_fr, description_ko, sort_order, created_at, updated_at
     `).bind(
-      normalized.bucket,
+      storageBucket(normalized.bucket),
       normalized.term_ko,
       normalized.term_en,
       normalized.term_fr,
       normalized.description_ko,
       normalized.sort_order
     ).first();
-    return json({ item: row }, 201);
+    return json({ item: { ...row, bucket: normalized.bucket } }, 201);
   } catch (err) {
     console.error('POST /api/glossary error:', err);
     return json({ error: 'Database error' }, 500);

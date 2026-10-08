@@ -47,3 +47,8 @@ export function inferBucket(termKo) {
   const choseongIndex = Math.floor((code - 0xac00) / 588);
   return CHOSEONG_BUCKETS[choseongIndex] || '';
 }
+
+// Legacy D1 CHECK accepts syllable buckets only; read paths infer 기타/국문 미확정.
+export function storageBucket(bucket) {
+  return SYLLABLE_BUCKETS.includes(bucket) ? bucket : '가';
+}

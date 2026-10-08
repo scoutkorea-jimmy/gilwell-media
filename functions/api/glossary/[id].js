@@ -1,7 +1,7 @@
 import { gateMenuAccess } from '../../_shared/admin-permissions.js';
 import {
   MISC_BUCKET, UNMATCHED_BUCKET, BUCKETS,
-  normalizeTermValue, isMiscTerm, isUnmatchedTerm, inferBucket,
+  normalizeTermValue, isMiscTerm, isUnmatchedTerm, inferBucket, storageBucket,
 } from '../../_shared/glossary-buckets.mjs';
 
 export async function onRequestPut({ request, env, params }) {
@@ -21,7 +21,7 @@ export async function onRequestPut({ request, env, params }) {
       WHERE id = ?
       RETURNING id, bucket, term_ko, term_en, term_fr, description_ko, sort_order, created_at, updated_at
     `).bind(
-      normalized.bucket,
+      storageBucket(normalized.bucket),
       normalized.term_ko,
       normalized.term_en,
       normalized.term_fr,
@@ -30,7 +30,7 @@ export async function onRequestPut({ request, env, params }) {
       id
     ).first();
     if (!row) return json({ error: '항목을 찾을 수 없습니다' }, 404);
-    return json({ item: row });
+    return json({ item: { ...row, bucket: normalized.bucket } });
   } catch (err) {
     console.error('PUT /api/glossary/:id error:', err);
     return json({ error: 'Database error' }, 500);
