@@ -19,4 +19,4 @@ db.executescript(sql);assert after=={r['id']:dict(r) for r in db.execute('SELECT
 i=next(iter(changes));db.execute('UPDATE glossary_terms SET description_ko=? WHERE id=?',('concurrent edit',int(i)))
 db.executescript(sql)
 assert db.execute('SELECT description_ko FROM glossary_terms WHERE id=?',(int(i),)).fetchone()[0]=='concurrent edit'
-print('PASS: 335 rows, exactly 10 corrections, other fields preserved, idempotence, concurrent-edit protection')
+print(f'PASS: 335 rows, exactly {len(changes)} corrections, other fields preserved, idempotence, concurrent-edit protection')
