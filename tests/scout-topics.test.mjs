@@ -41,6 +41,7 @@ function context(slug, db = database()) {
   return { params: { slug }, request: new Request(`https://bpmedia.net/topics/${slug}`), env: { DB: db } };
 }
 
+const ages = { 'cub-scouts': '6~12세', scouts: '12~15세', 'venture-scouts': '15~18세', 'rover-scouts': '18~24세' };
 for (const topic of SCOUT_TOPICS) {
   const response = await onRequestGet(context(topic.slug));
   assert.equal(response.status, 200);
@@ -48,6 +49,12 @@ for (const topic of SCOUT_TOPICS) {
   assert.ok(html.includes(`<h1 id="topic-title">${topic.name}</h1>`));
   assert.ok(html.includes(`<link rel="canonical" href="https://bpmedia.net/topics/${topic.slug}"`));
   assert.ok(html.includes('index,follow'));
+  assert.ok(html.includes(ages[topic.slug]));
+  assert.ok(html.includes('class="masthead"') && html.includes('data-managed-nav'));
+  assert.ok(html.includes('GW.bootstrapStandardPage()'));
+  assert.ok(html.indexOf('/css/topics.css') < html.indexOf('/css/m3-site.css'));
+  assert.ok(html.includes('연령은 부문별 소개의 안내 기준'));
+  assert.ok(html.includes('확인일 2026년 10월 8일'));
   assert.ok(!html.includes('/post/4') && !html.includes('/post/7'));
   assert.ok(html.includes(`href="/topics/${topic.slug}" aria-current="page"`));
   for (const script of html.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)) JSON.parse(script[1]);

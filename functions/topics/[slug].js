@@ -1,36 +1,36 @@
 import { buildShareMetaBlock, getResolvedShareImage, loadSiteMeta } from '../_shared/site-meta.js';
-import { ASSET_VERSION } from '../_shared/build-version.js';
+import { ASSET_VERSION, SITE_VERSION, ADMIN_VERSION } from '../_shared/build-version.js';
 
 export const SCOUT_TOPICS = [
   {
     slug: 'cub-scouts', name: '컵스카우트', english: 'Cub Scouts',
     aliases: ['컵스카우트', 'Cub Scout'],
-    intro: '컵스카우트는 어린이들이 함께 활동하며 협동심과 모험심을 기르는 스카우트 단계입니다. 놀이와 체험, 단계별 진급과 취미장 활동을 통해 작은 도전을 경험합니다.',
-    focus: '처음 해 보는 활동을 친구들과 함께 시도하고, 서로 돕는 경험이 중심입니다. 한국스카우트연맹은 배려와 소통, 개인의 성취감, 용기 있는 모험활동 등을 컵스카우트의 교육적 지표로 소개합니다.',
+    intro: '컵스카우트는 한국스카우트연맹 부문별 소개 기준 6~12세 어린이를 위한 단계입니다. 단체 활동과 모험, 진급·취미장 활동을 통해 협동심과 성취감을 기릅니다.',
+    focus: '친구들과 함께 도전하고 서로 돕는 경험을 쌓습니다. 배려와 소통, 자기 발전, 모험과 봉사 등 다양한 교육 목표를 활동에 담습니다.',
     question: '컵스카우트는 어떤 활동을 하나요?',
     answer: '어린이의 관심과 발달 단계에 맞춘 단체 활동과 체험 프로그램에 참여합니다. 아래 기사에서 야외활동, 환경교육, 캠프 등 국내외 컵스카우트의 실제 사례를 찾아볼 수 있습니다.',
   },
   {
     slug: 'scouts', name: '스카우트', english: 'Scouts',
     aliases: ['스카우트', 'Scout'],
-    intro: '스카우트는 청소년이 활동의 주체가 되어 배우고 성장하는 교육 운동입니다. 이 페이지에서는 스카우트 운동 전반의 소식과 함께, 컵스카우트 이후의 스카우트 단계도 안내합니다.',
-    focus: '한국스카우트연맹의 스카우트 단계 소개는 청소년 중심의 프로그램과 사회봉사 참여를 강조합니다. 대원들은 각자의 개성을 살리는 활동에 참여하며 공동체에 기여하는 경험을 쌓습니다.',
+    intro: '스카우트는 한국스카우트연맹 부문별 소개 기준 12~15세 청소년을 위한 단계입니다. 대원이 중심이 되는 프로그램과 사회봉사로 개성을 살리고 공동체에 기여합니다.',
+    focus: '자신의 관심을 활동으로 연결하고 친구들과 함께 실천합니다. 사회봉사에 참여하며 성취감을 얻고 각자의 개성을 발전시킵니다.',
     question: '스카우트와 컵스카우트는 어떻게 다른가요?',
     answer: '한국스카우트연맹은 컵스카우트, 스카우트, 벤처스카우트를 서로 다른 성장 단계로 소개합니다. 스카우트라는 말은 전체 운동을 뜻할 때도 쓰이므로, 기사에 등장하는 국가와 단계, 참가 대상을 함께 살펴보면 좋습니다.',
   },
   {
     slug: 'venture-scouts', name: '벤처스카우트', english: 'Venture Scouts',
     aliases: ['벤처스카우트', 'Venture Scout', 'Venturer'],
-    intro: '벤처스카우트는 청소년이 자신의 관심과 목표를 바탕으로 프로그램을 선택하고 구상하는 스카우트 단계입니다. 활동을 스스로 계획하는 과정에서 책임감과 자기관리 능력을 기릅니다.',
-    focus: '한국스카우트연맹은 벤처스카우트의 자율적인 프로그램 선택을 설명하며, 진급과제의 목표로 자기관리, 리더십, 환경, 사회공헌 등을 제시합니다. 결과뿐 아니라 활동을 준비하고 함께 실행하는 과정도 중요합니다.',
+    intro: '벤처스카우트는 한국스카우트연맹 부문별 소개 기준 15~18세 청소년을 위한 단계입니다. 관심과 목표에 따라 활동을 선택하고 직접 구상하며 자율성과 책임감을 기릅니다.',
+    focus: '대원이 프로그램을 선택하고 계획합니다. 자기관리, 리더십, 환경과 사회공헌 등을 진급과제와 연결하며 활동의 준비부터 실행까지 참여합니다.',
     question: '벤처스카우트 활동 소식은 어디에서 보나요?',
     answer: '이 페이지는 BP미디어 기사 중 벤처스카우트를 언급한 소식을 최신순으로 모읍니다. 행사와 국제 교류, 청소년 활동의 구체적인 참가 조건은 각 기사에 표시된 원문 공고를 확인하세요.',
   },
   {
     slug: 'rover-scouts', name: '로버스카우트', english: 'Rover Scouts',
     aliases: ['로버스카우트', 'Rover Scout', 'Rover Moot', 'Rovermoot', '로버무트'],
-    intro: '로버스카우트는 청년기의 봉사와 도전, 탐험활동에 무게를 두는 스카우트 단계입니다. 지역사회에 기여하는 활동과 스스로 어려움을 극복하는 경험을 통해 진취적인 삶을 준비합니다.',
-    focus: '한국스카우트연맹의 소개는 로버스카우트의 역점 분야로 사회봉사와 챌린지, 탐험활동을 설명합니다. BP미디어에서는 로버스카우트와 로버무트 관련 보도를 함께 읽을 수 있습니다.',
+    intro: '로버스카우트는 한국스카우트연맹 부문별 소개 기준 18~24세 청년층을 안내하는 부문입니다. 사회봉사와 챌린지·탐험활동으로 공동체에 기여하고 진취적인 삶을 준비합니다.',
+    focus: '한국스카우트연맹은 로버스카우트를 지도자 소개에서 설명합니다. 봉사를 실천하고 도전과 탐험을 통해 스스로 어려움을 극복하는 경험을 쌓습니다.',
     question: '로버스카우트와 로버무트는 같은 뜻인가요?',
     answer: '로버스카우트는 활동 단계와 대원을 가리키며, 로버무트는 로버 대원들이 모이는 행사 맥락에서 쓰입니다. 국제 행사에서는 국가별 운영 기준과 참가 연령이 다를 수 있으므로 주최 측 안내를 확인하세요.',
   },
@@ -88,11 +88,53 @@ async function renderTopicPage({ params, request, env }, headOnly = false) {
   <script type="application/ld+json">${articleList}</script>
   <link rel="icon" href="/img/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/css/style.css?v=${ASSET_VERSION}">
-  <link rel="stylesheet" href="/css/m3-site.css?v=${ASSET_VERSION}">
   <link rel="stylesheet" href="/css/topics.css?v=${ASSET_VERSION}">
+  <link rel="stylesheet" href="/css/chatbot.css?v=${ASSET_VERSION}">
+  <link rel="stylesheet" href="/css/dark-mode.css?v=${ASSET_VERSION}">
+  <link rel="stylesheet" href="/css/m3-site.css?v=${ASSET_VERSION}">
+  <style>.nav[data-managed-nav]{visibility:hidden;opacity:0}</style>
+  <noscript><style>.nav[data-managed-nav]{visibility:visible!important;opacity:1!important}.nav[data-managed-nav] a{font-size:0!important}.nav[data-managed-nav] a::before{content:attr(data-fallback-label);font-size:12px}</style></noscript>
 </head><body class="topic-page">
   <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
-  <header class="topic-header"><a href="/" class="topic-brand">BP미디어</a><a href="/latest">최신 스카우트 소식 →</a></header>
+    <header class="masthead">
+    <div class="masthead-top">
+      <div class="masthead-date" id="today-date"></div>
+      <div class="masthead-logo">
+        <a href="/">
+          <div class="masthead-logo-row">
+            <img src="/img/logo.svg" alt="" class="masthead-logo-img" aria-hidden="true">
+            <p class="masthead-wordmark">BP미디어</p>
+          </div>
+          <div class="sub">bpmedia.net</div>
+        </a>
+      </div>
+      <div class="masthead-right">
+        <div class="masthead-stats" id="masthead-stats"></div>
+        <div class="lang-toggle" role="group" aria-label="언어 선택">
+          <button class="lang-btn active" id="lang-btn-ko" data-lang-toggle="ko" aria-pressed="true" aria-label="한국어">KOR</button>
+          <button class="lang-btn" id="lang-btn-en" data-lang-toggle="en" aria-pressed="false" aria-label="English">ENG</button>
+        </div>
+        <div class="masthead-search">
+          <input type="text" id="mh-search-input" class="mh-search-input" placeholder="검색…" autocomplete="off" aria-label="사이트 검색어 입력" />
+          <button class="mh-search-btn" id="mh-search-btn" aria-label="검색"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg></button>
+        </div>
+      </div>
+    </div>
+    <nav class="nav" data-managed-nav>
+      <a href="/contributors" data-i18n="nav.contributors" data-fallback-label="도움을 주신 분들"></a>
+      <a href="/" data-i18n="nav.home" data-fallback-label="홈"></a>
+      <a href="/latest" data-i18n="nav.latest" data-fallback-label="최신 소식"></a>
+      <a href="/jamboree16" data-i18n="nav.jamboree16" data-fallback-label="제16회 한국잼버리"></a>
+      <a href="/korea" data-i18n="nav.korea" data-fallback-label="Korea"></a>
+      <a href="/apr" data-i18n="nav.apr" data-fallback-label="APR"></a>
+      <a href="/wosm" data-i18n="nav.wosm" data-fallback-label="World"></a>
+      <a href="/wosm-members" data-i18n="nav.wosm_members" data-fallback-label="세계연맹 회원국 현황"></a>
+      <a href="/people" data-i18n="nav.people" data-fallback-label="스카우트 인물"></a>
+      <a href="/calendar" data-i18n="nav.calendar" data-fallback-label="캘린더"></a>
+      <a href="/glossary" data-i18n="nav.glossary" data-fallback-label="용어집"></a>
+      <a href="/memorabilia" data-i18n="nav.memorabilia" data-fallback-label="스카우트 기념품 도감"></a>
+    </nav>
+  </header>
   <main id="main-content" class="topic-wrap">
     <nav aria-label="스카우트 활동 단계" class="topic-links">${renderTopicLinks('', topic.slug)}</nav>
     <section class="topic-intro" aria-labelledby="topic-title">
@@ -104,9 +146,9 @@ async function renderTopicPage({ params, request, env }, headOnly = false) {
       <section><h2>${topic.name}의 활동과 성장</h2><p>${topic.focus}</p></section>
       <section><h2>${topic.question}</h2><p>${topic.answer}</p></section>
       <section><h2>가입과 참가 조건은 어떻게 확인하나요?</h2>
-        <p>가입을 알아보고 있다면 거주 지역에서 참여할 수 있는 단위대와 활동 일정을 확인해 보세요. 국가와 프로그램마다 연령과 운영 기준이 다를 수 있습니다. 정확한 등록 대상과 신청 절차는 해당 연맹 또는 행사 주최 측에 확인하세요.</p>
+        <p>국내 가입은 한국스카우트연맹 가입 상담을 통해 거주 지역의 단위대와 활동 일정을 확인하세요. 등록 대상과 신청 절차는 연맹 안내를, 국내외 행사 참가 조건은 주최 측 공고를 확인하면 됩니다.</p>
         <p><a href="https://scout.or.kr/intro/scouts">한국스카우트연맹 부문별 공식 소개 ↗</a> · <a href="https://www.scout.or.kr/login">한국스카우트연맹 가입 상담 안내 ↗</a></p>
-        <p class="topic-note">설명 자료: 한국스카우트연맹 부문별 소개${topic.slug === 'rover-scouts' ? ' · <a href="https://www.scout.org/what-we-do/world-scout-events/world-scout-moot">WOSM 세계스카우트무트 안내</a>' : ''} · 확인일 2026년 10월 1일. BP미디어는 독립 미디어이며 연맹의 공식 가입 접수처가 아닙니다.</p>
+        <p class="topic-note">설명 자료: 한국스카우트연맹 부문별 소개${topic.slug === 'rover-scouts' ? ' · <a href="https://www.scout.org/what-we-do/world-scout-events/world-scout-moot">WOSM 세계스카우트무트 안내</a>' : ''} · 확인일 2026년 10월 8일. 연령은 부문별 소개의 안내 기준이며, 등록과 행사 참가 조건은 해당 공고를 따릅니다. BP미디어는 독립 미디어이며 연맹의 공식 가입 접수처가 아닙니다.</p>
       </section>
     </div>
     <section id="topic-news" aria-labelledby="news-heading"><h2 id="news-heading">${topic.name} 관련 최신 소식</h2>
@@ -120,7 +162,35 @@ async function renderTopicPage({ params, request, env }, headOnly = false) {
       <p><a href="/search?q=${encodeURIComponent(topic.name)}">${topic.name} 기사 더 찾아보기 →</a></p>
     </section>
   </main>
-  <footer class="topic-footer"><p>BP미디어 · 스카우트 뉴스와 활동 기록</p><div class="topic-links"><a href="/">홈</a><a href="/about">운영 주체</a><a href="/editorial-policy">편집 정책</a><a href="/rss.xml">RSS</a></div></footer>
+    <footer>
+    <div class="footer-inner">
+      <div class="footer-brand">
+        <h4 data-footer-role="title">BP미디어</h4>
+        <p data-footer-role="description">BP미디어는 스카우트 네트워크의 자발적인 봉사로 운영됩니다.</p>
+        <p data-footer-role="domain" style="margin-top:6px;">bpmedia.net</p>
+        <p>기사제보: <!--email_off--><a data-footer-role="tip-email" href="mailto:story@bpmedia.net">story@bpmedia.net</a><!--/email_off--></p>
+        <p>문의: <!--email_off--><a data-footer-role="contact-email" href="mailto:info@bpmedia.net">info@bpmedia.net</a><!--/email_off--></p>
+        <p class="footer-about-link"><a href="/about">About us</a></p>
+        <p class="footer-privacy-link"><a href="/privacy" data-footer-role="privacy-link">개인정보 처리방침</a></p>
+      </div>
+      <div class="footer-admin">
+        <h4>관리자</h4>
+        <a href="/admin.html">관리자 페이지 →</a>
+        <a href="/glossary-raw">용어집 RAW로 보기 →</a>
+        <p class="footer-build">Site <span class="site-build-version">V${SITE_VERSION}</span> · Admin <span class="admin-build-version">V${ADMIN_VERSION}</span></p>
+      </div>
+      <div class="footer-bottom">
+        <p data-i18n="footer.copyright">© 2026 BP미디어 · bpmedia.net</p>
+        <p class="footer-credit">기록·편집 <a href="/about">박지민 (Jimmy Park)</a></p>
+        <p data-i18n="footer.disclaimer">BP미디어는 전 세계 스카우트 소식과 활동을 기록하고 공유하는 독립 미디어 아카이브입니다. 한국스카우트연맹과 세계스카우트연맹 공식 채널이 아닌 자발적 스카우트 네트워크로 운영됩니다.</p>
+      </div>
+    </div>
+  </footer>
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.4/dist/purify.min.js" integrity="sha384-eEu5CTj3qGvu9PdJuS+YlkNi7d2XxQROAFYOr59zgObtlcux1ae1Il3u7jvdCSWu" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <script src="/js/main.js?v=${ASSET_VERSION}"></script>
+  <script src="/js/site-chrome.js?v=${ASSET_VERSION}"></script>
+  <script src="/js/chatbot.js?v=${ASSET_VERSION}" defer></script>
+  <script>GW.bootstrapStandardPage();</script>
 </body></html>`;
   return new Response(headOnly ? null : html, {
     headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'public, max-age=300' },

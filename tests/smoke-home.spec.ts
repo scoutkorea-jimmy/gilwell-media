@@ -42,8 +42,9 @@ test('scout topic buttons keep icons, touch targets and keyboard focus', async (
     });
     expect(coveredWidth).toBeLessThan(1);
     for (const link of await links.all()) {
-      expect((await link.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+      expect((await link.boundingBox())!.height).toBeGreaterThanOrEqual(48);
       await expect(link).toHaveCSS('text-decoration-line', 'none');
+      await expect(link).toHaveCSS('border-radius', '999px');
     }
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     await links.first().focus();

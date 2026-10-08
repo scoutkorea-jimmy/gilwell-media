@@ -216,7 +216,7 @@ body *:not(svg):not(path):not(circle):not(line):not(polyline):not(polygon):not(r
 }
 
 /* Common buttons — M3 Expressive small button: 높이 40(터치 48), 좌우 16, label-large */
-:where(.submit-btn, .cancel-btn, .memo-btn, .jam16-link-btn, .home-subscribe-btn, .post-like-btn, .post-action-btn, .search-page-btn, .calendar-map-search-btn, .bw-btn, .write-btn, .calendar-manage-btn, .calendar-today-btn, .calendar-current-month-btn, .glossary-admin-toggle-btn, .glossary-description-toggle, .member-country-toggle, #board-pw-submit, #board-pw-cancel, #post-login-submit-btn, #post-login-cancel-btn, #calendar-login-submit-btn) {
+:where(.scout-topic-entry .topic-links a, .submit-btn, .cancel-btn, .memo-btn, .jam16-link-btn, .home-subscribe-btn, .post-like-btn, .post-action-btn, .search-page-btn, .calendar-map-search-btn, .bw-btn, .write-btn, .calendar-manage-btn, .calendar-today-btn, .calendar-current-month-btn, .glossary-admin-toggle-btn, .glossary-description-toggle, .member-country-toggle, #board-pw-submit, #board-pw-cancel, #post-login-submit-btn, #post-login-cancel-btn, #calendar-login-submit-btn) {
   min-height: var(--md-comp-button-height) !important;
   display: inline-flex;
   align-items: center;
@@ -240,17 +240,17 @@ body *:not(svg):not(path):not(circle):not(line):not(polyline):not(polygon):not(r
 
 /* 상태 레이어: 배경색과 무관하게 현재 글자색을 8%(hover)·10%(pressed) 겹친다. */
 @media (hover: hover) {
-  :where(.submit-btn, .cancel-btn, .memo-btn, .jam16-link-btn, .home-subscribe-btn, .post-like-btn, .post-action-btn, .search-page-btn, .calendar-map-search-btn, .bw-btn, .write-btn, .calendar-manage-btn, .calendar-today-btn, .calendar-current-month-btn, .calendar-nav-btn, .glossary-admin-toggle-btn, .glossary-description-toggle, .member-country-toggle, .tag-filter-btn, .filter-btn, .board-sort-btn, .board-period-btn, .board-days-btn, .search-scope-btn, .glossary-letter-btn, .members-view-chip, .calendar-view-btn, .calendar-filter-chip, .post-page-tag, .board-page-btn):hover:not(:disabled) {
+  :where(.scout-topic-entry .topic-links a, .submit-btn, .cancel-btn, .memo-btn, .jam16-link-btn, .home-subscribe-btn, .post-like-btn, .post-action-btn, .search-page-btn, .calendar-map-search-btn, .bw-btn, .write-btn, .calendar-manage-btn, .calendar-today-btn, .calendar-current-month-btn, .calendar-nav-btn, .glossary-admin-toggle-btn, .glossary-description-toggle, .member-country-toggle, .tag-filter-btn, .filter-btn, .board-sort-btn, .board-period-btn, .board-days-btn, .search-scope-btn, .glossary-letter-btn, .members-view-chip, .calendar-view-btn, .calendar-filter-chip, .post-page-tag, .board-page-btn):hover:not(:disabled) {
     box-shadow: inset 0 0 0 999px color-mix(in srgb, currentColor var(--md-sys-state-hover), transparent);
   }
 }
 
-:where(.submit-btn, .cancel-btn, .memo-btn, .jam16-link-btn, .home-subscribe-btn, .post-like-btn, .post-action-btn, .search-page-btn, .calendar-map-search-btn, .bw-btn, .write-btn, .calendar-manage-btn, .calendar-today-btn, .calendar-current-month-btn, .calendar-nav-btn, .glossary-admin-toggle-btn, .glossary-description-toggle, .member-country-toggle, .tag-filter-btn, .filter-btn, .board-sort-btn, .board-period-btn, .board-days-btn, .search-scope-btn, .glossary-letter-btn, .members-view-chip, .calendar-view-btn, .calendar-filter-chip, .post-page-tag, .board-page-btn):active:not(:disabled) {
+:where(.scout-topic-entry .topic-links a, .submit-btn, .cancel-btn, .memo-btn, .jam16-link-btn, .home-subscribe-btn, .post-like-btn, .post-action-btn, .search-page-btn, .calendar-map-search-btn, .bw-btn, .write-btn, .calendar-manage-btn, .calendar-today-btn, .calendar-current-month-btn, .calendar-nav-btn, .glossary-admin-toggle-btn, .glossary-description-toggle, .member-country-toggle, .tag-filter-btn, .filter-btn, .board-sort-btn, .board-period-btn, .board-days-btn, .search-scope-btn, .glossary-letter-btn, .members-view-chip, .calendar-view-btn, .calendar-filter-chip, .post-page-tag, .board-page-btn):active:not(:disabled) {
   box-shadow: inset 0 0 0 999px color-mix(in srgb, currentColor var(--md-sys-state-pressed), transparent);
 }
 
 /* Expressive shape morph: 둥근 버튼은 누르는 동안 모서리가 small로 좁아진다. */
-:where(.submit-btn, .cancel-btn, .memo-btn, .jam16-link-btn, .home-subscribe-btn, .post-like-btn, .search-page-btn, .calendar-map-search-btn, .bw-btn, .write-btn, .calendar-manage-btn, .calendar-today-btn, .glossary-admin-toggle-btn, .member-country-toggle):active:not(:disabled) {
+:where(.scout-topic-entry .topic-links a, .submit-btn, .cancel-btn, .memo-btn, .jam16-link-btn, .home-subscribe-btn, .post-like-btn, .search-page-btn, .calendar-map-search-btn, .bw-btn, .write-btn, .calendar-manage-btn, .calendar-today-btn, .glossary-admin-toggle-btn, .member-country-toggle):active:not(:disabled) {
   border-radius: var(--md-sys-shape-small) !important;
 }
 
@@ -275,6 +275,7 @@ body *:not(svg):not(path):not(circle):not(line):not(polyline):not(polygon):not(r
 }
 
 /* Outlined button — 보조 동작 */
+.scout-topic-entry .topic-links a,
 .calendar-today-btn,
 .calendar-current-month-btn,
 .calendar-manage-btn,
@@ -1499,7 +1500,7 @@ input[type='radio'] {
  * 선택 전은 outline-variant 외곽선, 선택 후는 secondary-container + 체크 표시로
  * 색에만 의존하지 않고 상태를 전달한다.
  */
-:where(.tag-filter-btn, .filter-btn, .glossary-letter-btn, .calendar-filter-chip, .calendar-tag-preset, .post-page-tag, .scout-topic-entry .topic-links a) {
+:where(.tag-filter-btn, .filter-btn, .glossary-letter-btn, .calendar-filter-chip, .calendar-tag-preset, .post-page-tag) {
   min-height: var(--md-comp-chip-height) !important;
   height: auto !important;
   display: inline-flex !important;
