@@ -24,12 +24,23 @@ test('home API returns ok within 5s', async ({ request }) => {
 
 
 test('scout topic buttons keep icons, touch targets and keyboard focus', async ({ page }) => {
-  for (const width of [1440, 390, 320]) {
+  for (const width of [1440, 800, 768, 601, 390, 320]) {
     await page.setViewportSize({ width, height: 900 });
     await page.goto('/');
     const links = page.locator('.scout-topic-entry .topic-links a');
     await expect(links).toHaveCount(4);
     await expect(links.locator('svg[aria-hidden="true"]')).toHaveCount(4);
+    await expect(page.locator('.scout-topic-entry p')).toHaveCSS('text-align', 'center');
+    const boxes = await links.evaluateAll(nodes => nodes.map(n => {
+      const r = n.getBoundingClientRect(); return { width: r.width, top: r.top };
+    }));
+    expect(Math.max(...boxes.map(r => r.width)) - Math.min(...boxes.map(r => r.width))).toBeLessThan(1);
+    expect(new Set(boxes.map(r => r.top)).size).toBe(width > 768 ? 1 : 2);
+    const coveredWidth = await page.locator('.scout-topic-entry .topic-links').evaluate(n => {
+      const buttons = n.querySelectorAll('a');
+      return Math.abs(buttons[buttons.length - 1].getBoundingClientRect().right - n.getBoundingClientRect().right);
+    });
+    expect(coveredWidth).toBeLessThan(1);
     for (const link of await links.all()) {
       expect((await link.boundingBox())!.height).toBeGreaterThanOrEqual(44);
       await expect(link).toHaveCSS('text-decoration-line', 'none');
