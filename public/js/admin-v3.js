@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.155.00
+ * Version: 03.155.01
  *
  * Versioning:
  *   V3.aaa.bb
@@ -5359,7 +5359,7 @@
           status.textContent = '구글 검색어 ' + result.row_count + '개 저장 완료' + (loaded ? '' : ' · 화면 조회 실패, 저장된 보고서 보기를 다시 눌러주세요.');
         });
       }).catch(function (error) {
-        status.textContent = error.message + ' · 기존 보고서를 유지합니다.';
+        status.textContent = (error.message.charAt(0) === '<' ? '서버 연결에 실패했습니다. 잠시 후 다시 시도해주세요.' : error.message) + ' · 기존 보고서를 유지합니다.';
       }).finally(function () { button.disabled = false; });
   }
 

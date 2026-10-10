@@ -14,6 +14,7 @@ async function googleJson(url, options) {
   const timer = setTimeout(() => controller.abort(), 15000);
   try {
     const response = await fetch(url, { ...options, signal: controller.signal, redirect: 'error' });
+    if (!response.ok) console.warn('[search-performance-google]', url === TOKEN_URL ? 'oauth' : 'query', response.status);
     if (!response.ok) throw new GoogleSearchError(response.status === 403
       ? 'Google 보고서 접근 권한이 없습니다. 서비스 계정의 BP미디어 Search Console 권한과 API 활성화를 확인해주세요.'
       : 'Google 보고서 요청에 실패했습니다. API 연결 상태를 확인하고 다시 시도해주세요.');

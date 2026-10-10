@@ -95,6 +95,7 @@ export async function onRequestPost({ request, env }) {
     catch (error) { if (input.action === 'fetch-google') throw new GoogleSearchError('Google 보고서 검증에 실패했습니다. 이전 보고서를 유지합니다.'); throw error; }
     if (new TextEncoder().encode(JSON.stringify(report)).length > MAX_BYTES) return json({ error: '보고서가 1 MiB를 초과했습니다. 이전 보고서를 유지합니다.' }, 413);
   } catch (error) {
+    if (error instanceof GoogleSearchError) console.warn('[search-performance-google]', error.message);
     return json({ error: error instanceof SyntaxError ? 'JSON 보고서가 올바르지 않습니다.' : error.message }, error instanceof GoogleSearchError ? error.status : 400);
   }
   try {
