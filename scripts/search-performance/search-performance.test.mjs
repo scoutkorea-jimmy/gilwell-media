@@ -34,6 +34,7 @@ const apiEnv={GOOGLE_SEARCH_CONSOLE_SERVICE_ACCOUNT_JSON:JSON.stringify(account)
 function mockGoogleFetch(pages,totalClicks=13){
   let queries=0;
   return async(url,options)=>{
+    assert.equal(options.redirect,'manual');
     if(url==='https://oauth2.googleapis.com/token'){
       const assertion=options.body.get('assertion');const parts=assertion.split('.');
       const claims=JSON.parse(Buffer.from(parts[1],'base64url'));

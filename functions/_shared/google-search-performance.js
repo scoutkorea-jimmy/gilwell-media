@@ -13,7 +13,8 @@ async function googleJson(url, options) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 15000);
   try {
-    const response = await fetch(url, { ...options, signal: controller.signal, redirect: 'error' });
+    // Workers는 redirect:error를 지원하지 않아 수동 응답의 3xx를 아래에서 거부한다.
+    const response = await fetch(url, { ...options, signal: controller.signal, redirect: 'manual' });
     if (!response.ok) console.warn('[search-performance-google]', url === TOKEN_URL ? 'oauth' : 'query', response.status);
     if (!response.ok) throw new GoogleSearchError(response.status === 403
       ? 'Google 보고서 접근 권한이 없습니다. 서비스 계정의 BP미디어 Search Console 권한과 API 활성화를 확인해주세요.'
