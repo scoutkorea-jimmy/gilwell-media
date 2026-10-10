@@ -623,6 +623,12 @@
 
 /* ── Tables ──────────────────────────────────────────────── */
 .v3-table-wrap { overflow-x: auto; border-radius: var(--v3-radius-l); border: 1px solid var(--v3-border); background: var(--v3-surface); box-shadow: var(--v3-shadow); }
+.v3-search-performance-controls { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin: 12px 0; }
+.v3-search-performance-import { margin: 16px 0; padding: 16px; border: 1px solid var(--v3-border); border-radius: var(--v3-radius-l); }
+.v3-search-performance-import[hidden] { display: none !important; }
+.v3-search-performance-import input[type="number"] { width: 120px; }
+.v3-search-performance-controls label { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.v3-table td.v3-search-performance-keyword { white-space: normal; min-width: 160px; max-width: 360px; word-break: keep-all; overflow-wrap: anywhere; }
 .v3-table { width: 100%; border-collapse: collapse; font-size: var(--v3-fs-dense); }
 .v3-table th {
   padding: var(--v3-gap-sm) var(--v3-gap-md); text-align: left; background: var(--v3-neutral-50);

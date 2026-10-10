@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.154.02
+ * Version: 03.155.00
  *
  * Versioning:
  *   V3.aaa.bb
@@ -869,6 +869,14 @@
     _bindEl('analytics-refresh-btn', 'click', _loadAnalyticsVisits);
     _bindEl('analytics-tags-refresh-btn', 'click', _loadAnalyticsTags);
     _bindEl('search-keywords-refresh-btn', 'click', function () { _loadSearchKeywords(this); });
+    _bindEl('search-performance-refresh', 'click', _loadSearchPerformance);
+    _bindEl('search-performance-fetch', 'click', _fetchOfficialSearchPerformance);
+    _bindEl('search-performance-naver-open', 'click', function () { var form = document.getElementById('search-performance-naver'); form.hidden = !form.hidden; this.setAttribute('aria-expanded', String(!form.hidden)); if (!form.hidden) document.getElementById('search-performance-naver-date').focus(); });
+    _bindEl('search-performance-naver-form', 'submit', _importNaverSearchPerformance);
+    _bindEl('search-performance-engine', 'change', function () { _searchPerformancePage = 0; _renderSearchPerformanceRows(); });
+    _bindEl('search-performance-query', 'input', function () { _searchPerformancePage = 0; _renderSearchPerformanceRows(); });
+    _bindEl('search-performance-prev', 'click', function () { _searchPerformancePage--; _renderSearchPerformanceRows(); });
+    _bindEl('search-performance-next', 'click', function () { _searchPerformancePage++; _renderSearchPerformanceRows(); });
     _bindEl('analytics-auto-refresh', 'change', function () {
       _analyticsAutoRefresh = !!this.checked;
       _updateAnalyticsRefreshMeta();
@@ -5250,6 +5258,7 @@
 
   /* ── 검색 유입 키워드 로드/렌더 ─────────────────────────── */
   function _loadSearchKeywords(triggerBtn) {
+    _loadSearchPerformance();
     var summaryEl = document.getElementById('search-keywords-summary');
     var enginesEl = document.getElementById('search-keywords-engines');
     var listEl    = document.getElementById('search-keywords-list');
@@ -5333,6 +5342,112 @@
       '</div>';
     }).join('');
     listEl.innerHTML = rows;
+  }
+
+  var _searchPerformanceReports = [];
+  var _searchPerformancePage = 0;
+
+  function _fetchOfficialSearchPerformance() {
+    var button = document.getElementById('search-performance-fetch');
+    var status = document.getElementById('search-performance-status');
+    if (button.disabled) return;
+    button.disabled = true;
+    status.textContent = '구글 공식 API에서 검색어를 불러오는 중…';
+    _apiFetch('/api/admin/search-performance', { method: 'POST', body: JSON.stringify({ action: 'fetch-google' }) })
+      .then(function (result) {
+        return _loadSearchPerformance().then(function (loaded) {
+          status.textContent = '구글 검색어 ' + result.row_count + '개 저장 완료' + (loaded ? '' : ' · 화면 조회 실패, 저장된 보고서 보기를 다시 눌러주세요.');
+        });
+      }).catch(function (error) {
+        status.textContent = error.message + ' · 기존 보고서를 유지합니다.';
+      }).finally(function () { button.disabled = false; });
+  }
+
+  function _importNaverSearchPerformance(event) {
+    event.preventDefault();
+    var button = document.getElementById('search-performance-naver-save');
+    var status = document.getElementById('search-performance-naver-status');
+    if (button.disabled) return;
+    var payload = {
+      action: 'import-naver',
+      data_through: document.getElementById('search-performance-naver-date').value,
+      total_clicks: Number(document.getElementById('search-performance-naver-clicks').value),
+      row_count: Number(document.getElementById('search-performance-naver-count').value),
+      complete: document.getElementById('search-performance-naver-complete').checked,
+      text: document.getElementById('search-performance-naver-text').value
+    };
+    button.disabled = true;
+    status.textContent = '네이버 표를 검사하고 저장하는 중…';
+    _apiFetch('/api/admin/search-performance', { method: 'POST', body: JSON.stringify(payload) })
+      .then(function (result) {
+        return _loadSearchPerformance().then(function (loaded) {
+          status.textContent = '네이버 검색어 ' + result.row_count + '개 저장 완료' + (loaded ? '' : ' · 화면 조회 실패, 저장된 보고서 보기를 다시 눌러주세요.');
+        });
+      }).catch(function (error) {
+        status.textContent = error.message + ' · 이전 보고서와 붙여넣은 내용을 유지합니다.';
+      }).finally(function () { button.disabled = false; });
+  }
+
+  function _loadSearchPerformance() {
+    var status = document.getElementById('search-performance-status');
+    if (!status) return;
+    var button = document.getElementById('search-performance-refresh');
+    if (button) button.disabled = true;
+    status.textContent = '저장된 공식 보고서를 불러오는 중…';
+    return _apiFetch('/api/admin/search-performance').then(function (data) {
+      _searchPerformanceReports = data.reports || [];
+      var sources = document.getElementById('search-performance-sources');
+      var stale = false;
+      sources.innerHTML = ['naver', 'google'].map(function (engine) {
+        var label = engine === 'naver' ? '네이버' : '구글';
+        var report = _searchPerformanceReports.find(function (item) { return item.engine === engine; });
+        var link = engine === 'naver'
+          ? 'https://searchadvisor.naver.com/console/site/report/expose?site=https%3A%2F%2Fbpmedia.net'
+          : 'https://search.google.com/search-console/performance/search-analytics?resource_id=sc-domain%3Abpmedia.net';
+        if (!report) return '<div class="v3-sk-stat"><strong>' + label + '</strong><p>' + (engine === 'google' && !data.google_configured ? '서버 API 연결 대기' : '첫 보고서 가져오기 대기') + '</p><a href="' + link + '" target="_blank" rel="noopener">공식 보고서</a></div>';
+        var old = Date.now() - Date.parse(report.synced_at) > 7 * 86400000;
+        stale = stale || old;
+        var sync = new Date(report.synced_at).toLocaleString('sv-SE', { timeZone: 'Asia/Seoul' });
+        var known = report.rows.reduce(function (sum, row) { return sum + row.clicks; }, 0);
+        return '<div class="v3-sk-stat"><strong>' + label + ' · 최근 ' + Number(report.period_days) + '일</strong>' +
+          '<span class="v3-sk-stat-value">공개 검색어 ' + report.rows.length.toLocaleString('ko-KR') + '개</span>' +
+          '<span>공개 검색어 클릭 ' + known.toLocaleString('ko-KR') + ' / 전체 클릭 ' + Number(report.total_clicks).toLocaleString('ko-KR') + '</span>' +
+          '<span class="v3-sk-stat-sub">' + (engine === 'google' ? '집계 종료일 ' : '보고서 기준일 ') + GW.escapeHtml(report.data_through) + '</span>' +
+          '<span class="v3-sk-stat-sub">불러온 시각 ' + GW.escapeHtml(sync) + ' KST' + (old ? ' · 7일 이상 지난 보고서' : '') + '</span>' +
+          '<span class="v3-sk-stat-sub">' + (engine === 'google' ? '서버 API · PT 기준 · 확정 데이터' : '표 붙여넣기 · 최근 30일 · PC + Mobile') + '</span>' +
+          '<a href="' + link + '" target="_blank" rel="noopener">공식 보고서</a></div>';
+      }).join('');
+      status.textContent = !_searchPerformanceReports.length
+        ? '구글 불러오기 또는 네이버 표 붙여넣기로 보고서를 저장하면 여기에 표시됩니다.'
+        : stale ? '7일 이상 지난 보고서가 있습니다. 해당 엔진의 보고서를 다시 가져와주세요.'
+        : '마지막 성공한 공식 보고서입니다. 엔진별 기간이 달라 클릭 수를 합산하지 않습니다.';
+      _searchPerformancePage = 0;
+      _renderSearchPerformanceRows();
+      return true;
+    }).catch(function () {
+      status.textContent = '보고서를 불러오지 못했습니다. 이전 표시를 유지합니다. 다시 시도해주세요.';
+    }).finally(function () { if (button) button.disabled = false; });
+  }
+
+  function _renderSearchPerformanceRows() {
+    var engine = document.getElementById('search-performance-engine').value;
+    var query = document.getElementById('search-performance-query').value.trim().toLowerCase();
+    var rows = [];
+    _searchPerformanceReports.forEach(function (report) {
+      if (engine && report.engine !== engine) return;
+      report.rows.forEach(function (row) {
+        if (!query || row.keyword.toLowerCase().indexOf(query) >= 0) rows.push({ engine: report.engine, keyword: row.keyword, clicks: row.clicks, impressions: row.impressions });
+      });
+    });
+    rows.sort(function (a, b) { return b.clicks - a.clicks || b.impressions - a.impressions; });
+    var size = 50, pages = Math.max(1, Math.ceil(rows.length / size));
+    _searchPerformancePage = Math.max(0, Math.min(_searchPerformancePage, pages - 1));
+    document.getElementById('search-performance-rows').innerHTML = rows.slice(_searchPerformancePage * size, (_searchPerformancePage + 1) * size).map(function (row) {
+      return '<tr><td class="v3-search-performance-keyword">' + GW.escapeHtml(row.keyword) + '</td><td>' + (row.engine === 'naver' ? '네이버' : '구글') + '</td><td>' + row.clicks.toLocaleString('ko-KR') + '</td><td>' + row.impressions.toLocaleString('ko-KR') + '</td><td>' + (row.impressions ? (row.clicks / row.impressions * 100).toFixed(1) : '0.0') + '%</td></tr>';
+    }).join('') || '<tr><td colspan="5">' + (query || engine ? '조건에 맞는 검색어가 없습니다.' : '저장된 검색어 보고서가 없습니다.') + '</td></tr>';
+    document.getElementById('search-performance-page').textContent = '검색어 ' + rows.length.toLocaleString('ko-KR') + '개 · ' + (_searchPerformancePage + 1) + ' / ' + pages + ' 페이지';
+    document.getElementById('search-performance-prev').disabled = _searchPerformancePage === 0;
+    document.getElementById('search-performance-next').disabled = _searchPerformancePage >= pages - 1;
   }
 
   var _tagInsightsCache = null;

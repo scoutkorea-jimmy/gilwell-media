@@ -10,8 +10,8 @@
   <link rel="icon" type="image/svg+xml" href="/img/favicon.svg">
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png">
   <link rel="shortcut icon" href="/img/favicon-48.png">
-  <link rel="stylesheet" href="/css/admin-v3.css?v=20261008044620">
-  <link rel="stylesheet" href="/css/memorabilia.css?v=20261008044620">
+  <link rel="stylesheet" href="/css/admin-v3.css?v=20261010055337">
+  <link rel="stylesheet" href="/css/memorabilia.css?v=20261010055337">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H" crossorigin="anonymous" referrerpolicy="no-referrer">
   <style>
     #v3-login[style*="display: none"] { pointer-events: none !important; }
@@ -94,7 +94,7 @@
     <button class="v3-login-btn" id="v3-login-btn" type="button" onclick="window.__gwAdminFallbackLogin && window.__gwAdminFallbackLogin(event)">관리자 입장</button>
     <div class="v3-login-err" id="v3-login-err"></div>
     <div class="v3-login-ver">
-      Admin <span class="v3-ver-str v3-ver-admin admin-build-version">V03.154.02</span>
+      Admin <span class="v3-ver-str v3-ver-admin admin-build-version">V03.155.00</span>
       &nbsp;·&nbsp;
       Site <span class="v3-ver-str v3-ver-site site-build-version">V00.194.00</span>
     </div>
@@ -109,7 +109,7 @@
   <!-- ── Sidebar ─────────────────────────────────────────── -->
   <aside id="v3-sidebar">
     <div id="v3-sidebar-logo">
-      <div class="v3-logo-mark">BP미디어 <span class="v3-logo-version v3-ver-str v3-ver-admin admin-build-version">V03.154.02</span></div>
+      <div class="v3-logo-mark">BP미디어 <span class="v3-logo-version v3-ver-str v3-ver-admin admin-build-version">V03.155.00</span></div>
       <div class="v3-logo-sub">운영 콘솔 &nbsp;<span class="v3-logo-sub-site">Site <span class="v3-ver-site site-build-version">V00.194.00</span></span></div>
     </div>
 
@@ -1128,6 +1128,51 @@
         </div>
         <div id="analytics-body"></div>
 
+        <div class="v3-card">
+          <div class="v3-card-head">
+            <div>
+              <h2 class="v3-card-title">검색어 성과 모니터링</h2>
+              <p class="v3-text-m v3-text-s">네이버·구글 공식 보고서의 공개 검색어를 한곳에서 확인합니다. 방문 기록과 별도로 집계되며, 각 보고서의 기간을 표시합니다.</p>
+            </div>
+            <div class="v3-search-performance-controls">
+              <button type="button" class="v3-btn v3-btn-primary v3-btn-sm" id="search-performance-fetch" data-perm-slug="analytics-visits" data-perm-action="write">구글 불러오기</button>
+              <button type="button" class="v3-btn v3-btn-ghost v3-btn-sm" id="search-performance-naver-open" aria-controls="search-performance-naver" aria-expanded="false" data-perm-slug="analytics-visits" data-perm-action="write">네이버 표 붙여넣기</button>
+              <button type="button" class="v3-btn v3-btn-ghost v3-btn-sm" id="search-performance-refresh">저장된 보고서 보기</button>
+            </div>
+          </div>
+          <p id="search-performance-status" class="v3-text-m v3-text-s" role="status" aria-live="polite">보고서를 불러오는 중…</p>
+          <div id="search-performance-sources" class="v3-analytics-stats"></div>
+          <div id="search-performance-naver" class="v3-search-performance-import" hidden>
+            <h3>네이버 보고서 가져오기</h3>
+            <p class="v3-text-s">서치어드바이저에서 BP미디어의 <strong>최근 30일 · PC + Mobile</strong> 보고서를 열고, 검색 키워드 TOP 30 표의 모든 페이지를 순서대로 복사해 아래에 이어 붙여넣어주세요. 순위·검색어·클릭·노출·CTR 열을 모두 포함합니다.</p>
+            <p><a href="https://searchadvisor.naver.com/console/site/report/expose?site=https%3A%2F%2Fbpmedia.net" target="_blank" rel="noopener">네이버 공식 보고서 열기</a></p>
+            <form id="search-performance-naver-form" class="v3-form-grid">
+              <div class="v3-search-performance-controls">
+                <label>보고서 최근 업데이트 날짜 <input type="date" class="v3-input" id="search-performance-naver-date" required /></label>
+                <label>최근 총 클릭 <input type="number" class="v3-input" id="search-performance-naver-clicks" min="0" step="1" required /></label>
+                <label>표의 마지막 순위(전체 행 수) <input type="number" class="v3-input" id="search-performance-naver-count" min="0" max="30" step="1" required /></label>
+              </div>
+              <label class="v3-form-group">검색 키워드 표 <textarea id="search-performance-naver-text" class="v3-input" rows="8" maxlength="100000" placeholder="No  검색 키워드  클릭  노출  CTR(%) 열을 포함해 복사한 표를 붙여넣어주세요."></textarea></label>
+              <label><input type="checkbox" id="search-performance-naver-complete" required /> 최근 30일 · PC + Mobile이며, 마지막 페이지까지 모두 붙여넣었습니다.</label>
+              <div><button type="submit" class="v3-btn v3-btn-primary v3-btn-sm" id="search-performance-naver-save" data-perm-slug="analytics-visits" data-perm-action="write">검사 후 저장</button></div>
+              <p id="search-performance-naver-status" class="v3-text-s" role="status" aria-live="polite">입력값은 서버에 저장되며, 방문 분석 권한이 있는 관리자가 모든 기기에서 함께 볼 수 있습니다.</p>
+            </form>
+          </div>
+          <div class="v3-search-performance-controls">
+            <label>검색엔진 <select id="search-performance-engine" class="v3-select"><option value="">전체</option><option value="naver">네이버</option><option value="google">구글</option></select></label>
+            <label>검색어 찾기 <input id="search-performance-query" type="search" class="v3-input" placeholder="검색어 입력" /></label>
+          </div>
+          <div class="v3-table-wrap">
+            <table class="v3-table" aria-label="공식 검색어 성과"><thead><tr><th>검색어</th><th>검색엔진</th><th>클릭</th><th>노출</th><th>CTR</th></tr></thead><tbody id="search-performance-rows"></tbody></table>
+          </div>
+          <div class="v3-search-performance-controls">
+            <button type="button" id="search-performance-prev" class="v3-btn v3-btn-ghost v3-btn-sm">이전</button>
+            <span id="search-performance-page" class="v3-text-m v3-text-s" aria-live="polite"></span>
+            <button type="button" id="search-performance-next" class="v3-btn v3-btn-ghost v3-btn-sm">다음</button>
+          </div>
+          <p class="v3-text-m v3-text-s v3-mt-8">구글은 서버 API, 네이버는 공식 표 붙여넣기로 가져오며, 저장한 결과는 모든 기기에서 함께 볼 수 있습니다. 구글은 PT 3일 전까지 최근 28일의 확정 데이터를 조회합니다. 비공개 검색어와 공식 도구에서 제공하지 않는 검색어는 포함하지 않습니다. 네이버는 공개 TOP 30이며, 실패하면 이전 보고서를 유지합니다.</p>
+        </div>
+
         <!-- 검색 유입 키워드 -->
         <div class="v3-card v3-search-keywords-card">
           <div class="v3-card-head">
@@ -1142,7 +1187,7 @@
           </div>
           <div class="v3-search-keywords-engines" id="search-keywords-engines"></div>
           <div class="v3-search-keywords-list" id="search-keywords-list"></div>
-          <p class="v3-text-m v3-text-s v3-mt-8">검색어는 검색엔진이 방문 시 전달한 경우에만 표시됩니다. Google·Naver·Daum을 포함한 검색엔진은 검색어를 숨길 수 있습니다. 전체 검색어 성과는 각 검색엔진의 검색 성과 도구에서 확인하세요.</p>
+          <p class="v3-text-m v3-text-s v3-mt-8">검색어는 검색엔진이 방문 시 전달한 경우에만 표시됩니다. Google·Naver·Daum을 포함한 검색엔진은 검색어를 숨길 수 있습니다. 공식 보고서의 공개 검색어 성과는 위 검색어 성과 모니터링에서 불러올 수 있습니다.</p>
         </div>
       </div>
 
@@ -3454,14 +3499,14 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" integrity="sha384-vtjasyidUo0kW94K5MXDXntzOJpQgBKXmE7e2Ga4LG0skTTLeBi97eFAXsqewJjw" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha384-cxOPjt7s7Iz04uaHJceBmS+qpjv2JkIHNVcuOrM+YHwZOmJGBXI00mdUXEq65HTH" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.4/dist/purify.min.js" integrity="sha384-eEu5CTj3qGvu9PdJuS+YlkNi7d2XxQROAFYOr59zgObtlcux1ae1Il3u7jvdCSWu" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-<script src="/js/main.js?v=20261008044620"></script>
-<script src="/js/shared-country-name-ko.js?v=20261008044620"></script>
-<script src="/js/memorabilia-shared.js?v=20261008044620"></script>
-<script src="/js/admin-v3.js?v=20261008044620"></script>
-<script src="/js/admin-account.js?v=20261008044620"></script>
-<script src="/js/admin-memorabilia.js?v=20261008044620"></script>
-<script src="/js/admin-cardnews.js?v=20261008044620"></script>
-<script src="/js/admin-memorabilia-comments.js?v=20261008044620"></script>
+<script src="/js/main.js?v=20261010055337"></script>
+<script src="/js/shared-country-name-ko.js?v=20261010055337"></script>
+<script src="/js/memorabilia-shared.js?v=20261010055337"></script>
+<script src="/js/admin-v3.js?v=20261010055337"></script>
+<script src="/js/admin-account.js?v=20261010055337"></script>
+<script src="/js/admin-memorabilia.js?v=20261010055337"></script>
+<script src="/js/admin-cardnews.js?v=20261010055337"></script>
+<script src="/js/admin-memorabilia-comments.js?v=20261010055337"></script>
 <script>
   (function () {
     function toggleReveal(visible) {

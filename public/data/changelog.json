@@ -1,5 +1,23 @@
 {
   "items": [
+{
+    "version": "03.155.00",
+    "date": "2026-10-10",
+    "released_at": "2026-10-10 14:53:37 KST",
+    "summary": "네이버·구글 검색어 보고서를 서버에 모아 모든 기기의 관리자에서 함께 확인하도록 준비했습니다.",
+    "for_users": [
+      "구글 불러오기는 서버의 공식 API를 사용하고, 네이버는 공식 TOP 30 표를 붙여넣어 검사 후 저장합니다.",
+      "저장한 검색어·클릭·노출·CTR·기준일을 어느 기기에서든 검색·엔진 필터·페이지 이동으로 함께 확인합니다.",
+      "실패하거나 누락된 보고서는 기존 값을 유지하며, 비공개 검색어와 공식 도구가 제공하지 않는 검색어는 포함하지 않습니다."
+    ],
+    "for_developers": [
+      "functions/api/admin/search-performance.js: 기존 관리자 권한·bounded JSON·settings 스냅샷·settings_history 이력·D1 동시 변경 검사 재사용.",
+      "google-search-performance.js: 읽기 전용 서비스 계정 JWT·Google 공식 API 페이지 조회·PT 기준 최근 28일 확정 데이터. naver-search-performance.js: 서버에서 표의 순위·선언한 전체 행 수 검증.",
+      "확장·기기 수집기 제거. Google 비밀키는 Pages secret에만 설정하며, 인증 정보는 브라우저·D1·로그에 반환하지 않음.",
+      "Dreampath 영향: 새 보고서 모듈은 관리자 API에서만 사용하며 인증·미들웨어·Dreampath 런타임 변경 없음.",
+      "관리자 버전 03.154.02 → 03.155.00."
+    ]
+  },
   {
     "version": "00.194.00",
     "date": "2026-10-08",

@@ -24,3 +24,9 @@ DREAMPATH_SECRET=replace-with-a-random-64-char-hex-string
 # Initial admin password for jimmy (used only on first login if hash is null).
 # DO NOT put a real password here — copy this file to .dev.vars and set it there.
 JIMMY_PASSWORD=change-me-to-a-strong-password
+
+# Optional: Google Search Console server-side report access.
+# Add the service account as a restricted user of sc-domain:bpmedia.net.
+# Store its full JSON key ONLY in the ignored .dev.vars or the Pages secret.
+# No real credentials belong in this example file.
+# GOOGLE_SEARCH_CONSOLE_SERVICE_ACCOUNT_JSON=

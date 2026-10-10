@@ -2,5 +2,5 @@
 // release. Do not edit by hand; bump VERSION / ADMIN_VERSION / ASSET_VERSION
 // files instead and run ./scripts/sync_versions.sh.
 export const SITE_VERSION = '00.194.00';
-export const ADMIN_VERSION = '03.154.02';
-export const ASSET_VERSION = '20261008044620';
+export const ADMIN_VERSION = '03.155.00';
+export const ASSET_VERSION = '20261010055337';
