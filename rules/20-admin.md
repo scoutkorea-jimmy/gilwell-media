@@ -14,7 +14,7 @@ scope: project
 - 일부 계정은 히어로 설정만 접근 가능 (게시글 권한 제한)
 - 모바일: 단일 폭 1단 흐름 기본
 - 탐색 기준: 좌측 사이드바 (메인 영역에 보조 메뉴 중복 금지)
-- 운영 섹션: 분석, 접속 국가/도시, 마케팅, 버전기록, 오류/이슈 기록
+- 관리자 업무 영역: 대시보드, 기사 운영, 자료 관리, 노출 관리, 성과 분석, 운영·설정
 - 관리자 날짜 형식: **ISO 기반 KST** — 감사 `YYYY-MM-DD HH:MM:SS KST` / 테이블 `YYYY-MM-DD HH:MM` / 필요 시 한글 변형. 상세는 KMS 2.1.
 - 관리자 기본 서체: 시스템 서체 (`-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif`) — `NixgonFont` 사용 금지
 - `admin.html` 은 `css/style.css` 를 로드하지 않는다 — `style.css` 안의 `body.admin-page` 규칙은 죽은 코드이며 공개 사이트 용량만 늘린다.
@@ -24,7 +24,7 @@ scope: project
 > [!important] 사이드바 + API 이중 게이팅
 > 권한 없는 사용자가 메뉴를 보지도·누르지도 않도록 **프론트엔드 가시성 + 백엔드 401/403**을 함께 적용한다.
 
-- **단일 카탈로그 원본**: [`functions/_shared/admin-users.js`](../functions/_shared/admin-users.js) `ADMIN_MENUS` (27개 슬러그). 사이드바와 백엔드 `gateMenuAccess`는 이 카탈로그의 슬러그를 **1:1로** 참조한다.
+- **단일 카탈로그 원본**: [`functions/_shared/admin-users.js`](../functions/_shared/admin-users.js) `ADMIN_MENUS` (35개 슬러그). 사이드바와 백엔드 `gateMenuAccess`는 이 카탈로그의 슬러그를 **1:1로** 참조한다.
 - **프론트엔드 가시성** (`admin.html` 사이드바):
   - 각 메뉴 버튼에 `data-perm-slug="<slug>" data-perm-action="view"` 속성. 예: `<button data-panel="list" data-perm-slug="list" data-perm-action="view">`
   - 오너 전용 메뉴는 `data-owner-only="1" hidden` (예: 사용자 관리 / 프리셋 관리 / 개인정보 처리방침)

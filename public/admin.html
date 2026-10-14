@@ -10,19 +10,19 @@
   <link rel="icon" type="image/svg+xml" href="/img/favicon.svg">
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png">
   <link rel="shortcut icon" href="/img/favicon-48.png">
-  <link rel="stylesheet" href="/css/admin-v3.css?v=20261010070915">
-  <link rel="stylesheet" href="/css/memorabilia.css?v=20261010070915">
+  <link rel="stylesheet" href="/css/admin-v3.css?v=20261014173144">
+  <link rel="stylesheet" href="/css/memorabilia.css?v=20261014173144">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H" crossorigin="anonymous" referrerpolicy="no-referrer">
   <style>
     #v3-login[style*="display: none"] { pointer-events: none !important; }
     .v3-login-field { position: relative; display: block; width: 100%; overflow: hidden; }
-    .v3-login-input { width: 100%; min-height: 44px; padding-right: 52px; }
+    .v3-login-input { width: 100%; padding-right: 60px; }
     .v3-login-reveal {
       position: absolute;
       top: 50%;
       right: 6px;
-      width: 32px;
-      height: 32px;
+      width: 48px;
+      height: 48px;
       padding: 0;
       transform: translateY(-50%);
       z-index: 3;
@@ -94,7 +94,7 @@
     <button class="v3-login-btn" id="v3-login-btn" type="button" onclick="window.__gwAdminFallbackLogin && window.__gwAdminFallbackLogin(event)">관리자 입장</button>
     <div class="v3-login-err" id="v3-login-err"></div>
     <div class="v3-login-ver">
-      Admin <span class="v3-ver-str v3-ver-admin admin-build-version">V03.155.02</span>
+      Admin <span class="v3-ver-str v3-ver-admin admin-build-version">V03.156.00</span>
       &nbsp;·&nbsp;
       Site <span class="v3-ver-str v3-ver-site site-build-version">V00.194.00</span>
     </div>
@@ -109,7 +109,7 @@
   <!-- ── Sidebar ─────────────────────────────────────────── -->
   <aside id="v3-sidebar">
     <div id="v3-sidebar-logo">
-      <div class="v3-logo-mark">BP미디어 <span class="v3-logo-version v3-ver-str v3-ver-admin admin-build-version">V03.155.02</span></div>
+      <div class="v3-logo-mark">BP미디어 <span class="v3-logo-version v3-ver-str v3-ver-admin admin-build-version">V03.156.00</span></div>
       <div class="v3-logo-sub">운영 콘솔 &nbsp;<span class="v3-logo-sub-site">Site <span class="v3-ver-site site-build-version">V00.194.00</span></span></div>
     </div>
 
@@ -125,39 +125,18 @@
       </div>
     </div>
 
-    <nav id="v3-nav">
-      <!-- 대시보드 -->
+    <button id="v3-menu-toggle" class="v3-menu-toggle" type="button" aria-controls="v3-nav" aria-expanded="false">관리 메뉴</button>
+    <nav id="v3-nav" aria-label="관리자 업무">
       <div class="v3-nav-section v3-nav-section-top" data-nav-section="dashboard">
-        <button class="v3-nav-item active" data-panel="dashboard" data-perm-slug="dashboard" data-perm-action="view">
+        <div class="v3-nav-section-label">대시보드</div>
+        <button class="v3-nav-item active" data-panel="dashboard" aria-current="page" data-perm-slug="dashboard" data-perm-action="view">
           <svg class="v3-nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="1" y="1" width="6" height="6" rx="1.5"/><rect x="9" y="1" width="6" height="6" rx="1.5"/><rect x="1" y="9" width="6" height="6" rx="1.5"/><rect x="9" y="9" width="6" height="6" rx="1.5"/></svg>
           대시보드
         </button>
       </div>
 
-      <!-- 분석 -->
-      <div class="v3-nav-section" data-nav-section="analytics">
-        <div class="v3-nav-section-label">분석</div>
-        <button class="v3-nav-item" data-panel="analytics-visits" data-perm-slug="analytics-visits" data-perm-action="view">
-          <svg class="v3-nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><polyline points="1,12 5,7 9,9 15,3"/><polyline points="11,3 15,3 15,7"/></svg>
-          방문 분석
-        </button>
-        <button class="v3-nav-item" data-panel="marketing" data-perm-slug="marketing" data-perm-action="view">
-          <svg class="v3-nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M1 12 L4 8 L7 10 L10 5 L13 7 L15 3"/><circle cx="4" cy="8" r="1" fill="currentColor"/><circle cx="7" cy="10" r="1" fill="currentColor"/><circle cx="10" cy="5" r="1" fill="currentColor"/></svg>
-          마케팅
-        </button>
-        <button class="v3-nav-item" data-panel="analytics-tags" data-perm-slug="analytics-tags" data-perm-action="view">
-          <svg class="v3-nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="5" cy="5" r="2.5"/><circle cx="11" cy="11" r="2.5"/><line x1="6.5" y1="6.5" x2="9.5" y2="9.5"/><circle cx="11.5" cy="4.5" r="1.5"/><line x1="10.3" y1="5.5" x2="8" y2="7.5"/></svg>
-          태그 인사이트
-        </button>
-        <button class="v3-nav-item" data-panel="geo-audience" data-perm-slug="geo-audience" data-perm-action="view">
-          <svg class="v3-nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M8 1.25c3.73 0 6.75 3.02 6.75 6.75S11.73 14.75 8 14.75 1.25 11.73 1.25 8 4.27 1.25 8 1.25Z"/><path d="M1.8 6.2h12.4"/><path d="M1.8 9.8h12.4"/><path d="M8 1.5c1.9 1.85 3 4.1 3 6.5s-1.1 4.65-3 6.5c-1.9-1.85-3-4.1-3-6.5s1.1-4.65 3-6.5Z"/></svg>
-          접속 국가/도시
-        </button>
-      </div>
-
-      <!-- 콘텐츠 -->
-      <div class="v3-nav-section" data-nav-section="content">
-        <div class="v3-nav-section-label">콘텐츠</div>
+      <div class="v3-nav-section" data-nav-section="article-operations">
+        <div class="v3-nav-section-label">기사 운영</div>
         <button class="v3-nav-item" data-panel="list" data-perm-slug="list" data-perm-action="view">
           <svg class="v3-nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><line x1="3" y1="4" x2="13" y2="4"/><line x1="3" y1="8" x2="13" y2="8"/><line x1="3" y1="12" x2="10" y2="12"/></svg>
           게시글 목록
@@ -170,10 +149,13 @@
           <svg class="v3-nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="1" y="3" width="14" height="12" rx="1.5"/><line x1="5" y1="1" x2="5" y2="5"/><line x1="11" y1="1" x2="11" y2="5"/><line x1="1" y1="7" x2="15" y2="7"/></svg>
           캘린더
         </button>
-        <button class="v3-nav-item" data-panel="glossary" data-perm-slug="glossary" data-perm-action="view">
-          <svg class="v3-nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 2 h10 a1 1 0 0 1 1 1 v11 a1 1 0 0 1 -1 1 H3"/><path d="M3 2 a1 1 0 0 0 -1 1 v11 a1 1 0 0 0 1 1"/><line x1="6" y1="6" x2="11" y2="6"/><line x1="6" y1="9" x2="11" y2="9"/><line x1="6" y1="12" x2="9" y2="12"/></svg>
-          용어집
+        <button class="v3-nav-item" data-panel="card-news" data-perm-slug="card-news" data-perm-action="view">
+          <svg class="v3-nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="2" y="3" width="9" height="10" rx="1.5"/><path d="M13 5h1.5v8.5H6"/><line x1="4.5" y1="6" x2="8.5" y2="6"/><line x1="4.5" y1="8.5" x2="8.5" y2="8.5"/><line x1="4.5" y1="11" x2="7" y2="11"/></svg>
+          카드뉴스
         </button>
+        <details class="v3-nav-group" name="admin-tools">
+          <summary class="v3-nav-group-label">기사 검토</summary>
+          <div class="v3-nav-group-items">
         <button class="v3-nav-item" data-panel="article-scorer" data-perm-slug="article-scorer" data-perm-action="view">
           <svg class="v3-nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="8" cy="8" r="6.5"/><path d="M5.5 8.5 L7 10 L10.5 6"/></svg>
           기사 채점
@@ -181,6 +163,19 @@
         <button class="v3-nav-item" data-panel="ai-score-history" data-perm-slug="ai-score-history" data-perm-action="view">
           <svg class="v3-nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 3h10v10H3z"/><path d="M5.5 6h5"/><path d="M5.5 8.5h5"/><path d="M5.5 11h3"/></svg>
           AI 채점기록
+        </button>
+          </div>
+        </details>
+      </div>
+
+      <div class="v3-nav-section" data-nav-section="reference-data">
+        <div class="v3-nav-section-label">자료 관리</div>
+        <details class="v3-nav-group" name="admin-tools">
+          <summary class="v3-nav-group-label">스카우트 자료</summary>
+          <div class="v3-nav-group-items">
+        <button class="v3-nav-item" data-panel="glossary" data-perm-slug="glossary" data-perm-action="view">
+          <svg class="v3-nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 2 h10 a1 1 0 0 1 1 1 v11 a1 1 0 0 1 -1 1 H3"/><path d="M3 2 a1 1 0 0 0 -1 1 v11 a1 1 0 0 0 1 1"/><line x1="6" y1="6" x2="11" y2="6"/><line x1="6" y1="9" x2="11" y2="9"/><line x1="6" y1="12" x2="9" y2="12"/></svg>
+          용어집
         </button>
         <button class="v3-nav-item" data-panel="settings" data-settings-section="wosm-members" data-perm-slug="wosm-members" data-perm-action="view">
           <svg class="v3-nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="8" cy="8" r="6"/><path d="M2.5 6h11"/><path d="M2.5 10h11"/><path d="M8 2c1.8 1.6 2.8 3.7 2.8 6S9.8 12.4 8 14c-1.8-1.6-2.8-3.7-2.8-6S6.2 3.6 8 2Z"/></svg>
@@ -190,15 +185,11 @@
           <svg class="v3-nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M6.2 4.5h-2a2 2 0 0 0 0 4h2"/><path d="M9.8 4.5h2a2 2 0 1 1 0 4h-2"/><path d="M5.5 8h5"/><path d="M3 12.5h10"/><path d="M5.5 2.5h5"/></svg>
           기사 참고 사이트
         </button>
-        <button class="v3-nav-item" data-panel="card-news" data-perm-slug="card-news" data-perm-action="view">
-          <svg class="v3-nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="2" y="3" width="9" height="10" rx="1.5"/><path d="M13 5h1.5v8.5H6"/><line x1="4.5" y1="6" x2="8.5" y2="6"/><line x1="4.5" y1="8.5" x2="8.5" y2="8.5"/><line x1="4.5" y1="11" x2="7" y2="11"/></svg>
-          카드뉴스
-        </button>
-      </div>
-
-      <!-- 스카우트 백과 -->
-      <div class="v3-nav-section" data-nav-section="encyclopedia">
-        <div class="v3-nav-section-label">스카우트 백과</div>
+          </div>
+        </details>
+        <details class="v3-nav-group" name="admin-tools">
+          <summary class="v3-nav-group-label">도감 운영</summary>
+          <div class="v3-nav-group-items">
         <button class="v3-nav-item" data-panel="memorabilia" data-perm-slug="memorabilia" data-perm-action="view">
           <svg class="v3-nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="8" cy="8" r="6"/><circle cx="8" cy="8" r="3"/><line x1="8" y1="2" x2="8" y2="5"/><line x1="8" y1="11" x2="8" y2="14"/></svg>
           기념품 도감
@@ -216,27 +207,40 @@
           도감 댓글 승인
           <span class="v3-nav-badge" id="memo-comments-pending-badge" hidden></span>
         </button>
+          </div>
+        </details>
       </div>
 
-      <!-- 노출 -->
       <div class="v3-nav-section" data-nav-section="display">
-        <div class="v3-nav-section-label">노출</div>
-        <button class="v3-nav-item" data-panel="settings" data-settings-section="hero" data-perm-slug="hero" data-perm-action="view">
-          <svg class="v3-nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><polygon points="8,1 10,6 15,6 11,9 13,14 8,11 3,14 5,9 1,6 6,6"/></svg>
-          히어로 기사
-        </button>
+        <div class="v3-nav-section-label">노출 관리</div>
+        <details class="v3-nav-group" name="admin-tools">
+          <summary class="v3-nav-group-label">홈 편집</summary>
+          <div class="v3-nav-group-items">
         <button class="v3-nav-item" data-panel="settings" data-settings-section="home-lead" data-perm-slug="home-lead" data-perm-action="view">
           <svg class="v3-nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="1.5" y="2" width="13" height="12" rx="2"/><line x1="4" y1="5" x2="12" y2="5"/><line x1="4" y1="8" x2="10" y2="8"/><line x1="4" y1="11" x2="8" y2="11"/></svg>
           메인 스토리
         </button>
-        <button class="v3-nav-item" data-panel="settings" data-settings-section="picks" data-perm-slug="picks" data-perm-action="view">
-          <svg class="v3-nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M8 1.5 10 5.8 14.7 6.3 11.2 9.4 12.2 14 8 11.7 3.8 14 4.8 9.4 1.3 6.3 6 5.8 8 1.5Z"/></svg>
-          에디터 추천
+        <button class="v3-nav-item" data-panel="settings" data-settings-section="hero" data-perm-slug="hero" data-perm-action="view">
+          <svg class="v3-nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><polygon points="8,1 10,6 15,6 11,9 13,14 8,11 3,14 5,9 1,6 6,6"/></svg>
+          히어로 기사
         </button>
         <button class="v3-nav-item" data-panel="settings" data-settings-section="home-banners" data-perm-slug="home-banners" data-perm-action="view">
           <svg class="v3-nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="1.5" y="3" width="6" height="10" rx="1.5"/><rect x="8.5" y="3" width="6" height="10" rx="1.5"/></svg>
           홈 배너
         </button>
+        <button class="v3-nav-item" data-panel="settings" data-settings-section="ticker" data-perm-slug="ticker" data-perm-action="view">
+          <svg class="v3-nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><line x1="1" y1="5" x2="15" y2="5"/><line x1="1" y1="8" x2="12" y2="8"/><line x1="1" y1="11" x2="9" y2="11"/></svg>
+          티커
+        </button>
+        <button class="v3-nav-item" data-panel="settings" data-settings-section="picks" data-perm-slug="picks" data-perm-action="view">
+          <svg class="v3-nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M8 1.5 10 5.8 14.7 6.3 11.2 9.4 12.2 14 8 11.7 3.8 14 4.8 9.4 1.3 6.3 6 5.8 8 1.5Z"/></svg>
+          자동 추천 안내
+        </button>
+          </div>
+        </details>
+        <details class="v3-nav-group" name="admin-tools">
+          <summary class="v3-nav-group-label">게시판 편집</summary>
+          <div class="v3-nav-group-items">
         <button class="v3-nav-item" data-panel="settings" data-settings-section="board-copy" data-perm-slug="board-copy" data-perm-action="view">
           <svg class="v3-nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2 3.5h12"/><path d="M2 8h12"/><path d="M2 12.5h8"/><circle cx="12.5" cy="12.5" r="1.5" fill="currentColor" stroke="none"/></svg>
           게시판 설명
@@ -245,34 +249,89 @@
           <svg class="v3-nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="1" y="3" width="14" height="10" rx="1.5"/><line x1="1" y1="7" x2="15" y2="7"/></svg>
           게시판 배너
         </button>
-        <button class="v3-nav-item" data-panel="settings" data-settings-section="ticker" data-perm-slug="ticker" data-perm-action="view">
-          <svg class="v3-nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><line x1="1" y1="5" x2="15" y2="5"/><line x1="1" y1="8" x2="12" y2="8"/><line x1="1" y1="11" x2="9" y2="11"/></svg>
-          티커
+          </div>
+        </details>
+      </div>
+
+      <div class="v3-nav-section" data-nav-section="analytics">
+        <div class="v3-nav-section-label">성과 분석</div>
+        <details class="v3-nav-group" name="admin-tools">
+          <summary class="v3-nav-group-label">방문·유입 분석</summary>
+          <div class="v3-nav-group-items">
+        <button class="v3-nav-item" data-panel="analytics-visits" data-perm-slug="analytics-visits" data-perm-action="view">
+          <svg class="v3-nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><polyline points="1,12 5,7 9,9 15,3"/><polyline points="11,3 15,3 15,7"/></svg>
+          방문 분석
+        </button>
+        <button class="v3-nav-item" data-panel="marketing" data-perm-slug="marketing" data-perm-action="view">
+          <svg class="v3-nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M1 12 L4 8 L7 10 L10 5 L13 7 L15 3"/><circle cx="4" cy="8" r="1" fill="currentColor"/><circle cx="7" cy="10" r="1" fill="currentColor"/><circle cx="10" cy="5" r="1" fill="currentColor"/></svg>
+          마케팅
+        </button>
+        <button class="v3-nav-item" data-panel="geo-audience" data-perm-slug="geo-audience" data-perm-action="view">
+          <svg class="v3-nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M8 1.25c3.73 0 6.75 3.02 6.75 6.75S11.73 14.75 8 14.75 1.25 11.73 1.25 8 4.27 1.25 8 1.25Z"/><path d="M1.8 6.2h12.4"/><path d="M1.8 9.8h12.4"/><path d="M8 1.5c1.9 1.85 3 4.1 3 6.5s-1.1 4.65-3 6.5c-1.9-1.85-3-4.1-3-6.5s1.1-4.65 3-6.5Z"/></svg>
+          접속 국가/도시
+        </button>
+          </div>
+        </details>
+        <button class="v3-nav-item" data-panel="analytics-tags" data-perm-slug="analytics-tags" data-perm-action="view">
+          <svg class="v3-nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="5" cy="5" r="2.5"/><circle cx="11" cy="11" r="2.5"/><line x1="6.5" y1="6.5" x2="9.5" y2="9.5"/><circle cx="11.5" cy="4.5" r="1.5"/><line x1="10.3" y1="5.5" x2="8" y2="7.5"/></svg>
+          태그 인사이트
         </button>
       </div>
 
-      <!-- 설정 -->
-      <div class="v3-nav-section" data-nav-section="settings">
-        <div class="v3-nav-section-label">설정</div>
+      <div class="v3-nav-section" data-nav-section="operations-settings">
+        <div class="v3-nav-section-label">운영·설정</div>
+        <details class="v3-nav-group" name="admin-tools">
+          <summary class="v3-nav-group-label">운영 기록</summary>
+          <div class="v3-nav-group-items">
+        <button class="v3-nav-item" data-panel="homepage-issues" data-perm-slug="homepage-issues" data-perm-action="view">
+          <svg class="v3-nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M8 1.5 1.5 4.5v4.8c0 2.7 1.7 5.1 4.2 6l2.3.8 2.3-.8c2.5-.9 4.2-3.3 4.2-6V4.5L8 1.5Z"/><line x1="8" y1="5" x2="8" y2="9"/><circle cx="8" cy="11.4" r="0.8" fill="currentColor" stroke="none"/></svg>
+          오류 · 이슈 기록
+        </button>
+        <button class="v3-nav-item" data-panel="site-history" data-perm-slug="site-history" data-perm-action="view">
+          <svg class="v3-nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M8 2.2v5.3l3.4 2"/><circle cx="8" cy="8" r="6.2"/><path d="M2.3 8h2.1"/><path d="M11.6 8h2.1"/></svg>
+          사이트 히스토리
+        </button>
+        <button class="v3-nav-item" data-panel="releases" data-perm-slug="releases" data-perm-action="view">
+          <svg class="v3-nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="1" y="1" width="14" height="14" rx="2"/><line x1="4" y1="5" x2="9" y2="5"/><line x1="4" y1="8" x2="12" y2="8"/><line x1="4" y1="11" x2="10" y2="11"/><circle cx="12" cy="5" r="1.5" fill="currentColor" stroke="none"/></svg>
+          버전기록
+        </button>
+        <a class="v3-nav-item v3-nav-link" href="/kms" target="_blank" rel="noopener" data-perm-slug="kms" data-perm-action="view">
+          <svg class="v3-nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 2h7l3 3v9a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1z"/><path d="M10 2v3h3"/><line x1="5" y1="8" x2="11" y2="8"/><line x1="5" y1="11" x2="9" y2="11"/></svg>
+          KMS <svg class="v3-nav-ext-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 3H3a1 1 0 0 0-1 1v9a1 1 0 0 0 1 1h9a1 1 0 0 0 1-1V9"/><path d="M10 2h4v4"/><line x1="6" y1="10" x2="14" y2="2"/></svg>
+        </a>
+          </div>
+        </details>
+        <details class="v3-nav-group" name="admin-tools">
+          <summary class="v3-nav-group-label">편집 기준</summary>
+          <div class="v3-nav-group-items">
         <button class="v3-nav-item" data-panel="settings" data-settings-section="tags" data-perm-slug="tags" data-perm-action="view">
           <svg class="v3-nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M1 8 L8 1 L15 1 L15 8 L8 15 Z"/><circle cx="11.5" cy="4.5" r="1.2" fill="currentColor"/></svg>
           태그 / 글머리
-        </button>
-        <button class="v3-nav-item" data-panel="settings" data-settings-section="meta" data-perm-slug="meta" data-perm-action="view">
-          <svg class="v3-nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="8" cy="8" r="7"/><line x1="8" y1="4" x2="8" y2="8"/><line x1="8" y1="10" x2="8" y2="12"/></svg>
-          SEO · 메타태그
         </button>
         <button class="v3-nav-item" data-panel="settings" data-settings-section="author" data-perm-slug="author" data-perm-action="view">
           <svg class="v3-nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="8" cy="5" r="3"/><path d="M2 15 a6 6 0 0 1 12 0"/></svg>
           저자 · AI 고지
         </button>
+        <button class="v3-nav-item" data-panel="settings" data-settings-section="editors" data-perm-slug="editors" data-perm-action="view">
+          <svg class="v3-nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="1" y="1" width="14" height="14" rx="2"/><polyline points="5,7 7,9 11,5"/></svg>
+          저자명 관리
+        </button>
         <button class="v3-nav-item" data-panel="settings" data-settings-section="contributors" data-perm-slug="contributors" data-perm-action="view">
           <svg class="v3-nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="5" cy="5" r="2.5"/><circle cx="11" cy="5" r="2.5"/><path d="M1 14 a4 4 0 0 1 8 0"/><path d="M7 14 a4 4 0 0 1 8 0"/></svg>
           도움 주신 분들
         </button>
-        <button class="v3-nav-item" data-panel="settings" data-settings-section="editors" data-perm-slug="editors" data-perm-action="view">
-          <svg class="v3-nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="1" y="1" width="14" height="14" rx="2"/><polyline points="5,7 7,9 11,5"/></svg>
-          편집자 · 접근 관리
+          </div>
+        </details>
+        <details class="v3-nav-group" name="admin-tools">
+          <summary class="v3-nav-group-label">사이트 기본설정</summary>
+          <div class="v3-nav-group-items">
+        <button class="v3-nav-item" data-panel="settings" data-settings-section="meta" data-perm-slug="meta" data-perm-action="view">
+          <svg class="v3-nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="8" cy="8" r="7"/><line x1="8" y1="4" x2="8" y2="8"/><line x1="8" y1="10" x2="8" y2="12"/></svg>
+          SEO · 메타태그
+        </button>
+        <button class="v3-nav-item" data-panel="settings" data-settings-section="nav-labels" data-owner-only="1" hidden>
+          <svg class="v3-nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M2 4h12M2 8h12M2 12h8"/></svg>
+          공개 메뉴명
         </button>
         <button class="v3-nav-item" data-panel="settings" data-settings-section="translations" data-perm-slug="translations" data-perm-action="view">
           <svg class="v3-nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2 3 h6"/><path d="M5 3 v8"/><path d="M1 11 L4 5 L7 11"/><line x1="2" y1="9" x2="6" y2="9"/><path d="M10 5 L13 14"/><path d="M13 5 L10 14"/><line x1="11" y1="10" x2="15" y2="10"/></svg>
@@ -282,32 +341,11 @@
           <svg class="v3-nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M8 1.5 1.5 4.5v4.8c0 2.7 1.7 5.1 4.2 6l2.3.8 2.3-.8c2.5-.9 4.2-3.3 4.2-6V4.5L8 1.5Z"/><path d="M5 8 7.2 10.2 11 6.3"/></svg>
           개인정보 처리방침
         </button>
-      </div>
-
-      <!-- 시스템 -->
-      <div class="v3-nav-section" data-nav-section="system">
-        <div class="v3-nav-section-label">시스템</div>
-        <button class="v3-nav-item" data-panel="releases" data-perm-slug="releases" data-perm-action="view">
-          <svg class="v3-nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="1" y="1" width="14" height="14" rx="2"/><line x1="4" y1="5" x2="9" y2="5"/><line x1="4" y1="8" x2="12" y2="8"/><line x1="4" y1="11" x2="10" y2="11"/><circle cx="12" cy="5" r="1.5" fill="currentColor" stroke="none"/></svg>
-          버전기록
-        </button>
-        <button class="v3-nav-item" data-panel="homepage-issues" data-perm-slug="homepage-issues" data-perm-action="view">
-          <svg class="v3-nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M8 1.5 1.5 4.5v4.8c0 2.7 1.7 5.1 4.2 6l2.3.8 2.3-.8c2.5-.9 4.2-3.3 4.2-6V4.5L8 1.5Z"/><line x1="8" y1="5" x2="8" y2="9"/><circle cx="8" cy="11.4" r="0.8" fill="currentColor" stroke="none"/></svg>
-          오류 · 이슈 기록
-        </button>
-        <button class="v3-nav-item" data-panel="site-history" data-perm-slug="site-history" data-perm-action="view">
-          <svg class="v3-nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M8 2.2v5.3l3.4 2"/><circle cx="8" cy="8" r="6.2"/><path d="M2.3 8h2.1"/><path d="M11.6 8h2.1"/></svg>
-          사이트 히스토리
-        </button>
-        <a class="v3-nav-item v3-nav-link" href="/kms" target="_blank" rel="noopener" data-perm-slug="kms" data-perm-action="view">
-          <svg class="v3-nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 2h7l3 3v9a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1z"/><path d="M10 2v3h3"/><line x1="5" y1="8" x2="11" y2="8"/><line x1="5" y1="11" x2="9" y2="11"/></svg>
-          KMS <svg class="v3-nav-ext-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 3H3a1 1 0 0 0-1 1v9a1 1 0 0 0 1 1h9a1 1 0 0 0 1-1V9"/><path d="M10 2h4v4"/><line x1="6" y1="10" x2="14" y2="2"/></svg>
-        </a>
-      </div>
-
-      <!-- 계정 관리 -->
-      <div class="v3-nav-section" id="v3-nav-section-account">
-        <div class="v3-nav-section-label">계정 관리</div>
+          </div>
+        </details>
+        <details class="v3-nav-group" name="admin-tools" id="v3-nav-section-account">
+          <summary class="v3-nav-group-label">계정 관리</summary>
+          <div class="v3-nav-group-items">
         <button class="v3-nav-item" data-panel="account-me">
           <svg class="v3-nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="8" cy="5" r="3"/><path d="M2 15 a6 6 0 0 1 12 0"/></svg>
           내 계정
@@ -320,6 +358,8 @@
           <svg class="v3-nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="2" y="2" width="12" height="3" rx="1"/><rect x="2" y="7" width="12" height="3" rx="1"/><rect x="2" y="12" width="12" height="2" rx="1"/><circle cx="12" cy="3.5" r="0.9" fill="currentColor" stroke="none"/></svg>
           프리셋 관리
         </button>
+          </div>
+        </details>
       </div>
     </nav>
 
@@ -341,11 +381,6 @@
     <header id="v3-topbar">
       <div id="v3-breadcrumb">
         <strong id="v3-panel-title">대시보드</strong>
-      </div>
-      <div id="v3-topbar-actions">
-        <a class="v3-btn v3-btn-outline v3-btn-sm" href="/kms" target="_blank" rel="noopener">
-          기능 정의서 / KMS
-        </a>
       </div>
     </header>
 
@@ -691,7 +726,7 @@
             <!-- Inline AI Scorer (기사 작성 하단) -->
             <div class="v3-card" id="write-scorer-card">
               <div class="v3-card-head">
-                <h2 class="v3-card-title">AI 채점 <span class="v3-label-opt v3-label-opt-inline">BP미디어 표준 v2.1 기준</span></h2>
+                <h2 class="v3-card-title">AI 채점 <span class="v3-label-opt v3-label-opt-inline">현재 저장된 평가 기준</span></h2>
                 <button class="v3-btn v3-btn-primary v3-btn-sm" type="button" id="write-scorer-run-btn">
                   <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="8" cy="8" r="6.5"/><path d="M5.5 8.5 L7 10 L10.5 6"/></svg>
                   현재 기사 채점
@@ -863,7 +898,7 @@
         <div class="v3-page-head">
           <div class="v3-page-head-left">
             <h1 class="v3-page-title">기사 채점</h1>
-            <p class="v3-page-desc">BP미디어 기사 작성 표준 v2.3 기준으로 작성된 기사를 자동 채점합니다. 호출당 Workers AI 비용이 발생하므로 아래 사용량을 확인한 뒤 실행해주세요.</p>
+            <p class="v3-page-desc">현재 저장된 BP미디어 평가 기준으로 기사를 채점합니다. 호출당 Workers AI 비용이 발생하므로 아래 사용량을 확인한 뒤 실행해주세요.</p>
           </div>
         </div>
 
@@ -1325,26 +1360,6 @@
         </div>
         <div class="v3-settings-wrap">
           <!-- Settings nav -->
-          <div class="v3-settings-nav">
-            <button class="v3-settings-nav-btn active" data-section="hero">히어로 기사</button>
-            <button class="v3-settings-nav-btn" data-section="home-lead">메인 스토리</button>
-            <button class="v3-settings-nav-btn" data-section="picks">에디터 추천</button>
-            <button class="v3-settings-nav-btn" data-section="home-banners">홈 배너</button>
-            <button class="v3-settings-nav-btn" data-section="tags">태그 / 글머리</button>
-            <button class="v3-settings-nav-btn" data-section="meta">메타태그 / SEO</button>
-            <button class="v3-settings-nav-btn" data-section="board-copy">게시판 설명</button>
-            <button class="v3-settings-nav-btn" data-section="author">저자 / 고지</button>
-            <button class="v3-settings-nav-btn" data-section="banner">게시판 배너</button>
-            <button class="v3-settings-nav-btn" data-section="ticker">티커</button>
-            <button class="v3-settings-nav-btn" data-section="contributors">도움 주신 분들</button>
-            <button class="v3-settings-nav-btn" data-section="editors">편집자 / 접근</button>
-            <button class="v3-settings-nav-btn" data-section="nav-labels">상단 메뉴명</button>
-            <button class="v3-settings-nav-btn" data-section="translations">UI 번역</button>
-            <button class="v3-settings-nav-btn" data-section="wosm-members">세계연맹 회원국</button>
-            <button class="v3-settings-nav-btn" data-section="reference-sites">기사 참고 사이트</button>
-            <button class="v3-settings-nav-btn" data-section="privacy-policy">개인정보 처리방침</button>
-            <button class="v3-settings-nav-btn" data-section="account-security">계정 보안</button>
-          </div>
 
           <!-- Settings sections -->
           <div id="settings-sections">
@@ -1478,25 +1493,16 @@
               </div>
             </div>
 
-            <!-- PICKS -->
+            <!-- Automatic recommendations: informational only -->
             <div class="v3-settings-section" id="settings-picks">
               <div class="v3-card">
                 <div class="v3-card-head">
                   <div>
-                    <h2 class="v3-card-title">에디터 추천</h2>
-                    <p class="v3-card-desc"><strong>2026-07-22부터 자동 선정입니다.</strong> 홈의 에디터 추천 레일은 <strong>최근 30일 페이지뷰 상위 4건</strong>을 자동으로 보여줍니다. 아래에서 게시글을 선택해도 홈 노출에는 반영되지 않습니다. 순서·구성을 바꾸려면 기준 자체를 변경해야 합니다 (<code>functions/api/home.js</code> <code>loadHomePicks</code>).</p>
+                    <h2 class="v3-card-title">자동 추천 안내</h2>
+                    <p class="v3-card-desc">추천 기사는 최근 30일 페이지뷰 상위 4건에서 자동으로 선정됩니다.</p>
                   </div>
-                  <button class="v3-btn v3-btn-primary v3-btn-sm" id="picks-refresh-btn">새로고침</button>
                 </div>
-                <div class="v3-search-wrap v3-search-wrap-full v3-mb-16">
-                  <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="7" cy="7" r="5"/><line x1="12" y1="12" x2="15" y2="15"/></svg>
-                  <input class="v3-search-input" type="text" id="picks-search" placeholder="공개 게시글 제목 검색…" />
-                </div>
-                <div class="v3-search-results-drop" id="picks-search-results" style="display:none;"></div>
-                <div class="v3-inline-meta" id="picks-meta">불러오는 중…</div>
-                <div id="picks-selected">
-                  <div class="v3-loading"><div class="v3-spinner"></div>로딩 중…</div>
-                </div>
+                <p class="v3-hint">추천 기사를 직접 선택하거나 순서를 바꾸는 작업은 필요하지 않습니다. 기사별 특집 표시는 게시글 편집에서 관리합니다.</p>
               </div>
             </div>
 
@@ -1633,7 +1639,7 @@
               <div class="v3-card">
                 <div class="v3-card-head">
                   <div>
-                    <h2 class="v3-card-title">편집자 접근 관리</h2>
+                    <h2 class="v3-card-title">저자명 관리</h2>
                     <p class="v3-card-desc">Editor A~Z 슬롯에 내부 편집자 실명을 매핑합니다. <strong>A·B·C는 기존 기사 byline 호환을 위해 항상 유지</strong>되며 삭제할 수 없고, D 이후 슬롯은 자유롭게 추가·삭제할 수 있습니다.</p>
                   </div>
                   <div class="v3-flex">
@@ -1891,54 +1897,6 @@
                     <div class="v3-inline-meta" id="privacy-policy-meta">—</div>
                   </div>
                 </div>
-              </div>
-            </div>
-
-            <!-- ACCOUNT SECURITY -->
-            <div class="v3-settings-section" id="settings-account-security">
-              <div class="v3-card">
-                <div class="v3-card-head">
-                  <div>
-                    <h2 class="v3-card-title">관리자 비밀번호 변경</h2>
-                    <p class="v3-card-desc">
-                      비밀번호를 변경하면 현재 기기의 세션은 유지되고 <strong>다른 모든 기기의 세션은 즉시 로그아웃</strong>됩니다.
-                      최소 8자 이상으로 설정해주세요. 영문·숫자·기호를 섞어 쓰는 것을 권장합니다.
-                    </p>
-                  </div>
-                </div>
-                <form id="account-password-form" class="v3-form-grid" autocomplete="off" novalidate>
-                  <div class="v3-form-group v3-form-span-full">
-                    <label class="v3-label" for="account-current-password">현재 비밀번호</label>
-                    <input class="v3-input" type="password" id="account-current-password" name="current" autocomplete="current-password" required minlength="1" />
-                  </div>
-                  <div class="v3-form-group">
-                    <label class="v3-label" for="account-new-password">새 비밀번호 <span class="v3-label-opt">8자 이상</span></label>
-                    <input class="v3-input" type="password" id="account-new-password" name="new" autocomplete="new-password" required minlength="8" />
-                  </div>
-                  <div class="v3-form-group">
-                    <label class="v3-label" for="account-new-password-confirm">새 비밀번호 확인</label>
-                    <input class="v3-input" type="password" id="account-new-password-confirm" name="confirm" autocomplete="new-password" required minlength="8" />
-                  </div>
-                  <div class="v3-form-group v3-form-span-full">
-                    <div class="v3-flex" style="justify-content:flex-end;gap:8px;">
-                      <span id="account-password-status" class="v3-inline-meta" aria-live="polite"></span>
-                      <button class="v3-btn v3-btn-primary" type="submit" id="account-password-save-btn">비밀번호 변경</button>
-                    </div>
-                  </div>
-                </form>
-              </div>
-
-              <div class="v3-card" id="account-otp-card" style="margin-top:16px;">
-                <div class="v3-card-head">
-                  <div>
-                    <h2 class="v3-card-title">2단계 인증 (OTP)</h2>
-                    <p class="v3-card-desc">
-                      Google Authenticator 같은 인증 앱으로 <strong>사용자 관리 · 프리셋 관리 · 사이트 히스토리 · 오류/이슈 기록 · 도감 댓글 승인 · 개인정보 처리방침</strong>
-                      메뉴에 들어갈 때 6자리 코드를 추가로 확인합니다. 등록한 계정에만 적용되며, <strong>진입할 때마다</strong> 다시 확인합니다.
-                    </p>
-                  </div>
-                </div>
-                <div id="account-otp-body"><div class="v3-inline-meta">불러오는 중…</div></div>
               </div>
             </div>
 
@@ -2630,7 +2588,7 @@
               <p class="v3-card-desc">카테고리로 구분되어 표시됩니다. 체크박스로 여러 행사를 골라 카테고리를 일괄 부여할 수 있습니다.</p>
             </div>
             <div class="v3-card-actions" style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
-              <input type="search" class="v3-input v3-input-sm" id="memo-ev-search" placeholder="실시간 검색 — 행사명·기간·설명·카테고리" autocomplete="off" aria-label="행사 검색" style="min-width:260px"/>
+              <input type="search" class="v3-input v3-input-sm" id="memo-ev-search" placeholder="실시간 검색 — 행사명·기간·설명·카테고리" autocomplete="off" aria-label="행사 검색"/>
               <select class="v3-input v3-input-sm" id="memo-ev-filter-category" aria-label="카테고리 필터">
                 <option value="">카테고리 전체</option>
                 <option value="__none__">미분류만</option>
@@ -2913,7 +2871,7 @@
               <h2 class="v3-card-title">2단계 인증 (OTP)</h2>
               <p class="v3-card-desc">
                 인증 앱(Google Authenticator 등)을 등록하면 <strong>사용자 관리 · 프리셋 관리 · 사이트 히스토리 · 오류/이슈 기록 · 도감 댓글 승인 · 개인정보 처리방침</strong>
-                메뉴에 들어갈 때 6자리 코드를 추가로 확인합니다. 등록한 계정에만 적용되고, <strong>진입할 때마다</strong> 다시 확인합니다.
+                메뉴에 들어갈 때 6자리 코드를 추가로 확인합니다. 등록한 계정에만 적용되고, 인증 확인은 <strong>10분 동안 유효</strong>하며, 만료되면 다시 확인합니다.
               </p>
             </div>
           </div>
@@ -3499,14 +3457,14 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" integrity="sha384-vtjasyidUo0kW94K5MXDXntzOJpQgBKXmE7e2Ga4LG0skTTLeBi97eFAXsqewJjw" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha384-cxOPjt7s7Iz04uaHJceBmS+qpjv2JkIHNVcuOrM+YHwZOmJGBXI00mdUXEq65HTH" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.4/dist/purify.min.js" integrity="sha384-eEu5CTj3qGvu9PdJuS+YlkNi7d2XxQROAFYOr59zgObtlcux1ae1Il3u7jvdCSWu" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-<script src="/js/main.js?v=20261010070915"></script>
-<script src="/js/shared-country-name-ko.js?v=20261010070915"></script>
-<script src="/js/memorabilia-shared.js?v=20261010070915"></script>
-<script src="/js/admin-v3.js?v=20261010070915"></script>
-<script src="/js/admin-account.js?v=20261010070915"></script>
-<script src="/js/admin-memorabilia.js?v=20261010070915"></script>
-<script src="/js/admin-cardnews.js?v=20261010070915"></script>
-<script src="/js/admin-memorabilia-comments.js?v=20261010070915"></script>
+<script src="/js/main.js?v=20261014173144"></script>
+<script src="/js/shared-country-name-ko.js?v=20261014173144"></script>
+<script src="/js/memorabilia-shared.js?v=20261014173144"></script>
+<script src="/js/admin-v3.js?v=20261014173144"></script>
+<script src="/js/admin-account.js?v=20261014173144"></script>
+<script src="/js/admin-memorabilia.js?v=20261014173144"></script>
+<script src="/js/admin-cardnews.js?v=20261014173144"></script>
+<script src="/js/admin-memorabilia-comments.js?v=20261014173144"></script>
 <script>
   (function () {
     function toggleReveal(visible) {
@@ -3609,122 +3567,6 @@
 
     document.addEventListener('DOMContentLoaded', function () {
       var input = document.getElementById('v3-pw');
-      document.addEventListener('click', function (event) {
-        var navBtn = event.target && event.target.closest ? event.target.closest('#v3-nav .v3-nav-item[data-panel]') : null;
-        if (!navBtn || !window.V3 || typeof window.V3.showPanel !== 'function') return;
-        event.preventDefault();
-        window.V3.showPanel(navBtn.dataset.panel, navBtn.dataset.settingsSection);
-      }, true);
-      document.addEventListener('click', function (event) {
-        var settingsBtn = event.target && event.target.closest ? event.target.closest('.v3-settings-nav-btn[data-section]') : null;
-        if (!settingsBtn || !window.V3 || typeof window.V3.openSettingsSection !== 'function') return;
-        event.preventDefault();
-        window.V3.openSettingsSection(settingsBtn.dataset.section);
-      }, true);
-      document.addEventListener('click', function (event) {
-        var marketingBtn = event.target && event.target.closest ? event.target.closest('.mkt-preset-btn[data-days]') : null;
-        if (!marketingBtn || !window.V3 || typeof window.V3.applyMarketingPreset !== 'function') return;
-        event.preventDefault();
-        window.V3.applyMarketingPreset(marketingBtn.dataset.days);
-      }, true);
-      document.addEventListener('click', function (event) {
-        var target = event.target && event.target.closest ? event.target.closest('#dash-refresh-btn, #analytics-refresh-btn, #geo-audience-refresh-btn, #homepage-issues-refresh-btn, #site-history-refresh-btn, #mkt-apply-btn, [data-v3-heatmap-mode], #dash-heatmap-apply') : null;
-        if (!target || !window.V3) return;
-        var handled = false;
-        if (target.id === 'dash-refresh-btn' && typeof window.V3.refreshDashboard === 'function') {
-          window.V3.refreshDashboard();
-          handled = true;
-        } else if (target.id === 'analytics-refresh-btn' && typeof window.V3.refreshAnalytics === 'function') {
-          window.V3.refreshAnalytics();
-          handled = true;
-        } else if (target.id === 'geo-audience-refresh-btn' && typeof window.V3.refreshGeoAudience === 'function') {
-          window.V3.refreshGeoAudience();
-          handled = true;
-        } else if (target.id === 'homepage-issues-refresh-btn' && typeof window.V3.refreshHomepageIssues === 'function') {
-          window.V3.refreshHomepageIssues();
-          handled = true;
-        } else if (target.id === 'site-history-refresh-btn' && typeof window.V3.refreshSiteHistory === 'function') {
-          window.V3.refreshSiteHistory();
-          handled = true;
-        } else if (target.id === 'mkt-apply-btn' && typeof window.V3.applyMarketingRange === 'function') {
-          window.V3.applyMarketingRange();
-          handled = true;
-        } else if (target.hasAttribute('data-v3-heatmap-mode') && typeof window.V3.applyDashboardHeatmapMode === 'function') {
-          window.V3.applyDashboardHeatmapMode(target.getAttribute('data-v3-heatmap-mode'));
-          handled = true;
-        } else if (target.id === 'dash-heatmap-apply' && typeof window.V3.applyDashboardHeatmapRange === 'function') {
-          window.V3.applyDashboardHeatmapRange();
-          handled = true;
-        }
-        if (!handled) return;
-        event.preventDefault();
-      }, true);
-      document.addEventListener('click', function (event) {
-        var target = event.target && event.target.closest ? event.target.closest('#write-cancel-btn, #write-publish-btn, #post-preview-close, #post-preview-done, #post-preview-edit-btn, #cal-modal-close, #cal-modal-cancel, #cal-save-btn, #cal-delete-btn, #cal-tags-add-btn, #cal-geo-search-btn, #glos-modal-close, #glos-modal-cancel, #glos-save-btn, #glos-delete-btn, #v3-more-modal-close, #v3-more-modal-done, #analytics-tag-modal-close, #analytics-tag-modal-done, #wosm-import-close, #wosm-import-cancel, #wosm-import-apply, #confirm-cancel-btn, #confirm-ok-btn') : null;
-        if (!target || !window.V3) return;
-        var handled = false;
-        if ((target.id === 'write-cancel-btn') && typeof window.V3.cancelWrite === 'function') {
-          window.V3.cancelWrite();
-          handled = true;
-        } else if ((target.id === 'write-publish-btn') && typeof window.V3.savePost === 'function') {
-          window.V3.savePost();
-          handled = true;
-        } else if ((target.id === 'post-preview-close' || target.id === 'post-preview-done') && typeof window.V3.closePostPreview === 'function') {
-          window.V3.closePostPreview();
-          handled = true;
-        } else if ((target.id === 'post-preview-edit-btn') && typeof window.V3.editPost === 'function') {
-          var previewId = window.V3 && typeof window.V3.getPreviewPostId === 'function' ? window.V3.getPreviewPostId() : null;
-          if (previewId) {
-            window.V3.closePostPreview && window.V3.closePostPreview();
-            window.V3.editPost(previewId);
-            handled = true;
-          }
-        } else if ((target.id === 'cal-modal-close' || target.id === 'cal-modal-cancel') && typeof window.V3.closeCalendarModal === 'function') {
-          window.V3.closeCalendarModal();
-          handled = true;
-        } else if ((target.id === 'cal-save-btn') && typeof window.V3.saveCalendar === 'function') {
-          window.V3.saveCalendar();
-          handled = true;
-        } else if ((target.id === 'cal-delete-btn') && typeof window.V3.deleteCalendar === 'function') {
-          window.V3.deleteCalendar();
-          handled = true;
-        } else if ((target.id === 'cal-tags-add-btn') && typeof window.V3.addCalendarTag === 'function') {
-          window.V3.addCalendarTag();
-          handled = true;
-        } else if ((target.id === 'cal-geo-search-btn') && typeof window.V3.searchCalendarGeo === 'function') {
-          window.V3.searchCalendarGeo();
-          handled = true;
-        } else if ((target.id === 'glos-modal-close' || target.id === 'glos-modal-cancel') && typeof window.V3.closeGlossaryModal === 'function') {
-          window.V3.closeGlossaryModal();
-          handled = true;
-        } else if ((target.id === 'glos-save-btn') && typeof window.V3.saveGlossary === 'function') {
-          window.V3.saveGlossary();
-          handled = true;
-        } else if ((target.id === 'glos-delete-btn') && typeof window.V3.deleteGlossary === 'function') {
-          window.V3.deleteGlossary();
-          handled = true;
-        } else if ((target.id === 'v3-more-modal-close' || target.id === 'v3-more-modal-done') && typeof window.V3.closeMoreRowsModal === 'function') {
-          window.V3.closeMoreRowsModal();
-          handled = true;
-        } else if ((target.id === 'analytics-tag-modal-close' || target.id === 'analytics-tag-modal-done') && typeof window.V3.closeAnalyticsTagModal === 'function') {
-          window.V3.closeAnalyticsTagModal();
-          handled = true;
-        } else if ((target.id === 'wosm-import-close' || target.id === 'wosm-import-cancel') && typeof window.V3.closeWosmImportModal === 'function') {
-          window.V3.closeWosmImportModal();
-          handled = true;
-        } else if ((target.id === 'wosm-import-apply') && typeof window.V3.applyWosmImportMapping === 'function') {
-          window.V3.applyWosmImportMapping();
-          handled = true;
-        } else if ((target.id === 'confirm-cancel-btn') && typeof window.V3.closeConfirmModal === 'function') {
-          window.V3.closeConfirmModal(false);
-          handled = true;
-        } else if ((target.id === 'confirm-ok-btn') && typeof window.V3.closeConfirmModal === 'function') {
-          window.V3.closeConfirmModal(true);
-          handled = true;
-        }
-        if (!handled) return;
-        event.preventDefault();
-      }, true);
       if (input) {
         input.addEventListener('keydown', function (event) {
           if (event.key !== 'Enter') return;

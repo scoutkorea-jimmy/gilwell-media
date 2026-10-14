@@ -22,55 +22,53 @@ export const MEMBER_DEFAULT_AI_DAILY_LIMIT = 10;
  * Keep in sync with admin.html sidebar ordering.
  */
 export const ADMIN_MENUS = Object.freeze([
-  { group: '대시보드', items: [
-    { slug: 'dashboard', label: '대시보드', actions: ['view'] },
+  { group: "대시보드", items: [
+    {"slug":"dashboard","label":"대시보드","actions":["view"]}
   ]},
-  { group: '분석', items: [
-    { slug: 'analytics-visits', label: '방문 분석', actions: ['view', 'write'] },
-    { slug: 'marketing',        label: '마케팅',    actions: ['view', 'write'] },
-    { slug: 'analytics-tags',   label: '태그 인사이트', actions: ['view', 'write'] },
-    { slug: 'geo-audience',     label: '접속 국가/도시', actions: ['view', 'write'] },
+  { group: "기사 운영", items: [
+    {"slug":"list","label":"게시글 목록","actions":["view","write"]},
+    {"slug":"write","label":"새 글 작성","actions":["view","write"]},
+    {"slug":"calendar","label":"캘린더","actions":["view","write"]},
+    {"slug":"card-news","label":"카드뉴스","actions":["view","write"]},
+    {"slug":"article-scorer","label":"기사 채점","actions":["view","write"]},
+    {"slug":"ai-score-history","label":"AI 채점기록","actions":["view"]}
   ]},
-  { group: '콘텐츠', items: [
-    { slug: 'list',              label: '게시글 목록',  actions: ['view', 'write'] },
-    { slug: 'write',             label: '새 글 작성',   actions: ['view', 'write'] },
-    { slug: 'calendar',          label: '캘린더',       actions: ['view', 'write'] },
-    { slug: 'glossary',          label: '용어집',       actions: ['view', 'write'] },
-    { slug: 'article-scorer',    label: '기사 채점',    actions: ['view', 'write'] },
-    { slug: 'ai-score-history',  label: 'AI 채점기록',  actions: ['view'] },
-    { slug: 'wosm-members',      label: '세계연맹 회원국', actions: ['view', 'write'] },
-    { slug: 'reference-sites',   label: '기사 참고 사이트', actions: ['view', 'write'] },
-    { slug: 'card-news',         label: '카드뉴스',      actions: ['view', 'write'] },
+  { group: "자료 관리", items: [
+    {"slug":"glossary","label":"용어집","actions":["view","write"]},
+    {"slug":"wosm-members","label":"세계연맹 회원국","actions":["view","write"]},
+    {"slug":"reference-sites","label":"기사 참고 사이트","actions":["view","write"]},
+    {"slug":"memorabilia","label":"기념품 도감","actions":["view","write"]},
+    {"slug":"memorabilia-categories","label":"도감 분류 관리","actions":["view","write"]},
+    {"slug":"memorabilia-events","label":"행사 카탈로그","actions":["view","write"]},
+    {"slug":"memorabilia-comments","label":"도감 댓글 승인","actions":["view","write"]}
   ]},
-  { group: '스카우트 백과', items: [
-    { slug: 'memorabilia',            label: '기념품 도감',     actions: ['view', 'write'] },
-    { slug: 'memorabilia-categories', label: '도감 분류 관리', actions: ['view', 'write'] },
-    { slug: 'memorabilia-events',     label: '행사 카탈로그',   actions: ['view', 'write'] },
-    { slug: 'memorabilia-comments',   label: '도감 댓글 승인', actions: ['view', 'write'] },
+  { group: "노출 관리", items: [
+    {"slug":"home-lead","label":"메인 스토리","actions":["view","write"]},
+    {"slug":"hero","label":"히어로 기사","actions":["view","write"]},
+    {"slug":"home-banners","label":"홈 배너","actions":["view","write"]},
+    {"slug":"ticker","label":"티커","actions":["view","write"]},
+    {"slug":"picks","label":"자동 추천 안내","actions":["view","write"]},
+    {"slug":"board-copy","label":"게시판 설명","actions":["view","write"]},
+    {"slug":"banner","label":"게시판 배너","actions":["view","write"]}
   ]},
-  { group: '노출', items: [
-    { slug: 'hero',       label: '히어로 기사',   actions: ['view', 'write'] },
-    { slug: 'home-lead',  label: '메인 스토리',   actions: ['view', 'write'] },
-    { slug: 'picks',      label: '에디터 추천',   actions: ['view', 'write'] },
-    { slug: 'home-banners', label: '홈 배너',    actions: ['view', 'write'] },
-    { slug: 'board-copy', label: '게시판 설명',   actions: ['view', 'write'] },
-    { slug: 'banner',     label: '게시판 배너',   actions: ['view', 'write'] },
-    { slug: 'ticker',     label: '티커',         actions: ['view', 'write'] },
+  { group: "성과 분석", items: [
+    {"slug":"analytics-visits","label":"방문 분석","actions":["view","write"]},
+    {"slug":"marketing","label":"마케팅","actions":["view","write"]},
+    {"slug":"geo-audience","label":"접속 국가/도시","actions":["view","write"]},
+    {"slug":"analytics-tags","label":"태그 인사이트","actions":["view","write"]}
   ]},
-  { group: '설정', items: [
-    { slug: 'tags',         label: '태그 / 글머리',     actions: ['view', 'write'] },
-    { slug: 'meta',         label: 'SEO · 메타태그',    actions: ['view', 'write'] },
-    { slug: 'author',       label: '저자 · AI 고지',    actions: ['view', 'write'] },
-    { slug: 'contributors', label: '기고자',           actions: ['view', 'write'] },
-    { slug: 'editors',      label: '편집자 · 접근',    actions: ['view', 'write'] },
-    { slug: 'translations', label: 'UI 번역',          actions: ['view', 'write'] },
-  ]},
-  { group: '시스템', items: [
-    { slug: 'releases',         label: '버전기록',        actions: ['view'] },
-    { slug: 'homepage-issues',  label: '오류 · 이슈 기록', actions: ['view', 'write'] },
-    { slug: 'site-history',     label: '사이트 히스토리',  actions: ['view'] },
-    { slug: 'kms',              label: 'KMS (Knowledge Management)', actions: ['view', 'write'] },
-  ]},
+  { group: "운영·설정", items: [
+    {"slug":"homepage-issues","label":"오류 · 이슈 기록","actions":["view","write"]},
+    {"slug":"site-history","label":"사이트 히스토리","actions":["view"]},
+    {"slug":"releases","label":"버전기록","actions":["view"]},
+    {"slug":"kms","label":"KMS (Knowledge Management)","actions":["view","write"]},
+    {"slug":"tags","label":"태그 / 글머리","actions":["view","write"]},
+    {"slug":"author","label":"저자 · AI 고지","actions":["view","write"]},
+    {"slug":"editors","label":"저자명 관리","actions":["view","write"]},
+    {"slug":"contributors","label":"도움 주신 분들","actions":["view","write"]},
+    {"slug":"meta","label":"SEO · 메타태그","actions":["view","write"]},
+    {"slug":"translations","label":"UI 번역","actions":["view","write"]}
+  ]}
 ]);
 
 export function flattenMenuSlugs() {

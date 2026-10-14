@@ -268,12 +268,9 @@
     });
   }
 
-  // 패널 활성화 감지 → 최초 1회 로드 (memorabilia 와 동일 패턴)
-  document.addEventListener('click', function (e) {
-    var btn = e.target.closest('[data-panel="card-news"]');
-    if (!btn) return;
-    setTimeout(function () { if (!state.loadedOnce) bootList(); }, 60);
-  }, true);
+  document.addEventListener('gw:admin-panel-shown', function (e) {
+    if (e.detail && e.detail.panel === 'card-news' && !state.loadedOnce) bootList();
+  });
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', wireEvents);
   else wireEvents();

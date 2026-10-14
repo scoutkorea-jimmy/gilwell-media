@@ -250,15 +250,12 @@
     alert(msg);
   }
 
-  // ── Hook: panel 전환 감지 ────────────────────────────────────────────
-  // admin-v3.js 는 sidebar 버튼 클릭 시 data-panel 속성으로 패널을 전환한다.
-  // 우리는 #panel-memorabilia-comments 가 활성화될 때 init() 1회만 실행.
+  // 권한·OTP를 통과해 실제 패널이 열린 뒤에만 초기화한다.
   function watchPanel() {
-    document.addEventListener('click', (e) => {
-      const btn = e.target.closest('[data-panel="memorabilia-comments"]');
-      if (!btn) return;
-      // 약간의 딜레이: admin-v3.js 가 패널 전환 후 동작하도록.
-      setTimeout(init, 30);
+    document.addEventListener('gw:admin-panel-shown', (e) => {
+      if (!e.detail || e.detail.panel !== 'memorabilia-comments') return;
+      if (!state.initialized) init();
+      else { load(); loadCounts(); }
     });
 
     // 사이드바 뱃지는 로그인 직후에도 갱신 (별도 클릭 없이).

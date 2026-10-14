@@ -85,17 +85,13 @@
   // 국가 카탈로그는 /api/memorabilia/countries (functions/_shared/country-code-labels.js)
   // 단일 소스에서 fetch. memorabilia-shared.js GW.MemorabiliaCountries 가 캐시·picker 위젯 담당.
 
-  // ── Init: 패널 활성화 감지 ──────────────────────────────────────────────
-  document.addEventListener('click', (e) => {
-    const btn = e.target.closest('[data-panel="memorabilia"], [data-panel="memorabilia-categories"], [data-panel="memorabilia-events"]');
-    if (!btn) return;
-    const panel = btn.getAttribute('data-panel');
-    setTimeout(() => {
-      if (panel === 'memorabilia' && !state.loadedOnce) bootList();
-      if (panel === 'memorabilia-categories' && !state.catsLoadedOnce) bootCategories();
-      if (panel === 'memorabilia-events' && !state.eventsLoadedOnce) bootEvents();
-    }, 60);
-  }, true);
+  // 권한·OTP·작성 이탈 확인을 통과한 패널 전환만 로드한다.
+  document.addEventListener('gw:admin-panel-shown', (e) => {
+    const panel = e.detail && e.detail.panel;
+    if (panel === 'memorabilia' && !state.loadedOnce) bootList();
+    if (panel === 'memorabilia-categories' && !state.catsLoadedOnce) bootCategories();
+    if (panel === 'memorabilia-events' && !state.eventsLoadedOnce) bootEvents();
+  });
 
   document.addEventListener('DOMContentLoaded', wireEvents);
 

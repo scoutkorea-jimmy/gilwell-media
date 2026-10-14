@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.155.02
+ * Version: 03.156.00
  *
  * Versioning:
  *   V3.aaa.bb
@@ -166,6 +166,7 @@
   var _writeDraftDebounce = null;
   var _writeLastDraftSavedAt = 0;
   var _writeDirty    = false;
+  var _writeChangeRevision = 0;
   // D1 임시저장 시스템 — localStorage 단일 슬롯 시대를 대체.
   var _currentDraftId = null;   // 현재 작성 중인 글에 대응하는 drafts.id (POST 후 PUT 전환용)
   var _editingOriginalUpdatedAt = ''; // optimistic locking — 편집 진입 시 캡쳐한 서버 updated_at
@@ -194,9 +195,6 @@
   var _translations  = {};
   var _homeLeadPost  = null;
   var _homeLeadMedia = null;
-  var _picksPosts    = [];
-  var _picksOrder    = [];
-  var _picksSearchTimer = null;
   var _wosmMembers   = [];
   var _wosmColumns   = [];
   var _wosmRegisteredCount = 176;
@@ -568,7 +566,7 @@
     _bindEl('v3-logout-btn', 'click', _doLogout);
 
     // Sidebar nav
-    document.querySelectorAll('#v3-nav .v3-nav-item').forEach(function (btn) {
+    document.querySelectorAll('#v3-nav .v3-nav-item[data-panel]').forEach(function (btn) {
       btn.addEventListener('click', function () {
         var panel = btn.dataset.panel;
         var section = btn.dataset.settingsSection;
@@ -576,11 +574,11 @@
       });
     });
 
-    // Settings nav
-    document.querySelectorAll('.v3-settings-nav-btn').forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        _showSettingsSection(btn.dataset.section);
-      });
+    _bindEl('v3-menu-toggle', 'click', function () {
+      var sidebar = _el('v3-sidebar');
+      if (!sidebar) return;
+      var open = sidebar.classList.toggle('is-menu-open');
+      this.setAttribute('aria-expanded', String(open));
     });
 
     // Dashboard refresh
@@ -774,7 +772,6 @@
     _bindEl('home-lead-save-btn', 'click', _saveHomeLead);
     _bindEl('home-lead-clear-btn', 'click', _clearHomeLeadSelection);
     _bindEl('home-lead-auto-btn', 'click', _switchHomeLeadToAuto);
-    _bindEl('picks-refresh-btn', 'click', _loadPicksUI);
     _bindEl('banner-save-btn', 'click', _saveHomeBanners);
     _bindEl('banner-add-btn', 'click', function () {
       if (_homeBanners.length >= HOME_BANNER_MAX) return;
@@ -849,12 +846,6 @@
     });
     ['home-lead-fit', 'home-lead-desktop-x', 'home-lead-desktop-y', 'home-lead-desktop-zoom', 'home-lead-mobile-x', 'home-lead-mobile-y', 'home-lead-mobile-zoom'].forEach(function (id) {
       _bindEl(id, 'input', _handleHomeLeadControlChange);
-    });
-    _bindEl('picks-search', 'input', function () {
-      var q = this.value.trim();
-      clearTimeout(_picksSearchTimer);
-      if (!q) { var r = _el('picks-search-results'); if (r) r.style.display = 'none'; return; }
-      _picksSearchTimer = setTimeout(function () { _searchPicks(q); }, 220);
     });
 
     // Analytics period bar (통일 패턴). 각 패널별 독립 로더.
@@ -1293,6 +1284,10 @@
     'account-me': '내 계정',
     'account-users': '사용자 관리',
     'account-presets': '프리셋 관리',
+    memorabilia: '기념품 도감',
+    'memorabilia-categories': '도감 분류 관리',
+    'memorabilia-events': '행사 카탈로그',
+    'memorabilia-comments': '도감 댓글 승인',
   };
 
   // Permission guard — prevents members from bypassing sidebar gating via URL
@@ -1302,7 +1297,7 @@
   // 'dashboard' / 'account-me' panels only — everything else waits until
   // _loadMe resolves and a real check is possible.
   var _OWNER_ONLY_PANELS = { 'account-users': 1, 'account-presets': 1 };
-  var _OWNER_ONLY_SETTINGS = { 'privacy-policy': 1 };
+  var _OWNER_ONLY_SETTINGS = { 'privacy-policy': 1, 'nav-labels': 1 };
   var _SESSION_SAFE_PANELS = { 'dashboard': 1, 'account-me': 1 };
 
   function _panelPermSlug(panel, settingsSection) {
@@ -1327,8 +1322,45 @@
     return perms.indexOf('view:' + slug) !== -1;
   }
 
+  function _canLeaveWrite() {
+    var publishButton = _el('write-publish-btn');
+    if (_draftSaveInflight || (publishButton && publishButton.classList.contains('is-busy'))) {
+      GW.showToast('저장이 끝난 뒤 이동해주세요.', 'info');
+      return false;
+    }
+    return !_writeDirty || confirm('저장하지 않은 변경사항이 있습니다. 저장하지 않고 이동할까요?');
+  }
+
+  function _syncActiveNav(panel, settingsSection) {
+    var sectionLabel = '';
+    document.querySelectorAll('#v3-nav .v3-nav-item').forEach(function (btn) {
+      var match = btn.dataset.panel === panel;
+      if (panel === 'settings') match = match && btn.dataset.settingsSection === settingsSection;
+      btn.classList.toggle('active', match);
+      if (!match) { btn.removeAttribute('aria-current'); return; }
+      btn.setAttribute('aria-current', 'page');
+      var group = btn.closest('details.v3-nav-group');
+      while (group) {
+        group.open = true;
+        group = group.parentElement.closest('details.v3-nav-group');
+      }
+      var section = btn.closest('.v3-nav-section');
+      var heading = section && section.querySelector('.v3-nav-section-label');
+      if (heading) sectionLabel = heading.textContent.trim();
+    });
+    return sectionLabel;
+  }
+
   V3.showPanel = function (panel, settingsSection) {
-    if (!_canAccessPanel(panel, settingsSection)) {
+    if (panel === 'analytics') panel = 'analytics-visits';
+    if (panel === 'settings') settingsSection = settingsSection || _settingsSection;
+    if (panel === 'settings' && settingsSection === 'account-security') {
+      panel = 'account-me'; settingsSection = undefined;
+    }
+    if (!document.getElementById('panel-' + panel)) return false;
+    if (panel === 'settings' && !document.getElementById('settings-' + settingsSection)) return false;
+    var accessDenied = !_canAccessPanel(panel, settingsSection);
+    if (accessDenied) {
       if (window.GW && GW.showToast) GW.showToast('이 메뉴의 접근 권한이 없습니다.', 'error');
       // Reset URL hash so back-button / reload doesn't retry the denied panel.
       if (typeof location !== 'undefined' && location.hash) {
@@ -1340,12 +1372,14 @@
       } else if (_canAccessPanel('account-me')) {
         panel = 'account-me'; settingsSection = undefined;
       } else {
-        return;
+        return false;
       }
     }
 
     // 2단계 인증 게이트 (민감 메뉴) — 등록 계정이고 OTP 미통과면 모달 후 재진입.
-    if (!_otpGate(panel, settingsSection)) return;
+    if (!_otpGate(panel, settingsSection)) return false;
+
+    if (_panel === 'write' && panel !== 'write' && !_canLeaveWrite()) return false;
 
     if (_panel === 'write' && panel !== 'write') _stopDraftTimer();
     _panel = panel;
@@ -1355,22 +1389,13 @@
     var target = document.getElementById('panel-' + panel);
     if (target) target.classList.add('active');
 
-    // Update sidebar
-    document.querySelectorAll('#v3-nav .v3-nav-item').forEach(function (btn) {
-      var match = btn.dataset.panel === panel;
-      if (panel === 'settings' && settingsSection) {
-        match = match && btn.dataset.settingsSection === settingsSection;
-      }
-      btn.classList.toggle('active', match);
-    });
+    var sectionLabel = _syncActiveNav(panel, settingsSection);
 
     // Update breadcrumb
     var label = PANEL_LABELS[panel] || panel;
-    if (panel === 'settings' && settingsSection) {
-      document.getElementById('v3-panel-title').textContent = '사이트 설정 · ' + _sectionLabel(settingsSection);
-    } else {
-      document.getElementById('v3-panel-title').textContent = label;
-    }
+    if (panel === 'write' && _editingId) label = '글 수정';
+    if (panel === 'settings') label = _sectionLabel(settingsSection);
+    document.getElementById('v3-panel-title').textContent = sectionLabel && sectionLabel !== label ? sectionLabel + ' · ' + label : label;
 
     // Load panel data
     // 자동 새로고침은 방문 분석 패널에 한정 (태그 인사이트는 빈도 낮아 수동 새로고침)
@@ -1380,7 +1405,14 @@
     else if (panel === 'homepage-issues') _loadHomepageIssues();
     else if (panel === 'site-history') _loadSiteHistory();
     else if (panel === 'list')     _loadList();
-    else if (panel === 'write' && !_editingId) _resetWrite();
+    else if (panel === 'write') {
+      if (!_writeEnhanceInited) _resetWrite();
+      _initWriteEnhancementsOnce();
+      _startDraftTimer();
+      if (_writeDirty && !_writeDraftDebounce) _scheduleDraftSave();
+      _loadAuthorOptions();
+      _refreshDraftListCache().catch(function () {});
+    }
     else if (panel === 'calendar') _loadCalendar();
     else if (panel === 'glossary') _loadGlossary();
     else if (panel === 'analytics-visits' || panel === 'analytics') _loadAnalyticsVisits();
@@ -1397,13 +1429,19 @@
     else if (panel === 'account-me') {
       try { _renderOtpCard(document.getElementById('account-otp-body-me')); } catch (_) {}
     }
+    var sidebar = _el('v3-sidebar');
+    if (sidebar) sidebar.classList.remove('is-menu-open');
+    var menuToggle = _el('v3-menu-toggle');
+    if (menuToggle) menuToggle.setAttribute('aria-expanded', 'false');
+    if (!accessDenied) document.dispatchEvent(new CustomEvent('gw:admin-panel-shown', { detail: { panel: panel, settingsSection: settingsSection || null } }));
+    return true;
   };
 
   function _sectionLabel(s) {
     var labels = {
-      hero: '히어로 기사', 'home-lead': '메인 스토리', picks: '에디터 추천', tags: '태그 / 글머리', meta: '메타태그 / SEO', 'board-copy': '게시판 설명',
+      hero: '히어로 기사', 'home-lead': '메인 스토리', picks: '자동 추천 안내', 'home-banners': '홈 배너', tags: '태그 / 글머리', meta: 'SEO · 메타태그', 'board-copy': '게시판 설명',
       author: '저자 / 고지', banner: '게시판 배너', ticker: '티커',
-      contributors: '기고자', editors: '편집자 / 접근', 'nav-labels': '상단 메뉴명', translations: 'UI 번역', 'wosm-members': '세계연맹 회원국',
+      contributors: '도움 주신 분들', editors: '저자명 관리', 'nav-labels': '공개 메뉴명', translations: 'UI 번역', 'wosm-members': '세계연맹 회원국',
       'reference-sites': '기사 참고 사이트',
       'privacy-policy': '개인정보 처리방침',
       'account-security': '계정 보안',
@@ -1413,16 +1451,12 @@
 
   function _showSettingsSection(section) {
     _settingsSection = section;
-    document.querySelectorAll('.v3-settings-nav-btn').forEach(function (btn) {
-      btn.classList.toggle('active', btn.dataset.section === section);
-    });
     document.querySelectorAll('.v3-settings-section').forEach(function (el) {
       el.classList.toggle('active', el.id === 'settings-' + section);
     });
     // Load section data
     if (section === 'hero')         _loadHero();
     else if (section === 'home-lead') _loadHomeLeadUI();
-    else if (section === 'picks')   _loadPicksUI();
     else if (section === 'tags')    _loadTagSettingsUI();
     else if (section === 'meta')    _loadMetaUI();
     else if (section === 'board-copy') _loadBoardCopy();
@@ -1437,7 +1471,6 @@
     else if (section === 'wosm-members') _loadWosmMembersUI();
     else if (section === 'reference-sites') _loadReferenceSitesUI();
     else if (section === 'privacy-policy') _loadPrivacyPolicyUI();
-    else if (section === 'account-security') _loadAccountSecurityUI();
   }
 
   /* ══════════════════════════════════════════════════════════
@@ -1633,9 +1666,8 @@
   }
 
   /* ══════════════════════════════════════════════════════════
-     ACCOUNT SECURITY — 관리자 비밀번호 변경
+     ACCOUNT SECURITY — 2단계 인증
   ══════════════════════════════════════════════════════════ */
-  var _accountPasswordBound = false;
   // ── 2단계 인증 (OTP / TOTP) ──────────────────────────────────────────────
   // 민감 메뉴(사용자 관리·프리셋 관리·사이트 히스토리·오류/이슈 기록·도감 댓글 승인·
   // 개인정보 처리방침) 진입 시 등록된 계정에 한해 10분짜리 OTP 표식을 확인한다.
@@ -1771,9 +1803,9 @@
     input.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); submit(); } });
   }
 
-  // 2단계 인증 카드 렌더. body 미지정 시 계정 보안 섹션 컨테이너.
+  // 2단계 인증 카드 렌더. body 미지정 시 내 계정 컨테이너.
   function _renderOtpCard(body) {
-    if (!body || !body.nodeType) body = document.getElementById('account-otp-body');
+    if (!body || !body.nodeType) body = document.getElementById('account-otp-body-me');
     if (!body) return;
     body.innerHTML = '<div class="v3-inline-meta">불러오는 중…</div>';
     GW.apiFetch('/api/admin/totp')
@@ -1903,71 +1935,6 @@
     _otpPromptModal(function () { _otpJustPassed = true; _otpReenter(_panel, _settingsSection); });
   });
 
-  function _loadAccountSecurityUI() {
-    var form = document.getElementById('account-password-form');
-    _renderOtpCard();
-    if (!form) return;
-    _setAccountPasswordStatus('', '');
-    // Reset fields whenever the section is reopened.
-    var current = document.getElementById('account-current-password');
-    var next = document.getElementById('account-new-password');
-    var confirm = document.getElementById('account-new-password-confirm');
-    if (current) current.value = '';
-    if (next) next.value = '';
-    if (confirm) confirm.value = '';
-    if (_accountPasswordBound) return;
-    _accountPasswordBound = true;
-    form.addEventListener('submit', function (event) {
-      event.preventDefault();
-      _submitAccountPasswordChange();
-    });
-  }
-
-  function _setAccountPasswordStatus(message, tone) {
-    var el = document.getElementById('account-password-status');
-    if (!el) return;
-    el.textContent = message || '';
-    el.style.color = tone === 'error' ? 'var(--v3-danger, #c0392b)'
-                   : (tone === 'success' ? 'var(--v3-success, #1f8f3f)' : '');
-  }
-
-  function _submitAccountPasswordChange() {
-    var currentEl = document.getElementById('account-current-password');
-    var newEl = document.getElementById('account-new-password');
-    var confirmEl = document.getElementById('account-new-password-confirm');
-    var btn = document.getElementById('account-password-save-btn');
-    if (!currentEl || !newEl || !confirmEl || !btn) return;
-
-    var currentPassword = currentEl.value;
-    var newPassword = newEl.value;
-    var confirmPassword = confirmEl.value;
-
-    if (!currentPassword) { _setAccountPasswordStatus('현재 비밀번호를 입력해주세요.', 'error'); currentEl.focus(); return; }
-    if (!newPassword || newPassword.length < 8) { _setAccountPasswordStatus('새 비밀번호는 최소 8자 이상이어야 합니다.', 'error'); newEl.focus(); return; }
-    if (newPassword !== confirmPassword) { _setAccountPasswordStatus('새 비밀번호와 확인 값이 일치하지 않습니다.', 'error'); confirmEl.focus(); return; }
-    if (currentPassword === newPassword) { _setAccountPasswordStatus('새 비밀번호는 현재 비밀번호와 달라야 합니다.', 'error'); newEl.focus(); return; }
-
-    btn.disabled = true;
-    _setAccountPasswordStatus('변경 중…', '');
-    GW.apiFetch('/api/admin/password', {
-      method: 'POST',
-      body: JSON.stringify({ currentPassword: currentPassword, newPassword: newPassword, confirmPassword: confirmPassword })
-    })
-      .then(function (data) {
-        _setAccountPasswordStatus(
-          (data && data.message) || '비밀번호가 변경되었습니다. 다른 기기에서는 다시 로그인해야 합니다.',
-          'success'
-        );
-        currentEl.value = ''; newEl.value = ''; confirmEl.value = '';
-        if (typeof GW.showToast === 'function') GW.showToast('비밀번호가 변경되었습니다', 'success');
-      })
-      .catch(function (err) {
-        var message = (err && err.message) || '비밀번호 변경 중 오류가 발생했습니다.';
-        _setAccountPasswordStatus(message, 'error');
-      })
-      .then(function () { btn.disabled = false; });
-  }
-
   /* ══════════════════════════════════════════════════════════
      EDITOR.JS
   ══════════════════════════════════════════════════════════ */
@@ -2013,8 +1980,7 @@
 
   function _initEditor() {
     if (_editor) return;
-    // admin 은 이미지 블록 미포함(includeImage:false) + onChange(draft/stats) — 기존 동작 보존.
-    // MutationObserver만으로는 IME 합성·블록 type 전환 등 일부 변경 패턴이 누락되어 onChange 안전망 유지.
+    // Editor.js onChange가 사용자 편집만 임시저장·통계 갱신으로 연결한다.
     _editor = new window.EditorJS(GW.buildEditorConfig({
       holder: 'v3-editorjs',
       placeholder: '내용을 작성하세요…',
@@ -2063,7 +2029,8 @@
 
   function _editorClear() {
     if (!_editor) return;
-    _editor.isReady.then(function () { _editor.clear(); });
+    // render는 문서 초기화를 사용자 편집 이벤트로 보고하지 않는다.
+    _editor.isReady.then(function () { return _editor.render({ blocks: [] }); });
   }
 
   /* ══════════════════════════════════════════════════════════
@@ -2959,12 +2926,19 @@
   }
 
   function _saveDraftNow() {
+    if (_writeDraftDebounce) { clearTimeout(_writeDraftDebounce); _writeDraftDebounce = null; }
     var titleEl = _el('w-title');
     if (!titleEl) return;
     if (_draftSaveInflight) { _draftSavePending = true; return; }
+    var publishButton = _el('write-publish-btn');
+    if (publishButton && publishButton.classList.contains('is-busy')) {
+      _writeDraftDebounce = setTimeout(_saveDraftNow, 100);
+      return;
+    }
+    var saveRevision = _writeChangeRevision;
     _draftSaveInflight = true;
     _setDraftStatus('saving');
-    _editorGetData().then(function (content) {
+    return _editorGetData().then(function (content) {
       // 의미 있는 내용 기준: 제목 또는 본문(plain text 기준) 또는 cover/gallery 중 하나라도 있으면 저장.
       // 기존 'title만' 가드는 본문 먼저 쓰는 사용자의 저장을 통째로 막아 "본문이 안 떠"로 인식되던 회귀.
       var hasTitle = !!(titleEl.value || '').trim();
@@ -2987,16 +2961,17 @@
       if (draft && draft.id) {
         _currentDraftId = draft.id;
         // 서버가 R2로 업로드한 경우 image_url이 짧은 URL로 바뀌므로 in-memory 동기화.
-        if (draft.image_url && (!_coverDataUrl || _coverDataUrl.startsWith('data:'))) {
+        if (saveRevision === _writeChangeRevision && draft.image_url && (!_coverDataUrl || _coverDataUrl.startsWith('data:'))) {
           _coverDataUrl = draft.image_url;
         }
       }
       _writeLastDraftSavedAt = Date.now();
-      _writeDirty = false;
-      _setDraftStatus('saved', '자동 저장됨 · ' + _relativeTimeKo(_writeLastDraftSavedAt));
+      _writeDirty = saveRevision !== _writeChangeRevision;
+      _setDraftStatus(_writeDirty ? 'dirty' : 'saved', _writeDirty ? undefined : '자동 저장됨 · ' + _relativeTimeKo(_writeLastDraftSavedAt));
       // 목록도 갱신 (제목·시각 반영)
       _refreshDraftListCache().catch(function () {});
     }).catch(function (err) {
+      _writeDirty = true;
       console.error('draft save failed:', err);
       // 서버가 명시적 사용자 메시지를 준 경우 (이미지 업로드 실패 등) 토스트로 표면화.
       // _apiFetch 가 401/403/429 는 자체 처리하므로 여기로 들어오는 4xx 는 알릴 가치 있음.
@@ -3011,12 +2986,14 @@
       _draftSaveInflight = false;
       if (_draftSavePending) {
         _draftSavePending = false;
-        setTimeout(_saveDraftNow, 100);
+        if (_writeDraftDebounce) clearTimeout(_writeDraftDebounce);
+        _writeDraftDebounce = setTimeout(_saveDraftNow, 100);
       }
     });
   }
 
   function _scheduleDraftSave() {
+    _writeChangeRevision += 1;
     _writeDirty = true;
     _setDraftStatus('dirty');
     if (_writeDraftDebounce) clearTimeout(_writeDraftDebounce);
@@ -3024,7 +3001,7 @@
   }
 
   function _startDraftTimer() {
-    _stopDraftTimer();
+    if (_draftTimer) clearInterval(_draftTimer);
     _draftTimer = setInterval(function () {
       if (!_writeLastDraftSavedAt || _writeDirty) return;
       var line = _el('w-draft-line');
@@ -3192,7 +3169,7 @@
   }
 
   function _loadDraft(draftId) {
-    if (_writeDirty && !confirm('현재 작성 중인 내용에 변경사항이 있습니다. 다른 임시저장을 불러올까요?')) return;
+    if (!_canLeaveWrite()) return;
     var draft = _draftListCache.find(function (d) { return d.id === draftId; });
     if (!draft) {
       GW.showToast('임시저장을 찾지 못했습니다', 'error');
@@ -3577,16 +3554,6 @@
       if (el) el.addEventListener('change', _scheduleDraftSave);
     });
 
-    // Editor.js 변경 감지 — holder에 mutation observer (콘텐츠 편집 감지)
-    var holder = _el('v3-editorjs');
-    if (holder && window.MutationObserver) {
-      var obs = new MutationObserver(function () {
-        _scheduleDraftSave();
-        _updateWriteStats();
-      });
-      obs.observe(holder, { childList: true, subtree: true, characterData: true });
-    }
-
     // 인라인 채점 버튼
     _bindEl('write-scorer-run-btn', 'click', _runWriteScorer);
 
@@ -3637,6 +3604,11 @@
     }
 
     // 키보드 단축키 (Cmd/Ctrl+S 저장, Esc 취소)
+    window.addEventListener('beforeunload', function (event) {
+      if (!_writeDirty && !_draftSaveInflight) return;
+      event.preventDefault();
+      event.returnValue = '';
+    });
     document.addEventListener('keydown', function (e) {
       if (_panel !== 'write') return;
       var isMod = e.metaKey || e.ctrlKey;
@@ -3647,9 +3619,6 @@
         // textarea/input 에서 ESC로 포커스만 뺄 수 있도록 모달/드롭다운이 열려있지 않으면 취소
         var box = _el('w-metatag-suggestions');
         if (box && !box.hidden) return;
-        if (_writeDirty) {
-          if (!confirm('저장하지 않은 변경사항이 있습니다. 목록으로 나갈까요?')) return;
-        }
         V3.showPanel('list');
       }
     });
@@ -3658,41 +3627,35 @@
   V3.runWriteScorer = _runWriteScorer;
 
   V3.openWrite = function () {
+    if (!_canAccessPanel('write')) { V3.showPanel('write'); return; }
+    if (!_canLeaveWrite()) return;
+    _stopDraftTimer();
     _resetWrite();
     _currentDraftId = null;
+    _writeDirty = false;
+    _writeLastDraftSavedAt = 0;
     V3.showPanel('write');
-    _initWriteEnhancementsOnce();
-    _startDraftTimer();
     _ensureMetaTagPool();
     _updateWriteStats();
     _updateSeoPreview();
     _setDraftStatus('idle');
     var scoreOut = _el('write-scorer-result');
     if (scoreOut) { scoreOut.hidden = true; scoreOut.innerHTML = ''; }
-    // 임시저장 목록 + 작성자 dropdown 채우기
-    _loadAuthorOptions();
-    _refreshDraftListCache().catch(function () {});
   };
   V3.cancelWrite = function () {
-    if (_writeDirty) {
-      if (!confirm('저장하지 않은 변경사항이 있습니다. 목록으로 나갈까요?')) return;
-    }
     V3.showPanel('list');
   };
 
   V3.editPost = function (id) {
-    // First show panel (resets form), then load
-    _panel = 'write';
-    document.querySelectorAll('.v3-panel').forEach(function (el) { el.classList.remove('active'); });
-    document.getElementById('panel-write').classList.add('active');
-    document.querySelectorAll('#v3-nav .v3-nav-item').forEach(function (btn) {
-      btn.classList.toggle('active', btn.dataset.panel === 'write');
-    });
-    document.getElementById('v3-panel-title').textContent = '글 수정';
+    if (!_canAccessPanel('write')) { V3.showPanel('write'); return; }
+    if (!_canLeaveWrite()) return;
+    _stopDraftTimer();
+    _writeDirty = false;
+    if (!V3.showPanel('write')) return;
+    var sectionLabel = _syncActiveNav('write');
+    document.getElementById('v3-panel-title').textContent = sectionLabel ? sectionLabel + ' · 글 수정' : '글 수정';
     document.getElementById('write-panel-title').textContent = '글 수정 중…';
 
-    _initWriteEnhancementsOnce();
-    _startDraftTimer();
     _ensureMetaTagPool();
     var scoreOut = _el('write-scorer-result');
     if (scoreOut) { scoreOut.hidden = true; scoreOut.innerHTML = ''; }
@@ -3790,14 +3753,20 @@
   };
 
   function _savePost() {
+    var btn = document.getElementById('write-publish-btn');
+    if (_draftSaveInflight || (btn && btn.classList.contains('is-busy'))) {
+      GW.showToast('진행 중인 저장이 끝난 뒤 다시 저장해주세요.', 'info');
+      return;
+    }
     var title = document.getElementById('w-title').value.trim();
     if (!title) { GW.showToast('제목을 입력하세요', 'error'); return; }
 
-    var btn = document.getElementById('write-publish-btn');
+    if (_writeDraftDebounce) { clearTimeout(_writeDraftDebounce); _writeDraftDebounce = null; }
+    var saveRevision = _writeChangeRevision;
     var publishedChecked = !!document.getElementById('w-published').checked;
     _setButtonBusy(btn, publishedChecked ? '공개 저장 중…' : '비공개 저장 중…');
 
-    _editorGetData().then(function (content) {
+    return _editorGetData().then(function (content) {
       var dateVal = document.getElementById('w-date').value;
       var desiredFeatured = publishedChecked && !!document.getElementById('w-featured').checked;
       var body = {
@@ -3860,11 +3829,17 @@
       // 저장 직후 server updated_at으로 lock baseline 갱신 → 후속 저장에서 409 안 남.
       if (saved && saved.updated_at) _editingOriginalUpdatedAt = String(saved.updated_at);
       _clearDraft();
+      if (saveRevision !== _writeChangeRevision) {
+        _writeDirty = true;
+        _setDraftStatus('dirty');
+      }
       GW.showToast(Number(saved && saved.published || 0) === 1 ? '공개 상태로 저장했습니다' : '비공개 상태로 저장했습니다', 'success');
       document.getElementById('write-panel-title').textContent = '글 수정: ' + (document.getElementById('w-title').value || '');
-      document.getElementById('w-published').checked = Number(saved && saved.published || 0) === 1;
-      document.getElementById('w-featured').checked = Number(saved && saved.featured || 0) === 1;
-      _syncWriteFeaturedState();
+      if (!_writeDirty) {
+        document.getElementById('w-published').checked = Number(saved && saved.published || 0) === 1;
+        document.getElementById('w-featured').checked = Number(saved && saved.featured || 0) === 1;
+        _syncWriteFeaturedState();
+      }
       if (_homeLeadPost && Number(_homeLeadPost.id || 0) === Number(saved && saved.id || 0)) {
         _loadHomeLeadUI();
       }
@@ -3881,6 +3856,7 @@
         GW.showToast(e.message || '저장 실패', 'error');
       }
       _clearButtonBusy(btn);
+      if (_writeDirty && !_writeDraftDebounce) _scheduleDraftSave();
     });
   }
   V3.savePost = _savePost;
@@ -4628,6 +4604,8 @@
     );
     document.getElementById('cal-delete-btn').style.display = e ? '' : 'none';
     document.getElementById('cal-modal').style.display = 'flex';
+    var dialog = document.getElementById('cal-modal').querySelector('.v3-modal');
+    if (dialog) dialog.scrollTop = 0;
   }
 
   function _closeCalModal() {
@@ -8419,7 +8397,7 @@
       .finally(function () { _clearButtonBusy(btn); });
   }
   function _resetRubric(btn) {
-    if (!confirm('평가 기준을 기본값(BP미디어 v2.1)으로 되돌리시겠습니까?')) return;
+    if (!confirm('평가 기준을 기본 평가 기준으로 되돌리시겠습니까?')) return;
     _setButtonBusy(btn, '복원 중…');
     GW.apiFetch('/api/settings/score-rubric', { method: 'DELETE' })
       .then(function (data) {
@@ -10021,13 +9999,9 @@
         return;
       }
       el.innerHTML = posts.map(function (p) {
-        // 메인 스토리와 에디터 추천 동시 지정 허용 — 기존 배타 제약 제거(2026-04-19).
-        // 에디터 추천에 이미 있으면 안내 문구만 덧붙이되 선택은 가능.
-        var alsoPicked = _picksPosts.some(function (item) { return item.id === p.id; });
-        var suffix = alsoPicked ? ' · 에디터 추천에도 포함됨' : '';
         return '<div class="v3-search-result-item" onclick="V3._selectHomeLead(' + p.id + ')">' +
           '<div class="v3-search-result-title">' + GW.escapeHtml(p.title || '(제목 없음)') + '</div>' +
-          '<div class="v3-search-result-meta">' + GW.escapeHtml((p.category || '') + suffix) + '</div>' +
+          '<div class="v3-search-result-meta">' + GW.escapeHtml(p.category || '') + '</div>' +
         '</div>';
       }).join('');
       el.style.display = 'block';
@@ -10096,144 +10070,10 @@
     });
   }
 
-  /* ══════════════════════════════════════════════════════════
-     SETTINGS – EDITOR PICKS
-  ══════════════════════════════════════════════════════════ */
-  function _loadPicksUI() {
-    var wrap = document.getElementById('picks-selected');
-    var meta = document.getElementById('picks-meta');
-    if (wrap) wrap.innerHTML = '<div class="v3-loading"><div class="v3-spinner"></div>로딩 중…</div>';
-    if (meta) meta.textContent = '불러오는 중…';
-    Promise.all([
-      _apiFetch('/api/posts?featured=1&limit=20&published=all&scope=admin'),
-      _apiFetch('/api/settings/picks-order').catch(function () { return { items: [] }; }),
-    ]).then(function (results) {
-      var posts = (results[0] && results[0].posts) || [];
-      var order = (results[1] && Array.isArray(results[1].items)) ? results[1].items : [];
-      _picksOrder = order.slice();
-      _picksPosts = _applyPickOrder(posts, order);
-      _renderPicksSelected();
-    }).catch(function () {
-      if (wrap) wrap.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">불러오기 실패</div></div>';
-      if (meta) meta.textContent = '불러오기 실패';
-    });
-  }
-
-  function _applyPickOrder(posts, order) {
-    if (!Array.isArray(posts) || !posts.length) return [];
-    if (!Array.isArray(order) || !order.length) return posts.slice();
-    var idx = new Map();
-    order.forEach(function (id, i) {
-      var n = parseInt(id, 10);
-      if (Number.isFinite(n) && !idx.has(n)) idx.set(n, i);
-    });
-    return posts.slice().sort(function (a, b) {
-      var ai = idx.has(Number(a.id)) ? idx.get(Number(a.id)) : Number.POSITIVE_INFINITY;
-      var bi = idx.has(Number(b.id)) ? idx.get(Number(b.id)) : Number.POSITIVE_INFINITY;
-      return ai - bi;
-    });
-  }
-
-  function _savePicksOrder() {
-    var ids = _picksPosts.map(function (p) { return Number(p.id); }).filter(function (n) { return Number.isFinite(n) && n > 0; });
-    _picksOrder = ids.slice();
-    return _apiFetch('/api/settings/picks-order', {
-      method: 'PUT',
-      body: JSON.stringify({ items: ids }),
-    }).then(function () {
-      GW.showToast('에디터 추천 순서를 저장했습니다', 'success');
-    }).catch(function (err) {
-      GW.showToast((err && err.message) || '순서 저장 실패', 'error');
-    });
-  }
-
-  function _renderPicksSelected() {
-    var wrap = document.getElementById('picks-selected');
-    var meta = document.getElementById('picks-meta');
-    if (meta) meta.textContent = '현재 에디터 추천 ' + _picksPosts.length + '개 / 최대 4개 · 드래그해서 순서 변경';
-    if (!wrap) return;
-    if (!_picksPosts.length) {
-      wrap.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">선택된 에디터 추천 게시글이 없습니다.</div></div>';
-      return;
-    }
-    wrap.innerHTML = '<div class="v3-picks-list">' + _picksPosts.map(function (post) {
-      var badges = '<span class="v3-badge ' + _catBadge(post.category) + '">' + GW.escapeHtml(post.category || '') + '</span><span class="v3-badge v3-badge-yellow">추천</span>';
-      if (!post.published) badges += '<span class="v3-badge v3-badge-gray">비공개</span>';
-      return '<div class="v3-pick-row v3-sortable-row">' +
-        '<span class="v3-drag-handle" aria-hidden="true" title="드래그해서 순서 변경">⋮⋮</span>' +
-        '<div class="v3-pick-copy">' +
-          '<div class="v3-pick-badges">' + badges + '</div>' +
-          '<div class="v3-pick-title">' + GW.escapeHtml(post.title || '(제목 없음)') + '</div>' +
-          '<div class="v3-pick-meta">' + GW.escapeHtml(post.publish_at || post.created_at || '') + '</div>' +
-        '</div>' +
-        '<div class="v3-pick-actions">' +
-          '<button type="button" class="v3-btn v3-btn-outline v3-btn-sm" onclick="V3._removePick(' + post.id + ')">제외</button>' +
-        '</div>' +
-      '</div>';
-    }).join('') + '</div>';
-    var listEl = wrap.querySelector('.v3-picks-list');
-    _makeListSortable(listEl, function (from, to) {
-      var item = _picksPosts.splice(from, 1)[0];
-      _picksPosts.splice(to, 0, item);
-      _renderPicksSelected();
-      _savePicksOrder();
-    });
-  }
-
-  function _searchPicks(q) {
-    var el = document.getElementById('picks-search-results');
-    _apiFetch('/api/posts?q=' + encodeURIComponent(q) + '&limit=10&published=1').then(function (data) {
-      var posts = (data && data.posts) || [];
-      var isFull = _picksPosts.length >= 4;
-      if (!posts.length) {
-        el.style.display = 'none';
-        return;
-      }
-      el.innerHTML = posts.map(function (p) {
-        // 메인 스토리와 동시 지정 허용(2026-04-19). 이미 picks에 있거나 4개 제한만 비활성 처리.
-        var already = _picksPosts.some(function (item) { return item.id === p.id; });
-        var isLead = _homeLeadPost && Number(_homeLeadPost.id) === Number(p.id);
-        var disabled = already || (isFull && !already);
-        var suffix = already
-          ? ' · 이미 선택됨'
-          : (isLead ? ' · 메인 스토리에도 지정됨' : (isFull ? ' · 최대 4개 선택됨' : ''));
-        return '<div class="v3-search-result-item' + (disabled ? ' is-disabled' : '') + '"' + (disabled ? '' : ' onclick="V3._addPick(' + p.id + ')"') + '>' +
-          '<div class="v3-search-result-title">' + GW.escapeHtml(p.title || '(제목 없음)') + '</div>' +
-          '<div class="v3-search-result-meta">' + GW.escapeHtml((p.category || '') + suffix) + '</div>' +
-        '</div>';
-      }).join('');
-      el.style.display = 'block';
-    }).catch(function () {
-      el.style.display = 'none';
-    });
-  }
-
-  V3._addPick = function (id) {
-    if (_picksPosts.length >= 4 && !_picksPosts.some(function (item) { return item.id === id; })) {
-      _alert('에디터 추천 제한', '에디터 추천은 최대 4개까지 선택할 수 있습니다. 기존 추천을 하나 제외한 뒤 다시 시도해주세요.');
-      return;
-    }
-    // 메인 스토리 ↔ 에디터 추천 동시 지정 허용 (2026-04-19). 이전 배타 제약 제거.
-    _togglePick(id, true);
+  // Cached callers keep a safe no-mutation response while manual picks are retired.
+  V3._addPick = V3._removePick = function () {
+    GW.showToast('에디터 추천은 최근 30일 조회 수로 자동 선정됩니다.', 'info');
   };
-
-  V3._removePick = function (id) {
-    _togglePick(id, false);
-  };
-
-  function _togglePick(id, enabled) {
-    _apiFetch('/api/posts/' + id, {
-      method: 'PATCH',
-      body: JSON.stringify({ featured: !!enabled }),
-    }).then(function () {
-      GW.showToast(enabled ? '에디터 추천에 추가했습니다' : '에디터 추천에서 제외했습니다', 'success');
-      document.getElementById('picks-search-results').style.display = 'none';
-      document.getElementById('picks-search').value = '';
-      _loadPicksUI();
-    }).catch(function (e) {
-      GW.showToast(e.message || '처리 실패', 'error');
-    });
-  }
 
   function _setControlValue(id, value) {
     var el = document.getElementById(id);

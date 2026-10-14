@@ -13,9 +13,12 @@ layer: runtime
 
 ## Code Entry
 
-- `js/admin-v3.js`
-- 보조 데이터: `js/shared-country-name-ko.js`
-- 페이지 엔트리: `admin.html`
+- 저장소 코드: `public/js/admin-v3.js` (공개 자산 경로 `/js/admin-v3.js`)
+- 계정・권한 탐색: `public/js/admin-account.js`
+- 도감・댓글・카드뉴스: `public/js/admin-memorabilia.js`, `public/js/admin-memorabilia-comments.js`, `public/js/admin-cardnews.js`
+- 보조 데이터: `public/js/shared-country-name-ko.js`
+- 페이지 엔트리: `public/admin.html` (관리자 URL `/admin`)
+- 관리자 스타일: `public/css/admin-v3.css`
 
 ## 선행 의존
 
@@ -58,3 +61,18 @@ layer: runtime
 - calendar admin tools
 - glossary admin tools
 - home settings
+
+## 관리자 탐색 재정리 · 2026-10-15
+
+이번 변경은 [[Admin Operations Feature]]의 전 기능 대응표와 [[Admin Console Surface]]의 여섯 영역을 기존 런타임에 연결한다. 위 모듈 분리 목록은 기존 후보이며 이번 구현에서 큰 파일 분리・새 라우터・새 공통 프레임워크를 도입하지 않는다.
+
+- `V3.showPanel(panel, settingsSection)`와 기존 패널/설정 식별자를 재사용한다. 하위 `details`는 `name="admin-tools"`로 배타적으로 펼친다. 메뉴 그룹・접기 상태・현재 메뉴 표시가 권한 카탈로그를 대체하지 않는다.
+- `ADMIN_MENUS`의 35개 슬러그・`data-perm-slug`・`data-owner-only`・직접 패널 접근 검사・API의 보기/쓰기 게이트를 함께 유지한다. 계정 세션 로드 전 메뉴 숨김과 빈 하위 그룹 숨김도 확인한다.
+- 설정 내부의 숨긴 보조 메뉴는 제거하고, 구형 `account-security` 진입은 `account-me`로 연결한다. 내 계정의 비밀번호・OTP・백업코드와 서버 API를 재사용한다.
+- `picks`는 자동 추천 선정 기준 안내로 유지하며 현재 선정 결과를 조회하는 화면이라고 설명하지 않는다. 구형 검색・선택・해제・정렬에서 `featured`와 `picks_order`를 변경하던 호출부는 더는 도달하거나 실행할 수 없어야 한다. 공개 `loadHomePicks` 선정 로직과 실제 저장 데이터는 변경하지 않는다.
+- `nav-labels`는 오너 전용 공개 메뉴명 진입점으로 복원한다. 기존 서버 계약의 `translations` 슬러그를 재사용하고 PUT은 `write` 권한으로 검사한다.
+- `showPanel`의 작성 패널 이동/임시저장 타이머・분석 자동 갱신・OTP 재진입・설정 데이터 로더를 보존한다. 도감・댓글・카드뉴스는 `gw:admin-panel-shown` 성공 이벤트로 초기화하고 계정은 실제 허용된 `active` 패널을 관찰하는 기존 방식을 유지한다. 접근 거절・미저장 이동 취소・OTP 취소 때 숨긴 패널을 조회하지 않는다. 댓글은 OTP 재진입 시 목록/대기 수를 다시 조회한다. 기존 바인딩과 겹친 인라인 refresh/filter/save/modal 폴백은 제거한다.
+- 작성 변경 감지는 Editor.js `onChange`에서 처리하고 프로그램 초기화는 `render({blocks:[]})`로 한다. 원시 DOM 변화 때문에 빈 편집기가 미저장 상태가 되는 문제를 피하며 실제 편집기 입력/빈 재설정・작성・복원・이동을 로컬 합성 환경에서 검증했다.
+- 자동저장 응답은 변경 순번을 확인하여 그동안 추가한 입력/이미지를 덮지 않는다. 임시저장/발행 동시 실행・진행 중 이동을 막고 발행 성공 뒤 초안 ID를 비운다. 발행 중 추가 입력은 미저장 상태로 보존하며 실패 시 저장을 다시 예약한다. 100ms 재시도도 기존 자동저장 취소 경로에서 해제한다.
+
+최종 Playwright 18/18・production 함수 의미 검사・댓글 OTP 재진입・공개 메뉴명 권한 API 6개 검사는 통과했다. 최종 UI 검사와 관리자 릴리스 단계는 구별한다. KMS 원본/사례/검증 항목 동기화와 운영 오너 로그인은 확인했으나 새 UI 검수는 배포 후 대기다. 로컬 합성 검증과 인증된 프로덕션・KMS 동기화・배포는 서로 다른 단계이며 실제 상태와 증거는 [[Admin Operations Feature]]에서 관리한다. 실데이터 CRUD・OTP 성공・유료 AI 실행은 확인/실행하지 않았다.

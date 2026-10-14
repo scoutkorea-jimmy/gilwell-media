@@ -156,7 +156,9 @@
   // count is zero. The section label ("분석", "콘텐츠"…) stays with the
   // section wrapper, so hiding the wrapper is enough.
   function _collapseEmptyNavSections() {
-    document.querySelectorAll('#v3-nav .v3-nav-section').forEach(function (sec) {
+    var groups = Array.from(document.querySelectorAll('#v3-nav .v3-nav-group')).reverse();
+    var sections = Array.from(document.querySelectorAll('#v3-nav .v3-nav-section'));
+    groups.concat(sections).forEach(function (sec) {
       var items = sec.querySelectorAll('.v3-nav-item');
       if (!items.length) return;
       var anyVisible = false;
