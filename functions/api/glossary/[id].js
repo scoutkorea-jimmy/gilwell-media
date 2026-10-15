@@ -17,8 +17,8 @@ export async function onRequestPut({ request, env, params }) {
   try {
     const row = await env.DB.prepare(`
       UPDATE glossary_terms
-      SET bucket = ?, term_ko = ?, term_en = ?, term_fr = ?, description_ko = ?, sort_order = ?, updated_at = datetime('now')
-      WHERE id = ?
+      SET bucket = ?, term_ko = ?, term_en = ?, term_fr = ?, description_ko = ?, sort_order = ?, updated_at = CASE WHEN julianday(updated_at) >= julianday('now') THEN strftime('%Y-%m-%d %H:%M:%f', updated_at, '+0.001 seconds') ELSE strftime('%Y-%m-%d %H:%M:%f', 'now') END
+      WHERE id = ? AND (? = '' OR updated_at = ?)
       RETURNING id, bucket, term_ko, term_en, term_fr, description_ko, sort_order, created_at, updated_at
     `).bind(
       storageBucket(normalized.bucket),
@@ -27,9 +27,14 @@ export async function onRequestPut({ request, env, params }) {
       normalized.term_fr,
       normalized.description_ko,
       normalized.sort_order,
-      id
+      id,
+      String(body.expected_updated_at || ''),
+      String(body.expected_updated_at || '')
     ).first();
-    if (!row) return json({ error: '항목을 찾을 수 없습니다' }, 404);
+    if (!row) {
+      const existing = await env.DB.prepare('SELECT id FROM glossary_terms WHERE id = ?').bind(id).first();
+      return existing ? json({ error: '다른 변경이 감지되었습니다. 입력을 유지했습니다. 최신 용어를 확인한 뒤 다시 수정해주세요.' }, 409) : json({ error: '항목을 찾을 수 없습니다' }, 404);
+    }
     return json({ item: { ...row, bucket: normalized.bucket } });
   } catch (err) {
     console.error('PUT /api/glossary/:id error:', err);

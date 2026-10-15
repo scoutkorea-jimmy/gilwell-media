@@ -13,8 +13,8 @@ export async function onRequestPut({ request, env, params }) {
     await ensureCalendarTable(env);
     const row = await env.DB.prepare(`
       UPDATE calendar_events
-      SET title = ?, title_original = ?, event_category = ?, event_tags = ?, description = ?, country_name = ?, location_name = ?, location_address = ?, latitude = ?, longitude = ?, related_post_id = ?, related_posts_json = ?, start_at = ?, start_has_time = ?, end_at = ?, end_has_time = ?, link_url = ?, target_groups = ?, updated_at = CURRENT_TIMESTAMP
-      WHERE id = ?
+      SET title = ?, title_original = ?, event_category = ?, event_tags = ?, description = ?, country_name = ?, location_name = ?, location_address = ?, latitude = ?, longitude = ?, related_post_id = ?, related_posts_json = ?, start_at = ?, start_has_time = ?, end_at = ?, end_has_time = ?, link_url = ?, target_groups = ?, updated_at = CASE WHEN julianday(updated_at) >= julianday('now') THEN strftime('%Y-%m-%d %H:%M:%f', updated_at, '+0.001 seconds') ELSE strftime('%Y-%m-%d %H:%M:%f', 'now') END
+      WHERE id = ? AND (? = '' OR updated_at = ?)
       RETURNING id, title, title_original, event_category, event_tags, description, country_name, location_name, location_address, latitude, longitude, related_post_id, related_posts_json, start_at, start_has_time, end_at, end_has_time, link_url, target_groups, created_at, updated_at
     `).bind(
       normalized.title,
@@ -35,9 +35,14 @@ export async function onRequestPut({ request, env, params }) {
       normalized.end_has_time,
       normalized.link_url,
       normalized.target_groups,
-      id
+      id,
+      String(body.expected_updated_at || ''),
+      String(body.expected_updated_at || '')
     ).first();
-    if (!row) return json({ error: '일정을 찾을 수 없습니다.' }, 404);
+    if (!row) {
+      const existing = await env.DB.prepare('SELECT id FROM calendar_events WHERE id = ?').bind(id).first();
+      return existing ? json({ error: '다른 변경이 감지되었습니다. 입력을 유지했습니다. 최신 일정을 확인한 뒤 다시 수정해주세요.' }, 409) : json({ error: '일정을 찾을 수 없습니다.' }, 404);
+    }
     return json({ item: normalizeCalendarRows([row])[0] });
   } catch (err) {
     console.error('PUT /api/calendar/:id error:', err);

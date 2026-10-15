@@ -43,6 +43,7 @@ export async function onRequestGet({ request, env }) {
     const stored = row ? JSON.parse(row.value) : {};
     return json({ editors: normalizeEditors(stored) });
   } catch (err) {
+    if (request && new URL(request.url).searchParams.get('scope') === 'admin') return json({ error: '설정을 불러오지 못했습니다. 다시 시도해주세요.' }, 500);
     console.error('GET /api/settings/editors error:', err);
     return json({ editors: normalizeEditors(null) });
   }
@@ -65,10 +66,12 @@ export async function onRequestPut({ request, env }) {
 
   try {
     const prevRow = await env.DB.prepare(`SELECT value FROM settings WHERE key = 'editors'`).first();
-    await env.DB.prepare(
+    if (body.if_current && JSON.stringify(normalizeEditors(body.if_current.editors)) !== JSON.stringify(normalizeEditors(prevRow ? JSON.parse(prevRow.value) : {}))) return json({ error: '저자명이 다른 화면에서 변경되었습니다. 입력을 보존하고 최신 값을 확인해주세요.' }, 409);
+    const write = await env.DB.prepare(
       `INSERT INTO settings (key, value) VALUES ('editors', ?)
-       ON CONFLICT(key) DO UPDATE SET value = excluded.value`
-    ).bind(JSON.stringify(safe)).run();
+       ON CONFLICT(key) DO UPDATE SET value = excluded.value WHERE settings.value IS ?`
+    ).bind(JSON.stringify(safe), prevRow ? prevRow.value : null).run();
+    if (write.meta && write.meta.changes !== 1) return json({ error: '동시 저자명 변경이 감지되었습니다.' }, 409);
     await recordSettingChange(env, {
       key: 'editors',
       previousValue: prevRow && prevRow.value,

@@ -18,6 +18,9 @@
     items: [],
     busy: false,
   };
+  let loadSequence = 0;
+  let countsSequence = 0;
+  const busyIds = new Set();
 
   const $ = (sel) => document.querySelector(sel);
 
@@ -40,23 +43,27 @@
     });
 
     const refresh = $('#memoc-refresh-btn');
-    if (refresh) refresh.addEventListener('click', () => load());
+    if (refresh) refresh.addEventListener('click', () => { load(); loadCounts(); });
 
     load();
     loadCounts();
   }
 
   async function loadCounts() {
+    const sequence = ++countsSequence;
+    const wrap = $('#memoc-counts');
+    const badge = document.getElementById('memo-comments-pending-badge');
     try {
-      const res = await fetch('/api/admin/memorabilia-comments?counts=1', { credentials: 'same-origin' });
-      if (!res.ok) return;
+      const res = await fetch('/api/admin/memorabilia-comments?counts=1', { credentials: 'same-origin', headers: _otpHeaders() });
+      if (sequence !== countsSequence) return;
+      if (!res.ok) throw new Error('counts_failed');
       const data = await res.json();
+      if (sequence !== countsSequence) return;
       const counts = data.counts || {};
-      const wrap = $('#memoc-counts');
+      if (!['pending', 'approved', 'rejected', 'deleted'].every(key => Number.isFinite(Number(counts[key])))) throw new Error('invalid_counts');
       if (wrap) {
         wrap.textContent = `대기 ${counts.pending} · 승인 ${counts.approved} · 거부 ${counts.rejected} · 삭제 ${counts.deleted}`;
       }
-      const badge = document.getElementById('memo-comments-pending-badge');
       if (badge) {
         if (counts.pending > 0) {
           badge.textContent = String(counts.pending);
@@ -65,17 +72,25 @@
           badge.hidden = true;
         }
       }
-    } catch (_) {}
+    } catch (_) {
+      if (sequence !== countsSequence) return;
+      if (wrap) wrap.textContent = '댓글 집계를 불러오지 못했습니다. 새로고침으로 다시 시도하세요.';
+      if (badge) badge.hidden = true;
+    }
   }
 
   async function load() {
+    const sequence = ++loadSequence;
     const wrap = $('#memoc-table-wrap');
     if (!wrap) return;
+    const pagination = $('#memoc-pagination');
+    if (pagination) pagination.innerHTML = '';
     wrap.innerHTML = '<div style="padding:24px; text-align:center; color:var(--gray-700,#3f3f3f);">불러오는 중…</div>';
 
     try {
       const url = `/api/admin/memorabilia-comments?status=${encodeURIComponent(state.status)}&page=${state.page}&pageSize=${state.pageSize}`;
       const res = await fetch(url, { credentials: 'same-origin', headers: _otpHeaders() });
+      if (sequence !== loadSequence) return;
       if (!res.ok) {
         // 2단계 인증 필요 — OTP 모달 트리거(admin-v3 수신, 통과 후 재진입 로드).
         if (res.status === 401) {
@@ -85,11 +100,15 @@
         return;
       }
       const data = await res.json();
+      if (sequence !== loadSequence) return;
       state.items = data.items || [];
       state.total = data.total || 0;
+      const lastPage = Math.max(1, Math.ceil(state.total / state.pageSize));
+      if (state.page > lastPage) { state.page = lastPage; return load(); }
       renderTable();
       renderPagination();
     } catch (err) {
+      if (sequence !== loadSequence) return;
       wrap.innerHTML = '<div style="padding:24px; text-align:center; color:var(--color-fire-red,#ff5655);">네트워크 오류</div>';
     }
   }
@@ -109,7 +128,7 @@
       const actions = renderActions(c);
       return `
         <tr data-comment-id="${c.id}">
-          <td style="white-space:nowrap; font-size:12px;">${esc(c.created_at)}</td>
+          <td class="v3-nowrap">${esc(formatKst(c.created_at))}</td>
           <td>
             <div style="font-weight:600;">${esc(c.author_name)}</div>
             <div style="font-size:12px; color:var(--gray-700,#3f3f3f);">${esc(c.affiliation)}</div>
@@ -134,7 +153,7 @@
       <table class="v3-table" style="width:100%; border-collapse: collapse;">
         <thead>
           <tr style="text-align:left; border-bottom:1px solid var(--gray-300,#c4c4c4); font-size:12px; color:var(--gray-700,#3f3f3f);">
-            <th style="padding:8px;">작성시각 (UTC)</th>
+            <th style="padding:8px;">작성시각 (KST)</th>
             <th style="padding:8px;">작성자 / 소속</th>
             <th style="padding:8px;">내용</th>
             <th style="padding:8px;">도감 항목</th>
@@ -165,6 +184,7 @@
   }
 
   function renderActions(c) {
+    if (!canWrite()) return '<span class="v3-inline-meta">읽기 전용</span>';
     if (c.status === 'deleted') return '<span style="color:var(--gray-700,#3f3f3f); font-size:12px;">—</span>';
     const buttons = [];
     if (c.status !== 'approved') {
@@ -178,22 +198,27 @@
   }
 
   async function onActionClick(e) {
+    if (!canWrite()) return;
     const btn = e.currentTarget;
     const action = btn.getAttribute('data-action');
     const id = parseInt(btn.getAttribute('data-id'), 10);
     if (!Number.isFinite(id)) return;
+    if (busyIds.has(id)) return;
 
     let nextStatus, reason;
     if (action === 'approve') nextStatus = 'approved';
     else if (action === 'reject') {
       nextStatus = 'rejected';
-      reason = prompt('거부 사유 (선택, 500자 이하):') || '';
+      reason = prompt('거부 사유 (선택, 500자 이하):');
+      if (reason === null) return;
+      if (reason.length > 500) { toast('거부 사유는 500자 이하로 입력해주세요.', 'error'); return; }
     } else if (action === 'delete') {
       if (!confirm('이 댓글을 삭제하시겠습니까? 되돌릴 수 없습니다.')) return;
       nextStatus = 'deleted';
     } else return;
 
     btn.disabled = true;
+    busyIds.add(id);
     try {
       const res = await fetch(`/api/admin/memorabilia-comments/${id}`, {
         method: 'PATCH',
@@ -206,12 +231,13 @@
         toast(data.error || '처리 실패', 'error');
         return;
       }
-      toast(`상태가 '${nextStatus}'(으)로 변경되었습니다.`, 'success');
+      toast(nextStatus === 'approved' ? '댓글을 승인했습니다.' : nextStatus === 'rejected' ? '댓글을 거부했습니다.' : '댓글을 삭제했습니다.', 'success');
       load();
       loadCounts();
     } catch (_) {
       toast('네트워크 오류', 'error');
     } finally {
+      busyIds.delete(id);
       btn.disabled = false;
     }
   }
@@ -222,10 +248,12 @@
     const totalPages = Math.max(1, Math.ceil(state.total / state.pageSize));
     if (totalPages <= 1) { wrap.innerHTML = ''; return; }
     const parts = [];
-    for (let p = 1; p <= totalPages; p++) {
+    const pages = Array.from(new Set([1, totalPages, ...Array.from({ length: 5 }, (_, i) => state.page - 2 + i).filter(p => p >= 1 && p <= totalPages)])).sort((a, b) => a - b);
+    pages.forEach((p, index) => {
+      if (index && p > pages[index - 1] + 1) parts.push('<span aria-hidden="true">…</span>');
       const cls = p === state.page ? 'v3-btn v3-btn-primary v3-btn-sm' : 'v3-btn v3-btn-outline v3-btn-sm';
       parts.push(`<button type="button" class="${cls}" data-page="${p}">${p}</button>`);
-    }
+    });
     wrap.innerHTML = parts.join('');
     wrap.querySelectorAll('[data-page]').forEach((btn) => {
       btn.addEventListener('click', () => {
@@ -245,9 +273,21 @@
   }
 
   function toast(msg, kind) {
+    if (window.GW && typeof window.GW.showToast === 'function') return window.GW.showToast(msg, kind);
     if (window.GW && typeof window.GW.toast === 'function') return window.GW.toast(msg, kind);
     if (typeof window.gwToast === 'function') return window.gwToast(msg, kind);
     alert(msg);
+  }
+
+  function canWrite() {
+    const me = window.AccountAdmin?.currentMe?.();
+    return !!(me && (me.role === 'owner' || me.role === 'full' || (me.permissions?.permissions || []).includes('write:memorabilia-comments')));
+  }
+
+  function formatKst(value) {
+    const raw = String(value || '').replace(' ', 'T');
+    const date = new Date(raw + (/Z$|[+-]\d{2}:?\d{2}$/.test(raw) ? '' : 'Z'));
+    return Number.isNaN(date.getTime()) ? '—' : date.toLocaleString('sv-SE', { timeZone: 'Asia/Seoul' }) + ' KST';
   }
 
   // 권한·OTP를 통과해 실제 패널이 열린 뒤에만 초기화한다.

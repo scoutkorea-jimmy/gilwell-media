@@ -31,6 +31,14 @@
   };
 
   /* ── Fetch helper ─────────────────────────────────────────── */
+  var _pending = {};
+  function _accountDirtyNodes() { return Array.from(document.querySelectorAll('[data-account-dirty="1"]')); }
+  function _requestScope(path) {
+    if (path.indexOf('/me/username') >= 0) return $('account-me-username-form');
+    if (path === '/api/admin/password') return $('account-me-password-form');
+    var ids = path.indexOf('/presets') >= 0 ? ['account-preset-modal', 'panel-account-presets'] : ['account-permission-modal', 'account-user-modal', 'panel-account-users'];
+    return ids.map($).find(function (node) { return node && (node.classList.contains('active') || node.style.display === 'flex'); });
+  }
   // Authentication rides on the HttpOnly admin_token cookie (sent
   // automatically with credentials: 'same-origin'). GW.getToken returns the
   // 'admin_session' flag string ("1"), NOT a bearer JWT — do not set it as
@@ -39,11 +47,19 @@
   // rendering empty after Phase 3 deploy.
   function _api(path, opts) {
     opts = opts || {};
+    var write = opts.method && opts.method !== 'GET';
+    if (write && _pending[path]) return Promise.reject(new Error('이미 처리 중입니다. 완료를 기다려주세요.'));
+    var scope = write && _requestScope(path);
+    if (write) _pending[path] = true;
+    if (scope) {
+      scope.setAttribute('aria-busy', 'true');
+      scope.querySelectorAll('input, select, textarea, button').forEach(function (control) { control.dataset.accountDisabled = control.disabled ? '1' : '0'; control.disabled = true; });
+    }
     var headers = new Headers(opts.headers || {});
     if (opts.body && !headers.has('Content-Type')) headers.set('Content-Type', 'application/json');
     // 2단계 인증 토큰 헤더(쿠키 백업) — 사용자 관리 등 OTP 게이트 통과용.
     try { var _otpTok = sessionStorage.getItem('gw_admin_otp'); if (_otpTok && !headers.has('X-Admin-Otp')) headers.set('X-Admin-Otp', _otpTok); } catch (_) {}
-    return fetch(path, { method: opts.method || 'GET', headers: headers, body: opts.body, credentials: 'same-origin' })
+    return fetch(path, { method: opts.method || 'GET', headers: headers, body: opts.body, credentials: 'same-origin', cache: 'no-store' })
       .then(function (res) {
         return res.json().catch(function () { return null; }).then(function (data) {
           if (!res.ok) {
@@ -60,6 +76,21 @@
           }
           return data;
         });
+      }).then(function (data) {
+        if (scope) scope.removeAttribute('data-account-dirty');
+        return data;
+      }, function (error) {
+        if (scope) {
+          var status = scope.querySelector('[aria-live="polite"]');
+          if (status) { status.textContent = error.message; status.classList.add('is-error'); }
+        }
+        throw error;
+      }).finally(function () {
+        if (write) delete _pending[path];
+        if (scope) {
+          scope.removeAttribute('aria-busy');
+          scope.querySelectorAll('[data-account-disabled]').forEach(function (control) { control.disabled = control.dataset.accountDisabled === '1'; delete control.dataset.accountDisabled; });
+        }
       });
   }
 
@@ -84,8 +115,11 @@
   }
 
   /* ── Session load / owner nav toggle ─────────────────────── */
+  var _meLoadSerial = 0;
   function _loadMe() {
+    var serial = ++_meLoadSerial;
     return _api('/api/admin/users/me').then(function (data) {
+      if (serial !== _meLoadSerial) return _state.me;
       _state.me = data && data.user ? data.user : null;
       _state.menus = (data && data.menus) || _state.menus;
       _state.menuSlugs = (data && data.menu_slugs) || _state.menuSlugs;
@@ -93,8 +127,11 @@
       _renderMyProfile();
       _markSessionLoaded();
       return _state.me;
-    }).catch(function () {
+    }).catch(function (error) {
+      if (serial !== _meLoadSerial) return _state.me;
       _state.me = null;
+      var host = $('account-me-username');
+      if (host) host.textContent = '프로필을 불러오지 못했습니다. 새로고침으로 다시 확인해주세요.';
       _syncOwnerOnlyNav();
       _markSessionLoaded();
       return null;
@@ -236,12 +273,13 @@
       }).then(function (data) {
         status.textContent = '';
         _toast('아이디가 변경되었습니다.', 'success');
+        _meLoadSerial += 1;
         _state.me = (data && data.user) || _state.me;
         _renderMyProfile();
         form.reset();
       }).catch(function (err) {
-        status.textContent = '';
-        _toast((err && err.message) || '변경 실패', 'error');
+        status.textContent = (err && err.message) || '변경 실패';
+        _toast(status.textContent, 'error');
       });
     });
   }
@@ -268,28 +306,36 @@
         _toast('비밀번호가 변경되었습니다. 다른 기기 세션은 종료됩니다.', 'success');
         form.reset();
       }).catch(function (err) {
-        status.textContent = '';
-        _toast(err.message || '비밀번호 변경 실패', 'error');
+        status.textContent = err.message || '비밀번호 변경 실패';
+        _toast(status.textContent, 'error');
       });
     });
   }
 
   /* ── 사용자 관리 패널 ─────────────────────────────────────── */
+  var _usersLoadSerial = 0;
   function _loadUsers() {
+    var serial = ++_usersLoadSerial;
     var tbody = $('account-users-table');
     if (tbody) tbody.innerHTML = '<div class="v3-loading"><div class="v3-spinner"></div>로딩 중…</div>';
-    return Promise.all([
+    return Promise.allSettled([
       _api('/api/admin/users'),
       _api('/api/admin/presets'),
       _api('/api/admin/publish-kill-switch'),
-    ]).then(function (arr) {
+    ]).then(function (results) {
+      if (serial !== _usersLoadSerial) return;
+      if (results[0].status === 'rejected') throw results[0].reason;
+      var arr = results.map(function (result) { return result.status === 'fulfilled' ? result.value : null; });
       _state.users = (arr[0] && arr[0].users) || [];
       _state.menus = (arr[0] && arr[0].menus) || _state.menus;
       _state.menuSlugs = (arr[0] && arr[0].menu_slugs) || _state.menuSlugs;
-      _state.presets = (arr[1] && arr[1].presets) || [];
-      _renderKillSwitch(arr[2]);
+      if (arr[1]) _state.presets = arr[1].presets || [];
+      if (arr[2]) { _renderKillSwitch(arr[2]); var toggle = $('account-kill-switch-toggle'); if (toggle) toggle.disabled = false; }
+      else { var toggle = $('account-kill-switch-toggle'); if (toggle) toggle.disabled = true; var label = $('account-kill-switch-state'); if (label) label.textContent = '발행 차단 상태를 확인하지 못했습니다. 새로고침으로 다시 확인해주세요.'; }
+      if (!arr[1]) _toast('사용자 목록은 불러왔지만 권한 프리셋을 확인하지 못했습니다. 기존 값은 보존했습니다.', 'warn');
       _renderUsersTable();
     }).catch(function (err) {
+      if (serial !== _usersLoadSerial) return;
       if (tbody) tbody.innerHTML = '<div class="v3-inline-meta" style="color:#b91c1c;">로드 실패: ' + _esc(err.message) + '</div>';
     });
   }
@@ -319,7 +365,7 @@
     }
     var html = '<table class="v3-table v3-account-table">' +
       '<thead><tr>' +
-      '<th>아이디</th><th>표시 이름</th><th>역할</th><th>편집자 코드</th>' +
+      '<th>아이디</th><th>표시 이름</th><th>역할</th><th>저자 코드</th>' +
       '<th>상태</th><th>최근 로그인</th><th style="width:220px;">관리</th>' +
       '</tr></thead><tbody>';
     rows.forEach(function (u) {
@@ -354,7 +400,7 @@
         '</tr>';
     });
     html += '</tbody></table>';
-    host.innerHTML = html;
+    host.innerHTML = '<div class="v3-table-wrap" tabindex="0" aria-label="사용자 목록 · 좁은 화면에서 좌우로 이동할 수 있습니다">' + html + '</div>';
   }
 
   function _findUser(id) {
@@ -365,12 +411,14 @@
   function _openUserModal(userId) {
     _state.editingUserId = userId || null;
     _state.draftPermissions = null;
+    _state.permissionsDraftChanged = false;
     var modal = $('account-user-modal');
     var title = $('account-user-modal-title');
     if (!modal || !title) {
       _toast('사용자 모달이 로드되지 않았습니다. 페이지를 새로고침하세요.', 'error');
       return;
     }
+    modal.removeAttribute('data-account-dirty');
     if (userId) {
       var u = _findUser(userId);
       if (!u) { _toast('사용자를 찾을 수 없습니다', 'error'); return; }
@@ -427,7 +475,12 @@
     modal.style.display = 'flex';
   }
 
-  function _closeModal(id) { var m = $(id); if (m) m.style.display = 'none'; }
+  function _closeModal(id, force) {
+    var m = $(id); if (!m) return;
+    if (!force && m.getAttribute('aria-busy') === 'true') { _toast('저장 완료 후 닫아주세요.', 'info'); return; }
+    if (!force && m.dataset.accountDirty === '1' && !confirm('저장하지 않은 변경사항을 버리고 닫을까요?')) return;
+    m.removeAttribute('data-account-dirty'); m.style.display = 'none';
+  }
 
   function _submitUserForm(e) {
     e.preventDefault();
@@ -460,11 +513,14 @@
       if (resetCb && resetCb.checked && target && target.role !== 'owner') {
         payload.reset_member_self_rename = true;
       }
-      if (_state.draftPermissions) payload.permissions = _state.draftPermissions;
+      if (_state.permissionsDraftChanged && _state.draftPermissions) {
+        payload.permissions = _state.draftPermissions;
+        payload.if_permissions = target && target.permissions;
+      }
       statusEl.textContent = '저장 중…';
       _api('/api/admin/users/' + id, { method: 'PUT', body: JSON.stringify(payload) })
-        .then(function () { statusEl.textContent = ''; _closeModal('account-user-modal'); _toast('저장되었습니다', 'success'); _loadUsers(); })
-        .catch(function (err) { statusEl.textContent = ''; _toast(err.message || '저장 실패', 'error'); });
+        .then(function () { statusEl.textContent = ''; _closeModal('account-user-modal', true); _toast('저장되었습니다', 'success'); _loadUsers(); })
+        .catch(function (err) { statusEl.textContent = err.message || '저장 실패'; _toast(err.message || '저장 실패', 'error'); });
     } else {
       if (!username) { _toast('아이디를 입력해주세요', 'error'); return; }
       if (!displayName) { _toast('표시 이름을 입력해주세요', 'error'); return; }
@@ -480,13 +536,14 @@
       };
       statusEl.textContent = '생성 중…';
       _api('/api/admin/users', { method: 'POST', body: JSON.stringify(createPayload) })
-        .then(function () { statusEl.textContent = ''; _closeModal('account-user-modal'); _toast('사용자가 생성되었습니다', 'success'); _loadUsers(); })
-        .catch(function (err) { statusEl.textContent = ''; _toast(err.message || '생성 실패', 'error'); });
+        .then(function () { statusEl.textContent = ''; _closeModal('account-user-modal', true); _toast('사용자가 생성되었습니다', 'success'); _loadUsers(); })
+        .catch(function (err) { statusEl.textContent = err.message || '생성 실패'; _toast(err.message || '생성 실패', 'error'); });
     }
   }
 
   /* ── 권한 모달 ─────────────────────────────────────────── */
   function _openPermissionModal(targetId) {
+    $('account-permission-modal').removeAttribute('data-account-dirty');
     _state.permissionTarget = targetId;
     var subject = $('account-permission-subject');
     var body = $('account-permission-grid');
@@ -505,6 +562,7 @@
       } : { access_admin: true, permissions: [] };
     }
 
+    if ($('account-user-modal').style.display === 'flex' && String(targetId) === String(_state.editingUserId)) currentPerms = _state.draftPermissions || currentPerms;
     $('account-permission-access-admin').checked = !!currentPerms.access_admin;
     _renderPermissionGrid(currentPerms.permissions);
     _renderPresetOptions();
@@ -583,9 +641,11 @@
     var perms = _collectPermissionsFromGrid();
     var status = $('account-permission-status');
 
-    if (target === 'new') {
+    if (target === 'new' || ($('account-user-modal').style.display === 'flex' && String(target) === String(_state.editingUserId))) {
       _state.draftPermissions = perms;
-      _closeModal('account-permission-modal');
+      _state.permissionsDraftChanged = true;
+      $('account-user-modal').dataset.accountDirty = '1';
+      _closeModal('account-permission-modal', true);
       _toast('권한이 임시 저장되었습니다. 사용자 저장 시 확정됩니다.', 'info', 3000);
       return;
     }
@@ -593,14 +653,14 @@
     status.textContent = '저장 중…';
     _api('/api/admin/users/' + target, {
       method: 'PUT',
-      body: JSON.stringify({ permissions: perms }),
+      body: JSON.stringify({ permissions: perms, if_permissions: (_findUser(target) || {}).permissions }),
     }).then(function () {
       status.textContent = '';
-      _closeModal('account-permission-modal');
+      _closeModal('account-permission-modal', true);
       _toast('권한이 저장되었습니다', 'success');
       _loadUsers();
     }).catch(function (err) {
-      status.textContent = '';
+      status.textContent = err.message || '저장 실패';
       _toast(err.message || '저장 실패', 'error');
     });
   }
@@ -643,16 +703,15 @@
   function _deleteUser(userId) {
     var u = _findUser(userId);
     if (!u) return;
-    var hard = confirm(
-      u.username + ' 계정 삭제.\n\n' +
-      '[확인] → 완전 삭제(복구 불가)\n' +
-      '[취소] → 소프트 삭제(30일 복구 가능)\n\n' +
-      '게시글은 어느 경우에도 유지됩니다.'
-    );
-    // "확인" = 완전 삭제 경로. 추가 confirm으로 사고 방지.
-    if (hard) {
-      if (!confirm('정말로 완전 삭제할까요? 이 작업은 되돌릴 수 없습니다.')) return;
+    var choice = window.prompt(u.username + ' 계정 처리\n정지: 로그인 차단\n삭제: 30일 복구 가능\n완전 삭제: 복구 불가\n\n원하는 작업명을 입력하세요. 취소하면 변경하지 않습니다. 게시글은 유지됩니다.', '');
+    if (choice === null) return;
+    choice = choice.trim();
+    if (['정지', '삭제', '완전 삭제'].indexOf(choice) < 0) { _toast('정지, 삭제, 완전 삭제 중 작업명을 입력해주세요.', 'info'); return; }
+    if (!confirm(u.username + ' 계정을 ' + choice + '할까요?' + (choice === '완전 삭제' ? ' 복구할 수 없습니다.' : ''))) return;
+    if (choice === '정지') {
+      _api('/api/admin/users/' + userId, { method: 'PUT', body: JSON.stringify({ status: 'disabled' }) }).then(function () { _toast('계정을 정지했습니다.', 'success'); _loadUsers(); }).catch(function (error) { _toast(error.message, 'error'); }); return;
     }
+    var hard = choice === '완전 삭제';
     var url = '/api/admin/users/' + userId + (hard ? '?hard=1' : '');
     _api(url, { method: 'DELETE' })
       .then(function () { _toast(hard ? '완전 삭제되었습니다' : '삭제되었습니다 (30일 복구 가능)', 'success'); _loadUsers(); })
@@ -740,7 +799,7 @@
         '</tr>';
     });
     html += '</tbody></table>';
-    host.innerHTML = html;
+    host.innerHTML = '<div class="v3-table-wrap" tabindex="0" aria-label="프리셋 목록 · 좁은 화면에서 좌우로 이동할 수 있습니다">' + html + '</div>';
   }
 
   function _openPresetModal(presetId) {
@@ -752,6 +811,7 @@
     var descEl = $('account-preset-description');
     var accessEl = $('account-preset-access-admin');
     if (!modal) return;
+    modal.removeAttribute('data-account-dirty');
     if (presetId) {
       var p = (_state.presets || []).find(function (x) { return String(x.id) === String(presetId); });
       if (!p) { _toast('프리셋을 찾을 수 없습니다', 'error'); return; }
@@ -829,11 +889,11 @@
 
     status.textContent = '저장 중…';
     var req = id
-      ? _api('/api/admin/presets/' + id, { method: 'PUT', body: JSON.stringify({ name: name, description: description, permissions: perms }) })
+      ? _api('/api/admin/presets/' + id, { method: 'PUT', body: JSON.stringify({ name: name, description: description, permissions: perms, if_permissions: ((_state.presets || []).find(function (preset) { return String(preset.id) === String(id); }) || {}).permissions }) })
       : _api('/api/admin/presets', { method: 'POST', body: JSON.stringify({ slug: slug, name: name, description: description, permissions: perms }) });
     req.then(function (data) {
       status.textContent = '';
-      _closeModal('account-preset-modal');
+      _closeModal('account-preset-modal', true);
       // Server reports how many existing members had their permissions
       // propagated from the old preset to the new one. Surface it so the
       // owner understands the scope of what just changed.
@@ -845,8 +905,8 @@
       }
       _loadPresetsPanel();
     }).catch(function (err) {
-      status.textContent = '';
-      _toast((err && err.message) || '저장 실패', 'error');
+      status.textContent = (err && err.message) || '저장 실패';
+      _toast(status.textContent, 'error');
     });
   }
 
@@ -862,6 +922,12 @@
 
   /* ── 이벤트 바인딩 ─────────────────────────────────────── */
   function _bind() {
+    var refreshMe = $('account-me-refresh-btn'); if (refreshMe) refreshMe.addEventListener('click', function () { if (!_accountDirtyNodes().length && !Object.keys(_pending).length) _loadMe(); else _toast('입력 중인 계정 변경사항을 먼저 저장하거나 취소해주세요.', 'info'); });
+    ['account-user-modal', 'account-permission-modal', 'account-preset-modal', 'account-me-username-form', 'account-me-password-form'].forEach(function (id) {
+      var node = $(id); if (!node) return;
+      node.addEventListener('input', function () { node.dataset.accountDirty = '1'; });
+      node.addEventListener('change', function () { node.dataset.accountDirty = '1'; });
+    });
     _bindMyUsernameForm();
     _bindMyPasswordForm();
 
@@ -1007,6 +1073,17 @@
 
   // Expose a tiny API so admin-v3.js or DevTools can trigger refresh on demand.
   window.AccountAdmin = {
+    hasUnsaved: function () { return !!_accountDirtyNodes().length || !!Object.keys(_pending).length; },
+    guardLeave: function (nextPanel) {
+      var active = document.querySelector('.v3-panel.active');
+      if (!active || active.id.indexOf('panel-account-') !== 0) return true;
+      if (active.id === 'panel-' + nextPanel) return false;
+      if (Object.keys(_pending).length) { _toast('계정 변경 완료 후 이동해주세요.', 'info'); return false; }
+      if (_accountDirtyNodes().length && !confirm('저장하지 않은 계정 변경사항을 버리고 이동할까요?')) return false;
+      _accountDirtyNodes().forEach(function (node) { node.removeAttribute('data-account-dirty'); });
+      ['account-user-modal', 'account-permission-modal', 'account-preset-modal'].forEach(function (id) { _closeModal(id, true); });
+      return true;
+    },
     refreshMe: _loadMe,
     refreshUsers: _loadUsers,
     openUserModal: _openUserModal,

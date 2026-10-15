@@ -3,7 +3,7 @@ import { gateMenuAccess } from '../../_shared/admin-permissions.js';
 import { serializePostImage } from '../../_shared/images.js';
 import { purgeContentCache } from '../../_shared/cache-purge.js';
 import { recordSettingChange } from '../../_shared/settings-audit.js';
-import { readHomeLeadMode, refreshAutoHomeLead, selectAutoHomeLeadId } from '../../_shared/home-lead-auto.js';
+import { readHomeLeadState, commitHomeLeadState, selectAutoHomeLeadId } from '../../_shared/home-lead-auto.js';
 
 const DEFAULT_HOME_LEAD_MEDIA = {
   fit: 'cover',
@@ -22,16 +22,13 @@ const DEFAULT_HOME_LEAD_MEDIA = {
 export async function onRequestGet({ env, request }) {
   try {
     const origin = new URL(request.url).origin;
-    const [postRow, mediaRow] = await Promise.all([
-      env.DB.prepare(`SELECT value FROM settings WHERE key = 'home_lead_post'`).first(),
-      env.DB.prepare(`SELECT value FROM settings WHERE key = 'home_lead_media'`).first(),
-    ]);
-    const postId = postRow ? parseInt(postRow.value, 10) : 0;
-    const media = normalizeHomeLeadMedia(parseJsonValue(mediaRow && mediaRow.value));
+    const snapshot = await readHomeLeadState(env);
+    const postId = snapshot.postId;
+    const media = normalizeHomeLeadMedia(parseJsonValue(snapshot.mediaValue));
 
     // 모드와 함께, 자동 규칙이라면 어떤 글이 뽑히는지도 미리 보여준다.
     // 운영자가 '자동으로 전환' 을 누르기 전에 결과를 가늠할 수 있어야 한다.
-    const mode = await readHomeLeadMode(env);
+    const mode = snapshot.mode;
     let autoPreview = null;
     try {
       const picked = await selectAutoHomeLeadId(env);
@@ -47,14 +44,14 @@ export async function onRequestGet({ env, request }) {
     }
 
     if (!postId) {
-      return json({ post: null, media, mode, auto_preview: autoPreview }, 200);
+      return json({ post: null, media, mode, auto_preview: autoPreview, revision: snapshot.revision }, 200);
     }
     const post = await env.DB.prepare(
       `SELECT id, category, title, subtitle, content, image_url, image_caption, created_at, tag, views, author, youtube_url
          FROM posts
         WHERE id = ? AND published = 1`
     ).bind(postId).first();
-    return json({ post: post ? serializePostImage(post, origin) : null, media, mode, auto_preview: autoPreview }, 200);
+    return json({ post: post ? serializePostImage(post, origin) : null, media, mode, auto_preview: autoPreview, revision: snapshot.revision }, 200);
   } catch (err) {
     console.error('GET /api/settings/home-lead error:', err);
     return json({ post: null, media: DEFAULT_HOME_LEAD_MEDIA, mode: 'auto', auto_preview: null }, 500);
@@ -63,133 +60,53 @@ export async function onRequestGet({ env, request }) {
 
 export async function onRequestPut({ env, request }) {
   const origin = new URL(request.url).origin;
-  const __gate = await gateMenuAccess(request, env, 'home-lead', 'view'); if (__gate) return __gate
-
+  const gate = await gateMenuAccess(request, env, 'home-lead', 'write');
+  if (gate) return gate;
   let body;
+  try { body = await request.json(); } catch { return json({ error: 'Invalid JSON body' }, 400); }
   try {
-    body = await request.json();
-  } catch {
-    return json({ error: 'Invalid JSON body' }, 400);
-  }
-
-  // 모드 전환 요청. 'auto' 로 바꾸면 다음 자정을 기다리지 않고 즉시 규칙대로 다시 고른다
-  // — 운영자가 버튼을 눌렀는데 홈이 그대로면 동작하지 않은 것처럼 보이기 때문이다.
-  const requestedMode = body && typeof body.mode === 'string' ? body.mode.trim() : '';
-  if (requestedMode === 'auto') {
-    try {
-      await env.DB.prepare(
-        `INSERT INTO settings (key, value) VALUES ('home_lead_mode', 'auto')
-         ON CONFLICT(key) DO UPDATE SET value = excluded.value`
-      ).run();
-      const refreshed = await refreshAutoHomeLead(env);
-      await purgeContentCache(env, origin, { postId: refreshed.post_id }).catch((err) => {
-        console.error('PUT /api/settings/home-lead (auto) cache purge error:', err);
-      });
-      await recordSettingChange(env, {
-        key: 'home_lead',
-        path: '/api/settings/home-lead',
-        message: '메인 스토리 자동 선정으로 전환',
-        details: { mode: 'auto', post_id: refreshed.post_id, reason: refreshed.reason },
-      });
-      return json({ success: true, mode: 'auto', post_id: refreshed.post_id, reason: refreshed.reason, media: DEFAULT_HOME_LEAD_MEDIA });
-    } catch (err) {
-      console.error('PUT /api/settings/home-lead auto error:', err);
-      return json({ error: '자동 선정으로 전환하지 못했습니다.' }, 500);
-    }
-  }
-
-  const hasPostId = !!(body && Object.prototype.hasOwnProperty.call(body, 'post_id'));
-  const rawPostId = hasPostId ? parseInt(body.post_id, 10) : 0;
-  const postId = Number.isFinite(rawPostId) ? rawPostId : 0;
-  const hasMedia = !!(body && typeof body.media === 'object' && body.media);
-  const media = hasMedia ? normalizeHomeLeadMedia(body.media) : null;
-
-  try {
-    const [currentRow, currentMediaRow] = await Promise.all([
-      env.DB.prepare(`SELECT value FROM settings WHERE key = 'home_lead_post'`).first(),
-      env.DB.prepare(`SELECT value FROM settings WHERE key = 'home_lead_media'`).first(),
-    ]);
-    const currentPostId = currentRow ? parseInt(currentRow.value, 10) : 0;
-    const previousMedia = normalizeHomeLeadMedia(parseJsonValue(currentMediaRow && currentMediaRow.value));
-    const previousSnapshot = JSON.stringify({
-      post_id: currentPostId || null,
-      media: previousMedia,
-    });
-
-    if (hasPostId && !postId) {
-      await env.DB.prepare(`DELETE FROM settings WHERE key = 'home_lead_post'`).run();
-      await env.DB.prepare(`DELETE FROM settings WHERE key = 'home_lead_media'`).run();
-      // 명시적으로 비운 것이므로 자동이 다시 채우지 않도록 수동으로 고정한다.
-      await env.DB.prepare(
-        `INSERT INTO settings (key, value) VALUES ('home_lead_mode', 'manual')
-         ON CONFLICT(key) DO UPDATE SET value = excluded.value`
-      ).run();
-      await recordSettingChange(env, {
-        key: 'home_lead',
-        previousValue: previousSnapshot,
-        path: '/api/settings/home-lead',
-        message: '메인 스토리 설정 초기화',
-        details: { post_id: null },
-      });
-      await purgeContentCache(env, origin).catch((err) => {
-        console.error('PUT /api/settings/home-lead cache purge error:', err);
-      });
-      return json({ success: true, post_id: null, media: DEFAULT_HOME_LEAD_MEDIA });
-    }
-
-    var leadCategory = '';
-    if (hasPostId) {
-      // 메인 스토리 ↔ 에디터 추천 동시 지정 허용(2026-04-19). featured=1 배타 체크 제거.
-      const post = await env.DB.prepare(`SELECT id, featured FROM posts WHERE id = ? AND published = 1`).bind(postId).first();
-      if (!post) return json({ error: '공개된 게시글만 메인 스토리로 지정할 수 있습니다.' }, 400);
-      leadCategory = String(post.category || '').trim();
-      await env.DB.prepare(
-        `INSERT INTO settings (key, value) VALUES ('home_lead_post', ?)
-         ON CONFLICT(key) DO UPDATE SET value = excluded.value`
-      ).bind(String(postId)).run();
-      // 운영자가 직접 고른 글은 자정 작업이 덮어쓰면 안 된다.
-      await env.DB.prepare(
-        `INSERT INTO settings (key, value) VALUES ('home_lead_mode', 'manual')
-         ON CONFLICT(key) DO UPDATE SET value = excluded.value`
-      ).run();
-      if (!hasMedia && currentPostId !== postId) {
-        await env.DB.prepare(
-          `INSERT INTO settings (key, value) VALUES ('home_lead_media', ?)
-           ON CONFLICT(key) DO UPDATE SET value = excluded.value`
-        ).bind(JSON.stringify(DEFAULT_HOME_LEAD_MEDIA)).run();
+    const previous = await readHomeLeadState(env);
+    if (Number.isInteger(body.if_revision) && body.if_revision !== previous.revision) return json({ error: '다른 화면에서 메인 스토리가 변경되었습니다. 입력을 보존하고 최신 설정을 확인해주세요.' }, 409);
+    const next = { mode: previous.mode, postId: previous.postId, mediaValue: previous.mediaValue };
+    const previousSnapshot = JSON.stringify({ mode: previous.mode, post_id: previous.postId || null, media: normalizeHomeLeadMedia(parseJsonValue(previous.mediaValue)) });
+    const auto = body.mode === 'auto';
+    let picked = null;
+    let category = '';
+    if (auto) {
+      // Reuse the exact existing ranking/window/fallback. Selection reads no settings.
+      picked = await selectAutoHomeLeadId(env);
+      next.mode = 'auto';
+      if (picked.id) { next.postId = picked.id; if (picked.id !== previous.postId) next.mediaValue = null; }
+    } else {
+      const hasPost = Object.prototype.hasOwnProperty.call(body, 'post_id');
+      const hasMedia = !!(body.media && typeof body.media === 'object');
+      if (!hasPost && !hasMedia) return json({ error: '변경할 기사 또는 이미지 설정을 입력해주세요.' }, 400);
+      if (hasPost) {
+        const id = body.post_id == null ? 0 : Number(body.post_id);
+        if (!Number.isInteger(id) || id < 0) return json({ error: '유효한 기사 ID를 입력해주세요.' }, 400);
+        next.mode = 'manual'; next.postId = id;
+        if (id) {
+          const post = await env.DB.prepare(`SELECT id, category FROM posts WHERE id = ? AND published = 1`).bind(id).first();
+          if (!post) return json({ error: '공개된 게시글만 메인 스토리로 지정할 수 있습니다.' }, 400);
+          category = String(post.category || '');
+        }
+        if (!id || id !== previous.postId) next.mediaValue = null;
       }
+      // Explicit clear also resets framing; media-only changes retain the mode.
+      if (hasMedia && next.postId) next.mediaValue = JSON.stringify(normalizeHomeLeadMedia(body.media));
     }
-
-    if (hasMedia) {
-      await env.DB.prepare(
-        `INSERT INTO settings (key, value) VALUES ('home_lead_media', ?)
-         ON CONFLICT(key) DO UPDATE SET value = excluded.value`
-      ).bind(JSON.stringify(media)).run();
-    }
-
-    await purgeContentCache(env, origin, {
-      postId: hasPostId ? postId : currentPostId,
-      categories: leadCategory ? [leadCategory] : [],
-    }).catch((err) => {
-      console.error('PUT /api/settings/home-lead cache purge error:', err);
-    });
-
-    const nextPayload = {
-      success: true,
-      post_id: hasPostId ? postId : currentPostId,
-      media: media || (currentPostId !== postId && hasPostId ? DEFAULT_HOME_LEAD_MEDIA : normalizeHomeLeadMedia(parseJsonValue((await env.DB.prepare(`SELECT value FROM settings WHERE key = 'home_lead_media'`).first())?.value))),
-    };
+    const result = await commitHomeLeadState(env, previous, next, auto && picked.id ? new Date().toISOString() : '');
+    if (!result.committed) return json({ error: '동시 메인 스토리 변경이 감지되었습니다. 입력을 보존하고 최신 설정을 확인해주세요.' }, 409);
     await recordSettingChange(env, {
-      key: 'home_lead',
-      previousValue: previousSnapshot,
-      path: '/api/settings/home-lead',
-      message: '메인 스토리 설정 변경',
-      details: { post_id: nextPayload.post_id },
+      key: 'home_lead', previousValue: previousSnapshot, path: '/api/settings/home-lead',
+      message: auto ? '메인 스토리 자동 선정으로 전환' : next.postId ? '메인 스토리 설정 변경' : '메인 스토리 설정 초기화',
+      details: { mode: next.mode, post_id: next.postId || null, revision: result.revision },
     });
-    return json(nextPayload);
-  } catch (err) {
-    console.error('PUT /api/settings/home-lead error:', err);
-    return json({ error: 'Database error' }, 500);
+    await purgeContentCache(env, origin, { postId: next.postId, categories: category ? [category] : [] }).catch((error) => console.error('home-lead cache purge error:', error));
+    return json({ success: true, mode: next.mode, post_id: next.postId || null, media: normalizeHomeLeadMedia(parseJsonValue(next.mediaValue)), revision: result.revision, ...(picked ? { reason: picked.reason } : {}) });
+  } catch (error) {
+    console.error('PUT /api/settings/home-lead error:', error);
+    return json({ error: '메인 스토리 설정을 저장하지 못했습니다.' }, 500);
   }
 }
 

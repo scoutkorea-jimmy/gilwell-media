@@ -30,6 +30,7 @@ class Node {
   removeAttribute(name) { delete this.attrs[name]; }
   hasAttribute(name) { return Object.hasOwn(this.attrs, name); }
   getAttribute(name) { return this.attrs[name] ?? null; }
+  addEventListener(name, callback) { (this.listeners || (this.listeners = {}))[name] = callback; }
   closest(selector) {
     const kind = selector === '.v3-nav-section' ? 'section' : 'group';
     for (let node = this; node; node = node.parentElement) if (node.kind === kind) return node;
@@ -65,9 +66,10 @@ function fixture(role = 'owner', permissions = []) {
   const context = {
     V3: {}, me: role ? { role, permissions: { permissions } } : null,
     _state: {}, _panel: 'write', _settingsSection: 'hero', _writeDirty: false,
-    _draftSaveInflight: false, _writeDraftDebounce: null, _writeEnhanceInited: true,
+    _draftSaveInflight: false, _writeMediaPending: 0, _editorRenderPending: 0, _editorRenderFailed: false, _writeDraftDebounce: null, _writeEnhanceInited: true,
     _editingId: null, loads: [], confirmations: [], toasts: [], resets: 0, otpCalls: [], events: [],
     CustomEvent: class { constructor(type, options) { this.type = type; this.detail = options.detail; } },
+    MutationObserver: class { observe() {} },
     confirm: message => { context.confirmations.push(message); return context.confirmAnswer ?? true; },
     GW: { showToast: (...args) => context.toasts.push(args) },
     _el: id => ids.get(id),
@@ -83,6 +85,7 @@ function fixture(role = 'owner', permissions = []) {
     _renderOtpCard: () => {},
     document: {
       getElementById: id => ids.get(id),
+      querySelector: () => null,
       dispatchEvent: event => { context.events.push(event); return true; },
       querySelectorAll: selector => {
         if (selector === '.v3-panel') return panels;
@@ -238,13 +241,37 @@ for (const blocked of ['dirty', 'saving', 'otp']) {
 {
   const f = fixture(); let beforeUnload;
   f.context.addEventListener = (type, handler) => { beforeUnload = handler; };
-  const unloadCode = admin.slice(admin.indexOf("    window.addEventListener('beforeunload'"), admin.indexOf("    document.addEventListener('keydown'", admin.indexOf("    window.addEventListener('beforeunload'")));
+  const unloadStart = admin.indexOf("    window.addEventListener('beforeunload'");
+  const unloadCode = admin.slice(unloadStart, admin.indexOf('    });', unloadStart) + 7);
   vm.runInContext(unloadCode, f.context);
-  for (const state of ['clean', 'dirty', 'saving']) {
+  for (const state of ['clean', 'dirty', 'saving', 'content', 'settings']) {
     f.context._writeDirty = state === 'dirty'; f.context._draftSaveInflight = state === 'saving';
+    f.context.V3.contentHasUnsaved = () => state === 'content';
+    f.context.V3.settingsHasUnsaved = () => state === 'settings';
     const event = { prevented: false, preventDefault() { this.prevented = true; } };
     beforeUnload(event);
     assert.equal(event.prevented, state !== 'clean');
+  }
+}
+
+for (const guard of ['contentCanLeave', 'guardSettingsLeave']) {
+  const f = fixture();
+  f.context._panel = 'list';
+  f.context.V3[guard] = () => false;
+  assert.equal(f.context.V3.showPanel('calendar'), false);
+  assert.equal(f.context._panel, 'list');
+  assert.equal(f.context.loads.length, 0, 'Canceled form navigation never loads another panel');
+  assert.equal(f.context.events.length, 0);
+  assert.equal(f.context.otpCalls.length, 0, 'Canceled navigation does not open another authentication dialog');
+}
+
+for (const permissions of [[], ['view:list'], ['view:list', 'write:list'], ['view:write', 'write:write']]) {
+  const f = fixture('member', permissions);
+  const allowed = permissions.includes('write:list') || permissions.includes('write:write');
+  assert.equal(f.context.V3.canEditPost(), allowed);
+  if (allowed) {
+    assert.equal(f.context.V3.showPanel('write', null, { editing: true }), true);
+    assert.equal(f.context._panel, 'write', 'Existing article editing follows the backend edit permission');
   }
 }
 
@@ -370,6 +397,9 @@ function deferredWrites() {
   const modalCode = admin.slice(admin.indexOf('  function _openCalModal('), admin.indexOf('  function _closeCalModal()'));
   for (const match of modalCode.matchAll(/document\.getElementById\('([^']+)'\)/g)) f.ids.set(match[1], new Node('field'));
   const dialog = new Node('dialog'); dialog.scrollTop = 320;
+  c._contentDialogs = {};
+  c._contentCloseDialog = () => true;
+  c._contentOpenDialog = id => { c._contentDialogs[id] = {}; };
   f.ids.get('cal-modal').querySelector = () => dialog;
   for (const name of ['_renderCalTags', '_renderCalTagPresets', '_renderCalTargetGroups', '_renderCalRelatedPosts', '_syncCalCategoryUi', '_renderCalGeoPreview']) c[name] = () => {};
   vm.runInContext(modalCode, c); c._openCalModal(null);

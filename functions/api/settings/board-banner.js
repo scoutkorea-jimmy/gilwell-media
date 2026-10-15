@@ -11,18 +11,19 @@ const DEFAULT_BOARD_BANNER = Object.freeze({
   },
 });
 
-export async function onRequestGet({ env }) {
+export async function onRequestGet({ env, request }) {
   try {
     const row = await env.DB.prepare(`SELECT value FROM settings WHERE key = 'board_banner_events'`).first();
     return json(normalizeBoardBannerSettings(row && row.value));
   } catch (err) {
+    if (request && new URL(request.url).searchParams.get('scope') === 'admin') return json({ error: '설정을 불러오지 못했습니다. 다시 시도해주세요.' }, 500);
     console.error('GET /api/settings/board-banner error:', err);
     return json(DEFAULT_BOARD_BANNER);
   }
 }
 
 export async function onRequestPut({ request, env }) {
-  const __gate = await gateMenuAccess(request, env, 'banner', 'view'); if (__gate) return __gate
+  const __gate = await gateMenuAccess(request, env, 'banner', 'write'); if (__gate) return __gate
 
   let body;
   try {
@@ -34,10 +35,12 @@ export async function onRequestPut({ request, env }) {
   const normalized = normalizeBoardBannerSettings(body);
   try {
     const prevRow = await env.DB.prepare(`SELECT value FROM settings WHERE key = 'board_banner_events'`).first();
-    await env.DB.prepare(
+    if (body.if_current && JSON.stringify(normalizeBoardBannerSettings(body.if_current)) !== JSON.stringify(normalizeBoardBannerSettings(prevRow && prevRow.value))) return json({ error: '게시판 배너가 다른 화면에서 변경되었습니다. 입력을 보존하고 최신 값을 확인해주세요.' }, 409);
+    const write = await env.DB.prepare(
       `INSERT INTO settings (key, value) VALUES ('board_banner_events', ?)
-       ON CONFLICT(key) DO UPDATE SET value = excluded.value`
-    ).bind(JSON.stringify(normalized)).run();
+       ON CONFLICT(key) DO UPDATE SET value = excluded.value WHERE settings.value IS ?`
+    ).bind(JSON.stringify(normalized), prevRow ? prevRow.value : null).run();
+    if (write.meta && write.meta.changes !== 1) return json({ error: '동시 게시판 배너 변경이 감지되었습니다.' }, 409);
     await recordSettingChange(env, {
       key: 'board_banner_events',
       previousValue: prevRow && prevRow.value,

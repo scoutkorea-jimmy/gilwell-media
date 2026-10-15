@@ -10,8 +10,8 @@
   <link rel="icon" type="image/svg+xml" href="/img/favicon.svg">
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png">
   <link rel="shortcut icon" href="/img/favicon-48.png">
-  <link rel="stylesheet" href="/css/admin-v3.css?v=20261014173144">
-  <link rel="stylesheet" href="/css/memorabilia.css?v=20261014173144">
+  <link rel="stylesheet" href="/css/admin-v3.css?v=20261015030005">
+  <link rel="stylesheet" href="/css/memorabilia.css?v=20261015030005">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H" crossorigin="anonymous" referrerpolicy="no-referrer">
   <style>
     #v3-login[style*="display: none"] { pointer-events: none !important; }
@@ -94,7 +94,7 @@
     <button class="v3-login-btn" id="v3-login-btn" type="button" onclick="window.__gwAdminFallbackLogin && window.__gwAdminFallbackLogin(event)">관리자 입장</button>
     <div class="v3-login-err" id="v3-login-err"></div>
     <div class="v3-login-ver">
-      Admin <span class="v3-ver-str v3-ver-admin admin-build-version">V03.156.00</span>
+      Admin <span class="v3-ver-str v3-ver-admin admin-build-version">V03.157.00</span>
       &nbsp;·&nbsp;
       Site <span class="v3-ver-str v3-ver-site site-build-version">V00.194.00</span>
     </div>
@@ -109,7 +109,7 @@
   <!-- ── Sidebar ─────────────────────────────────────────── -->
   <aside id="v3-sidebar">
     <div id="v3-sidebar-logo">
-      <div class="v3-logo-mark">BP미디어 <span class="v3-logo-version v3-ver-str v3-ver-admin admin-build-version">V03.156.00</span></div>
+      <div class="v3-logo-mark">BP미디어 <span class="v3-logo-version v3-ver-str v3-ver-admin admin-build-version">V03.157.00</span></div>
       <div class="v3-logo-sub">운영 콘솔 &nbsp;<span class="v3-logo-sub-site">Site <span class="v3-ver-site site-build-version">V00.194.00</span></span></div>
     </div>
 
@@ -132,6 +132,31 @@
         <button class="v3-nav-item active" data-panel="dashboard" aria-current="page" data-perm-slug="dashboard" data-perm-action="view">
           <svg class="v3-nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="1" y="1" width="6" height="6" rx="1.5"/><rect x="9" y="1" width="6" height="6" rx="1.5"/><rect x="1" y="9" width="6" height="6" rx="1.5"/><rect x="9" y="9" width="6" height="6" rx="1.5"/></svg>
           대시보드
+        </button>
+      </div>
+
+      <div class="v3-nav-section" data-nav-section="analytics">
+        <div class="v3-nav-section-label">성과 분석</div>
+        <details class="v3-nav-group" name="admin-tools">
+          <summary class="v3-nav-group-label">방문·유입 분석</summary>
+          <div class="v3-nav-group-items">
+        <button class="v3-nav-item" data-panel="analytics-visits" data-perm-slug="analytics-visits" data-perm-action="view">
+          <svg class="v3-nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><polyline points="1,12 5,7 9,9 15,3"/><polyline points="11,3 15,3 15,7"/></svg>
+          방문 분석
+        </button>
+        <button class="v3-nav-item" data-panel="marketing" data-perm-slug="marketing" data-perm-action="view">
+          <svg class="v3-nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M1 12 L4 8 L7 10 L10 5 L13 7 L15 3"/><circle cx="4" cy="8" r="1" fill="currentColor"/><circle cx="7" cy="10" r="1" fill="currentColor"/><circle cx="10" cy="5" r="1" fill="currentColor"/></svg>
+          마케팅
+        </button>
+        <button class="v3-nav-item" data-panel="geo-audience" data-perm-slug="geo-audience" data-perm-action="view">
+          <svg class="v3-nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M8 1.25c3.73 0 6.75 3.02 6.75 6.75S11.73 14.75 8 14.75 1.25 11.73 1.25 8 4.27 1.25 8 1.25Z"/><path d="M1.8 6.2h12.4"/><path d="M1.8 9.8h12.4"/><path d="M8 1.5c1.9 1.85 3 4.1 3 6.5s-1.1 4.65-3 6.5c-1.9-1.85-3-4.1-3-6.5s1.1-4.65 3-6.5Z"/></svg>
+          접속 국가/도시
+        </button>
+          </div>
+        </details>
+        <button class="v3-nav-item" data-panel="analytics-tags" data-perm-slug="analytics-tags" data-perm-action="view">
+          <svg class="v3-nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="5" cy="5" r="2.5"/><circle cx="11" cy="11" r="2.5"/><line x1="6.5" y1="6.5" x2="9.5" y2="9.5"/><circle cx="11.5" cy="4.5" r="1.5"/><line x1="10.3" y1="5.5" x2="8" y2="7.5"/></svg>
+          태그 인사이트
         </button>
       </div>
 
@@ -251,31 +276,6 @@
         </button>
           </div>
         </details>
-      </div>
-
-      <div class="v3-nav-section" data-nav-section="analytics">
-        <div class="v3-nav-section-label">성과 분석</div>
-        <details class="v3-nav-group" name="admin-tools">
-          <summary class="v3-nav-group-label">방문·유입 분석</summary>
-          <div class="v3-nav-group-items">
-        <button class="v3-nav-item" data-panel="analytics-visits" data-perm-slug="analytics-visits" data-perm-action="view">
-          <svg class="v3-nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><polyline points="1,12 5,7 9,9 15,3"/><polyline points="11,3 15,3 15,7"/></svg>
-          방문 분석
-        </button>
-        <button class="v3-nav-item" data-panel="marketing" data-perm-slug="marketing" data-perm-action="view">
-          <svg class="v3-nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M1 12 L4 8 L7 10 L10 5 L13 7 L15 3"/><circle cx="4" cy="8" r="1" fill="currentColor"/><circle cx="7" cy="10" r="1" fill="currentColor"/><circle cx="10" cy="5" r="1" fill="currentColor"/></svg>
-          마케팅
-        </button>
-        <button class="v3-nav-item" data-panel="geo-audience" data-perm-slug="geo-audience" data-perm-action="view">
-          <svg class="v3-nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M8 1.25c3.73 0 6.75 3.02 6.75 6.75S11.73 14.75 8 14.75 1.25 11.73 1.25 8 4.27 1.25 8 1.25Z"/><path d="M1.8 6.2h12.4"/><path d="M1.8 9.8h12.4"/><path d="M8 1.5c1.9 1.85 3 4.1 3 6.5s-1.1 4.65-3 6.5c-1.9-1.85-3-4.1-3-6.5s1.1-4.65 3-6.5Z"/></svg>
-          접속 국가/도시
-        </button>
-          </div>
-        </details>
-        <button class="v3-nav-item" data-panel="analytics-tags" data-perm-slug="analytics-tags" data-perm-action="view">
-          <svg class="v3-nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="5" cy="5" r="2.5"/><circle cx="11" cy="11" r="2.5"/><line x1="6.5" y1="6.5" x2="9.5" y2="9.5"/><circle cx="11.5" cy="4.5" r="1.5"/><line x1="10.3" y1="5.5" x2="8" y2="7.5"/></svg>
-          태그 인사이트
-        </button>
       </div>
 
       <div class="v3-nav-section" data-nav-section="operations-settings">
@@ -423,7 +423,8 @@
             <div id="dash-home-sections"><div class="v3-loading"><div class="v3-spinner"></div>섹션 요약을 불러오는 중…</div></div>
           </div>
         </div>
-        <div class="v3-card v3-dash-feature-card">
+        <details class="v3-card v3-dash-feature-card v3-content-advanced">
+          <summary>접속 시간 분석 · 기간별 히트맵</summary>
           <div class="v3-card-head">
             <div>
               <h2 class="v3-card-title">접속 시간 히트맵</h2>
@@ -447,7 +448,7 @@
           </div>
           <div id="dash-traffic-heatmap"><div class="v3-loading"><div class="v3-spinner"></div>로딩 중…</div></div>
           <div id="dash-traffic-insight" class="v3-dash-insight"><div class="v3-inline-meta">히트맵 인사이트를 정리하는 중…</div></div>
-        </div>
+        </details>
         <div class="v3-dash-cols">
           <div class="v3-card" id="dash-recent-card">
             <div class="v3-card-head">
@@ -492,7 +493,7 @@
         <div class="v3-page-head">
           <div class="v3-page-head-left">
             <h1 class="v3-page-title">게시글 목록</h1>
-            <p class="v3-page-desc">정렬, 공개 상태 전환, 수정, 삭제</p>
+            <p class="v3-page-desc">전체 기사에서 검색·필터·정렬합니다. 제목을 열어 확인한 뒤 수정하거나 공개 상태를 바꿀 수 있습니다.</p>
           </div>
           <button class="v3-btn v3-btn-primary" onclick="V3.openWrite()" data-perm-slug="write" data-perm-action="view" hidden>
             <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="2" x2="8" y2="14"/><line x1="2" y1="8" x2="14" y2="8"/></svg>
@@ -582,6 +583,8 @@
           <div class="v3-write-main">
             <!-- Basic info -->
             <div class="v3-card">
+              <div class="v3-card-head"><h2 class="v3-card-title">기사 기본 정보</h2></div>
+              <p class="v3-input-hint">제목과 본문을 먼저 작성하고, 대표 이미지와 공개 상태를 확인한 뒤 저장하세요. 변경 내용은 임시저장에도 보관됩니다.</p>
               <div class="v3-form-grid">
                 <div class="v3-form-grid v3-form-2col">
                   <div class="v3-form-group">
@@ -618,6 +621,7 @@
             <!-- Editor -->
             <div class="v3-card">
               <div class="v3-card-head"><h2 class="v3-card-title">본문</h2></div>
+              <p class="v3-input-hint" id="write-editor-status" aria-live="polite">본문을 입력할 수 있습니다.</p>
               <div class="v3-editor-wrap">
                 <div id="v3-editorjs"></div>
               </div>
@@ -678,6 +682,8 @@
             </div>
 
             <!-- Gallery -->
+            <details class="v3-content-advanced">
+              <summary>추가 자료 · 갤러리, 위치, 특집, 관련 기사</summary>
             <div class="v3-card">
               <div class="v3-card-head">
                 <h2 class="v3-card-title">갤러리 슬라이드 <span class="v3-label-opt v3-label-opt-inline">최대 10장</span></h2>
@@ -724,7 +730,8 @@
             </div>
 
             <!-- Inline AI Scorer (기사 작성 하단) -->
-            <div class="v3-card" id="write-scorer-card">
+            </details>
+            <div class="v3-card" id="write-scorer-card" data-perm-slug="article-scorer" data-perm-action="write" hidden>
               <div class="v3-card-head">
                 <h2 class="v3-card-title">AI 채점 <span class="v3-label-opt v3-label-opt-inline">현재 저장된 평가 기준</span></h2>
                 <button class="v3-btn v3-btn-primary v3-btn-sm" type="button" id="write-scorer-run-btn">
@@ -819,7 +826,7 @@
             <h1 class="v3-page-title">캘린더</h1>
             <p class="v3-page-desc">일정 등록과 공개 캘린더 관리</p>
           </div>
-          <button class="v3-btn v3-btn-primary" id="cal-new-btn">
+          <button class="v3-btn v3-btn-primary" id="cal-new-btn" data-perm-slug="calendar" data-perm-action="write" hidden>
             <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="2" x2="8" y2="14"/><line x1="2" y1="8" x2="14" y2="8"/></svg>
             새 일정
           </button>
@@ -875,7 +882,7 @@
             <h1 class="v3-page-title">용어집</h1>
             <p class="v3-page-desc">국문 · 영문 · 불문 스카우트 용어 관리</p>
           </div>
-          <button class="v3-btn v3-btn-primary" id="glos-new-btn">
+          <button class="v3-btn v3-btn-primary" id="glos-new-btn" data-perm-slug="glossary" data-perm-action="write" hidden>
             <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="2" x2="8" y2="14"/><line x1="2" y1="8" x2="14" y2="8"/></svg>
             새 용어
           </button>
@@ -903,7 +910,8 @@
         </div>
 
         <!-- AI 토큰 사용량 배너 (Cloudflare Workers AI 빌링 가시성) -->
-        <div class="v3-card v3-ai-usage-card" id="ai-usage-card">
+        <details class="v3-card v3-ai-usage-card v3-content-advanced" id="ai-usage-card">
+          <summary>채점 비용 · 사용량과 기간별 추이</summary>
           <div class="v3-ai-usage-head">
             <div class="v3-ai-usage-head-text">
               <h2 class="v3-card-title v3-ai-usage-title">AI 토큰 사용량 <span class="v3-label-opt v3-label-opt-inline">Workers AI · llama-3.1-8b-instruct</span></h2>
@@ -967,7 +975,7 @@
             <svg id="ai-usage-chart" class="v3-ai-usage-chart" viewBox="0 0 800 220" preserveAspectRatio="none" aria-label="일별 채점 호출 추이"></svg>
           </div>
           <div class="v3-ai-usage-footline" id="ai-usage-footline">Cloudflare Workers AI는 neuron 단위로 청구됩니다. 정확한 비용은 Cloudflare 대시보드에서 확인하세요.</div>
-        </div>
+        </details>
 
         <!-- 평가 기준(rubric) 편집 — settings.score_rubric -->
         <details class="v3-card v3-rubric-card" id="rubric-card">
@@ -983,9 +991,9 @@
             <div class="v3-rubric-actions">
               <span class="v3-rubric-meta" id="rubric-meta">—</span>
               <div class="v3-rubric-btn-group">
-                <button class="v3-btn v3-btn-ghost v3-btn-sm" type="button" id="rubric-reset-btn">기본값으로 되돌리기</button>
+                <button class="v3-btn v3-btn-ghost v3-btn-sm" type="button" id="rubric-reset-btn" data-perm-slug="article-scorer" data-perm-action="write" hidden>기본값으로 되돌리기</button>
                 <button class="v3-btn v3-btn-outline v3-btn-sm" type="button" id="rubric-reload-btn">다시 불러오기</button>
-                <button class="v3-btn v3-btn-primary v3-btn-sm" type="button" id="rubric-save-btn">저장</button>
+                <button class="v3-btn v3-btn-primary v3-btn-sm" type="button" id="rubric-save-btn" data-perm-slug="article-scorer" data-perm-action="write" hidden>저장</button>
               </div>
             </div>
             <p class="v3-rubric-hint">변경 기록은 설정 히스토리(settings_history)에 남습니다 · 최대 20,000자.</p>
@@ -1017,23 +1025,23 @@
             </div>
             <div class="v3-scorer-fields">
               <div class="v3-scorer-field">
-                <label class="v3-scorer-label">Title</label>
+                <label class="v3-scorer-label" for="scorer-title">제목</label>
                 <input type="text" id="scorer-title" class="v3-scorer-text-input" placeholder="기사 제목을 입력하세요" />
               </div>
               <div class="v3-scorer-field">
-                <label class="v3-scorer-label">Subtitle</label>
+                <label class="v3-scorer-label" for="scorer-subtitle">부제목 <span class="v3-scorer-label-hint">선택</span></label>
                 <input type="text" id="scorer-subtitle" class="v3-scorer-text-input" placeholder="부제목을 입력하세요" />
               </div>
               <div class="v3-scorer-field">
-                <label class="v3-scorer-label">Body <span class="v3-scorer-label-hint">(문단 구분은 빈 줄)</span></label>
+                <label class="v3-scorer-label" for="scorer-body">본문 <span class="v3-scorer-label-hint">(문단 구분은 빈 줄)</span></label>
                 <textarea id="scorer-body" class="v3-scorer-textarea" placeholder="본문을 붙여넣으세요&#10;&#10;문단 사이는 빈 줄로 구분합니다.&#10;&#10;4개 문단을 유지해야 합니다."></textarea>
               </div>
               <div class="v3-scorer-field">
-                <label class="v3-scorer-label">Recommended Tags <span class="v3-scorer-label-hint">(쉼표 구분)</span></label>
+                <label class="v3-scorer-label" for="scorer-tags">메타 태그 <span class="v3-scorer-label-hint">(선택 · 쉼표 구분)</span></label>
                 <input type="text" id="scorer-tags" class="v3-scorer-text-input" placeholder="스카우트, 국제교류, 한국연맹, …" />
               </div>
             </div>
-            <button class="v3-btn v3-btn-primary v3-scorer-run-btn" id="scorer-run-btn" type="button">
+            <button class="v3-btn v3-btn-primary v3-scorer-run-btn" id="scorer-run-btn" type="button" data-perm-slug="article-scorer" data-perm-action="write" hidden>
               <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="8" cy="8" r="6.5"/><path d="M5.5 8.5 L7 10 L10.5 6"/></svg>
               채점하기
             </button>
@@ -1106,6 +1114,7 @@
         <div class="v3-card v3-mb-16">
           <div class="v3-card-head">
             <h3 class="v3-card-title" id="ai-score-history-stats-title">전체 통계</h3>
+            <p class="v3-card-desc">전체 채점 기록의 통계입니다. 아래 기록 목록에는 검색·등급·점수 필터가 적용됩니다.</p>
           </div>
           <div id="ai-score-history-stats" class="v3-stats-grid">
             <div class="v3-loading"><div class="v3-spinner"></div>집계 중…</div>
@@ -1142,9 +1151,9 @@
                 <button type="button" class="v3-preset-btn" data-days="90">90일</button>
               </div>
               <div class="v3-date-range">
-                <input type="date" class="v3-date-input-period" data-v3-role="start" aria-label="방문 분석 시작일" />
+                <label for="analytics-range-start">시작일</label><input type="date" id="analytics-range-start" class="v3-date-input-period" data-v3-role="start" aria-label="방문 분석 시작일" />
                 <span class="v3-date-sep">~</span>
-                <input type="date" class="v3-date-input-period" data-v3-role="end" aria-label="방문 분석 종료일" />
+                <label for="analytics-range-end">종료일</label><input type="date" id="analytics-range-end" class="v3-date-input-period" data-v3-role="end" aria-label="방문 분석 종료일" />
                 <button type="button" class="v3-apply-btn">조회</button>
               </div>
             </div>
@@ -1217,6 +1226,7 @@
             </div>
             <button type="button" class="v3-btn v3-btn-ghost v3-btn-sm" id="search-keywords-refresh-btn">새로고침</button>
           </div>
+          <div id="search-keywords-status" class="v3-analysis-status" role="status" aria-live="polite"></div>
           <div class="v3-search-keywords-summary" id="search-keywords-summary">
             <div class="v3-loading"><div class="v3-spinner"></div>로딩 중…</div>
           </div>
@@ -1231,7 +1241,7 @@
         <div class="v3-page-head">
           <div class="v3-page-head-left">
             <h1 class="v3-page-title">태그 인사이트</h1>
-            <p class="v3-page-desc">태그·메타 태그 사용 빈도, 워드 클라우드, 관계도를 기간별로 봅니다.</p>
+            <p class="v3-page-desc">공개 기사의 글머리·메타 태그 사용과 검토 후보를 기간별로 봅니다.</p>
           </div>
           <div class="v3-analytics-head-tools">
             <div class="v3-period-bar" data-v3-period-scope="analytics-tag" aria-label="태그 인사이트 기간">
@@ -1241,15 +1251,16 @@
                 <button type="button" class="v3-preset-btn" data-days="90">90일</button>
               </div>
               <div class="v3-date-range">
-                <input type="date" class="v3-date-input-period" data-v3-role="start" aria-label="태그 인사이트 시작일" />
+                <label for="analytics-tag-range-start">시작일</label><input type="date" id="analytics-tag-range-start" class="v3-date-input-period" data-v3-role="start" aria-label="태그 인사이트 시작일" />
                 <span class="v3-date-sep">~</span>
-                <input type="date" class="v3-date-input-period" data-v3-role="end" aria-label="태그 인사이트 종료일" />
+                <label for="analytics-tag-range-end">종료일</label><input type="date" id="analytics-tag-range-end" class="v3-date-input-period" data-v3-role="end" aria-label="태그 인사이트 종료일" />
                 <button type="button" class="v3-apply-btn">조회</button>
               </div>
             </div>
             <button class="v3-btn v3-btn-outline" id="analytics-tags-refresh-btn" type="button">새로고침</button>
           </div>
         </div>
+        <div id="analytics-tags-status" class="v3-analysis-status" role="status" aria-live="polite"></div>
         <div id="analytics-tags-body">
           <div class="v3-loading"><div class="v3-spinner"></div>로딩 중…</div>
         </div>
@@ -1261,7 +1272,7 @@
             <h1 class="v3-page-title">접속 국가/도시</h1>
             <p class="v3-page-desc">접속 IP 기준의 국가·도시 분포를 지도와 테이블로 확인합니다. IP 원문은 저장하지 않습니다.</p>
           </div>
-          <div class="v3-flex">
+          <div class="v3-analytics-head-tools">
             <!-- 통일 기간 선택: 마케팅과 동일 .v3-period-bar 패턴 -->
             <div class="v3-period-bar" data-v3-period-scope="geo-audience" aria-label="접속 국가/도시 기간">
               <div class="v3-presets">
@@ -1270,56 +1281,44 @@
                 <button type="button" class="v3-preset-btn" data-days="90">90일</button>
               </div>
               <div class="v3-date-range">
-                <input type="date" class="v3-date-input-period" data-v3-role="start" aria-label="접속 국가/도시 시작일" />
+                <label for="geo-range-start">시작일</label><input type="date" id="geo-range-start" class="v3-date-input-period" data-v3-role="start" aria-label="접속 국가/도시 시작일" />
                 <span class="v3-date-sep">~</span>
-                <input type="date" class="v3-date-input-period" data-v3-role="end" aria-label="접속 국가/도시 종료일" />
+                <label for="geo-range-end">종료일</label><input type="date" id="geo-range-end" class="v3-date-input-period" data-v3-role="end" aria-label="접속 국가/도시 종료일" />
                 <button type="button" class="v3-apply-btn">조회</button>
               </div>
             </div>
             <button class="v3-btn v3-btn-outline" id="geo-audience-refresh-btn">새로고침</button>
           </div>
         </div>
+        <div id="geo-audience-status" class="v3-analysis-status" role="status" aria-live="polite"></div>
         <div class="v3-analytics-stats" id="geo-audience-stats">
           <div class="v3-loading v3-grid-loading-full"><div class="v3-spinner"></div>로딩 중…</div>
         </div>
-        <div class="v3-card">
-          <div class="v3-card-head">
-            <div>
-              <h2 class="v3-card-title">세계 지도 분포</h2>
-              <p class="v3-card-desc">원형 크기는 해당 국가의 방문 수를 나타냅니다.</p>
-            </div>
-          </div>
-          <div class="v3-inline-meta" id="geo-audience-note">불러오는 중…</div>
-          <div id="geo-audience-map"></div>
-        </div>
-        <div class="v3-dash-cols v3-mt-16">
+        <div id="geo-audience-region-summary" class="v3-geo-region-summary"></div>
+        <div class="v3-mt-16">
           <div class="v3-card">
             <div class="v3-card-head">
               <div>
-                <h2 class="v3-card-title">접속 국가 목록</h2>
-                <p class="v3-card-desc">국가별 방문 수, 페이지뷰, 도시 수를 함께 봅니다.</p>
-              </div>
-            </div>
-            <div id="geo-audience-country-list">
-              <div class="v3-loading"><div class="v3-spinner"></div>로딩 중…</div>
-            </div>
-          </div>
-          <div class="v3-card">
-            <div class="v3-card-head">
-              <div>
-                <h2 class="v3-card-title">접속 도시 목록</h2>
-                <p class="v3-card-desc">국가별로 묶어서 보여줍니다. 국가 행을 클릭하면 도시 목록이 펼쳐집니다.</p>
+                <h2 class="v3-card-title">국가·도시별 방문</h2>
+                <p class="v3-card-desc">국가의 고유 방문과 전체 조회를 먼저 확인하고, 국가 행을 선택해 도시를 봅니다. 전체 목록에서 검색합니다.</p>
               </div>
               <div class="v3-geo-city-toolbar">
+                <label for="geo-audience-city-search">국가·도시 검색</label>
                 <input type="search" id="geo-audience-city-search" class="v3-geo-city-search" placeholder="국가 또는 도시 검색…" autocomplete="off" spellcheck="false" />
                 <button type="button" class="v3-btn v3-btn-outline v3-btn-sm" id="geo-audience-city-toggle-all">모두 펼치기</button>
               </div>
             </div>
-            <div id="geo-audience-city-list">
+            <div id="geo-audience-country-list"><div id="geo-audience-city-list">
               <div class="v3-loading"><div class="v3-spinner"></div>로딩 중…</div>
-            </div>
+            </div></div>
           </div>
         </div>
+        <details class="v3-content-advanced v3-mt-16" id="geo-audience-map-details">
+          <summary>세계 지도 · 추정 위치 분포</summary>
+          <div class="v3-inline-meta" id="geo-audience-note">불러오는 중…</div>
+          <p class="v3-inline-meta">목록이 전체 집계의 기준입니다. 지도는 좌표가 있는 위치만 표시하며 확대·축소 버튼 또는 Ctrl/⌘+휠로 조작합니다.</p>
+          <div id="geo-audience-map"></div>
+        </details>
       </div>
 
       <!-- ════════════════════ MARKETING ════════════════════ -->
@@ -1327,7 +1326,7 @@
         <div class="v3-page-head">
           <div class="v3-page-head-left">
             <h1 class="v3-page-title">마케팅</h1>
-            <p class="v3-page-desc">유입 경로, 고객 여정, 전환 흐름</p>
+            <p class="v3-page-desc">유입 채널·단계별 도달·콘텐츠 성과를 봅니다. 세션 전환율과 구별합니다.</p>
           </div>
           <div class="mkt-period-bar" id="mkt-period-bar">
             <div class="mkt-presets">
@@ -1338,13 +1337,14 @@
               <button type="button" class="mkt-preset-btn" data-days="30">30일</button>
             </div>
             <div class="mkt-date-range">
-              <input type="date" id="mkt-date-from" class="mkt-date-input" />
+              <label for="mkt-date-from">시작일</label><input type="date" id="mkt-date-from" class="mkt-date-input" />
               <span class="mkt-date-sep">~</span>
-              <input type="date" id="mkt-date-to" class="mkt-date-input" />
+              <label for="mkt-date-to">종료일</label><input type="date" id="mkt-date-to" class="mkt-date-input" />
               <button type="button" class="mkt-apply-btn" id="mkt-apply-btn">조회</button>
             </div>
           </div>
         </div>
+        <div id="marketing-status" class="v3-analysis-status" role="status" aria-live="polite"></div>
         <div id="marketing-body">
           <div class="v3-loading"><div class="v3-spinner"></div>로딩 중…</div>
         </div>
@@ -1426,8 +1426,8 @@
                       <div class="v3-media-control">
                         <label for="home-lead-fit">표시 방식</label>
                         <select class="v3-select" id="home-lead-fit">
-                          <option value="cover">cover</option>
-                          <option value="contain">contain</option>
+                          <option value="cover">화면 채우기</option>
+                          <option value="contain">전체 이미지 보기</option>
                         </select>
                       </div>
                       <div class="v3-media-control">
@@ -1483,7 +1483,7 @@
                     <h2 class="v3-card-title">홈 배너</h2>
                     <p class="v3-card-desc">홈 첫 진입 시 화면 정중앙에 뜨는 팝업 배너입니다. <strong>최대 2개</strong>까지 등록할 수 있고, 2개면 데스크톱에서 좌우로 나란히, 모바일에서는 좌우 스와이프로 보입니다. 방문자는 <em>닫기</em> 또는 <em>오늘 하루 보지 않기</em>로 숨길 수 있습니다.</p>
                   </div>
-                  <button class="v3-btn v3-btn-primary v3-btn-sm" id="banner-save-btn">저장</button>
+                  <button class="v3-btn v3-btn-primary v3-btn-sm" id="home-banners-save-btn">홈 배너 저장</button>
                 </div>
                 <div id="banner-editor-list"></div>
                 <div class="v3-mt-16">
@@ -1705,6 +1705,8 @@
                     <button class="v3-btn v3-btn-outline v3-btn-sm" id="wosm-members-add-btn-inline">빈 회원국 항목 추가</button>
                   </div>
                 </div>
+                <details class="v3-content-advanced">
+                  <summary>고급 설정 · 표 열, 가져오기 기본값, 공개 안내 문구</summary>
                 <div class="v3-card v3-card-soft v3-mb-16">
                   <div class="v3-card-head">
                     <div>
@@ -1713,7 +1715,7 @@
                     </div>
                     <div class="v3-flex">
                       <button class="v3-btn v3-btn-outline v3-btn-sm" id="wosm-column-add-btn">열 추가</button>
-                      <button class="v3-btn v3-btn-primary v3-btn-sm" id="wosm-columns-save-btn">열 구성 저장</button>
+                      <button class="v3-btn v3-btn-primary v3-btn-sm" id="wosm-columns-save-btn">모든 변경 저장</button>
                     </div>
                   </div>
                   <div id="wosm-columns-editor">
@@ -1772,6 +1774,7 @@
                     </div>
                   </div>
                 </div>
+                </details>
                 <div class="v3-form-grid">
                   <div class="v3-form-group">
                     <label class="v3-label" for="wosm-members-search">항목 검색</label>
@@ -1793,7 +1796,7 @@
                     <p class="v3-card-desc">기사 탐색용 참고 사이트를 저장하고, 어떤 WOSM 지역연맹과 관련 있는지 함께 정리합니다. 추가·편집은 모달로 진행됩니다.</p>
                   </div>
                   <div class="v3-flex">
-                    <button class="v3-btn v3-btn-primary v3-btn-sm" id="reference-sites-add-btn">사이트 추가</button>
+                    <button class="v3-btn v3-btn-primary v3-btn-sm" id="reference-sites-add-btn" data-perm-slug="reference-sites" data-perm-action="write" hidden>사이트 추가</button>
                   </div>
                 </div>
                 <div class="v3-refsite-stack">
@@ -1844,9 +1847,8 @@
                   <div>
                     <h2 class="v3-card-title">개인정보 처리방침</h2>
                     <p class="v3-card-desc">
-                      <a href="/privacy" target="_blank" rel="noopener">/privacy</a> 페이지에 공개되는 본문을 Tiptap 에디터로 편집합니다.
-                      저장 시 공개면에서 DOMPurify로 sanitize되며, <code>&lt;script&gt;</code> 태그는 서버에서 차단됩니다.
-                      기본값으로 복원하면 deployment 시점의 GDPR 준수 기본 방침이 다시 노출됩니다.
+                      홈페이지 <a href="/privacy" target="_blank" rel="noopener">개인정보 처리방침</a>에 공개될 본문을 편집합니다.
+                      저장하면 홈페이지에 반영됩니다. 기본값 복원은 확인 후 즉시 반영됩니다.
                     </p>
                   </div>
                   <div class="v3-flex" style="gap:8px;align-items:center;">
@@ -1858,8 +1860,8 @@
                 </div>
                 <div class="v3-form-grid">
                   <div class="v3-form-group v3-form-span-full">
-                    <label class="v3-label">본문 <span class="v3-label-opt">Tiptap · 최대 100,000자</span></label>
-                    <div class="v3-tiptap-toolbar" id="privacy-policy-toolbar" role="toolbar" aria-label="Tiptap 서식 도구">
+                    <label class="v3-label">본문 <span class="v3-label-opt">· 최대 100,000자</span></label>
+                    <div class="v3-tiptap-toolbar" id="privacy-policy-toolbar" role="toolbar" aria-label="본문 서식 도구">
                       <button type="button" data-cmd="bold" title="굵게 (Ctrl+B)"><strong>B</strong></button>
                       <button type="button" data-cmd="italic" title="기울임 (Ctrl+I)"><em>I</em></button>
                       <button type="button" data-cmd="strike" title="취소선"><s>S</s></button>
@@ -1911,6 +1913,7 @@
             <h1 class="v3-page-title">버전기록</h1>
             <p class="v3-page-desc">Site와 Admin 배포 이력을 시각 기준으로 빠르게 확인합니다.</p>
           </div>
+          <button type="button" class="v3-btn v3-btn-outline" id="releases-refresh-btn">새로고침</button>
         </div>
         <div class="v3-releases-tabs">
           <button class="v3-btn v3-btn-sm v3-releases-tab active" data-scope="all">전체</button>
@@ -1922,11 +1925,11 @@
           <input type="search" id="releases-search" class="v3-releases-filters-search" placeholder="키워드 검색 (요약 · 변경사항 · 버전 · 날짜)" autocomplete="off" />
           <div class="v3-releases-filters-dates">
             <label class="v3-releases-filters-date">
-              <span>From</span>
+              <span>시작일</span>
               <input type="date" id="releases-date-from" />
             </label>
             <label class="v3-releases-filters-date">
-              <span>To</span>
+              <span>종료일</span>
               <input type="date" id="releases-date-to" />
             </label>
           </div>
@@ -2174,7 +2177,7 @@
               <select class="v3-input v3-input-sm" id="memo-list-event-filter" aria-label="행사 필터">
                 <option value="">행사 전체</option>
               </select>
-              <input class="v3-input v3-input-sm" type="search" id="memo-list-search" placeholder="제목 검색" />
+              <input class="v3-input v3-input-sm" type="search" id="memo-list-search" placeholder="전체 도감 제목 검색" aria-label="전체 도감 제목 검색" />
             </div>
           </div>
           <div class="v3-inline-meta" id="memo-list-meta">불러오는 중…</div>
@@ -2267,7 +2270,7 @@
         </div>
 
         <!-- 데이터 일괄 수정 (find/replace) — 접힘 가능한 도구 영역 -->
-        <details class="v3-card" id="memo-bulk-replace-card" style="margin-top: 16px;">
+        <details class="v3-card v3-content-advanced" id="memo-bulk-replace-card" style="margin-top: 16px;">
           <summary style="cursor:pointer; padding:14px 16px; font-weight:600; font-size:14px;">
             🛠 데이터 일괄 수정 (find/replace) — 표기 통일·오탈자 일괄 교정
           </summary>
@@ -2350,6 +2353,7 @@
               </div>
 
               <form id="memo-edit-form" autocomplete="off">
+                <p class="v3-input-hint">제목은 국문·영문 중 하나 이상 입력하세요. 이미지 업로드가 끝난 뒤 저장할 수 있습니다. 공개 상태는 아래에서 확인하세요.</p>
                 <div class="v3-form-row">
                   <label class="v3-label">대표 이미지·갤러리</label>
                   <div class="memo-images-zone" id="memo-images-zone">
@@ -2406,6 +2410,8 @@
                   </div>
                 </div>
 
+                <details class="v3-content-advanced">
+                  <summary>추가 정보 · 재질, 제작기관, 태그, 설명, 연결 자료</summary>
                 <div class="v3-form-row v3-form-row-2col">
                   <div>
                     <label class="v3-label" for="memo-material-en">재질 (영문)</label>
@@ -2479,6 +2485,7 @@
                   <div id="memo-links-wrap"></div>
                   <button type="button" class="v3-btn v3-btn-outline v3-btn-sm" id="memo-link-add">링크 추가</button>
                 </div>
+                </details>
 
                 <div class="v3-form-row v3-form-row-2col">
                   <div>
@@ -2688,6 +2695,7 @@
             </div>
             <div class="v3-modal-body">
               <form id="memo-ev-edit-form" autocomplete="off">
+                <p class="v3-input-hint">행사명은 국문·영문 중 하나 이상 입력하세요. 기간은 연도·월만 입력할 수도 있습니다. 행사 삭제 시 연결된 도감 항목은 유지됩니다.</p>
                 <div class="v3-form-row v3-form-row-2col">
                   <div>
                     <label class="v3-label" for="memo-ev-name-en">행사명 (영문)</label>
@@ -2793,20 +2801,21 @@
             <h1 class="v3-page-title">내 계정</h1>
             <p class="v3-page-desc">로그인 중인 계정 프로필과 비밀번호를 관리합니다. 비밀번호를 바꾸면 이 기기의 세션만 유지되고 다른 모든 기기는 즉시 로그아웃됩니다.</p>
           </div>
+          <button type="button" class="v3-btn v3-btn-outline" id="account-me-refresh-btn">프로필 새로고침</button>
         </div>
 
         <div class="v3-card" id="account-me-profile-card">
           <div class="v3-card-head">
             <div>
               <h2 class="v3-card-title">프로필</h2>
-              <p class="v3-card-desc">읽기 전용 정보. 표시 이름·편집자 코드·권한은 오너가 <strong>사용자 관리</strong>에서 수정합니다.</p>
+                    <p class="v3-card-desc">읽기 전용 정보. 표시 이름·기사 서명용 저자 코드·권한은 오너가 <strong>사용자 관리</strong>에서 수정합니다.</p>
             </div>
           </div>
           <div class="v3-form-grid" id="account-me-profile-grid">
             <div class="v3-form-group"><label class="v3-label">아이디</label><div class="v3-inline-meta" id="account-me-username">—</div></div>
             <div class="v3-form-group"><label class="v3-label">표시 이름</label><div class="v3-inline-meta" id="account-me-display-name">—</div></div>
             <div class="v3-form-group"><label class="v3-label">역할</label><div class="v3-inline-meta" id="account-me-role">—</div></div>
-            <div class="v3-form-group"><label class="v3-label">편집자 코드</label><div class="v3-inline-meta" id="account-me-editor-code">—</div></div>
+            <div class="v3-form-group"><label class="v3-label">저자 코드</label><div class="v3-inline-meta" id="account-me-editor-code">—</div></div>
             <div class="v3-form-group"><label class="v3-label">AI 채점 일일 한도</label><div class="v3-inline-meta" id="account-me-ai-limit">—</div></div>
             <div class="v3-form-group"><label class="v3-label">마지막 로그인</label><div class="v3-inline-meta" id="account-me-last-login">—</div></div>
           </div>
@@ -2935,7 +2944,7 @@
         <div class="v3-page-head">
           <div class="v3-page-head-left">
             <h1 class="v3-page-title">프리셋 관리</h1>
-            <p class="v3-page-desc">사용자에게 일괄 적용할 수 있는 권한 프리셋을 관리합니다. 빌트인 3종(글쟁이·뷰어·마케팅 담당)은 수정·삭제 불가이고, 오너가 자유롭게 커스텀 프리셋을 추가하거나 편집할 수 있습니다.</p>
+            <p class="v3-page-desc">권한 묶음을 관리합니다. 기본 프리셋도 이름·설명·권한을 편집할 수 있으며, 코드 변경과 삭제는 보호됩니다. 권한 변경은 이전 권한 묶음과 정확히 일치하는 활성 멤버에게 함께 반영되고, 각 멤버의 관리자 접근 상태는 유지됩니다.</p>
           </div>
           <div class="v3-page-head-actions" style="display:flex;gap:8px;align-items:center;">
             <button class="v3-btn v3-btn-ghost" type="button" id="account-presets-refresh-btn">새로고침</button>
@@ -2969,7 +2978,7 @@
   <div class="v3-modal v3-modal-lg">
     <div class="v3-modal-head">
       <h3 class="v3-modal-title" id="account-user-modal-title">사용자 추가</h3>
-      <button class="v3-modal-close" type="button" data-close="account-user-modal">×</button>
+      <button class="v3-modal-close" aria-label="닫기" type="button" data-close="account-user-modal">×</button>
     </div>
     <form id="account-user-form" class="v3-form-grid" autocomplete="off" novalidate>
       <div class="v3-form-group">
@@ -2982,10 +2991,10 @@
       </div>
       <div class="v3-form-group">
         <label class="v3-label" for="account-user-password">비밀번호 <span class="v3-label-opt">8자 이상 · 신규만</span></label>
-        <input class="v3-input" type="text" id="account-user-password" autocomplete="off" spellcheck="false" autocapitalize="off" />
+        <input class="v3-input" type="password" id="account-user-password" autocomplete="new-password" spellcheck="false" autocapitalize="off" />
       </div>
       <div class="v3-form-group">
-        <label class="v3-label" for="account-user-editor-code">편집자 코드 <span class="v3-label-opt">byline 표기용 · 선택</span></label>
+        <label class="v3-label" for="account-user-editor-code">저자 코드 <span class="v3-label-opt">기사 서명용 · 선택</span></label>
         <input class="v3-input" type="text" id="account-user-editor-code" placeholder="Editor.B" spellcheck="false" />
       </div>
       <div class="v3-form-group">
@@ -3030,7 +3039,7 @@
   <div class="v3-modal v3-modal-xl">
     <div class="v3-modal-head">
       <h3 class="v3-modal-title">권한 편집 <span id="account-permission-subject" class="v3-inline-meta" style="margin-left:8px;"></span></h3>
-      <button class="v3-modal-close" type="button" data-close="account-permission-modal">×</button>
+      <button class="v3-modal-close" aria-label="닫기" type="button" data-close="account-permission-modal">×</button>
     </div>
     <div class="v3-modal-body" id="account-permission-body">
       <div class="v3-flex" style="align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px;">
@@ -3064,7 +3073,7 @@
   <div class="v3-modal">
     <div class="v3-modal-head">
       <h3 class="v3-modal-title">임시 비밀번호 발급</h3>
-      <button class="v3-modal-close" type="button" data-close="account-temp-password-modal">×</button>
+      <button class="v3-modal-close" aria-label="닫기" type="button" data-close="account-temp-password-modal">×</button>
     </div>
     <div class="v3-modal-body">
       <p class="v3-card-desc">
@@ -3094,7 +3103,7 @@
   <div class="v3-modal v3-modal-xl">
     <div class="v3-modal-head">
       <h3 class="v3-modal-title" id="account-preset-modal-title">프리셋 추가</h3>
-      <button class="v3-modal-close" type="button" data-close="account-preset-modal">×</button>
+      <button class="v3-modal-close" aria-label="닫기" type="button" data-close="account-preset-modal">×</button>
     </div>
     <div class="v3-modal-body">
       <div class="v3-form-grid">
@@ -3113,7 +3122,7 @@
         <div class="v3-form-group v3-form-span-full">
           <label class="v3-checkbox">
             <input type="checkbox" id="account-preset-access-admin" checked />
-            <span><strong>관리자 페이지 접근 허용</strong> (이 토글이 꺼지면 로그인해도 바로 차단)</span>
+            <span><strong>새로 적용할 때 관리자 접근 허용</strong> · 기존 멤버의 접근 상태는 유지됩니다.</span>
           </label>
         </div>
         <div class="v3-form-group v3-form-span-full">
@@ -3143,6 +3152,7 @@
     </div>
     <div class="v3-modal-body">
       <input type="hidden" id="cal-id" />
+      <p class="v3-input-hint">행사명은 국문·원문 중 하나 이상, 시작 일은 필수입니다. 추가 자료와 지도 정보는 아래에서 펼쳐 입력하세요.</p>
       <input type="hidden" id="cal-lat" />
       <input type="hidden" id="cal-lng" />
       <div class="v3-form-grid">
@@ -3198,6 +3208,8 @@
             <input class="v3-input" type="time" id="cal-end-time" disabled />
           </div>
         </div>
+        <details class="v3-content-advanced v3-form-span-full">
+          <summary>추가 정보 · 국가, 대상, 태그, 관련 기사, 지도</summary>
         <div class="v3-form-grid v3-form-2col">
           <div class="v3-form-group">
             <label class="v3-label" for="cal-country">국가</label>
@@ -3251,12 +3263,13 @@
             <input class="v3-input" type="text" id="cal-loc-addr" />
           </div>
         </div>
+        </details>
       </div>
     </div>
     <div class="v3-modal-foot">
-      <button class="v3-btn v3-btn-danger v3-btn-sm" id="cal-delete-btn" type="button" style="display:none;">삭제</button>
+      <button class="v3-btn v3-btn-danger v3-btn-sm" id="cal-delete-btn" type="button" data-content-write style="display:none;">삭제</button>
       <button class="v3-btn v3-btn-outline v3-btn-sm" id="cal-modal-cancel" type="button">취소</button>
-      <button class="v3-btn v3-btn-primary v3-btn-sm" id="cal-save-btn" type="button">저장</button>
+      <button class="v3-btn v3-btn-primary v3-btn-sm" id="cal-save-btn" type="button" data-content-write>저장</button>
     </div>
   </div>
 </div>
@@ -3285,16 +3298,19 @@
             <input class="v3-input" type="text" id="glos-fr" placeholder="Jamboree Mondial" />
           </div>
         </div>
+        <details class="v3-content-advanced">
+          <summary>추가 설명 · 선택</summary>
         <div class="v3-form-group">
           <label class="v3-label" for="glos-desc">설명 <span class="v3-label-opt">선택</span></label>
           <textarea class="v3-textarea" id="glos-desc" rows="3" placeholder="용어에 대한 설명"></textarea>
         </div>
+        </details>
       </div>
     </div>
     <div class="v3-modal-foot">
-      <button class="v3-btn v3-btn-danger v3-btn-sm" id="glos-delete-btn" type="button" style="display:none;">삭제</button>
+      <button class="v3-btn v3-btn-danger v3-btn-sm" id="glos-delete-btn" type="button" data-content-write style="display:none;">삭제</button>
       <button class="v3-btn v3-btn-outline v3-btn-sm" id="glos-modal-cancel" type="button">취소</button>
-      <button class="v3-btn v3-btn-primary v3-btn-sm" id="glos-save-btn" type="button">저장</button>
+      <button class="v3-btn v3-btn-primary v3-btn-sm" id="glos-save-btn" type="button" data-content-write>저장</button>
     </div>
   </div>
 </div>
@@ -3427,14 +3443,14 @@
       <div class="v3-modal-foot">
         <span id="refsite-modal-status" class="v3-inline-meta" aria-live="polite"></span>
         <button class="v3-btn v3-btn-outline" type="button" data-close="refsite-modal">취소</button>
-        <button class="v3-btn v3-btn-primary" type="submit" id="refsite-modal-submit">저장</button>
+        <button class="v3-btn v3-btn-primary" type="submit" id="refsite-modal-submit" data-content-write>저장</button>
       </div>
     </form>
   </div>
 </div>
 
 <!-- Marketing Fullscreen -->
-<div class="marketing-fullscreen-modal" id="marketing-fullscreen-modal" aria-hidden="true">
+<div class="marketing-fullscreen-modal" id="marketing-fullscreen-modal" role="dialog" aria-modal="true" aria-labelledby="marketing-fullscreen-title" aria-hidden="true">
   <div class="marketing-fullscreen-backdrop" onclick="V3.closeMarketingFullscreen()"></div>
   <div class="marketing-fullscreen-card">
     <div class="marketing-fullscreen-head">
@@ -3446,7 +3462,7 @@
         <button class="marketing-zoom-btn" type="button" onclick="V3.adjustMarketingFullscreenZoom(-0.1)">축소</button>
         <button class="marketing-zoom-btn" type="button" onclick="V3.resetMarketingFullscreenZoom()">100%</button>
         <button class="marketing-zoom-btn" type="button" onclick="V3.adjustMarketingFullscreenZoom(0.1)">확대</button>
-        <button class="marketing-fullscreen-close" type="button" onclick="V3.closeMarketingFullscreen()">닫기</button>
+        <button class="marketing-fullscreen-close" id="marketing-fullscreen-close" type="button" onclick="V3.closeMarketingFullscreen()">닫기</button>
       </div>
     </div>
     <div class="marketing-fullscreen-body" id="marketing-fullscreen-body"></div>
@@ -3457,14 +3473,14 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" integrity="sha384-vtjasyidUo0kW94K5MXDXntzOJpQgBKXmE7e2Ga4LG0skTTLeBi97eFAXsqewJjw" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha384-cxOPjt7s7Iz04uaHJceBmS+qpjv2JkIHNVcuOrM+YHwZOmJGBXI00mdUXEq65HTH" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.4/dist/purify.min.js" integrity="sha384-eEu5CTj3qGvu9PdJuS+YlkNi7d2XxQROAFYOr59zgObtlcux1ae1Il3u7jvdCSWu" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-<script src="/js/main.js?v=20261014173144"></script>
-<script src="/js/shared-country-name-ko.js?v=20261014173144"></script>
-<script src="/js/memorabilia-shared.js?v=20261014173144"></script>
-<script src="/js/admin-v3.js?v=20261014173144"></script>
-<script src="/js/admin-account.js?v=20261014173144"></script>
-<script src="/js/admin-memorabilia.js?v=20261014173144"></script>
-<script src="/js/admin-cardnews.js?v=20261014173144"></script>
-<script src="/js/admin-memorabilia-comments.js?v=20261014173144"></script>
+<script src="/js/main.js?v=20261015030005"></script>
+<script src="/js/shared-country-name-ko.js?v=20261015030005"></script>
+<script src="/js/memorabilia-shared.js?v=20261015030005"></script>
+<script src="/js/admin-v3.js?v=20261015030005"></script>
+<script src="/js/admin-account.js?v=20261015030005"></script>
+<script src="/js/admin-memorabilia.js?v=20261015030005"></script>
+<script src="/js/admin-cardnews.js?v=20261015030005"></script>
+<script src="/js/admin-memorabilia-comments.js?v=20261015030005"></script>
 <script>
   (function () {
     function toggleReveal(visible) {

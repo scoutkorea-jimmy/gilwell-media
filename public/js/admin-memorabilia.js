@@ -37,6 +37,19 @@
     selectedEventIds: new Set(),
     eventCategoryFilter: '', // '' = 전체, '__none__' = 미분류, '<id>' = 특정 카테고리
     eventSearchQuery: '',    // 실시간 검색어 (소문자 정규화)
+    listQuery: '',
+    listRequest: 0,
+    listError: '',
+    catsRequest: 0,
+    catsError: '',
+    eventsRequest: 0,
+    eventsError: '',
+    eventCatsRequest: 0,
+    eventCatsError: '',
+    editorRequest: 0,
+    importRequest: 0,
+    csvRequest: 0,
+    uploads: 0,
   };
 
   // 공유 모듈 hooks
@@ -73,6 +86,122 @@
     console[kind === 'error' ? 'error' : 'log']('[memorabilia]', msg);
   }
 
+  const dialogs = new Map();
+  const busy = new Set();
+  const readOnlyDisabled = new Map();
+  const readOnlyDisplay = new Map();
+  const dialogSlugs = {
+    'memo-edit-modal': 'memorabilia', 'memo-bulkedit-modal': 'memorabilia',
+    'memo-cat-edit-modal': 'memorabilia-categories',
+    'memo-ev-edit-modal': 'memorabilia-events', 'memo-ev-bulk-modal': 'memorabilia-events',
+    'memo-ev-cats-modal': 'memorabilia-events',
+  };
+
+  function canWrite(slug) {
+    const me = window.AccountAdmin?.currentMe?.();
+    return !!(me && (me.role === 'owner' || me.role === 'full' || (me.permissions?.permissions || []).includes('write:' + slug)));
+  }
+
+  function dialogSnapshot(id) {
+    const fields = $$('input[id], textarea[id], select[id], input[name]', $('#' + id))
+      .filter((el) => el.type !== 'file' && !el.closest('#memo-country-picker, #memo-event-picker, #memo-related-picker, #memo-bulkedit-country-picker, #memo-bulkedit-event-picker, #memo-import-panel'))
+      .map((el) => [el.id || el.name, el.type === 'checkbox' || el.type === 'radio' ? el.checked : el.value]);
+    let data = null;
+    if (id === 'memo-edit-modal') data = [state.images.map(({ url, alt_en, alt_ko, credit, is_primary, sort_order }) => ({ url, alt_en, alt_ko, credit, is_primary, sort_order })), state.links, state.selectedEventId,
+      state.countryPicker?.getValue() || [], relatedPickerHandle?.getIds() || []];
+    if (id === 'memo-bulkedit-modal') data = [state.bulkEditCountryPicker?.getValue() || [], state.bulkEditEventPicker?.getEventId() || null];
+    if (id === 'memo-ev-cats-modal') data = $$('input[data-cat-en], input[data-cat-ko], input[data-cat-sort], input[data-cat-arch]', $('#' + id)).map((el) => [el.getAttribute('data-cat-en') || el.getAttribute('data-cat-ko') || el.getAttribute('data-cat-sort') || el.getAttribute('data-cat-arch'), el.type === 'checkbox' ? el.checked : el.value]);
+    return JSON.stringify([fields, data]);
+  }
+
+  function trackDialog(id) {
+    dialogs.set(id, dialogSnapshot(id));
+    syncReadOnly();
+  }
+
+  function canCloseDialog(id, quiet) {
+    if (busy.has(id) || (id === 'memo-edit-modal' && state.uploads)) {
+      if (!quiet) toast('저장 또는 업로드가 끝난 뒤 다시 시도하세요.', 'error');
+      return false;
+    }
+    if (canWrite(dialogSlugs[id]) && dialogs.has(id) && dialogs.get(id) !== dialogSnapshot(id)) {
+      return quiet ? false : confirm('저장하지 않은 변경 사항이 있습니다. 변경 사항을 버리고 닫을까요?');
+    }
+    return true;
+  }
+
+  function hideDialog(id, force) {
+    if (force !== true && !canCloseDialog(id)) return false;
+    $('#' + id).hidden = true;
+    dialogs.delete(id);
+    document.body.style.overflow = Array.from(dialogs.keys()).some((key) => !$('#' + key).hidden) ? 'hidden' : '';
+    return true;
+  }
+
+  function startMutation(id) {
+    if (busy.has(id) || !canWrite(dialogSlugs[id] || (id === 'memo-bulk-replace' ? 'memorabilia' : 'memorabilia-events'))) return false;
+    busy.add(id);
+    return true;
+  }
+
+  function syncReadOnly() {
+    for (const [el, saved] of readOnlyDisabled) if (canWrite(saved.slug)) { el.disabled = saved.disabled; readOnlyDisabled.delete(el); }
+    for (const [el, saved] of readOnlyDisplay) if (canWrite(saved.slug)) { el.style.display = saved.display; readOnlyDisplay.delete(el); }
+    function disable(el, slug) { if (!readOnlyDisabled.has(el)) readOnlyDisabled.set(el, { slug, disabled: el.disabled }); el.disabled = true; }
+    ['memo-country-picker', 'memo-event-picker', 'memo-related-picker'].forEach(id => {
+      const host = $('#' + id);
+      if (host) { host.inert = !canWrite('memorabilia'); host.setAttribute?.('aria-disabled', canWrite('memorabilia') ? 'false' : 'true'); }
+    });
+    const controls = {
+      memorabilia: ['memo-new-btn', 'memo-empty-new', 'memo-image-add', 'memo-link-add', 'memo-import-btn', 'memo-edit-save', 'memo-edit-delete', 'memo-bulk-edit-open', 'memo-bulkedit-apply', 'memo-bulk-rule-add', 'memo-bulk-manual-dry', 'memo-bulk-manual-apply'],
+      'memorabilia-categories': ['memo-cat-new-btn', 'memo-cat-edit-save'],
+      'memorabilia-events': ['memo-ev-new-btn', 'memo-ev-empty-new', 'memo-ev-import-btn', 'memo-ev-edit-save', 'memo-ev-edit-delete', 'memo-ev-bulk-open', 'memo-ev-bulk-apply', 'memo-ev-cat-add'],
+    };
+    for (const [slug, ids] of Object.entries(controls)) if (!canWrite(slug)) {
+      for (const id of ids) { const el = $('#' + id); if (el) { if (!readOnlyDisplay.has(el)) readOnlyDisplay.set(el, { slug, display: el.style.display }); el.style.display = 'none'; } }
+    }
+    for (const [id, slug] of Object.entries(dialogSlugs)) if (!canWrite(slug)) {
+      const modal = $('#' + id);
+      if (!modal) continue;
+      $$('input, textarea, select, button', modal).forEach((el) => {
+        if (!/(?:close|cancel|done)$/.test(el.id)) disable(el, slug);
+      });
+    }
+    for (const [selector, slug] of [['[data-memo-check], #memo-list-select-all, [data-preset]', 'memorabilia'], ['[data-ev-check], #memo-ev-select-all', 'memorabilia-events']]) {
+      if (!canWrite(slug)) $$(selector).forEach((el) => { disable(el, slug); });
+    }
+    for (const [selector, slug] of [['[data-memo-edit]', 'memorabilia'], ['[data-cat-edit]', 'memorabilia-categories'], ['[data-ev-edit]', 'memorabilia-events']]) {
+      if (!canWrite(slug)) $$(selector).forEach((el) => { el.textContent = '보기'; });
+    }
+  }
+
+  function showLoadError(wrapId, message, retry) {
+    const wrap = $('#' + wrapId);
+    if (!wrap) return;
+    wrap.innerHTML = `<div class="v3-empty" role="alert">${escapeHtml(message)} <button type="button" class="v3-btn v3-btn-outline v3-btn-sm">다시 시도</button></div>`;
+    $('button', wrap)?.addEventListener('click', retry);
+  }
+
+  function hasUnsaved() {
+    if (busy.size || state.uploads) return true;
+    return Array.from(dialogs.keys()).some((id) => !$('#' + id).hidden && !canCloseDialog(id, true));
+  }
+
+  function canLeave() {
+    const open = Array.from(dialogs.keys()).filter((id) => !$('#' + id).hidden);
+    if (busy.size || state.uploads) { toast('저장 또는 업로드가 끝난 뒤 이동하세요.', 'error'); return false; }
+    if (open.some((id) => !canCloseDialog(id, true)) && !confirm('저장하지 않은 변경 사항이 있습니다. 변경 사항을 버리고 이동할까요?')) return false;
+    open.forEach((id) => hideDialog(id, true));
+    state.editorRequest += 1;
+    state.importRequest += 1;
+    state.csvRequest += 1;
+    return true;
+  }
+
+  window.V3 = window.V3 || {};
+  window.V3.contentMemorabiliaCanLeave = canLeave;
+  window.V3.contentMemorabiliaHasUnsaved = hasUnsaved;
+
   function readFileAsDataUrl(file) {
     return new Promise((resolve, reject) => {
       const r = new FileReader();
@@ -88,9 +217,10 @@
   // 권한·OTP·작성 이탈 확인을 통과한 패널 전환만 로드한다.
   document.addEventListener('gw:admin-panel-shown', (e) => {
     const panel = e.detail && e.detail.panel;
-    if (panel === 'memorabilia' && !state.loadedOnce) bootList();
-    if (panel === 'memorabilia-categories' && !state.catsLoadedOnce) bootCategories();
-    if (panel === 'memorabilia-events' && !state.eventsLoadedOnce) bootEvents();
+    if (panel === 'memorabilia') bootList();
+    if (panel === 'memorabilia-categories') bootCategories();
+    if (panel === 'memorabilia-events') bootEvents();
+    syncReadOnly();
   });
 
   document.addEventListener('DOMContentLoaded', wireEvents);
@@ -100,7 +230,11 @@
     const newBtn = $('#memo-new-btn');
     if (newBtn) newBtn.addEventListener('click', () => openEditor(null));
     const searchInput = $('#memo-list-search');
-    if (searchInput) searchInput.addEventListener('input', renderList);
+    if (searchInput) searchInput.addEventListener('input', debounce(() => {
+      state.listQuery = searchInput.value.trim();
+      loadList(1);
+    }, 250));
+    searchInput?.addEventListener('input', () => { state.listRequest += 1; state.selectedIds.clear(); });
     const eventFilter = $('#memo-list-event-filter');
     if (eventFilter) eventFilter.addEventListener('change', () => {
       state.listEventFilter = eventFilter.value || '';
@@ -181,6 +315,7 @@
 
   // ── 다른 도감 정보 불러오기 ────────────────────────────────────────────
   function openImportPanel() {
+    if (!canWrite("memorabilia")) return;
     const panel = $('#memo-import-panel');
     if (!panel) return;
     panel.hidden = false;
@@ -191,6 +326,7 @@
   }
 
   function closeImportPanel() {
+    state.importRequest += 1;
     const panel = $('#memo-import-panel');
     if (panel) panel.hidden = true;
   }
@@ -199,6 +335,8 @@
     const input = $('#memo-import-search');
     const results = $('#memo-import-results');
     if (!input || !results) return;
+    const request = ++state.importRequest;
+    const editor = state.editorRequest;
     const q = input.value.trim();
     if (!q) { results.innerHTML = '<div style="padding:12px; color:var(--gray-700,#3f3f3f); font-size:13px;">검색어를 입력하세요.</div>'; return; }
     results.innerHTML = '<div style="padding:12px; color:var(--gray-700,#3f3f3f); font-size:13px;">검색 중…</div>';
@@ -211,6 +349,7 @@
         return;
       }
       const data = await res.json();
+      if (request !== state.importRequest || editor !== state.editorRequest) return;
       const items = data.items || data.results || [];
       // 현재 편집 중인 항목은 자기 자신 제외
       const currentId = state.editing?.id || null;
@@ -240,9 +379,13 @@
   }
 
   async function importFromItem(sourceId) {
+    if (!canWrite('memorabilia')) return;
+    const request = ++state.importRequest;
+    const editor = state.editorRequest;
     if (!Number.isFinite(sourceId)) return;
     try {
-      const full = await fetchJson(`/api/memorabilia/${sourceId}`);
+      const full = await fetchJson(`/api/memorabilia/${sourceId}?scope=admin`);
+      if (request !== state.importRequest || editor !== state.editorRequest) return;
       const src = full.item;
       if (!src) { toast('불러올 항목을 찾지 못했습니다.', 'error'); return; }
       // 즉시 적용하지 않고 필드 선택 화면으로 이동 — 사용자가 어떤 필드를
@@ -326,6 +469,7 @@
   }
 
   function applyImportFields(src, fieldsSet) {
+    if (!canWrite("memorabilia")) return;
     if (fieldsSet.has('title')) {
       $('#memo-title-en').value = src.title_en || '';
       $('#memo-title-ko').value = src.title_ko || '';
@@ -447,6 +591,8 @@
   }
 
   function openBulkEdit() {
+    if (!canCloseDialog("memo-bulkedit-modal")) return;
+    if (!canWrite("memorabilia")) return;
     const n = state.selectedIds.size;
     if (!n) return;
     wireBulkEditOnce();
@@ -457,7 +603,7 @@
     if (catSel) {
       const opts = ['<option value="">(분류 없음)</option>'];
       for (const c of state.categories) {
-        if (c.archived) continue;
+        if (c.archived && String(c.id) !== cur) continue;
         opts.push(`<option value="${c.id}">${escapeHtml(c.label_ko)} / ${escapeHtml(c.label_en)}</option>`);
       }
       catSel.innerHTML = opts.join('');
@@ -502,12 +648,11 @@
 
     $('#memo-bulkedit-modal').hidden = false;
     document.body.style.overflow = 'hidden';
+    trackDialog("memo-bulkedit-modal");
   }
 
-  function closeBulkEdit() {
-    const modal = $('#memo-bulkedit-modal');
-    if (modal) modal.hidden = true;
-    document.body.style.overflow = '';
+  function closeBulkEdit(force) {
+    if (!hideDialog("memo-bulkedit-modal", force)) return;
   }
 
   function isToggleChecked(key) {
@@ -516,6 +661,8 @@
   }
 
   async function applyBulkEdit() {
+    if (!canWrite("memorabilia")) return;
+    if (busy.has('memo-bulkedit-modal')) return;
     const ids = Array.from(state.selectedIds);
     if (!ids.length) { closeBulkEdit(); return; }
 
@@ -561,6 +708,8 @@
     }
 
     if (!confirm(`${ids.length}개 항목에 일괄 적용합니다. 되돌릴 수 없으니 신중히 진행하세요. 계속할까요?`)) return;
+    if (!startMutation('memo-bulkedit-modal')) return;
+    const snapshot = dialogSnapshot('memo-bulkedit-modal');
 
     const btn = $('#memo-bulkedit-apply');
     btn.disabled = true; const orig = btn.textContent; btn.textContent = '적용 중…';
@@ -580,12 +729,14 @@
       const skipped = data.skipped || 0;
       const errCount = (data.errors || []).length;
       toast(`적용 완료 — 변경 ${updated}건 · 변경 없음 ${skipped}건${errCount ? ` · 오류 ${errCount}건` : ''}`, 'success');
-      closeBulkEdit();
+      if (dialogSnapshot('memo-bulkedit-modal') === snapshot) closeBulkEdit(true);
+      else { dialogs.set('memo-bulkedit-modal', snapshot); toast('추가로 바꾼 일괄 편집 조건은 유지했습니다. 아직 적용되지 않았습니다.', 'info'); }
       state.selectedIds.clear();
       await loadList();
     } catch (err) {
       toast('네트워크 오류: ' + err.message, 'error');
     } finally {
+      busy.delete('memo-bulkedit-modal');
       btn.disabled = false; btn.textContent = orig;
     }
   }
@@ -707,6 +858,8 @@
   }
 
   async function runBulkReplace(body) {
+    if (!canWrite("memorabilia")) return;
+    if (!startMutation('memo-bulk-replace')) return;
     try {
       const res = await fetch('/api/memorabilia/bulk-replace', {
         method: 'POST',
@@ -729,7 +882,7 @@
       }
     } catch (err) {
       toast('네트워크 오류: ' + err.message, 'error');
-    }
+    } finally { busy.delete('memo-bulk-replace'); }
   }
 
   function showBulkResult(data) {
@@ -792,7 +945,6 @@
 
   // ── 목록 ────────────────────────────────────────────────────────────────
   async function bootList() {
-    state.loadedOnce = true;
     await Promise.all([loadList(), loadCategories(true), ensureCountryLabels(), populateListEventFilter()]);
     populateCategorySelect();
     // 목록 한 번 더 렌더 — country labels 도착 이후 행사명·국가 셀에 반영
@@ -800,26 +952,44 @@
   }
 
   async function loadList(page) {
-    if (typeof page === 'number') state.page = Math.max(1, page);
+    if (typeof page === 'number') { state.page = Math.max(1, page); state.selectedIds.clear(); renderBulkToolbar(); }
+    const request = ++state.listRequest;
+    state.listError = '';
+    const wrap = $('#memo-list-wrap');
+    if (wrap) wrap.innerHTML = '<div class="v3-empty" role="status">목록을 불러오는 중…</div>';
+    const meta = $('#memo-list-meta');
+    if (meta) meta.textContent = '조회 중…';
     try {
-      const params = new URLSearchParams({ include_drafts: '1', limit: String(PAGE_SIZE), page: String(state.page) });
+      const params = new URLSearchParams({ scope: 'admin', include_drafts: '1', limit: String(PAGE_SIZE), page: String(state.page) });
       if (state.listEventFilter) params.set('event_id', state.listEventFilter);
+      if (state.listQuery) params.set('q', state.listQuery);
       const data = await fetchJson(`/api/memorabilia?${params.toString()}`);
+      if (request !== state.listRequest) return false;
       state.items = data.items || [];
       state.total = Number(data.total || 0);
+      const totalPages = Math.max(1, Math.ceil(state.total / PAGE_SIZE));
+      if (state.page > totalPages) return loadList(totalPages);
+      // Selection is scoped to the displayed page, including a changed search/filter.
+      const visible = new Set(state.items.map((it) => it.id));
+      state.selectedIds = new Set(Array.from(state.selectedIds).filter((id) => visible.has(id)));
+      state.loadedOnce = true;
       renderList();
-      const meta = $('#memo-list-meta');
       if (meta) {
-        const totalPages = Math.max(1, Math.ceil(state.total / PAGE_SIZE));
         const filterTag = state.listEventFilter ? ' · 행사 필터 적용' : '';
-        meta.textContent = `${state.total}건 (드래프트 포함) · ${state.page}/${totalPages} 페이지${filterTag}`;
+        const queryTag = state.listQuery ? ' · 전체 제목 검색 결과' : '';
+        meta.textContent = `${state.total}건 (초안 포함) · ${state.page}/${totalPages} 페이지${filterTag}${queryTag}`;
       }
+      return true;
     } catch (err) {
-      toast('목록을 불러오지 못했습니다: ' + err.message, 'error');
+      if (request !== state.listRequest) return false;
+      state.loadedOnce = false;
+      state.listError = '목록을 불러오지 못했습니다: ' + err.message;
+      if (meta) meta.textContent = '조회 실패';
+      renderList();
+      return false;
     }
   }
 
-  // 행사 필터 드롭다운 채우기 — events 카탈로그 캐시 사용
   async function populateListEventFilter() {
     const sel = $('#memo-list-event-filter');
     if (!sel || !eventsMod) return;
@@ -872,25 +1042,30 @@
       ),
       `<button type="button" class="v3-btn v3-btn-outline v3-btn-sm" data-page="${cur + 1}" ${cur === totalPages ? 'disabled' : ''}>다음 ›</button>`,
     ].join('');
-    pag.addEventListener('click', (e) => {
+    pag.onclick = (e) => {
       const btn = e.target.closest('[data-page]');
       if (!btn || btn.disabled) return;
       const p = parseInt(btn.getAttribute('data-page'), 10);
       if (Number.isFinite(p) && p !== state.page) loadList(p);
-    }, { once: true });
+    };
   }
 
   function renderList() {
     const wrap = $('#memo-list-wrap');
     if (!wrap) return;
-    const q = ($('#memo-list-search')?.value || '').trim().toLowerCase();
-    const items = !q ? state.items : state.items.filter((it) =>
-      String(it.title_en || '').toLowerCase().includes(q) ||
-      String(it.title_ko || '').toLowerCase().includes(q));
+    if (state.listError) {
+      showLoadError('memo-list-wrap', state.listError, () => loadList());
+      return;
+    }
+    const items = state.items;
+    const q = state.listQuery;
     if (!items.length) {
-      wrap.innerHTML = '<div class="v3-empty">아직 항목이 없습니다. <button class="v3-btn v3-btn-primary v3-btn-sm" id="memo-empty-new">첫 항목 추가</button></div>';
+      wrap.innerHTML = q || state.listEventFilter
+        ? '<div class="v3-empty">검색·필터와 일치하는 도감 항목이 없습니다.</div>'
+        : '<div class="v3-empty">아직 항목이 없습니다. <button class="v3-btn v3-btn-primary v3-btn-sm" id="memo-empty-new">첫 항목 추가</button></div>';
       const b = $('#memo-empty-new'); if (b) b.addEventListener('click', () => openEditor(null));
       renderBulkToolbar();
+      syncReadOnly();
       return;
     }
     // 현재 페이지의 표시 가능한 id 들
@@ -992,25 +1167,28 @@
 
     renderBulkToolbar();
     renderPagination();
+    syncReadOnly();
   }
 
   // ── Editor modal ────────────────────────────────────────────────────────
   async function openEditor(item) {
+    if (!canCloseDialog('memo-edit-modal')) return;
+    if (!item && !canWrite('memorabilia')) return;
+    if (!$('#memo-edit-modal').hidden) hideDialog('memo-edit-modal', true);
+    const request = ++state.editorRequest;
+    const panel = $('.v3-panel.active')?.id;
     if (!state.categories.length) await loadCategories(true);
-    populateCategorySelect();
-    ensureCountryPicker(item?.country_codes || []);
-    ensureEventPicker(item?.event_id || null, item?.event || null);
-    setupDropZone();
-
-    // Hydrate fields
-    state.editing = item;
+    if (request !== state.editorRequest || (panel && panel !== $('.v3-panel.active')?.id)) return;
+    // Hydrate fields only after the current request finishes.
     if (item) {
       // 상세 fetch (full hydration)
       try {
-        const full = await fetchJson(`/api/memorabilia/${item.id}`);
+        const full = await fetchJson(`/api/memorabilia/${item.id}?scope=admin`);
+        if (request !== state.editorRequest || (panel && panel !== $('.v3-panel.active')?.id)) return;
         item = full.item;
+        if (!item) throw new Error('항목을 찾을 수 없습니다.');
       } catch (err) {
-        toast('상세 로드 실패: ' + err.message, 'error');
+        if (request === state.editorRequest) toast('상세 로드 실패: ' + err.message, 'error');
         return;
       }
       $('#memo-edit-title').textContent = '도감 항목 편집';
@@ -1020,6 +1198,11 @@
       $('#memo-edit-delete').hidden = true;
     }
 
+    state.editing = item;
+    populateCategorySelect();
+    ensureCountryPicker(item?.country_codes || []);
+    ensureEventPicker(item?.event_id || null, item?.event || null);
+    setupDropZone();
     $('#memo-title-en').value = item?.title_en || '';
     $('#memo-title-ko').value = item?.title_ko || '';
     $('#memo-has-event').checked = !!item?.has_event;
@@ -1046,9 +1229,7 @@
     // event picker — 초기 openEditor 진입 시점에는 shallow list row 만 있어
     // event_id / event 가 없을 수 있다. 위 fetchJson(`/api/memorabilia/${id}`) 로
     // 받은 hydrated item 의 event 객체로 picker 를 재초기화.
-    if (item && (item.event_id || item.event)) {
-      ensureEventPicker(item.event_id || null, item.event || null);
-    }
+
 
     state.images = (item?.images || []).map((img) => ({
       url: img.url, alt_en: img.alt_en || '', alt_ko: img.alt_ko || '',
@@ -1065,11 +1246,13 @@
 
     $('#memo-edit-modal').hidden = false;
     document.body.style.overflow = 'hidden';
+    trackDialog('memo-edit-modal');
   }
 
-  function closeEditor() {
-    $('#memo-edit-modal').hidden = true;
-    document.body.style.overflow = '';
+  function closeEditor(force) {
+    if (!hideDialog("memo-edit-modal", force)) return;
+    state.editorRequest += 1;
+    state.importRequest += 1;
     state.editing = null;
   }
 
@@ -1224,6 +1407,7 @@
         renderImages();
       });
     });
+    syncReadOnly();
     // credit 입력은 input 이벤트로 state 즉시 반영 — renderImages 호출은 하지 않아
     // 포커스 손실 방지 (사용자가 타이핑 중일 때 grid 재렌더되면 IME/커서 깨짐).
     $$('input[data-credit-i]', grid).forEach((inp) => {
@@ -1246,10 +1430,12 @@
   }
 
   async function addFiles(fileList) {
+    if (!canWrite("memorabilia")) return;
     const files = Array.from(fileList || []);
     console.log('[memo upload] addFiles called with', files.length, 'file(s)', files.map((f) => ({ name: f.name, type: f.type, size: f.size })));
-    if (!files.length) return;
-
+    if (!files.length || busy.has('memo-edit-modal')) return;
+    state.uploads += 1;
+    try {
     const errors = [];
     const placeholders = [];
 
@@ -1344,6 +1530,7 @@
     }
 
     if (errors.length) flashError(errors.join('\n'));
+    } finally { state.uploads -= 1; }
   }
 
   // 이미지 영역 상단 진행 바 — "⬆ 업로드 중… 1/3" + 진행률.
@@ -1431,8 +1618,10 @@
         renderLinks();
       });
     });
+    syncReadOnly();
   }
   function addLink() {
+    if (!canWrite('memorabilia')) return;
     state.links.push({ label_en: '', label_ko: '', url: '' });
     renderLinks();
   }
@@ -1483,6 +1672,7 @@
     hidden.value = tagsChipState.tags.join(', ');
     $$('.memo-tag-chip-x', wrap).forEach((b) => {
       b.addEventListener('click', () => {
+        if (!canWrite('memorabilia')) return;
         const i = parseInt(b.getAttribute('data-i'), 10);
         if (Number.isFinite(i)) {
           tagsChipState.tags.splice(i, 1);
@@ -1491,8 +1681,10 @@
         }
       });
     });
+    syncReadOnly();
   }
   function addTagFromText(raw) {
+    if (!canWrite('memorabilia')) return false;
     const cleaned = String(raw || '').trim().replace(/^,+|,+$/g, '').trim();
     if (!cleaned) return false;
     const lower = cleaned.toLowerCase();
@@ -1646,11 +1838,13 @@
     const source = $('#memo-tags-suggestions-source');
     if (!wrap || !list) return;
     const eventId = state.selectedEventId || null;
+    const editor = state.editorRequest;
     if (!eventId) { wrap.hidden = true; return; }
     if (_tagSuggestTimer) clearTimeout(_tagSuggestTimer);
     _tagSuggestTimer = setTimeout(async () => {
       try {
         const res = await fetchJson(`/api/memorabilia?event_id=${eventId}&limit=30`);
+        if (editor !== state.editorRequest || eventId !== state.selectedEventId || $('#memo-edit-modal').hidden) return;
         const freq = {};
         (res.items || []).forEach((it) => {
           (it.tags || []).forEach((t) => { if (!t) return; freq[t] = (freq[t] || 0) + 1; });
@@ -1667,16 +1861,22 @@
         ).join('');
         $$('.memo-tag-suggestion', list).forEach((b) => {
           b.addEventListener('click', () => {
+            if (!canWrite('memorabilia')) return;
             if (addTagFromText(b.getAttribute('data-tag'))) refreshTagSuggestions();
           });
         });
         wrap.hidden = false;
+        syncReadOnly();
       } catch (_) { wrap.hidden = true; }
     }, 200);
   }
 
   // ── Save / Delete ───────────────────────────────────────────────────────
   async function save() {
+    if (!canWrite("memorabilia")) return;
+    if (state.uploads || busy.has('memo-edit-modal')) { toast('업로드 또는 저장 완료 후 저장하세요.', 'error'); return; }
+    const target = state.editing;
+    const snapshot = dialogSnapshot('memo-edit-modal');
     const country_codes = state.countryPicker ? state.countryPicker.getValue() : [];
     const tagsRaw = $('#memo-tags').value || '';
     const tags = tagsRaw.split(/[,\n]+/).map((s) => s.trim()).filter(Boolean);
@@ -1707,15 +1907,17 @@
       status: $('#memo-status').value || 'draft',
     };
 
+    if (!startMutation('memo-edit-modal')) return;
     const saveBtn = $('#memo-edit-save');
     saveBtn.disabled = true;
     saveBtn.textContent = '저장 중…';
     try {
-      if (state.editing && state.editing.id) {
+      let saved;
+      if (target && target.id) {
         // Optimistic locking — 편집 진입 시점의 updated_at 을 동봉. 서버가
         // 현재 row 와 다르면 409 + reason 으로 친절한 안내. (안정성 3차)
-        body.expected_updated_at = state.editing.updated_at || null;
-        const res = await fetch(`/api/memorabilia/${state.editing.id}`, {
+        body.expected_updated_at = target.updated_at || null;
+        const res = await fetch(`/api/memorabilia/${target.id}`, {
           method: 'PATCH',
           credentials: 'same-origin',
           headers: { 'Content-Type': 'application/json' },
@@ -1727,56 +1929,67 @@
           return; // 모달은 열려 있는 상태로 유지
         }
         if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+        saved = data;
         toast('수정 완료', 'success');
       } else {
-        await fetchJson('/api/memorabilia', {
+        saved = await fetchJson('/api/memorabilia', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(body),
         });
         toast('생성 완료', 'success');
       }
-      closeEditor();
+      state.editing = { ...(target || {}), id: saved.id, updated_at: saved.updated_at || null };
+      dialogs.set('memo-edit-modal', snapshot);
+      if (dialogSnapshot('memo-edit-modal') === snapshot) closeEditor(true);
+      else toast('저장 후 추가한 변경 사항이 남아 있습니다. 다시 저장하세요.', 'success');
       await loadList();
     } catch (err) {
       toast('저장 실패: ' + err.message, 'error');
     } finally {
-      saveBtn.disabled = false;
+      busy.delete('memo-edit-modal');
+      saveBtn.disabled = !canWrite('memorabilia');
       saveBtn.textContent = '저장';
     }
   }
 
   async function remove() {
+    if (!canWrite("memorabilia")) return;
     if (!state.editing || !state.editing.id) return;
     if (!confirm('이 도감 항목을 삭제하시겠습니까? 되돌릴 수 없습니다.')) return;
+    if (state.uploads || !startMutation('memo-edit-modal')) return;
     try {
       await fetchJson(`/api/memorabilia/${state.editing.id}`, { method: 'DELETE' });
       toast('삭제됨', 'success');
-      closeEditor();
+      closeEditor(true);
       await loadList();
     } catch (err) {
       toast('삭제 실패: ' + err.message, 'error');
-    }
+    } finally { busy.delete('memo-edit-modal'); }
   }
 
   // ── Categories panel ────────────────────────────────────────────────────
   async function bootCategories() {
-    state.catsLoadedOnce = true;
-    await loadCategories(true);
-    renderCategories();
+    await loadCategories(false);
   }
 
   async function loadCategories(silent) {
+    const request = ++state.catsRequest;
+    state.catsError = '';
+    if (!silent) { const wrap = $('#memo-cat-list-wrap'); if (wrap) wrap.innerHTML = '<div class="v3-empty" role="status">분류를 불러오는 중…</div>'; }
     try {
-      const data = await fetchJson('/api/memorabilia/categories');
+      const data = await fetchJson('/api/memorabilia/categories?scope=admin');
+      if (request !== state.catsRequest) return false;
       state.categories = data.items || [];
-      if (!silent) {
-        const meta = $('#memo-cat-meta');
-        if (meta) meta.textContent = `${state.categories.length}개 분류`;
-        renderCategories();
-      }
+      state.catsLoadedOnce = true;
+      if (!silent) renderCategories();
+      return true;
     } catch (err) {
-      if (!silent) toast('분류 목록 실패: ' + err.message, 'error');
+      if (request !== state.catsRequest) return false;
+      state.catsLoadedOnce = false;
+      state.catsError = '분류 목록을 불러오지 못했습니다: ' + err.message;
+      if (!silent) renderCategories();
+      return false;
     }
   }
 
@@ -1784,6 +1997,11 @@
     const wrap = $('#memo-cat-list-wrap');
     if (!wrap) return;
     const meta = $('#memo-cat-meta');
+    if (state.catsError) {
+      if (meta) meta.textContent = '조회 실패';
+      showLoadError('memo-cat-list-wrap', state.catsError, () => loadCategories(false));
+      return;
+    }
     if (meta) meta.textContent = `${state.categories.length}개 분류 · 사용 중인 분류는 아카이브 처리됩니다.`;
 
     if (!state.categories.length) {
@@ -1807,6 +2025,7 @@
       const target = state.categories.find((x) => x.id === id);
       if (target) openCategoryEditor(target);
     }));
+    syncReadOnly();
   }
 
   // 분류 추가/편집 모달 (prompt() 대체).
@@ -1823,6 +2042,8 @@
     });
   }
   function openCategoryEditor(cat) {
+    if (!cat && !canWrite('memorabilia-categories')) return;
+    if (!canCloseDialog("memo-cat-edit-modal")) return;
     _editingCategory = cat || null;
     $('#memo-cat-edit-title').textContent = cat ? '분류 편집' : '새 분류';
     const slugInput = $('#memo-cat-slug');
@@ -1834,17 +2055,21 @@
     $('#memo-cat-archived').checked = !!cat?.archived;
     $('#memo-cat-edit-modal').hidden = false;
     document.body.style.overflow = 'hidden';
+    trackDialog("memo-cat-edit-modal");
   }
-  function closeCategoryEditor() {
-    $('#memo-cat-edit-modal').hidden = true;
-    document.body.style.overflow = '';
+  function closeCategoryEditor(force) {
+    if (!hideDialog("memo-cat-edit-modal", force)) return;
     _editingCategory = null;
   }
   async function saveCategory() {
+    if (!canWrite("memorabilia-categories")) return;
+    if (busy.has('memo-cat-edit-modal')) return;
+    const target = _editingCategory;
+    const snapshot = dialogSnapshot('memo-cat-edit-modal');
     const body = {
       label_en: $('#memo-cat-label-en').value.trim(),
       label_ko: $('#memo-cat-label-ko').value.trim(),
-      sort_order: parseInt($('#memo-cat-sort').value, 10) || 999,
+      sort_order: Number.isFinite(parseInt($('#memo-cat-sort').value, 10)) ? parseInt($('#memo-cat-sort').value, 10) : 999,
       archived: $('#memo-cat-archived').checked,
     };
     if (!_editingCategory) {
@@ -1854,21 +2079,26 @@
       body.slug = slug;
     }
     if (!body.label_en && !body.label_ko) { toast('영문 또는 국문 라벨 중 하나는 필수', 'error'); return; }
+    if (!startMutation('memo-cat-edit-modal')) return;
     const saveBtn = $('#memo-cat-edit-save');
     saveBtn.disabled = true; const orig = saveBtn.textContent; saveBtn.textContent = '저장 중…';
     try {
-      const url = _editingCategory ? `/api/memorabilia/categories/${_editingCategory.id}` : '/api/memorabilia/categories';
-      const method = _editingCategory ? 'PATCH' : 'POST';
-      await fetchJson(url, {
+      const url = target ? `/api/memorabilia/categories/${target.id}` : '/api/memorabilia/categories';
+      const method = target ? 'PATCH' : 'POST';
+      const saved = await fetchJson(url, {
         method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
       });
-      closeCategoryEditor();
+      _editingCategory = saved.item || target;
+      dialogs.set('memo-cat-edit-modal', snapshot);
+      if (dialogSnapshot('memo-cat-edit-modal') === snapshot) closeCategoryEditor(true);
+      else $('#memo-cat-slug').disabled = true;
       await loadCategories(false);
-      toast(_editingCategory ? '분류 저장됨' : '분류 추가됨', 'success');
+      toast(target ? '분류 저장됨' : '분류 추가됨', 'success');
     } catch (err) {
-      toast((_editingCategory ? '저장' : '추가') + ' 실패: ' + err.message, 'error');
+      toast((target ? '저장' : '추가') + ' 실패: ' + err.message, 'error');
     } finally {
-      saveBtn.disabled = false; saveBtn.textContent = orig;
+      busy.delete('memo-cat-edit-modal');
+      saveBtn.disabled = !canWrite('memorabilia-categories'); saveBtn.textContent = orig;
     }
   }
 
@@ -1879,22 +2109,27 @@
   let _eventsWiredOnce = false;
 
   async function bootEvents() {
-    state.eventsLoadedOnce = true;
     wireEventsPanelOnce();
     await Promise.all([loadEventCategories(), loadEventsList()]);
+    state.eventsLoadedOnce = !state.eventsError && !state.eventCatsError;
     populateEventCategoryControls();
     renderEventsList();
   }
 
-  // 행사 카테고리 카탈로그 로드 (모달·필터·편집 모달 select 채우기)
   async function loadEventCategories() {
+    const request = ++state.eventCatsRequest;
+    state.eventCatsError = '';
     try {
-      const data = await fetchJson('/api/memorabilia/event-categories?include_archived=1');
+      const data = await fetchJson('/api/memorabilia/event-categories?scope=admin&include_archived=1');
+      if (request !== state.eventCatsRequest) return false;
       state.eventCategories = data.items || [];
       state.eventCatsLoadedOnce = true;
+      return true;
     } catch (err) {
-      state.eventCategories = [];
-      console.warn('event categories load failed:', err);
+      if (request !== state.eventCatsRequest) return false;
+      state.eventCatsLoadedOnce = false;
+      state.eventCatsError = '행사 카테고리를 불러오지 못했습니다: ' + err.message;
+      return false;
     }
   }
 
@@ -1905,7 +2140,7 @@
       const cur = filter.value;
       const opts = ['<option value="">카테고리 전체</option>', '<option value="__none__">미분류만</option>'];
       for (const c of state.eventCategories) {
-        if (c.archived) continue;
+        if (c.archived && String(c.id) !== cur) continue;
         opts.push(`<option value="${c.id}">${escapeHtml(c.label_ko || c.label_en)}</option>`);
       }
       filter.innerHTML = opts.join('');
@@ -1917,7 +2152,7 @@
       const cur = editSel.value;
       const opts = ['<option value="">(미분류)</option>'];
       for (const c of state.eventCategories) {
-        if (c.archived) continue;
+        if (c.archived && String(c.id) !== cur) continue;
         opts.push(`<option value="${c.id}">${escapeHtml(c.label_ko || c.label_en)}</option>`);
       }
       editSel.innerHTML = opts.join('');
@@ -1929,7 +2164,7 @@
       const cur = bulkSel.value;
       const opts = ['<option value="">(미분류로 설정)</option>'];
       for (const c of state.eventCategories) {
-        if (c.archived) continue;
+        if (c.archived && String(c.id) !== cur) continue;
         opts.push(`<option value="${c.id}">${escapeHtml(c.label_ko || c.label_en)}</option>`);
       }
       bulkSel.innerHTML = opts.join('');
@@ -2031,6 +2266,9 @@
   }
 
   async function onCsvImport(e) {
+    if (!canWrite("memorabilia-events")) return;
+    if (busy.has('memo-ev-csv')) return;
+    const request = ++state.csvRequest;
     const file = e.target.files && e.target.files[0];
     try { e.target.value = ''; } catch {}
     if (!file) return;
@@ -2046,6 +2284,9 @@
       return;
     }
     if (!text.trim()) { toast('빈 파일입니다.', 'error'); return; }
+    if (request !== state.csvRequest || !document.querySelector('#panel-memorabilia-events.active')) return;
+    if (!confirm('CSV의 행사를 추가하거나 같은 키의 행사를 갱신합니다. 파일 내용을 적용할까요?')) return;
+    if (!startMutation('memo-ev-csv')) return;
 
     try {
       const res = await fetch('/api/memorabilia/events/csv', {
@@ -2068,7 +2309,7 @@
       renderEventsList();
     } catch (err) {
       toast('네트워크 오류: ' + err.message, 'error');
-    }
+    } finally { busy.delete('memo-ev-csv'); }
   }
 
   function showCsvResult(data) {
@@ -2117,21 +2358,34 @@
 
   // 행사 카탈로그 fetch — state.events 에 저장 후 renderEventsList 가 표시
   async function loadEventsList() {
+    const request = ++state.eventsRequest;
+    state.eventsError = '';
     try {
-      const data = await fetchJson('/api/memorabilia/events?include_archived=1');
+      const data = await fetchJson('/api/memorabilia/events?scope=admin&include_archived=1');
+      if (request !== state.eventsRequest) return false;
       state.events = data.items || [];
+      const valid = new Set(state.events.map((ev) => ev.id));
+      state.selectedEventIds = new Set(Array.from(state.selectedEventIds).filter((id) => valid.has(id)));
+      state.eventsLoadedOnce = !state.eventCatsError;
+      return true;
     } catch (err) {
-      state.events = [];
-      toast('행사 목록 로드 실패: ' + err.message, 'error');
+      if (request !== state.eventsRequest) return false;
+      state.eventsLoadedOnce = false;
+      state.eventsError = '행사 목록을 불러오지 못했습니다: ' + err.message;
+      return false;
     }
   }
 
-  // 카테고리별 그룹화 + 체크박스 + bulk toolbar
   function renderEventsList() {
     const wrap = $('#memo-ev-list-wrap');
     const meta = $('#memo-ev-meta');
     if (!wrap) return;
 
+    if (state.eventsError || state.eventCatsError) {
+      if (meta) meta.textContent = '조회 실패';
+      showLoadError('memo-ev-list-wrap', state.eventsError || state.eventCatsError, bootEvents);
+      return;
+    }
     const all = state.events || [];
     // 1차 필터링: 카테고리
     const catFilter = state.eventCategoryFilter || '';
@@ -2181,6 +2435,7 @@
       }</div>`;
       const b = $('#memo-ev-empty-new'); if (b) b.addEventListener('click', () => openEventEditor(null));
       renderEventsBulkToolbar();
+      syncReadOnly();
       return;
     }
 
@@ -2195,7 +2450,7 @@
           const cat = state.eventCategories.find((c) => String(c.id) === key);
           groups.set(key, {
             label: cat ? (cat.label_ko || cat.label_en || `#${cat.id}`) : `#${key}`,
-            sort:  cat ? (cat.sort_order || 999) : 999,
+            sort:  cat ? (cat.sort_order ?? 999) : 999,
             items: [],
           });
         }
@@ -2300,6 +2555,7 @@
     }
 
     renderEventsBulkToolbar();
+    syncReadOnly();
   }
 
   function renderEventsBulkToolbar() {
@@ -2321,6 +2577,8 @@
   }
 
   function openEventsBulkModal() {
+    if (!canCloseDialog("memo-ev-bulk-modal")) return;
+    if (!canWrite("memorabilia-events")) return;
     if (!state.selectedEventIds.size) return;
     $('#memo-ev-bulk-count').textContent = `${state.selectedEventIds.size}개`;
     // toggles 초기화
@@ -2332,13 +2590,15 @@
     $('#memo-ev-bulk-archived').value = '0';
     $('#memo-ev-bulk-modal').hidden = false;
     document.body.style.overflow = 'hidden';
+    trackDialog("memo-ev-bulk-modal");
   }
-  function closeEventsBulkModal() {
-    $('#memo-ev-bulk-modal').hidden = true;
-    document.body.style.overflow = '';
+  function closeEventsBulkModal(force) {
+    if (!hideDialog("memo-ev-bulk-modal", force)) return;
   }
 
   async function applyEventsBulkUpdate() {
+    if (!canWrite("memorabilia-events")) return;
+    if (busy.has('memo-ev-bulk-modal')) return;
     const ids = Array.from(state.selectedEventIds);
     if (!ids.length) { closeEventsBulkModal(); return; }
     const updates = {};
@@ -2354,6 +2614,8 @@
       return;
     }
     if (!confirm(`${ids.length}개 행사에 일괄 적용합니다. 계속할까요?`)) return;
+    if (!startMutation('memo-ev-bulk-modal')) return;
+    const snapshot = dialogSnapshot('memo-ev-bulk-modal');
 
     const applyBtn = $('#memo-ev-bulk-apply');
     applyBtn.disabled = true; const orig = applyBtn.textContent; applyBtn.textContent = '적용 중…';
@@ -2370,7 +2632,8 @@
         return;
       }
       toast(`적용 완료 — ${data.updated || 0}건 변경됨`, 'success');
-      closeEventsBulkModal();
+      if (dialogSnapshot('memo-ev-bulk-modal') === snapshot) closeEventsBulkModal(true);
+      else { dialogs.set('memo-ev-bulk-modal', snapshot); toast('추가로 바꾼 일괄 편집 조건을 유지했습니다.', 'info'); }
       state.selectedEventIds.clear();
       if (eventsMod && typeof eventsMod.load === 'function') {
         try { await eventsMod.load(true); } catch {}
@@ -2380,12 +2643,14 @@
     } catch (err) {
       toast('네트워크 오류: ' + err.message, 'error');
     } finally {
+      busy.delete('memo-ev-bulk-modal');
       applyBtn.disabled = false; applyBtn.textContent = orig;
     }
   }
 
   // 카테고리 관리 모달
   function openEventCategoriesModal() {
+    if (!canCloseDialog("memo-ev-cats-modal")) return;
     $('#memo-ev-cats-modal').hidden = false;
     document.body.style.overflow = 'hidden';
     renderEventCategoriesList();
@@ -2393,15 +2658,19 @@
     $('#memo-ev-cat-new-en').value = '';
     $('#memo-ev-cat-new-ko').value = '';
     $('#memo-ev-cat-new-sort').value = '999';
+    trackDialog("memo-ev-cats-modal");
   }
-  function closeEventCategoriesModal() {
-    $('#memo-ev-cats-modal').hidden = true;
-    document.body.style.overflow = '';
+  function closeEventCategoriesModal(force) {
+    if (!hideDialog("memo-ev-cats-modal", force)) return;
   }
 
   function renderEventCategoriesList() {
     const wrap = $('#memo-ev-cats-list-wrap');
     if (!wrap) return;
+    if (state.eventCatsError) {
+      showLoadError('memo-ev-cats-list-wrap', state.eventCatsError, async () => { await loadEventCategories(); populateEventCategoryControls(); renderEventCategoriesList(); });
+      return;
+    }
     if (!state.eventCategories.length) {
       wrap.innerHTML = '<div style="padding:12px; font-size:12.5px; color:var(--gray-700,#3f3f3f);">등록된 분류가 없습니다.</div>';
       return;
@@ -2424,13 +2693,16 @@
       `).join('')}</tbody>
     </table>`;
 
+    syncReadOnly();
     wrap.querySelectorAll('button[data-cat-save]').forEach((btn) => {
       btn.addEventListener('click', async () => {
+        if (!startMutation('memo-ev-cats-modal')) return;
         const id = parseInt(btn.getAttribute('data-cat-save'), 10);
+        const snapshot = dialogSnapshot('memo-ev-cats-modal');
         const body = {
           label_en:   wrap.querySelector(`[data-cat-en="${id}"]`).value.trim(),
           label_ko:   wrap.querySelector(`[data-cat-ko="${id}"]`).value.trim(),
-          sort_order: parseInt(wrap.querySelector(`[data-cat-sort="${id}"]`).value, 10) || 999,
+          sort_order: Number.isFinite(parseInt(wrap.querySelector(`[data-cat-sort="${id}"]`).value, 10)) ? parseInt(wrap.querySelector(`[data-cat-sort="${id}"]`).value, 10) : 999,
           archived:   wrap.querySelector(`[data-cat-arch="${id}"]`).checked,
         };
         try {
@@ -2444,10 +2716,11 @@
           if (!res.ok) { toast(`저장 실패: ${data.detail || data.error}`, 'error'); return; }
           await loadEventCategories();
           populateEventCategoryControls();
-          renderEventCategoriesList();
+          markEventCategorySaved(id, snapshot);
           renderEventsList();
           toast('분류 저장됨', 'success');
         } catch (err) { toast('네트워크 오류: ' + err.message, 'error'); }
+        finally { busy.delete('memo-ev-cats-modal'); }
       });
     });
     wrap.querySelectorAll('button[data-cat-del]').forEach((btn) => {
@@ -2459,26 +2732,34 @@
           ? `이 분류를 ${used}건의 행사가 사용 중입니다. 삭제하면 해당 행사들의 분류가 비워집니다(행사는 보존). 계속할까요?`
           : '이 분류를 삭제할까요?';
         if (!confirm(msg)) return;
+        if (!startMutation('memo-ev-cats-modal')) return;
         try {
           const res = await fetch(`/api/memorabilia/event-categories/${id}`, { method: 'DELETE', credentials: 'same-origin' });
           if (!res.ok) { const data = await res.json().catch(() => ({})); toast(`삭제 실패: ${data.detail || data.error}`, 'error'); return; }
           await Promise.all([loadEventCategories(), loadEventsList()]);
           populateEventCategoryControls();
-          renderEventCategoriesList();
+          wrap.querySelector(`[data-cat-row="${id}"]`)?.remove();
+          const baseline = JSON.parse(dialogs.get('memo-ev-cats-modal') || '[[],[]]');
+          baseline[1] = (baseline[1] || []).filter(([key]) => String(key) !== String(id));
+          dialogs.set('memo-ev-cats-modal', JSON.stringify(baseline));
           renderEventsList();
           toast('분류 삭제됨', 'success');
         } catch (err) { toast('네트워크 오류: ' + err.message, 'error'); }
+        finally { busy.delete('memo-ev-cats-modal'); }
       });
     });
   }
 
   async function addEventCategory() {
+    if (!canWrite("memorabilia-events")) return;
     const body = {
       label_en:   $('#memo-ev-cat-new-en').value.trim(),
       label_ko:   $('#memo-ev-cat-new-ko').value.trim(),
-      sort_order: parseInt($('#memo-ev-cat-new-sort').value, 10) || 999,
+      sort_order: Number.isFinite(parseInt($('#memo-ev-cat-new-sort').value, 10)) ? parseInt($('#memo-ev-cat-new-sort').value, 10) : 999,
     };
     if (!body.label_en && !body.label_ko) { toast('영문/국문 라벨 중 하나는 입력하세요.', 'error'); return; }
+    if (!startMutation('memo-ev-cats-modal')) return;
+    const snapshot = dialogSnapshot('memo-ev-cats-modal');
     try {
       const res = await fetch('/api/memorabilia/event-categories', {
         method: 'POST',
@@ -2488,17 +2769,46 @@
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) { toast(`추가 실패: ${data.detail || data.error}`, 'error'); return; }
-      $('#memo-ev-cat-new-en').value = '';
-      $('#memo-ev-cat-new-ko').value = '';
-      $('#memo-ev-cat-new-sort').value = '999';
-      await loadEventCategories();
+      const unchanged = snapshot === dialogSnapshot('memo-ev-cats-modal');
+      const oldRows = $$('#memo-ev-cats-list-wrap input').map(el => [el.getAttribute('data-cat-en') ? 'data-cat-en' : el.getAttribute('data-cat-ko') ? 'data-cat-ko' : el.getAttribute('data-cat-sort') ? 'data-cat-sort' : 'data-cat-arch', el.getAttribute('data-cat-en') || el.getAttribute('data-cat-ko') || el.getAttribute('data-cat-sort') || el.getAttribute('data-cat-arch'), el.value, el.checked]);
+      if (unchanged) { $('#memo-ev-cat-new-en').value = ''; $('#memo-ev-cat-new-ko').value = ''; $('#memo-ev-cat-new-sort').value = '999'; }
+      const savedNewForm = JSON.parse(dialogSnapshot('memo-ev-cats-modal'))[0];
+      const refreshed = await loadEventCategories();
+      if (!refreshed) {
+        // The POST committed. Keep existing row edits and newer input even if the follow-up GET fails.
+        if (unchanged) {
+          const baseline = JSON.parse(dialogs.get('memo-ev-cats-modal') || '[[],[]]');
+          baseline[0] = savedNewForm;
+          dialogs.set('memo-ev-cats-modal', JSON.stringify(baseline));
+        }
+        toast('분류는 추가됐지만 목록을 갱신하지 못했습니다. 기존 입력은 보존됩니다.', 'error');
+        return;
+      }
       populateEventCategoryControls();
       renderEventCategoriesList();
+      const fresh = JSON.parse(dialogSnapshot('memo-ev-cats-modal'));
+      const baseline = JSON.parse(dialogs.get('memo-ev-cats-modal') || '[[],[]]');
+      const existingIds = new Set((baseline[1] || []).map(([id]) => String(id)));
+      baseline[1] = (baseline[1] || []).concat((fresh[1] || []).filter(([id]) => !existingIds.has(String(id))));
+      if (unchanged) baseline[0] = fresh[0];
+      dialogs.set('memo-ev-cats-modal', JSON.stringify(baseline));
+      oldRows.forEach(([attribute, id, value, checked]) => { const el = $(`#memo-ev-cats-list-wrap [${attribute}="${id}"]`); if (el) { el.value = value; el.checked = checked; } });
       toast('분류 추가됨', 'success');
     } catch (err) { toast('네트워크 오류: ' + err.message, 'error'); }
+    finally { busy.delete('memo-ev-cats-modal'); }
+  }
+
+  function markEventCategorySaved(id, snapshot) {
+    const baseline = JSON.parse(dialogs.get('memo-ev-cats-modal') || '[[],[]]');
+    const submitted = (JSON.parse(snapshot)[1] || []).filter(([key]) => String(key) === String(id));
+    let index = 0;
+    baseline[1] = (baseline[1] || []).map(entry => String(entry[0]) === String(id) ? submitted[index++] : entry);
+    dialogs.set('memo-ev-cats-modal', JSON.stringify(baseline));
   }
 
   function openEventEditor(ev) {
+    if (!ev && !canWrite('memorabilia-events')) return;
+    if (!canCloseDialog("memo-ev-edit-modal")) return;
     _editingEvent = ev;
     $('#memo-ev-edit-title').textContent = ev ? '행사 편집' : '새 행사';
     $('#memo-ev-edit-delete').hidden = !ev;
@@ -2519,14 +2829,18 @@
     $('#memo-ev-archived').checked = !!ev?.archived;
     $('#memo-ev-edit-modal').hidden = false;
     document.body.style.overflow = 'hidden';
+    trackDialog("memo-ev-edit-modal");
   }
-  function closeEventEditor() {
-    $('#memo-ev-edit-modal').hidden = true;
-    document.body.style.overflow = '';
+  function closeEventEditor(force) {
+    if (!hideDialog("memo-ev-edit-modal", force)) return;
     _editingEvent = null;
   }
 
   async function saveEvent() {
+    if (!canWrite("memorabilia-events")) return;
+    if (busy.has('memo-ev-edit-modal')) return;
+    const target = _editingEvent;
+    const snapshot = dialogSnapshot('memo-ev-edit-modal');
     const catRaw = $('#memo-ev-category').value;
     const body = {
       name_en: $('#memo-ev-name-en').value.trim(),
@@ -2542,11 +2856,12 @@
       description_ko: $('#memo-ev-desc-ko').value || '',
       archived: $('#memo-ev-archived').checked,
     };
+    if (!startMutation('memo-ev-edit-modal')) return;
     const saveBtn = $('#memo-ev-edit-save');
     saveBtn.disabled = true; const orig = saveBtn.textContent; saveBtn.textContent = '저장 중…';
     try {
-      const url = _editingEvent ? `/api/memorabilia/events/${_editingEvent.id}` : '/api/memorabilia/events';
-      const method = _editingEvent ? 'PATCH' : 'POST';
+      const url = target ? `/api/memorabilia/events/${target.id}` : '/api/memorabilia/events';
+      const method = target ? 'PATCH' : 'POST';
       const res = await fetch(url, {
         method, credentials: 'same-origin',
         headers: { 'Content-Type': 'application/json' },
@@ -2561,24 +2876,29 @@
       if (eventsMod && typeof eventsMod.load === 'function') {
         try { await eventsMod.load(true); } catch {}
       }
-      closeEventEditor();
+      _editingEvent = { ...(target || {}), id: data.id || target?.id };
+      dialogs.set('memo-ev-edit-modal', snapshot);
+      if (dialogSnapshot('memo-ev-edit-modal') === snapshot) closeEventEditor(true);
       await loadEventsList();
       renderEventsList();
-      toast(_editingEvent ? '행사 수정됨' : '행사 추가됨', 'success');
+      toast(target ? '행사 수정됨' : '행사 추가됨', 'success');
     } catch (err) {
       toast('저장 실패: ' + err.message, 'error');
     } finally {
-      saveBtn.disabled = false; saveBtn.textContent = orig;
+      busy.delete('memo-ev-edit-modal');
+      saveBtn.disabled = !canWrite('memorabilia-events'); saveBtn.textContent = orig;
     }
   }
 
   async function deleteEventRow() {
+    if (!canWrite("memorabilia-events")) return;
     if (!_editingEvent) return;
     const used = Number(_editingEvent.usage_count || 0);
     const warning = used > 0
       ? `이 행사를 ${used}건의 도감 항목이 참조 중입니다. 삭제 시 해당 항목들의 행사 연결이 끊어집니다 (도감 항목 자체는 보존, denormalized 행사명 cache 만 표시). 계속할까요?`
       : '이 행사를 삭제할까요? 되돌릴 수 없습니다.';
     if (!confirm(warning)) return;
+    if (!startMutation('memo-ev-edit-modal')) return;
     try {
       const res = await fetch(`/api/memorabilia/events/${_editingEvent.id}`, {
         method: 'DELETE', credentials: 'same-origin',
@@ -2590,12 +2910,12 @@
       if (eventsMod && typeof eventsMod.load === 'function') {
         try { await eventsMod.load(true); } catch {}
       }
-      closeEventEditor();
+      closeEventEditor(true);
       await loadEventsList();
       renderEventsList();
       toast('행사 삭제됨', 'success');
     } catch (err) {
       toast('삭제 실패: ' + err.message, 'error');
-    }
+    } finally { busy.delete('memo-ev-edit-modal'); }
   }
 })();

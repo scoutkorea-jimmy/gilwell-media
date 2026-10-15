@@ -21,7 +21,7 @@ export default defineConfig({
     navigationTimeout: 30_000,
   },
   webServer: {
-    command: 'python3 -m http.server 8767 --bind 127.0.0.1 --directory public',
+    command: 'python3 tests/admin-static-server.py 8767',
     cwd: '..',
     url: 'http://127.0.0.1:8767/admin.html',
     reuseExistingServer: false,

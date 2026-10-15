@@ -380,7 +380,7 @@ export async function createMemorabilia(db, input, { createdBy = null } = {}) {
   return id;
 }
 
-export async function updateMemorabilia(db, id, input) {
+export async function updateMemorabilia(db, id, input, { expectedUpdatedAt = null } = {}) {
   const existing = await db.prepare(`SELECT id, status, event_id FROM memorabilia WHERE id = ?`).bind(id).first();
   if (!existing) return null;
 
@@ -388,20 +388,7 @@ export async function updateMemorabilia(db, id, input) {
 
   await maybeHydrateEventName(db, input);
 
-  // event_id 변경 시 events.usage_count 조정 — 이전엔 create/delete 만 ±1 했고
-  // update 에서 누락되어 행사 변경/해제 시 카운트가 드리프트 했음 (2026-05-26 fix).
-  const oldEventId = existing.event_id || null;
-  const newEventId = input.event_id || null;
-  if (oldEventId !== newEventId) {
-    if (oldEventId) {
-      await db.prepare(`UPDATE memorabilia_events SET usage_count = MAX(usage_count - 1, 0) WHERE id = ?`).bind(oldEventId).run();
-    }
-    if (newEventId) {
-      await db.prepare(`UPDATE memorabilia_events SET usage_count = usage_count + 1 WHERE id = ?`).bind(newEventId).run();
-    }
-  }
-
-  await db.prepare(`
+  const saved = await db.prepare(`
     UPDATE memorabilia SET
       title_en = ?, title_ko = ?,
       has_event = ?, event_id = ?, event_name_en = ?, event_name_ko = ?,
@@ -414,13 +401,14 @@ export async function updateMemorabilia(db, id, input) {
       related_links_json = ?,
       related_memorabilia_json = ?,
       status = ?,
-      updated_at = datetime('now'),
+      updated_at = CASE WHEN julianday(updated_at) >= julianday('now') THEN strftime('%Y-%m-%d %H:%M:%f', updated_at, '+0.001 seconds') ELSE strftime('%Y-%m-%d %H:%M:%f', 'now') END,
       published_at = CASE
         WHEN ? = 'public' AND published_at IS NULL THEN datetime('now')
         WHEN ? = 'draft' THEN published_at
         ELSE published_at
       END
-    WHERE id = ?
+    WHERE id = ? AND (? IS NULL OR updated_at = ?)
+    RETURNING id, updated_at
   `).bind(
     input.title_en, input.title_ko,
     input.has_event, input.event_id, input.event_name_en, input.event_name_ko,
@@ -437,12 +425,23 @@ export async function updateMemorabilia(db, id, input) {
     input.status,
     input.status,
     id,
-  ).run();
+    expectedUpdatedAt,
+    expectedUpdatedAt,
+  ).first();
+  if (!saved) return { conflict: true };
+
+  // A failed compare-and-swap must not change event counts or child relations.
+  const oldEventId = existing.event_id || null;
+  const newEventId = input.event_id || null;
+  if (oldEventId !== newEventId) {
+    if (oldEventId) await db.prepare(`UPDATE memorabilia_events SET usage_count = MAX(usage_count - 1, 0) WHERE id = ?`).bind(oldEventId).run();
+    if (newEventId) await db.prepare(`UPDATE memorabilia_events SET usage_count = usage_count + 1 WHERE id = ?`).bind(newEventId).run();
+  }
 
   await syncRelations(db, id, input);
   await syncMutualRelated(db, id, input.related_memorabilia);
   await syncFtsForId(db, id);
-  return id;
+  return saved;
 }
 
 export async function deleteMemorabilia(db, id) {

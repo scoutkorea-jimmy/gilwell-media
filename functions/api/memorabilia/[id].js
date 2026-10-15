@@ -5,6 +5,7 @@
  */
 
 import { gateMenuAccess, loadAdminSession } from '../../_shared/admin-permissions.js';
+import { hasMenuPermission } from '../../_shared/admin-users.js';
 import {
   normalizeMemorabiliaInput,
   getMemorabiliaById,
@@ -18,11 +19,12 @@ export async function onRequestGet({ request, env, params }) {
   if (!Number.isFinite(id)) return json({ error: 'invalid_id' }, 400);
 
   const session = await loadAdminSession(request, env).catch(() => null);
-  const includeDrafts = !!session;
+  const includeDrafts = !!(session && (session.isOwner || (session.permissions.access_admin && hasMenuPermission(session.permissions, 'memorabilia', 'view'))));
+  if (new URL(request.url).searchParams.get('scope') === 'admin' && !includeDrafts) return (await gateMenuAccess(request, env, 'memorabilia', 'view')) || json({ error: '관리자 권한을 확인하지 못했습니다. 다시 시도해주세요.' }, 503);
 
   const item = await getMemorabiliaById(env.DB, id, { includeDrafts });
   if (!item) return json({ error: 'not_found' }, 404);
-  return json({ item });
+  return json({ item }, 200, includeDrafts ? { 'Cache-Control': 'no-store' } : {});
 }
 
 export async function onRequestPatch({ request, env, params }) {
@@ -63,9 +65,10 @@ export async function onRequestPatch({ request, env, params }) {
   }
 
   try {
-    const result = await updateMemorabilia(env.DB, id, input);
+    const result = await updateMemorabilia(env.DB, id, input, { expectedUpdatedAt: body.expected_updated_at ? String(body.expected_updated_at).trim() : null });
     if (!result) return json({ error: 'not_found' }, 404);
-    return json({ id });
+    if (result.conflict) return json({ error: 'version_mismatch', reason: '다른 운영자가 먼저 저장했습니다. 입력을 유지했습니다. 최신 내용을 확인한 뒤 다시 수정해주세요.' }, 409);
+    return json({ id, updated_at: result.updated_at || null });
   } catch (err) {
     console.error('PATCH /api/memorabilia error:', err);
     return json({ error: 'update_failed' }, 500);
@@ -88,9 +91,9 @@ export async function onRequestDelete({ request, env, params }) {
   }
 }
 
-function json(data, status = 200) {
+function json(data, status = 200, extraHeaders = {}) {
   return new Response(JSON.stringify(data), {
     status,
-    headers: { 'Content-Type': 'application/json; charset=utf-8' },
+    headers: { 'Content-Type': 'application/json; charset=utf-8', ...extraHeaders },
   });
 }

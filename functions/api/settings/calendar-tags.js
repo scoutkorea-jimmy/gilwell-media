@@ -12,7 +12,7 @@ const DEFAULT_CALENDAR_TAGS = [
   '모집',
 ];
 
-export async function onRequestGet({ env }) {
+export async function onRequestGet({ request, env }) {
   try {
     const row = await env.DB.prepare(
       `SELECT value FROM settings WHERE key = 'calendar_tags'`
@@ -21,12 +21,13 @@ export async function onRequestGet({ env }) {
     return json({ items });
   } catch (err) {
     console.error('GET /api/settings/calendar-tags error:', err);
+    if (request && new URL(request.url).searchParams.get('scope') === 'admin') return json({ error: '태그 목록을 불러오지 못했습니다.' }, 503);
     return json({ items: DEFAULT_CALENDAR_TAGS });
   }
 }
 
 export async function onRequestPut({ request, env }) {
-  const __gate = await gateMenuAccess(request, env, 'calendar', 'view'); if (__gate) return __gate
+  const __gate = await gateMenuAccess(request, env, 'calendar', 'write'); if (__gate) return __gate
   let body;
   try { body = await request.json(); } catch (_) {
     return json({ error: 'Invalid JSON' }, 400);

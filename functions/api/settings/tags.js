@@ -49,6 +49,7 @@ export async function onRequestGet({ env, request }) {
       categories: tags.categories,
     });
   } catch (err) {
+    if (request && new URL(request.url).searchParams.get('scope') === 'admin') return json({ error: '설정을 불러오지 못했습니다. 다시 시도해주세요.' }, 500);
     console.error('GET /api/settings/tags error:', err);
     return json({
       items: getTagsForCategory(DEFAULT_TAGS, null),
@@ -79,7 +80,9 @@ export async function onRequestPut({ request, env }) {
   }
 
   try {
-    const current = await loadTagSettings(env);
+    const previousRow = await env.DB.prepare(`SELECT value FROM settings WHERE key = 'tags'`).first();
+    const current = normalizeTagSettings(previousRow ? JSON.parse(previousRow.value) : DEFAULT_TAGS);
+    if (body.if_current && JSON.stringify(normalizeTagSettings(body.if_current)) !== JSON.stringify(current)) return json({ error: '태그 설정이 다른 화면에서 변경되었습니다. 입력을 보존하고 최신 값을 확인해주세요.' }, 409);
     const removedTags = collectRemovedTags(current, safe);
     for (const removedTag of removedTags) {
       const usage = await getTagUsage(env, removedTag);
@@ -92,10 +95,11 @@ export async function onRequestPut({ request, env }) {
         }, 409);
       }
     }
-    await env.DB.prepare(
+    const write = await env.DB.prepare(
       `INSERT INTO settings (key, value) VALUES ('tags', ?)
-       ON CONFLICT(key) DO UPDATE SET value = excluded.value`
-    ).bind(JSON.stringify(safe)).run();
+       ON CONFLICT(key) DO UPDATE SET value = excluded.value WHERE settings.value IS ?`
+    ).bind(JSON.stringify(safe), previousRow ? previousRow.value : null).run();
+    if (write.meta && write.meta.changes !== 1) return json({ error: '동시 태그 변경이 감지되었습니다.' }, 409);
     await recordSettingChange(env, {
       key: 'tags',
       previousValue: current ? JSON.stringify(current) : null,

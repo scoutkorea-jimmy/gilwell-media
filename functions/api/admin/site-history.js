@@ -26,25 +26,25 @@ export async function onRequestGet({ request, env }) {
            FROM operational_events
           ORDER BY datetime(created_at) DESC, id DESC
           LIMIT ?`
-      ).bind(limit).all().catch(function () { return { results: [] }; }),
+      ).bind(limit).all().catch(function () { return { results: [], failed: true }; }),
       env.DB.prepare(
         `SELECT *
            FROM homepage_issues
           ORDER BY datetime(updated_at) DESC, id DESC
           LIMIT ?`
-      ).bind(Math.min(limit, 200)).all().catch(function () { return { results: [] }; }),
+      ).bind(Math.min(limit, 200)).all().catch(function () { return { results: [], failed: true }; }),
       env.DB.prepare(
         `SELECT id, key, value, saved_at
            FROM settings_history
           ORDER BY datetime(saved_at) DESC, id DESC
           LIMIT ?`
-      ).bind(Math.min(limit, 150)).all().catch(function () { return { results: [] }; }),
+      ).bind(Math.min(limit, 150)).all().catch(function () { return { results: [], failed: true }; }),
       env.DB.prepare(
         `SELECT id, post_id, action, summary, before_snapshot, after_snapshot, created_at
            FROM post_history
           ORDER BY datetime(created_at) DESC, id DESC
           LIMIT ?`
-      ).bind(Math.min(limit, 150)).all().catch(function () { return { results: [] }; }),
+      ).bind(Math.min(limit, 150)).all().catch(function () { return { results: [], failed: true }; }),
     ]);
 
     const items = dedupeHistoryItems([]
@@ -58,6 +58,9 @@ export async function onRequestGet({ request, env }) {
     return json({
       items,
       total: items.length,
+      limit,
+      sources: { operational: !operationalRows.failed, issues: !issueRows.failed, settings: !settingsRows.failed, posts: !postHistoryRows.failed },
+      partial: [operationalRows, issueRows, settingsRows, postHistoryRows].some((row) => row.failed),
       groups: {
         error: countBy(items, 'group', 'error'),
         issue: countBy(items, 'group', 'issue'),

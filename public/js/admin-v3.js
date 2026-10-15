@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.156.00
+ * Version: 03.157.00
  *
  * Versioning:
  *   V3.aaa.bb
@@ -88,8 +88,8 @@
       presetBtns.forEach(function (b) { b.classList.remove('is-active'); });
     }
     function clearRange() {
-      if (startInput) startInput.value = '';
-      if (endInput)   endInput.value = '';
+      if (startInput) { startInput.value = ''; startInput.setCustomValidity(''); }
+      if (endInput) { endInput.value = ''; endInput.setCustomValidity(''); }
     }
     presetBtns.forEach(function (btn) {
       btn.addEventListener('click', function () {
@@ -100,15 +100,42 @@
         if (typeof onChange === 'function') onChange({ days: days });
       });
     });
-    if (applyBtn) {
-      applyBtn.addEventListener('click', function () {
-        var s = startInput ? startInput.value : '';
-        var e = endInput ? endInput.value : '';
-        if (!s && !e) return;
+    function applyRange() {
+        var range = _readAnalysisRange(startInput, endInput);
+        if (!range) return;
         clearPresets();
-        if (typeof onChange === 'function') onChange({ start: s, end: e });
-      });
+        if (typeof onChange === 'function') onChange(range);
     }
+    if (applyBtn) applyBtn.addEventListener('click', applyRange);
+    [startInput, endInput].forEach(function (input) {
+      if (!input) return;
+      input.addEventListener('input', function () { input.setCustomValidity(''); });
+      input.addEventListener('keydown', function (event) {
+        if (event.key === 'Enter') { event.preventDefault(); applyRange(); }
+      });
+    });
+  }
+
+  function _readAnalysisRange(startInput, endInput) {
+    var start = startInput && startInput.value;
+    var end = endInput && endInput.value;
+    if (!start || !end) {
+      var missing = !start ? startInput : endInput;
+      if (missing) { missing.setCustomValidity('시작일과 종료일을 모두 입력해주세요.'); missing.reportValidity(); }
+      return null;
+    }
+    if (startInput) startInput.setCustomValidity('');
+    if (endInput) endInput.setCustomValidity('');
+    if (start > end) { var temp = start; start = end; end = temp; }
+    var count = Math.round((new Date(end + 'T00:00:00Z') - new Date(start + 'T00:00:00Z')) / 86400000) + 1;
+    if (!Number.isFinite(count)) return null;
+    if (count > 180) {
+      start = _shiftDate(end, -179);
+      if (GW.showToast) GW.showToast('최대 180일 범위로 조정했습니다.', 'info');
+    }
+    if (startInput) startInput.value = start;
+    if (endInput) endInput.value = end;
+    return { start: start, end: end };
   }
 
   function _togglePasswordReveal(visible) {
@@ -154,6 +181,10 @@
   // Write / edit
   var _editingId     = null;
   var _editor        = null;
+  var _editorRenderQueue = Promise.resolve();
+  var _editorRenderPending = 0;
+  var _editorRenderSequence = 0;
+  var _editorRenderFailed = false;
   var _coverDataUrl  = null;
   var _coverFrame    = { x: 50, y: 50 }; // 대표 이미지 초점(목차 썸네일 + OG 공용). 50/50 = 중앙
   var _galleryImages = [];
@@ -201,6 +232,90 @@
   var _wosmPublicCopy = {};
   var _wosmMembersRevision = 0;
   var _wosmMembersSearch = '';
+  var _contentLoadSequence = { dashboard: 0, list: 0, editor: 0, calendar: 0, glossary: 0, history: 0, scorer: 0, wosm: 0, references: 0 };
+  var _referenceWosmMembers = [];
+  var _referenceWosmColumns = [];
+  var _contentDialogs = {};
+  var _wosmSavedSnapshot = null;
+  var _wosmSavePending = false;
+  var _referenceSavePending = false;
+  var _rubricSavedText = null;
+  var _rubricSavePending = false;
+  var _contentReady = { wosm: false, references: false };
+  var _writeMediaPending = 0;
+  var _scorerInputBaseline = null;
+  var _scorerDetailSequence = 0;
+  var _calendarTagsLoadError = false;
+  function _scorerInputSnapshot() { return JSON.stringify(['scorer-title','scorer-subtitle','scorer-body','scorer-tags'].map(function (id) { return (_el(id) || {}).value || ''; })); }
+
+  function _contentCanWrite(slug) {
+    var me = window.AccountAdmin && window.AccountAdmin.currentMe && window.AccountAdmin.currentMe();
+    return !!(me && (me.role !== 'member' || ((me.permissions && me.permissions.permissions) || []).indexOf('write:' + slug) >= 0));
+  }
+
+  function _contentFormSnapshot(id) {
+    var modal = _el(id);
+    var values = modal ? Array.prototype.map.call(modal.querySelectorAll('input,textarea,select'), function (input) {
+      return [input.id || input.name, input.type === 'checkbox' ? input.checked : input.value];
+    }) : [];
+    if (id === 'cal-modal') values.push(_calModalTags, _calModalTargetGroups, _calModalRelatedPosts);
+    return JSON.stringify(values);
+  }
+
+  function _contentOpenDialog(id, slug) {
+    var modal = _el(id);
+    _contentDialogs[id] = { baseline: _contentFormSnapshot(id), pending: false };
+    var canWrite = _contentCanWrite(slug);
+    if (modal) {
+      Array.prototype.forEach.call(modal.querySelectorAll('input,textarea,select'), function (input) {
+        if (input.type !== 'hidden') input.disabled = !canWrite || (input.id === 'cal-start-time' && !_el('cal-start-time-enabled').checked) || (input.id === 'cal-end-time' && !_el('cal-end-time-enabled').checked);
+      });
+      Array.prototype.forEach.call(modal.querySelectorAll('[data-content-write]'), function (button) { button.hidden = !canWrite; });
+      if (!canWrite) Array.prototype.forEach.call(modal.querySelectorAll('button'), function (button) {
+        if (!button.classList.contains('v3-modal-close') && !/(?:close|cancel)$/.test(button.id)) button.disabled = true;
+      });
+    }
+  }
+
+  function _contentCloseDialog(id, force) {
+    var state = _contentDialogs[id];
+    if (!force && state && state.pending) { GW.showToast('저장 중입니다. 완료 후 닫아주세요.', 'info'); return false; }
+    if (!force && state && state.baseline !== _contentFormSnapshot(id) && !window.confirm('저장하지 않은 변경이 있습니다. 닫으시겠습니까?')) return false;
+    if (_el(id)) _el(id).style.display = 'none';
+    delete _contentDialogs[id];
+    return true;
+  }
+
+  function _wosmSnapshot() {
+    return JSON.stringify([_wosmMembers, _wosmColumns, _wosmImportSavedMapping, _wosmRegisteredCount, _wosmPublicCopy,
+      _collectWosmPublicCopyFields(), _collectWosmImportDefaultFields(), (_el('wosm-registered-count') || {}).value]);
+  }
+
+  V3.contentHasUnsaved = function () {
+    return _writeMediaPending > 0 || _editorRenderPending > 0 || _rubricSavePending || (_scorerInputBaseline !== null && _scorerInputBaseline !== _scorerInputSnapshot()) || Object.keys(_contentDialogs).some(function (id) { var state = _contentDialogs[id]; return state.pending || state.baseline !== _contentFormSnapshot(id); }) ||
+      _wosmSavePending || (_wosmSavedSnapshot !== null && _wosmSavedSnapshot !== _wosmSnapshot()) ||
+      (_rubricSavedText !== null && _el('rubric-textarea') && _el('rubric-textarea').value !== _rubricSavedText) ||
+      !!(V3.contentCardnewsHasUnsaved && V3.contentCardnewsHasUnsaved()) ||
+      !!(V3.contentMemorabiliaHasUnsaved && V3.contentMemorabiliaHasUnsaved());
+  };
+  V3.contentCanLeave = function (panel, section) {
+    if (panel === _panel && (panel !== 'settings' || section === _settingsSection)) return true;
+    if (_writeMediaPending || _editorRenderPending || _rubricSavePending || _wosmSavePending || _referenceSavePending || Object.keys(_contentDialogs).some(function (id) { return _contentDialogs[id].pending; })) {
+      GW.showToast('저장 또는 이미지 처리 중입니다. 완료 후 이동해주세요.', 'info'); return false;
+    }
+    if (_panel === 'card-news' && V3.contentCardnewsCanLeave && !V3.contentCardnewsCanLeave()) return false;
+    if (_panel.indexOf('memorabilia') === 0 && V3.contentMemorabiliaCanLeave && !V3.contentMemorabiliaCanLeave()) return false;
+    var dirty = Object.keys(_contentDialogs).some(function (id) { return _contentDialogs[id].baseline !== _contentFormSnapshot(id); }) ||
+      (_panel === 'settings' && _settingsSection === 'wosm-members' && _wosmSavedSnapshot !== null && _wosmSavedSnapshot !== _wosmSnapshot()) ||
+      (_panel === 'article-scorer' && _scorerInputBaseline !== null && _scorerInputBaseline !== _scorerInputSnapshot()) ||
+      (_panel === 'article-scorer' && _rubricSavedText !== null && _el('rubric-textarea') && _el('rubric-textarea').value !== _rubricSavedText);
+    if (dirty && !window.confirm('저장하지 않은 변경이 있습니다. 다른 메뉴로 이동하시겠습니까?')) return false;
+    Object.keys(_contentDialogs).forEach(function (id) { _contentCloseDialog(id, true); });
+    if (_panel === 'settings' && _settingsSection === 'wosm-members') _wosmSavedSnapshot = null;
+    if (_panel === 'article-scorer') _rubricSavedText = null;
+    if (_panel === 'article-scorer') _scorerInputBaseline = null;
+    return true;
+  };
   var _referenceSites = [];
   var _referenceSitesRevision = 0;
   var _referenceSitesSearch = '';
@@ -239,9 +354,17 @@
   var _analyticsAutoRefreshTimer = null;
   var _analyticsLastUpdatedAt = 0;
   var _analyticsLoading = false;
+  var _analysisRequests = Object.create(null);
+  var _marketingPanZoomResizeBound = false;
+  var _geoAudienceCountriesCache = [];
+  var _geoAudienceSearchCollapsed = Object.create(null);
+  var _geoAudienceWosmCache = null;
+  var _geoAudienceWosmPending = null;
+  var _geoAudienceWosmFetchedAt = 0;
   // 통일 기간 선택 상태. {days: N} 또는 {start, end}.
   var _analyticsPeriodState = { days: 30 };
   var _analyticsTagPeriodState = { days: 30 };
+  var _tagInsightsSearch = '';
   var _geoAudiencePeriodState = { days: 30 };
   var _geoAudienceExpandedCountries = Object.create(null); // country_code → true
   var _geoAudienceCityQuery = '';
@@ -486,7 +609,108 @@
   /* ══════════════════════════════════════════════════════════
      INIT
   ══════════════════════════════════════════════════════════ */
+  function _initAdminDialogs() {
+    var selector = '.v3-modal-backdrop,.v3-overlay,.v3-ti-modal-overlay,.v3-ti-articles-modal,#otp-verify-overlay,#marketing-fullscreen-modal';
+    var stack = [], background = [], serial = 0;
+    var lastFocus = document.activeElement, previousFocus = lastFocus;
+    function visible(element) {
+      return element.isConnected && !element.hidden && element.getAttribute('aria-hidden') !== 'true'
+        && element.getClientRects().length > 0 && getComputedStyle(element).visibility !== 'hidden';
+    }
+    function controls(dialog) {
+      return Array.from(dialog.querySelectorAll('button,input:not([type="hidden"]),select,textarea,a[href],[tabindex],[contenteditable="true"],iframe')).filter(function (element) {
+        return !element.disabled && element.tabIndex >= 0 && visible(element);
+      });
+    }
+    function focusDialog(item) {
+      var firstInput = item.dialog.querySelector('input:not([type="hidden"]):not([disabled]),textarea:not([disabled]),select:not([disabled])');
+      var target = firstInput && visible(firstInput) ? firstInput : controls(item.dialog)[0] || item.dialog;
+      target.focus();
+    }
+    function sync() {
+      var visibleOverlays = Array.from(document.querySelectorAll(selector)).filter(visible);
+      var closed = stack.filter(function (item) { return visibleOverlays.indexOf(item.overlay) === -1; });
+      stack = stack.filter(function (item) { return visibleOverlays.indexOf(item.overlay) !== -1; });
+      var added = [];
+      visibleOverlays.forEach(function (overlay) {
+        if (stack.some(function (item) { return item.overlay === overlay; })) return;
+        var dialog = overlay.matches('[role="dialog"]') ? overlay : overlay.querySelector('[role="dialog"],.v3-modal,.v3-modal-panel,.v3-confirm-box,.marketing-fullscreen-card') || overlay;
+        dialog.setAttribute('role', 'dialog');
+        dialog.setAttribute('aria-modal', 'true');
+        dialog.tabIndex = -1;
+        var title = dialog.querySelector('h2,h3,.v3-confirm-title,#marketing-fullscreen-title,.v3-session-modal-box > p');
+        if (title && !dialog.hasAttribute('aria-labelledby') && !dialog.hasAttribute('aria-label')) {
+          if (!title.id) title.id = 'v3-dialog-title-' + (++serial);
+          dialog.setAttribute('aria-labelledby', title.id);
+        }
+        dialog.querySelectorAll('.v3-modal-close').forEach(function (button) {
+          if (!button.hasAttribute('aria-label')) button.setAttribute('aria-label', '닫기');
+        });
+        var item = { overlay: overlay, dialog: dialog, opener: dialog.contains(document.activeElement) ? previousFocus : document.activeElement };
+        stack.push(item); added.push(item);
+      });
+      background.forEach(function (item) { item.element.inert = item.inert; });
+      background = [];
+      var top = stack[stack.length - 1];
+      if (top) {
+        // Dialogs may live inside a panel; only their ancestor siblings become inert.
+        for (var branch = top.overlay; branch && branch !== document.body; branch = branch.parentElement) {
+          Array.from(branch.parentElement.children).forEach(function (element) {
+            if (element === branch || /^(SCRIPT|STYLE|LINK)$/.test(element.tagName)) return;
+            background.push({ element: element, inert: element.inert });
+            element.inert = true;
+          });
+        }
+      }
+      document.body.classList.toggle('v3-dialog-open', !!top);
+      if (added.length) focusDialog(added[added.length - 1]);
+      else if (closed.length) {
+        var opener = closed[0].opener;
+        if (opener && visible(opener) && !opener.closest('[inert]') && (!top || top.dialog.contains(opener))) opener.focus();
+        else if (top) focusDialog(top);
+      }
+    }
+    document.addEventListener('focusin', function (event) {
+      previousFocus = lastFocus; lastFocus = event.target;
+      var top = stack[stack.length - 1];
+      if (top && visible(top.overlay) && !top.dialog.contains(event.target)) focusDialog(top);
+    });
+    document.addEventListener('keydown', function (event) {
+      var top = stack[stack.length - 1];
+      if (!top || !visible(top.overlay)) return;
+      if (event.key === 'Escape') {
+        event.preventDefault(); event.stopImmediatePropagation();
+        var close = top.dialog.querySelector('.v3-modal-close,[data-close],#confirm-cancel-btn,#otp-cancel-btn,#marketing-fullscreen-close,.marketing-fullscreen-close,#v3-ti-modal-close,#v3-ti-articles-close');
+        if (close && visible(close) && !close.disabled) close.click();
+        else if (top.overlay.id === 'v3-confirm' && !visible(document.getElementById('confirm-cancel-btn'))) document.getElementById('confirm-ok-btn').click();
+      } else if (event.key === 'Tab') {
+        var items = controls(top.dialog), first = items[0], last = items[items.length - 1];
+        if (!first) { event.preventDefault(); top.dialog.focus(); }
+        else if (event.shiftKey && (document.activeElement === first || !items.includes(document.activeElement))) { event.preventDefault(); last.focus(); }
+        else if (!event.shiftKey && (document.activeElement === last || !items.includes(document.activeElement))) { event.preventDefault(); first.focus(); }
+      }
+    }, true);
+    new MutationObserver(function (records) {
+      if (records.some(function (record) {
+        if (record.type === 'attributes') return record.target.matches(selector);
+        return Array.from(record.addedNodes).concat(Array.from(record.removedNodes)).some(function (node) {
+          return node.nodeType === 1 && (node.matches(selector) || node.querySelector(selector));
+        });
+      })) sync();
+    }).observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ['hidden', 'style', 'class', 'aria-hidden'] });
+    sync();
+  }
+
   document.addEventListener('DOMContentLoaded', function () {
+    _initAdminDialogs();
+    window.addEventListener('beforeunload', function (event) {
+      var pending = _writeDirty || _draftSaveInflight
+        || (V3.contentHasUnsaved && V3.contentHasUnsaved())
+        || (V3.settingsHasUnsaved && V3.settingsHasUnsaved());
+      if (!pending) return;
+      event.preventDefault();
+      event.returnValue = '';
+    });
     _installDelegation();
     _syncAdminVersionLabels();
     if (typeof _applyChartPrefs === 'function') _applyChartPrefs();
@@ -756,6 +980,7 @@
     });
 
     // Settings saves
+    _bindEl('releases-refresh-btn', 'click', function () { _loadReleases(true); });
     _bindEl('hero-save-btn', 'click', _saveHero);
     _bindEl('tags-save-btn', 'click', _saveTags);
     _bindEl('meta-save-btn', 'click', _saveMeta);
@@ -772,9 +997,10 @@
     _bindEl('home-lead-save-btn', 'click', _saveHomeLead);
     _bindEl('home-lead-clear-btn', 'click', _clearHomeLeadSelection);
     _bindEl('home-lead-auto-btn', 'click', _switchHomeLeadToAuto);
-    _bindEl('banner-save-btn', 'click', _saveHomeBanners);
+    _bindEl('home-banners-save-btn', 'click', _saveHomeBanners);
     _bindEl('banner-add-btn', 'click', function () {
       if (_homeBanners.length >= HOME_BANNER_MAX) return;
+      _homeBanners = _collectHomeBanners();
       _homeBanners.push({ image_url: '', title: '', link_url: '', starts_at: '', ends_at: '', active: 1, sort_order: _homeBanners.length });
       _renderHomeBanners();
     });
@@ -887,6 +1113,9 @@
     _bindEl('geo-audience-refresh-btn', 'click', _loadGeoAudience);
     _bindEl('geo-audience-city-search', 'input', _onGeoCitySearchInput);
     _bindEl('geo-audience-city-toggle-all', 'click', _onGeoCityToggleAll);
+    _bindEl('geo-audience-map-details', 'toggle', function () {
+      if (this.open && _geoAudienceMap) requestAnimationFrame(function () { _geoAudienceMap.invalidateSize(); });
+    });
     // 도시 국가 그룹 헤더 클릭 → 펼침/접힘 (위임)
     var _geoCityListEl = _el('geo-audience-city-list');
     if (_geoCityListEl) {
@@ -895,7 +1124,9 @@
         if (!btn) return;
         var key = btn.getAttribute('data-geo-country-toggle');
         if (!key) return;
-        if (_geoAudienceExpandedCountries[key]) {
+        if (_geoAudienceCityQuery) {
+          _geoAudienceSearchCollapsed[key] = !_geoAudienceSearchCollapsed[key];
+        } else if (_geoAudienceExpandedCountries[key]) {
           delete _geoAudienceExpandedCountries[key];
         } else {
           _geoAudienceExpandedCountries[key] = true;
@@ -1322,6 +1553,15 @@
     return perms.indexOf('view:' + slug) !== -1;
   }
 
+  V3.canEditPost = function () {
+    var me = window.AccountAdmin && AccountAdmin.currentMe();
+    if (!me) return false;
+    if (me.role && me.role !== 'member') return true;
+    var permissions = (me.permissions && me.permissions.permissions) || [];
+    return (permissions.indexOf('view:list') !== -1 || permissions.indexOf('view:write') !== -1)
+      && (permissions.indexOf('write:list') !== -1 || permissions.indexOf('write:write') !== -1);
+  };
+
   function _canLeaveWrite() {
     var publishButton = _el('write-publish-btn');
     if (_draftSaveInflight || (publishButton && publishButton.classList.contains('is-busy'))) {
@@ -1351,7 +1591,7 @@
     return sectionLabel;
   }
 
-  V3.showPanel = function (panel, settingsSection) {
+  V3.showPanel = function (panel, settingsSection, entry) {
     if (panel === 'analytics') panel = 'analytics-visits';
     if (panel === 'settings') settingsSection = settingsSection || _settingsSection;
     if (panel === 'settings' && settingsSection === 'account-security') {
@@ -1359,7 +1599,7 @@
     }
     if (!document.getElementById('panel-' + panel)) return false;
     if (panel === 'settings' && !document.getElementById('settings-' + settingsSection)) return false;
-    var accessDenied = !_canAccessPanel(panel, settingsSection);
+    var accessDenied = !(panel === 'write' && entry && entry.editing ? V3.canEditPost() : _canAccessPanel(panel, settingsSection));
     if (accessDenied) {
       if (window.GW && GW.showToast) GW.showToast('이 메뉴의 접근 권한이 없습니다.', 'error');
       // Reset URL hash so back-button / reload doesn't retry the denied panel.
@@ -1376,10 +1616,12 @@
       }
     }
 
-    // 2단계 인증 게이트 (민감 메뉴) — 등록 계정이고 OTP 미통과면 모달 후 재진입.
-    if (!_otpGate(panel, settingsSection)) return false;
-
     if (_panel === 'write' && panel !== 'write' && !_canLeaveWrite()) return false;
+    if (V3.contentCanLeave && !V3.contentCanLeave(panel, settingsSection)) return false;
+    if (V3.guardSettingsLeave && !V3.guardSettingsLeave(panel, settingsSection)) return false;
+
+    // 2단계 인증 게이트 (민감 메뉴) — 이탈을 승인한 뒤 인증하고 재진입.
+    if (!_otpGate(panel, settingsSection)) return false;
 
     if (_panel === 'write' && panel !== 'write') _stopDraftTimer();
     _panel = panel;
@@ -1449,8 +1691,158 @@
     return labels[s] || s;
   }
 
+  // Settings share one load/edit/save contract; data failure never becomes an editable empty form.
+  var _managedSettings = ['hero', 'home-lead', 'home-banners', 'tags', 'meta', 'board-copy', 'author', 'banner', 'ticker', 'contributors', 'editors', 'nav-labels', 'translations', 'privacy-policy'];
+  var _settingsStates = {};
+  var _settingsSnapshots = {};
+  var _settingsComparePaths = ['author', 'ai-disclaimer', 'board-banner', 'ticker', 'tags', 'editors', 'translations', 'nav-labels', 'privacy-policy'].map(function (key) { return '/api/settings/' + key; });
+  function _settingsState(section) {
+    return _settingsStates[section] || (_settingsStates[section] = { loaded: false, pending: 0, busy: false, dirty: false, error: '', saved: false });
+  }
+  function _settingsWritable(section) {
+    var me = window.AccountAdmin && window.AccountAdmin.currentMe && window.AccountAdmin.currentMe();
+    if (!me) return false;
+    if (me.role === 'owner') return true;
+    if (section === 'privacy-policy' || section === 'nav-labels') return false;
+    return !!(me.permissions && me.permissions.access_admin && (me.permissions.permissions || []).indexOf('write:' + section) >= 0);
+  }
+  function _settingsStatus(section) {
+    var root = _el('settings-' + section);
+    if (!root) return;
+    var state = _settingsState(section);
+    var node = root.querySelector('[data-settings-status]');
+    if (!node) {
+      node = document.createElement('div');
+      node.setAttribute('data-settings-status', section);
+      node.setAttribute('role', 'status');
+      node.setAttribute('aria-live', 'polite');
+      var card = root.querySelector('.v3-card');
+      (card || root).appendChild(node);
+    }
+    var text = state.busy ? '저장 중입니다. 완료까지 이 화면을 유지해주세요.' : state.pending ? '설정을 불러오는 중…' : state.error ? state.error : !_settingsWritable(section) ? '읽기 전용 · 설정을 변경하려면 쓰기 권한이 필요합니다.' : state.dirty ? '저장하지 않은 변경사항이 있습니다.' : state.saved ? '변경사항을 저장했습니다.' : '현재 설정을 불러왔습니다.';
+    node.className = 'v3-state-message v3-form-save-state' + (state.error ? ' is-error' : state.saved ? ' is-success' : '');
+    node.dataset.state = state.error ? 'error' : state.dirty ? 'dirty' : state.saved ? 'saved' : 'ready';
+    if (node.getAttribute('data-message') !== text) {
+      node.setAttribute('data-message', text);
+      node.textContent = text;
+      if (state.error && !state.pending) {
+        var retry = document.createElement('button');
+        retry.type = 'button'; retry.className = 'v3-btn v3-btn-outline'; retry.textContent = state.loaded ? '최신 설정 다시 불러오기' : '다시 불러오기';
+        retry.setAttribute('data-settings-retry', '1');
+        retry.addEventListener('click', function () {
+          if (state.dirty && !window.confirm('현재 입력을 버리고 최신 설정을 불러올까요? 필요한 입력은 먼저 복사해주세요.')) return;
+          state.dirty = false; _showSettingsSection(section);
+        });
+        node.appendChild(retry);
+      }
+    }
+    root.setAttribute('aria-busy', state.busy || state.pending ? 'true' : 'false');
+    var locked = !state.loaded || !!state.pending || state.busy || !_settingsWritable(section);
+    root.querySelectorAll('input, textarea, select, button').forEach(function (control) {
+      if (control.hasAttribute('data-settings-retry')) return;
+      if (locked && !control.hasAttribute('data-settings-locked')) {
+        control.setAttribute('data-settings-locked', control.disabled ? 'disabled' : 'enabled');
+        control.disabled = true;
+      } else if (!locked && control.hasAttribute('data-settings-locked')) {
+        control.disabled = control.getAttribute('data-settings-locked') === 'disabled';
+        control.removeAttribute('data-settings-locked');
+      }
+      // Dynamic editors retain meaningful field names even when rerendered.
+      if ((control.tagName === 'INPUT' || control.tagName === 'TEXTAREA' || control.tagName === 'SELECT') && !control.getAttribute('aria-label')) {
+        var label = control.id && root.querySelector('label[for="' + control.id + '"]');
+        if (!label) {
+          var group = control.closest('.v3-form-group, .v3-form-row, .v3-trans-row, .v3-board-copy-card, .v3-person-row');
+          var caption = group && group.querySelector('.v3-label, .v3-trans-key, strong, .v3-badge');
+          control.setAttribute('aria-label', [caption ? caption.textContent.trim() : '', control.placeholder || control.getAttribute('data-field') || (control.type === 'date' ? '날짜' : '입력')].filter(Boolean).join(' · '));
+        }
+      }
+    });
+    if (_privacyTiptap && section === 'privacy-policy' && _privacyTiptap.isEditable === locked) _privacyTiptap.setEditable(!locked, false);
+  }
+  function _settingsInit(section) {
+    if (_managedSettings.indexOf(section) < 0) return;
+    var root = _el('settings-' + section);
+    if (!root || root.dataset.settingsManaged) return;
+    root.dataset.settingsManaged = '1';
+    ['input', 'change'].forEach(function (kind) {
+      root.addEventListener(kind, function (event) {
+        if (/search/.test(event.target.id || '')) return;
+        _settingsState(section).dirty = true; _settingsState(section).saved = false;
+        _settingsStatus(section);
+      });
+    });
+    root.addEventListener('click', function (event) {
+      var button = event.target.closest('button, [onclick], [data-tag-action]');
+      if (!button || button.hasAttribute('data-settings-retry')) return;
+      var state = _settingsState(section);
+      if (!state.loaded || state.pending || state.busy || !_settingsWritable(section)) {
+        event.preventDefault(); event.stopImmediatePropagation(); return;
+      }
+      if (!/save|source-toggle/.test(button.id || '')) { state.dirty = true; state.saved = false; _settingsStatus(section); }
+    }, true);
+    new MutationObserver(function () { _settingsStatus(section); }).observe(root, { childList: true, subtree: true });
+  }
+  function _settingsFetch(section, path, opts) {
+    var sourcePath = path;
+    var state = _settingsState(section);
+    var generation = state.generation || 0;
+    var write = opts && opts.method && opts.method !== 'GET';
+    if (write && (!state.loaded || state.pending || state.busy || !_settingsWritable(section))) {
+      return Promise.reject(new Error('설정을 먼저 불러오고 저장 완료를 기다려주세요.'));
+    }
+    if (write) { state.busy = true; state.error = ''; }
+    else { if (!state.pending) { state.error = ''; state.loaded = false; } state.pending += 1; }
+    _settingsStatus(section);
+    if (write && opts.body) {
+      var payload = JSON.parse(opts.body);
+      if (payload.if_revision === undefined && Number.isInteger(state.revision)) payload.if_revision = state.revision;
+      if (_settingsComparePaths.indexOf(path) >= 0 && _settingsSnapshots[path]) payload.if_current = _settingsSnapshots[path];
+      opts = Object.assign({}, opts, { body: JSON.stringify(payload) });
+    }
+    if (!write) { path += (path.indexOf('?') >= 0 ? '&' : '?') + 'scope=admin'; opts = Object.assign({}, opts, { cache: 'no-store' }); }
+    return _apiFetch(path, opts).then(function (data) {
+      if (!write && data && typeof data === 'object') Object.defineProperty(data, '__settingsGeneration', { value: generation, enumerable: false });
+      if (!write && generation !== (state.generation || 0)) return data;
+      if (!write) _settingsSnapshots[sourcePath] = JSON.parse(JSON.stringify(data || {}));
+      else if (_settingsComparePaths.indexOf(sourcePath) >= 0) _settingsSnapshots[sourcePath] = sourcePath === '/api/settings/translations' ? { strings: payload.strings } : JSON.parse(JSON.stringify(data || {}));
+      if (data && Number.isInteger(data.revision)) state.revision = data.revision;
+      if (write) { state.busy = false; state.dirty = false; state.saved = true; }
+      else { state.pending -= 1; if (!state.pending && !state.error) state.loaded = true; }
+      _settingsStatus(section);
+      return data;
+    }, function (error) {
+      if (!write && generation !== (state.generation || 0)) { error.settingsStale = true; throw error; }
+      if (write) state.busy = false; else state.pending = Math.max(0, state.pending - 1);
+      state.error = (error && error.message) || '설정을 불러오지 못했습니다. 입력을 보존했습니다.';
+      _settingsStatus(section);
+      throw error;
+    });
+  }
+  function _settingsResponseCurrent(section, data) {
+    return !data || typeof data !== 'object' || data.__settingsGeneration === (_settingsState(section).generation || 0);
+  }
+  V3.settingsHasUnsaved = function () {
+    return Object.keys(_settingsStates).some(function (key) { var state = _settingsStates[key]; return state.dirty || state.busy; }) || !!(window.AccountAdmin && AccountAdmin.hasUnsaved && AccountAdmin.hasUnsaved());
+  };
+  V3.guardSettingsLeave = function (nextPanel, nextSection) {
+    if (window.AccountAdmin && AccountAdmin.guardLeave && !AccountAdmin.guardLeave(nextPanel)) return false;
+    if (_panel !== 'settings' || _managedSettings.indexOf(_settingsSection) < 0) return true;
+    if (nextPanel === 'settings' && (nextSection || _settingsSection) === _settingsSection) return false;
+    var state = _settingsState(_settingsSection);
+    if (state.busy) { GW.showToast('저장을 완료한 뒤 이동해주세요.', 'info'); return false; }
+    if (state.dirty && !window.confirm('저장하지 않은 변경사항을 버리고 이동할까요?')) return false;
+    state.dirty = false; return true;
+  };
   function _showSettingsSection(section) {
     _settingsSection = section;
+    if (_managedSettings.indexOf(section) >= 0) {
+      var state = _settingsState(section); state.generation = (state.generation || 0) + 1; state.pending = 0;
+    }
+    _settingsInit(section);
+    var heading = document.querySelector('#panel-settings .v3-page-title');
+    var description = document.querySelector('#panel-settings .v3-page-desc');
+    if (heading) heading.textContent = _sectionLabel(section);
+    if (description) description.textContent = section === 'picks' ? '공개 홈에 적용되는 자동 추천 기준을 확인합니다.' : '설정을 확인하고 변경사항을 저장하세요. 저장하지 않은 입력은 이동 전에 확인합니다.';
     document.querySelectorAll('.v3-settings-section').forEach(function (el) {
       el.classList.toggle('active', el.id === 'settings-' + section);
     });
@@ -1568,6 +1960,7 @@
     var source = document.getElementById('privacy-policy-editor-source');
     var toolbar = document.getElementById('privacy-policy-toolbar');
     if (!surface || !source) return;
+    if (!_privacyTiptap) { GW.showToast('편집기를 불러오지 못해 HTML 원문으로 편집합니다.', 'info'); return; }
     if (!_privacySourceMode) {
       // Enter source mode: pull HTML from Tiptap into textarea.
       source.value = _privacyTiptap ? _privacyTiptap.getHTML() : '';
@@ -1593,24 +1986,29 @@
     if (!surface || !source) return;
     if (status) status.textContent = '불러오는 중…';
 
-    Promise.all([
-      GW.apiFetch('/api/settings/privacy-policy'),
-      _loadTiptap(),
-    ]).then(function (arr) {
-      var data = arr[0];
-      var tp = arr[1];
+    _settingsFetch('privacy-policy', '/api/settings/privacy-policy').then(function (data) {
+      if (!_settingsResponseCurrent('privacy-policy', data)) return null;
+      source.value = (data && data.html) || '';
+      return _loadTiptap().then(function (tp) { return [data, tp]; }, function () { return [data, null]; });
+    }).then(function (arr) {
+      if (!arr || !_settingsResponseCurrent('privacy-policy', arr[0])) return;
+      var data = arr[0]; var tp = arr[1];
       // (Re)create the editor. If a previous instance exists, destroy to keep
       // DOM clean and unbind listeners.
       if (_privacyTiptap) { try { _privacyTiptap.destroy(); } catch (_) {} _privacyTiptap = null; }
       surface.innerHTML = '';
-      _privacyTiptap = new tp.Editor({
+      if (tp) _privacyTiptap = new tp.Editor({
         element: surface,
         extensions: [tp.StarterKit, tp.Link.configure({ openOnClick: false, autolink: true, linkOnPaste: true })],
         content: (data && data.html) || '',
         onTransaction: _privacyUpdateToolbarState,
         onSelectionUpdate: _privacyUpdateToolbarState,
+        onUpdate: function () { _settingsState('privacy-policy').dirty = true; _settingsState('privacy-policy').saved = false; _settingsStatus('privacy-policy'); },
       });
       source.value = (data && data.html) || '';
+      _privacySourceMode = !tp;
+      surface.hidden = !tp; source.hidden = !!tp;
+      if (!tp && status) status.textContent = '편집기를 불러오지 못했습니다. 불러온 HTML 원문으로 편집할 수 있습니다.';
       _privacyBindToolbar();
       _privacyUpdateToolbarState();
 
@@ -1621,8 +2019,9 @@
         if (data && data.max_chars) parts.push('최대 ' + Number(data.max_chars).toLocaleString() + '자');
         meta.textContent = parts.join(' · ');
       }
-      if (status) status.textContent = '';
+      if (status && tp) status.textContent = '';
     }).catch(function (err) {
+      if (err && err.settingsStale) return;
       if (status) status.textContent = '';
       if (GW.showToast) GW.showToast((err && err.message) || 'Tiptap 로드 실패 — HTML 모드로 전환', 'error');
       // Degrade gracefully to the raw source textarea.
@@ -1637,7 +2036,7 @@
       var html = _privacyGetHtml();
       if (!html) { if (GW.showToast) GW.showToast('본문을 입력해주세요', 'error'); return; }
       if (status) status.textContent = '저장 중…';
-      GW.apiFetch('/api/settings/privacy-policy', {
+      _settingsFetch('privacy-policy', '/api/settings/privacy-policy', {
         method: 'PUT',
         body: JSON.stringify({ html: html }),
       }).then(function (data) {
@@ -1652,7 +2051,7 @@
     _bindEl('privacy-policy-reset-btn', 'click', function () {
       if (!confirm('기본 방침으로 되돌립니다. 현재 저장된 본문은 사라집니다. 계속할까요?')) return;
       if (status) status.textContent = '복원 중…';
-      GW.apiFetch('/api/settings/privacy-policy', { method: 'DELETE' }).then(function (data) {
+      _settingsFetch('privacy-policy', '/api/settings/privacy-policy', { method: 'DELETE', body: JSON.stringify({}) }).then(function (data) {
         if (status) status.textContent = '';
         _privacySetHtml((data && data.html) || '');
         if (meta) meta.textContent = '기본값 사용 중';
@@ -1992,51 +2391,69 @@
     }));
   }
 
-  function _editorSetData(data) {
-    function doRender() {
-      return _editor.isReady.then(function () {
-        if (data && data.blocks) return _editor.render(data);
-        if (typeof data === 'string' && data.trim().charAt(0) === '{') {
-          try { return _editor.render(JSON.parse(data)); } catch (e) { /* ignore */ }
-        }
-        return _editor.render({ blocks: [{ type: 'paragraph', data: { text: data || '' } }] });
-      });
+  function _syncEditorBusy() {
+    var editorRoot = _el('v3-editorjs');
+    var loading = _el('panel-write') && _el('panel-write').getAttribute('aria-busy') === 'true';
+    if (editorRoot) {
+      editorRoot.inert = !!(loading || _editorRenderPending || _editorRenderFailed);
+      editorRoot.setAttribute('aria-busy', loading || _editorRenderPending ? 'true' : 'false');
     }
-    if (_editor) return doRender();
-    // Editor.js가 CDN에서 아직 mount 안 된 시점에 호출됐을 때 polling (최대 5초).
-    // 사용자가 admin 로그인 직후 곧장 임시저장 칩을 누르면 발생할 수 있는 timing 회귀 방어.
-    return new Promise(function (resolve) {
-      var tries = 0;
-      var t = setInterval(function () {
-        tries += 1;
-        if (_editor) {
-          clearInterval(t);
-          doRender().then(resolve, resolve);
-        } else if (tries > 50) {
-          clearInterval(t);
-          resolve();
-        }
-      }, 100);
-    });
+    var status = _el('write-editor-status');
+    if (status) status.textContent = _editorRenderFailed ? '본문을 준비하지 못했습니다. 기사를 다시 열거나 새 글을 열어주세요. 입력 내용은 저장되지 않았습니다.' : loading || _editorRenderPending ? '본문을 준비하는 중입니다. 완료되면 본문을 입력할 수 있습니다.' : '본문을 입력할 수 있습니다.';
+  }
+
+  function _queueEditorRender(data) {
+    var sequence = ++_editorRenderSequence;
+    ++_editorRenderPending;
+    _syncEditorBusy();
+    var job = _editorRenderQueue.catch(function () {}).then(function () {
+      if (sequence !== _editorRenderSequence) return false;
+      var ready = _editor ? Promise.resolve() : new Promise(function (resolve, reject) {
+        var tries = 0;
+        var timer = setInterval(function () {
+          if (_editor) { clearInterval(timer); resolve(); }
+          else if (++tries > 50) { clearInterval(timer); reject(new Error('본문 편집기를 불러오지 못했습니다.')); }
+        }, 100);
+      });
+      return ready.then(function () { return _editor.isReady; }).then(function () {
+        if (sequence !== _editorRenderSequence) return false;
+        return _editor.render(data).then(function () { if (sequence === _editorRenderSequence) _editorRenderFailed = false; return true; });
+      });
+    }).catch(function (err) {
+      if (sequence === _editorRenderSequence) { _editorRenderFailed = true; GW.showToast(err.message || '본문 준비 실패', 'error'); }
+      return false;
+    }).finally(function () { --_editorRenderPending; _syncEditorBusy(); });
+    _editorRenderQueue = job;
+    return job;
+  }
+
+  function _editorSetData(data) {
+    var documentData = data && data.blocks ? data : null;
+    if (!documentData && typeof data === 'string' && data.trim().charAt(0) === '{') {
+      try { documentData = JSON.parse(data); } catch (_) {}
+    }
+    return _queueEditorRender(documentData || { blocks: [{ type: 'paragraph', data: { text: data || '' } }] });
   }
 
   function _editorGetData() {
-    if (!_editor) return Promise.resolve('');
-    return _editor.isReady.then(function () {
-      return _editor.save().then(function (d) { return JSON.stringify(d); });
-    });
+    function read() {
+      return _editorRenderQueue.then(function () {
+        if (_editorRenderPending) return read();
+        if (_editorRenderFailed) throw new Error('본문 준비가 실패했습니다. 기사를 다시 열어주세요.');
+        if (!_editor) return '';
+        return _editor.isReady.then(function () { return _editor.save().then(function (data) { return JSON.stringify(data); }); });
+      });
+    }
+    return read();
   }
 
-  function _editorClear() {
-    if (!_editor) return;
-    // render는 문서 초기화를 사용자 편집 이벤트로 보고하지 않는다.
-    _editor.isReady.then(function () { return _editor.render({ blocks: [] }); });
-  }
+  function _editorClear() { return _queueEditorRender({ blocks: [] }); }
 
   /* ══════════════════════════════════════════════════════════
      DASHBOARD
   ══════════════════════════════════════════════════════════ */
   function _loadDashboard(actionBtn) {
+    var sequence = ++_contentLoadSequence.dashboard;
     var recentEl = document.getElementById('dash-recent-list');
     var topEl = document.getElementById('dash-top-list');
     var heatmapEl = document.getElementById('dash-traffic-heatmap');
@@ -2070,6 +2487,7 @@
       _apiFetch('/api/posts?limit=1&published=1'),
       _apiFetch('/api/home'),
     ]).then(function (results) {
+      if (sequence !== _contentLoadSequence.dashboard) return;
       var analytics = results[0].status === 'fulfilled' ? (results[0].value || {}) : {};
       var operations = results[1].status === 'fulfilled' ? (results[1].value || {}) : {};
       var recentRes = results[2].status === 'fulfilled' ? (results[2].value || {}) : { posts: [] };
@@ -2087,8 +2505,8 @@
       var analyticsOk = results[0].status === 'fulfilled';
       _setText('dash-stat-visits', analyticsOk ? _fmt(today.visits || visitors.today_visits || summary.today_visits || 0) : '—');
       _setText('dash-stat-views',  analyticsOk ? _fmt(today.views || summary.today_pageviews || summary.today_views || 0) : '—');
-      _setText('dash-stat-posts', _fmt(recentRes.total || counts.total || recent.length || 0));
-      _setText('dash-stat-pub',   _fmt(published.total || counts.published || 0));
+      _setText('dash-stat-posts', results[2].status === 'fulfilled' ? _fmt(recentRes.total == null ? recent.length : recentRes.total) : '—');
+      _setText('dash-stat-pub', results[4].status === 'fulfilled' ? _fmt(published.total || 0) : '—');
       if (heatmapEl) _renderDashboardVisitHeatmap(heatmapEl, analytics.heatmap || null);
       if (heatmapInsightEl) _renderDashboardVisitInsight(heatmapInsightEl, analytics.heatmap || null);
 
@@ -2097,7 +2515,7 @@
         recentEl.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">게시글이 없습니다</div></div>';
       } else {
         recentEl.innerHTML = recent.map(function (p) {
-          return '<div class="v3-recent-row" onclick="V3.openPostPreview(' + p.id + ')">' +
+          return '<div class="v3-recent-row" role="button" tabindex="0" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();this.click();}" onclick="V3.openPostPreview(' + p.id + ')">' +
             '<div class="v3-recent-cat"><span class="v3-badge ' + _catBadge(p.category) + '">' + GW.escapeHtml(p.category || '') + '</span></div>' +
             '<div class="v3-recent-info">' +
               '<div class="v3-recent-title">' + GW.escapeHtml(p.title || '(제목 없음)') + '</div>' +
@@ -2113,7 +2531,7 @@
         topEl.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">데이터 없음</div></div>';
       } else {
         topEl.innerHTML = popular.map(function (p, i) {
-          return '<div class="v3-recent-row" onclick="V3.openPostPreview(' + p.id + ')">' +
+          return '<div class="v3-recent-row" role="button" tabindex="0" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();this.click();}" onclick="V3.openPostPreview(' + p.id + ')">' +
             '<div style="font-size:11px;font-weight:700;color:var(--v3-text-l);width:18px;flex-shrink:0;">' + (i + 1) + '</div>' +
             '<div class="v3-recent-info">' +
               '<div class="v3-recent-title">' + GW.escapeHtml(p.title || '') + '</div>' +
@@ -2136,6 +2554,12 @@
       _renderDashboardHomepageOverview(homeOverviewEl, homepage, results[5].status === 'fulfilled');
       _renderDashboardHomepageSections(homeSectionsEl, homepage, results[5].status === 'fulfilled');
       _renderDashboardOperations(editorialEl, alertsEl, settingsEl, deploymentsEl, operations);
+      if (results[1].status !== 'fulfilled') {
+        [editorialEl, alertsEl, settingsEl, deploymentsEl].forEach(function (el) {
+          if (el) el.innerHTML = '<div class="v3-empty" role="alert"><div class="v3-empty-text">운영 현황을 불러오지 못했습니다. 새로고침으로 다시 확인해주세요.</div></div>';
+        });
+        _setText('dash-status-note', '운영 현황 조회에 실패했습니다. 오류·초안이 없는 상태로 판단할 수 없습니다. 새로고침 후 확인해주세요.');
+      }
       if (results[2].status !== 'fulfilled') {
         recentEl.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">최근 게시글 API 오류</div></div>';
       }
@@ -2152,6 +2576,7 @@
         if (homeSectionsEl) homeSectionsEl.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">홈 섹션 요약 API 오류</div></div>';
       }
     }).catch(function (e) {
+      if (sequence !== _contentLoadSequence.dashboard) return;
       recentEl.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">불러오기 실패: ' + GW.escapeHtml((e && e.message) || 'API 오류') + '</div></div>';
       topEl.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">불러오기 실패</div></div>';
       if (homeOverviewEl) homeOverviewEl.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">홈페이지 스냅샷을 불러오지 못했습니다.</div></div>';
@@ -2562,6 +2987,7 @@
      POST LIST
   ══════════════════════════════════════════════════════════ */
   function _loadList() {
+    var sequence = ++_contentLoadSequence.list;
     var tbody = document.getElementById('list-tbody');
     tbody.innerHTML = '<tr><td colspan="8"><div class="v3-loading"><div class="v3-spinner"></div>로딩 중…</div></td></tr>';
     _renderListSortState();
@@ -2579,12 +3005,15 @@
     params.set('scope', 'admin');
     _apiFetch('/api/posts?' + params.toString())
       .then(function (data) {
+        if (sequence !== _contentLoadSequence.list) return;
         var posts = (data && data.posts) || [];
-        _listTotal = (data && data.total) || posts.length;
+        _listTotal = data && data.total != null ? Number(data.total) : posts.length;
+        var lastPage = Math.max(1, Math.ceil(_listTotal / _listPageSize));
+        if (_listPage > lastPage) { _listPage = lastPage; _loadList(); return; }
         document.getElementById('list-count').textContent = '총 ' + _listTotal + '건';
 
         if (!posts.length) {
-          tbody.innerHTML = '<tr><td colspan="8"><div class="v3-empty"><div class="v3-empty-text">게시글이 없습니다</div></div></td></tr>';
+          tbody.innerHTML = '<tr><td colspan="8"><div class="v3-empty"><div class="v3-empty-text">' + (_listSearch || _listCat !== 'all' || _listPub !== 'all' ? '검색·필터 조건에 맞는 게시글이 없습니다' : '게시글이 없습니다') + '</div></div></td></tr>';
         } else {
           // Row actions (edit / togglePublish / delete) are write operations.
           // Hide them for readers; for writers, PUT/DELETE server still enforces
@@ -2606,7 +3035,7 @@
                   : '')
               )
               : '<span class="v3-text-m v3-text-s">읽기 전용</span>';
-            return '<tr class="v3-row-clickable" onclick="V3.openPostPreview(' + p.id + ')">' +
+            return '<tr class="v3-row-clickable" tabindex="0" aria-label="' + GW.escapeHtml((p.title || '제목 없음') + ' 미리보기') + '" onkeydown="if(event.target===this&&(event.key===\'Enter\'||event.key===\' \')){event.preventDefault();this.click();}" onclick="V3.openPostPreview(' + p.id + ')">' +
               '<td><div class="v3-table-title">' + GW.escapeHtml(p.title || '(제목 없음)') + '</div>' +
                 (p.subtitle ? '<div class="v3-text-m v3-text-s">' + GW.escapeHtml(p.subtitle) + '</div>' : '') +
               '</td>' +
@@ -2623,7 +3052,10 @@
         _renderPagination();
       })
       .catch(function (e) {
+        if (sequence !== _contentLoadSequence.list) return;
         tbody.innerHTML = '<tr><td colspan="8"><div class="v3-empty"><div class="v3-empty-text">불러오기 실패: ' + GW.escapeHtml(e.message || '') + '</div></div></td></tr>';
+        document.getElementById('list-count').textContent = '조회 실패 · 검색 조건을 유지했습니다';
+        document.getElementById('list-pagination').innerHTML = '';
       });
   }
 
@@ -2816,6 +3248,8 @@
      POST WRITE / EDIT
   ══════════════════════════════════════════════════════════ */
   function _resetWrite() {
+    ++_contentLoadSequence.editor;
+    _setWriteLoading(false);
     _editingId    = null;
     _coverDataUrl = null;
     _coverFrame   = { x: 50, y: 50 };
@@ -2860,6 +3294,16 @@
     _renderRelated();
     _syncWriteFeaturedState();
     _editorClear();
+  }
+
+  function _setWriteLoading(loading) {
+    var panel = _el('panel-write');
+    if (!panel) return;
+    panel.setAttribute('aria-busy', loading ? 'true' : 'false');
+    Array.prototype.forEach.call(panel.querySelectorAll('input,textarea,select'), function (field) { field.disabled = loading; });
+    _syncEditorBusy();
+    var publish = _el('write-publish-btn'); if (publish) publish.disabled = loading;
+    if (!loading) _syncWriteFeaturedState();
   }
 
   // ─────────────────────────────────────────────────────────────
@@ -2929,6 +3373,8 @@
     if (_writeDraftDebounce) { clearTimeout(_writeDraftDebounce); _writeDraftDebounce = null; }
     var titleEl = _el('w-title');
     if (!titleEl) return;
+    if (_writeMediaPending || _editorRenderPending) { _writeDraftDebounce = setTimeout(_saveDraftNow, 100); return; }
+    if (_editorRenderFailed) { _setDraftStatus('dirty', '본문 준비 실패 — 기사를 다시 열어주세요'); return; }
     if (_draftSaveInflight) { _draftSavePending = true; return; }
     var publishButton = _el('write-publish-btn');
     if (publishButton && publishButton.classList.contains('is-busy')) {
@@ -3169,12 +3615,15 @@
   }
 
   function _loadDraft(draftId) {
+    if (_writeMediaPending) { GW.showToast('이미지 처리가 끝난 뒤 임시저장을 열어주세요.', 'info'); return; }
     if (!_canLeaveWrite()) return;
     var draft = _draftListCache.find(function (d) { return d.id === draftId; });
     if (!draft) {
       GW.showToast('임시저장을 찾지 못했습니다', 'error');
       return;
     }
+    ++_contentLoadSequence.editor;
+    _setWriteLoading(false);
     _applyDraftPayload(draft);
     _currentDraftId = draft.id;
     _editingId = draft.editing_post_id || null;
@@ -3248,7 +3697,7 @@
       } catch (_) { _relatedPosts = []; }
       _renderRelated();
       _syncWriteFeaturedState();
-      if (draft.content) _editorSetData(draft.content);
+      _editorSetData(draft.content || { blocks: [] });
       _updateWriteStats();
       _updateSeoPreview();
     } catch (e) {
@@ -3437,6 +3886,7 @@
 
   /* ── 인라인 AI 채점 ── */
   function _runWriteScorer() {
+    if (!_contentCanWrite('article-scorer')) { GW.showToast('기사 채점 실행 권한이 없습니다.', 'error'); return; }
     var btn = _el('write-scorer-run-btn');
     var out = _el('write-scorer-result');
     var title    = (_el('w-title')    || {}).value || '';
@@ -3584,7 +4034,9 @@
           var items = box.querySelectorAll('.v3-metatag-suggestion');
           var active = items[_metaSuggestActiveIdx];
           if (active) _applyMetaTagSuggestion(active.getAttribute('data-name') || '');
-        } else if (e.key === 'Escape') {
+        } else if (e.key === 'Escape' && open) {
+          e.preventDefault();
+          e.stopPropagation();
           _hideMetaTagSuggestions();
         }
       });
@@ -3604,13 +4056,8 @@
     }
 
     // 키보드 단축키 (Cmd/Ctrl+S 저장, Esc 취소)
-    window.addEventListener('beforeunload', function (event) {
-      if (!_writeDirty && !_draftSaveInflight) return;
-      event.preventDefault();
-      event.returnValue = '';
-    });
     document.addEventListener('keydown', function (e) {
-      if (_panel !== 'write') return;
+      if (_panel !== 'write' || e.defaultPrevented) return;
       var isMod = e.metaKey || e.ctrlKey;
       if (isMod && (e.key === 's' || e.key === 'S')) {
         e.preventDefault();
@@ -3627,14 +4074,15 @@
   V3.runWriteScorer = _runWriteScorer;
 
   V3.openWrite = function () {
+    if (_writeMediaPending) { GW.showToast('이미지 처리가 끝난 뒤 새 글을 열어주세요.', 'info'); return; }
     if (!_canAccessPanel('write')) { V3.showPanel('write'); return; }
     if (!_canLeaveWrite()) return;
+    if (!V3.showPanel('write')) return;
     _stopDraftTimer();
     _resetWrite();
     _currentDraftId = null;
     _writeDirty = false;
     _writeLastDraftSavedAt = 0;
-    V3.showPanel('write');
     _ensureMetaTagPool();
     _updateWriteStats();
     _updateSeoPreview();
@@ -3647,11 +4095,16 @@
   };
 
   V3.editPost = function (id) {
-    if (!_canAccessPanel('write')) { V3.showPanel('write'); return; }
+    if (_writeMediaPending) { GW.showToast('이미지 처리가 끝난 뒤 다른 글을 열어주세요.', 'info'); return; }
+    if (!V3.canEditPost()) { GW.showToast('기존 글을 수정할 권한이 없습니다.', 'error'); return; }
     if (!_canLeaveWrite()) return;
+    if (!V3.showPanel('write', null, { editing: true })) return;
     _stopDraftTimer();
     _writeDirty = false;
-    if (!V3.showPanel('write')) return;
+    _resetWrite();
+    _setWriteLoading(true);
+    var sequence = ++_contentLoadSequence.editor;
+    var changeRevision = _writeChangeRevision;
     var sectionLabel = _syncActiveNav('write');
     document.getElementById('v3-panel-title').textContent = sectionLabel ? sectionLabel + ' · 글 수정' : '글 수정';
     document.getElementById('write-panel-title').textContent = '글 수정 중…';
@@ -3673,6 +4126,7 @@
 
     _apiFetch('/api/posts/' + id)
       .then(function (data) {
+        if (sequence !== _contentLoadSequence.editor || _panel !== 'write' || _editingId !== id || changeRevision !== _writeChangeRevision) return;
         var p = data.post || data;
         // optimistic locking 기준점 — 저장 시 이 값을 expected_updated_at으로 보낸다.
         _editingOriginalUpdatedAt = String(p.updated_at || '');
@@ -3683,6 +4137,7 @@
         _selectedWriteTags = p.tag ? p.tag.split(',').map(function(t){ return t.trim(); }).filter(Boolean) : [];
         _renderWriteTagPills(p.category || 'korea');
         _authorReady.then(function () {
+          if (sequence !== _contentLoadSequence.editor || _editingId !== id || changeRevision !== _writeChangeRevision) return;
           document.getElementById('w-author').value = p.author || '';
         });
         document.getElementById('w-youtube').value     = p.youtube_url || '';
@@ -3737,22 +4192,34 @@
         }
 
         // Editor content
-        _editorSetData(p.content || '').then(function () {
+        _editorSetData(p.content || '').then(function (rendered) {
+          if (sequence !== _contentLoadSequence.editor || _editingId !== id || changeRevision !== _writeChangeRevision) return;
           _updateWriteStats();
           _updateSeoPreview();
           _writeDirty = false;
           _setDraftStatus('idle', '서버 데이터 기준');
+          _setWriteLoading(false);
+          if (!rendered && _el('write-publish-btn')) _el('write-publish-btn').disabled = true;
         });
 
         // History card
         _loadPostHistory(id);
       })
       .catch(function (e) {
+        if (sequence !== _contentLoadSequence.editor) return;
+        _setWriteLoading(false);
+        _editingId = null;
+        _editingOriginalUpdatedAt = '';
+        document.getElementById('write-panel-title').textContent = '기사를 불러오지 못했습니다';
+        if (_el('write-publish-btn')) _el('write-publish-btn').disabled = true;
         GW.showToast(e.message || '불러오기 실패', 'error');
       });
   };
 
   function _savePost() {
+    if (_editorRenderPending || _editorRenderFailed) { GW.showToast('본문 준비를 완료한 뒤 저장해주세요.', 'info'); return; }
+    if (_writeMediaPending) { GW.showToast('이미지 처리가 끝난 뒤 저장해주세요.', 'info'); return; }
+    if (_el('panel-write') && _el('panel-write').getAttribute('aria-busy') === 'true') { GW.showToast('기사 불러오기가 끝난 뒤 저장해주세요.', 'info'); return; }
     var btn = document.getElementById('write-publish-btn');
     if (_draftSaveInflight || (btn && btn.classList.contains('is-busy'))) {
       GW.showToast('진행 중인 저장이 끝난 뒤 다시 저장해주세요.', 'info');
@@ -3876,10 +4343,11 @@
     var list = document.getElementById('write-history-list');
     card.style.display = 'block';
     _apiFetch('/api/posts/' + id + '/history').then(function (data) {
+      if (_editingId !== id || _panel !== 'write') return;
       var items = (data && data.history) || [];
       if (!items.length) { list.textContent = '수정 기록 없음'; return; }
       list.innerHTML = items.slice(0, 20).map(_renderPostHistoryRow).join('');
-    }).catch(function () { list.textContent = '기록 없음'; });
+    }).catch(function () { if (_editingId === id) list.textContent = '수정 기록을 불러오지 못했습니다.'; });
   }
 
   function _renderPostHistoryRow(h) {
@@ -3966,11 +4434,32 @@
   }
 
   /* ── Cover image ── */
+  function _pickWriteImages(options) {
+    if (_writeMediaPending) { GW.showToast('이미지 처리가 끝난 뒤 추가해주세요.', 'info'); return Promise.resolve([]); }
+    var sequence = _contentLoadSequence.editor;
+    return new Promise(function (resolve, reject) {
+      var input = document.createElement('input');
+      input.type = 'file'; input.accept = 'image/*'; input.multiple = !!options.multiple;
+      input.addEventListener('cancel', function () { resolve([]); }, { once: true });
+      input.addEventListener('change', function () {
+        var files = Array.prototype.slice.call(input.files || []);
+        if (!files.length || sequence !== _contentLoadSequence.editor || _panel !== 'write') { resolve([]); return; }
+        ++_writeMediaPending;
+        _setDraftStatus('dirty', '이미지 처리 중…');
+        Promise.all(files.map(function (file) {
+          if (GW.optimizeImageFile) return GW.optimizeImageFile(file, options).then(function (result) { return result.dataUrl; });
+          return new Promise(function (res, rej) { var reader = new FileReader(); reader.onload = function () { res(reader.result); }; reader.onerror = function () { rej(new Error('이미지 읽기 실패')); }; reader.readAsDataURL(file); });
+        })).then(function (urls) { resolve(sequence === _contentLoadSequence.editor && _panel === 'write' ? urls : []); }, reject).finally(function () { --_writeMediaPending; });
+      }, { once: true });
+      input.click();
+    });
+  }
   function _pickCover() {
-    GW.pickAndOptimizeImages({ maxW: 1600, maxH: 1600, quality: 0.82 })
+    _pickWriteImages({ maxW: 1600, maxH: 1600, quality: 0.82 })
       .then(function (urls) {
         if (!urls.length) return;
         _coverDataUrl = urls[0]; _renderCoverPreview();
+        _scheduleDraftSave();
       })
       .catch(function (e) { GW.showToast((e && e.message) || '이미지 처리 실패', 'error'); });
   }
@@ -4048,11 +4537,12 @@
   function _pickGallery() {
     if (_galleryImages.length >= 10) { GW.showToast('최대 10장까지 추가할 수 있습니다', 'error'); return; }
     var remaining = Math.max(0, 10 - _galleryImages.length);
-    GW.pickAndOptimizeImages({ multiple: true, maxW: 1800, maxH: 1800, quality: 0.84 })
+    _pickWriteImages({ multiple: true, maxW: 1800, maxH: 1800, quality: 0.84 })
       .then(function (urls) {
         if (!urls.length) return;
         urls.slice(0, remaining).forEach(function (url) { _galleryImages.push({ url: url, caption: '' }); });
         _renderGallery();
+        _scheduleDraftSave();
       })
       .catch(function (e) { GW.showToast((e && e.message) || '이미지 처리 실패', 'error'); });
   }
@@ -4251,29 +4741,35 @@
   var CAL_STATUS_BADGE = { upcoming: 'v3-badge-blue', ongoing: 'v3-badge-green', finished: 'v3-badge-gray' };
 
   function _loadCalendar() {
+    var sequence = ++_contentLoadSequence.calendar;
     var el = document.getElementById('cal-list');
     el.innerHTML = '<div class="v3-loading"><div class="v3-spinner"></div>로딩 중…</div>';
     var cacheKey = Date.now();
     Promise.all([
-      _apiFetch('/api/calendar?limit=500&_=' + cacheKey),
-      _apiFetch('/api/settings/calendar-tags?_=' + cacheKey).catch(function () { return { tags: [] }; }),
+      _apiFetch('/api/calendar?scope=admin&limit=500&_=' + cacheKey),
+      _apiFetch('/api/settings/calendar-tags?scope=admin&_=' + cacheKey).catch(function () { return { load_failed: true }; }),
     ]).then(function (results) {
+      if (sequence !== _contentLoadSequence.calendar) return;
       var data = results[0];
       _calItems = (data && data.events) || (data && data.items) || [];
       var tagData = results[1] || {};
-      _calendarTags = Array.isArray(tagData.items) ? tagData.items : (Array.isArray(tagData.tags) ? tagData.tags : (Array.isArray(tagData) ? tagData : []));
+      _calendarTagsLoadError = !!tagData.load_failed;
+      if (!_calendarTagsLoadError) _calendarTags = Array.isArray(tagData.items) ? tagData.items : (Array.isArray(tagData.tags) ? tagData.tags : (Array.isArray(tagData) ? tagData : []));
 
       // Year filter (from actual data)
       var years = {};
       _calItems.forEach(function (e) { if (e.start_at) years[e.start_at.slice(0, 4)] = 1; });
       var yearSel = document.getElementById('cal-filter-year');
+      var selectedYear = yearSel.value;
       yearSel.innerHTML = '<option value="all">전체 연도</option>' + Object.keys(years).sort().reverse().map(function (y) {
         return '<option value="' + y + '">' + y + '</option>';
       }).join('');
+      yearSel.value = years[selectedYear] ? selectedYear : 'all';
 
       _bindCalFilters();
       _renderCalList();
     }).catch(function (e) {
+      if (sequence !== _contentLoadSequence.calendar) return;
       el.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">불러오기 실패: ' + GW.escapeHtml(e.message || '') + '</div></div>';
     });
   }
@@ -4339,7 +4835,7 @@
     if (countEl) countEl.textContent = items.length + '건';
 
     if (!items.length) {
-      el.innerHTML = '<div class="v3-empty"><div class="v3-empty-icon">📅</div><div class="v3-empty-text">일정이 없습니다</div></div>';
+      el.innerHTML = '<div class="v3-empty"><div class="v3-empty-icon">📅</div><div class="v3-empty-text">' + (_calItems.length ? '검색·필터 조건에 맞는 일정이 없습니다' : '일정이 없습니다') + '</div></div>';
       return;
     }
 
@@ -4349,7 +4845,7 @@
       var day   = dt ? dt.getDate() : '—';
       var evSt  = _calEventStatus(e);
       var endStr = e.end_at ? ' ~ ' + e.end_at.slice(0, 10) : '';
-      return '<div class="v3-cal-item" onclick="V3._openCalEvent(' + e.id + ')">' +
+      return '<div class="v3-cal-item" role="button" tabindex="0" onkeydown="if(event.target===this&&(event.key===\'Enter\'||event.key===\' \')){event.preventDefault();this.click();}" onclick="V3._openCalEvent(' + e.id + ')">' +
         '<div class="v3-cal-date-col">' +
           '<div class="v3-cal-date-m">' + GW.escapeHtml(month) + '</div>' +
           '<div class="v3-cal-date-d">' + day + '</div>' +
@@ -4363,7 +4859,7 @@
             (endStr ? '<span style="margin-left:6px;font-size:11px;color:var(--v3-text-l);">' + GW.escapeHtml((e.start_at || '').slice(0, 10)) + GW.escapeHtml(endStr) + '</span>' : '') +
           '</div>' +
         '</div>' +
-        '<button class="v3-btn v3-btn-ghost v3-btn-xs" onclick="event.stopPropagation();V3._openCalEvent(' + e.id + ')">수정</button>' +
+        '<button class="v3-btn v3-btn-ghost v3-btn-xs" onclick="event.stopPropagation();V3._openCalEvent(' + e.id + ')">' + (_contentCanWrite('calendar') ? '수정' : '보기') + '</button>' +
       '</div>';
     }).join('');
   }
@@ -4416,6 +4912,7 @@
   function _renderCalTagPresets() {
     var el = document.getElementById('cal-tag-presets');
     if (!el) return;
+    if (_calendarTagsLoadError) { el.innerHTML = '<div class="v3-input-hint" role="alert">태그 목록을 불러오지 못했습니다. 저장된 행사 태그는 유지되며 직접 입력할 수 있습니다. 일정 메뉴를 다시 열어 재시도해주세요.</div>'; return; }
     if (!_calendarTags.length) { el.innerHTML = ''; return; }
     el.innerHTML = _calendarTags.map(function (tag) {
       var active = _calModalTags.indexOf(tag) >= 0 ? ' is-active' : '';
@@ -4451,8 +4948,11 @@
   }
 
   function _searchCalRelated(q) {
+    var dialogState = _contentDialogs['cal-modal'];
+    if (!_contentCanWrite('calendar')) return;
     var results = document.getElementById('cal-related-results');
     _apiFetch('/api/posts?q=' + encodeURIComponent(q) + '&limit=8&scope=admin').then(function (data) {
+      if (_contentDialogs['cal-modal'] !== dialogState || _el('cal-related-query').value.trim() !== q) return;
       var posts = (data && data.posts) || [];
       if (!posts.length) {
         results.innerHTML = '<div class="v3-input-hint">검색 결과가 없습니다.</div>';
@@ -4474,6 +4974,7 @@
         });
       });
     }).catch(function () {
+      if (_contentDialogs['cal-modal'] !== dialogState) return;
       results.innerHTML = '<div class="v3-input-hint">기사를 검색하지 못했습니다.</div>';
     });
   }
@@ -4533,6 +5034,8 @@
   }
 
   function _searchCalGeo() {
+    var dialogState = _contentDialogs['cal-modal'];
+    if (!_contentCanWrite('calendar')) return;
     var query = document.getElementById('cal-geo-query').value.trim();
     var results = document.getElementById('cal-geo-results');
     if (!query) { GW.showToast('검색할 주소나 장소명을 입력해주세요', 'error'); return; }
@@ -4542,6 +5045,7 @@
     })
       .then(function (res) { return res.json(); })
       .then(function (items) {
+        if (_contentDialogs['cal-modal'] !== dialogState || document.getElementById('cal-geo-query').value.trim() !== query) return;
         if (!Array.isArray(items) || !items.length) {
           results.innerHTML = '<div class="v3-input-hint">검색 결과가 없습니다.</div>';
           return;
@@ -4558,11 +5062,13 @@
         });
       })
       .catch(function () {
+        if (_contentDialogs['cal-modal'] !== dialogState) return;
         results.innerHTML = '<div class="v3-input-hint">지도 검색에 실패했습니다.</div>';
       });
   }
 
   function _openCalModal(e) {
+    if (_contentDialogs['cal-modal'] && !_contentCloseDialog('cal-modal')) return;
     document.getElementById('cal-id').value = e ? e.id : '';
     document.getElementById('cal-modal-title').textContent = e ? '일정 수정' : '새 일정';
     document.getElementById('cal-title').value = e ? (e.title || '') : '';
@@ -4606,16 +5112,21 @@
     document.getElementById('cal-modal').style.display = 'flex';
     var dialog = document.getElementById('cal-modal').querySelector('.v3-modal');
     if (dialog) dialog.scrollTop = 0;
+    _contentOpenDialog('cal-modal', 'calendar');
+    _contentDialogs['cal-modal'].updatedAt = e && e.updated_at || '';
   }
 
   function _closeCalModal() {
-    document.getElementById('cal-modal').style.display = 'none';
+    return _contentCloseDialog('cal-modal');
   }
   V3.closeCalendarModal = _closeCalModal;
   V3.addCalendarTag = _addCalTag;
   V3.searchCalendarGeo = _searchCalGeo;
 
   function _saveCal() {
+    var dialogState = _contentDialogs['cal-modal'];
+    if (!_contentCanWrite('calendar') || !dialogState || dialogState.pending) return;
+    var snapshot = _contentFormSnapshot('cal-modal');
     var id = document.getElementById('cal-id').value;
     var title = document.getElementById('cal-title').value.trim();
     var titleOriginal = document.getElementById('cal-title-original').value.trim();
@@ -4640,11 +5151,13 @@
       related_post_id: _calModalRelatedPosts.length ? _calModalRelatedPosts[0].id : null,
       related_posts: _calModalRelatedPosts.slice(),
       link_url: document.getElementById('cal-link').value.trim(),
+      expected_updated_at: dialogState.updatedAt || undefined,
     };
     var method = id ? 'PUT' : 'POST';
     var url    = id ? '/api/calendar/' + id : '/api/calendar';
     var btn = document.getElementById('cal-save-btn');
     _setButtonBusy(btn, '저장 중…');
+    dialogState.pending = true;
     _apiFetch(url, { method: method, body: JSON.stringify(body) })
       .then(function (data) {
         var saved = data && data.item;
@@ -4656,20 +5169,31 @@
         }
         GW.showToast('저장했습니다', 'success');
         _clearButtonBusy(btn, '완료');
-        _closeCalModal();
+        dialogState.pending = false;
+        if (_contentDialogs['cal-modal'] === dialogState) {
+          if (_contentFormSnapshot('cal-modal') === snapshot) _contentCloseDialog('cal-modal', true);
+          else {
+            document.getElementById('cal-id').value = saved && saved.id || id;
+            dialogState.updatedAt = saved && saved.updated_at || dialogState.updatedAt;
+            // The submitted version is saved; newer edits remain visible and dirty.
+            dialogState.baseline = snapshot;
+            GW.showToast('저장 후 추가로 변경한 내용은 아직 저장되지 않았습니다.', 'info');
+          }
+        }
         _loadCalendar();
       }).catch(function (e) { GW.showToast(e.message || '저장 실패', 'error'); })
-      .finally(function () { if (btn.classList.contains('is-busy')) _clearButtonBusy(btn); });
+      .finally(function () { dialogState.pending = false; if (btn.classList.contains('is-busy')) _clearButtonBusy(btn); });
   }
   V3.saveCalendar = _saveCal;
 
   function _deleteCal(id) {
+    if (!_contentCanWrite('calendar') || (_contentDialogs['cal-modal'] && _contentDialogs['cal-modal'].pending)) return;
     _confirm('일정 삭제', '이 일정을 삭제하시겠습니까?').then(function (ok) {
       if (!ok) return;
       _apiFetch('/api/calendar/' + id, { method: 'DELETE' })
         .then(function () {
           GW.showToast('삭제했습니다', 'success');
-          _closeCalModal();
+          _contentCloseDialog('cal-modal', true);
           _loadCalendar();
         }).catch(function (e) { GW.showToast(e.message || '삭제 실패', 'error'); });
     });
@@ -4722,10 +5246,14 @@
   }
 
   function _loadGlossary() {
-    _apiFetch('/api/glossary?limit=500').then(function (data) {
+    var sequence = ++_contentLoadSequence.glossary;
+    document.getElementById('glos-list').innerHTML = '<div class="v3-loading"><div class="v3-spinner"></div>용어를 불러오는 중…</div>';
+    _apiFetch('/api/glossary?scope=admin&limit=500', { cache: 'no-store' }).then(function (data) {
+      if (sequence !== _contentLoadSequence.glossary) return;
       _glosItems = (data && data.terms) || (data && data.items) || [];
       _renderGlos();
     }).catch(function (e) {
+      if (sequence !== _contentLoadSequence.glossary) return;
       document.getElementById('glos-list').innerHTML = '<div class="v3-empty"><div class="v3-empty-text">불러오기 실패</div></div>';
     });
   }
@@ -4740,7 +5268,7 @@
              (t.term_fr || '').toLowerCase().includes(q);
     });
     if (!items.length) {
-      el.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">용어가 없습니다</div></div>';
+      el.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">' + (q ? '검색어와 일치하는 용어가 없습니다' : '용어가 없습니다') + '</div></div>';
       return;
     }
     // Group by bucket
@@ -4755,11 +5283,11 @@
       if (!grouped[bucket]) return;
       html += '<div class="v3-bucket-head">' + GW.escapeHtml(bucket) + '</div>';
       grouped[bucket].forEach(function (t) {
-        html += '<div class="v3-glos-item" onclick="V3._openGlosItem(' + t.id + ')">' +
+        html += '<div class="v3-glos-item" role="button" tabindex="0" onkeydown="if(event.target===this&&(event.key===\'Enter\'||event.key===\' \')){event.preventDefault();this.click();}" onclick="V3._openGlosItem(' + t.id + ')">' +
           '<div class="v3-glos-ko">' + (_glosHasKorean(t.term_ko) ? GW.escapeHtml(t.term_ko || '') : '<span class="v3-glos-ko-empty">국문 미확정</span>') + '</div>' +
           '<div class="v3-glos-en">' + GW.escapeHtml(t.term_en || '') + '</div>' +
           '<div class="v3-glos-fr">' + GW.escapeHtml(t.term_fr || '') + '</div>' +
-          '<button class="v3-btn v3-btn-ghost v3-btn-xs" onclick="event.stopPropagation();V3._openGlosItem(' + t.id + ')">수정</button>' +
+          '<button class="v3-btn v3-btn-ghost v3-btn-xs" onclick="event.stopPropagation();V3._openGlosItem(' + t.id + ')">' + (_contentCanWrite('glossary') ? '수정' : '보기') + '</button>' +
         '</div>';
       });
     });
@@ -4772,6 +5300,7 @@
   };
 
   function _openGlosModal(t) {
+    if (_contentDialogs['glos-modal'] && !_contentCloseDialog('glos-modal')) return;
     document.getElementById('glos-id').value            = t ? t.id : '';
     document.getElementById('glos-modal-title').textContent = t ? '용어 수정' : '새 용어';
     document.getElementById('glos-ko').value            = t ? (t.term_ko || '') : '';
@@ -4780,11 +5309,16 @@
     document.getElementById('glos-desc').value          = t ? (t.description_ko || '') : '';
     document.getElementById('glos-delete-btn').style.display = t ? '' : 'none';
     document.getElementById('glos-modal').style.display = 'flex';
+    _contentOpenDialog('glos-modal', 'glossary');
+    _contentDialogs['glos-modal'].updatedAt = t && t.updated_at || '';
   }
-  function _closeGlosModal() { document.getElementById('glos-modal').style.display = 'none'; }
+  function _closeGlosModal() { return _contentCloseDialog('glos-modal'); }
   V3.closeGlossaryModal = _closeGlosModal;
 
   function _saveGlos() {
+    var dialogState = _contentDialogs['glos-modal'];
+    if (!_contentCanWrite('glossary') || !dialogState || dialogState.pending) return;
+    var snapshot = _contentFormSnapshot('glos-modal');
     var id = document.getElementById('glos-id').value;
     var ko = _glosNormalizeTermValue(document.getElementById('glos-ko').value);
     var en = _glosNormalizeTermValue(document.getElementById('glos-en').value);
@@ -4795,6 +5329,7 @@
       term_en:       en,
       term_fr:       fr,
       description_ko: document.getElementById('glos-desc').value.trim(),
+      expected_updated_at: dialogState.updatedAt || undefined,
       bucket: (_glosIsNumericStart(ko) || _glosIsNumericStart(en) || _glosIsNumericStart(fr))
         ? GLOS_MISC_BUCKET
         : ((!_glosHasKorean(ko) && (en || fr)) ? GLOS_UNMATCHED_BUCKET : (_glosInferBucket(ko) || GLOS_UNMATCHED_BUCKET)),
@@ -4803,24 +5338,35 @@
     var url    = id ? '/api/glossary/' + id : '/api/glossary';
     var btn = document.getElementById('glos-save-btn');
     _setButtonBusy(btn, '저장 중…');
+    dialogState.pending = true;
     _apiFetch(url, { method: method, body: JSON.stringify(body) })
-      .then(function () {
+      .then(function (data) {
         GW.showToast('저장했습니다', 'success');
         _clearButtonBusy(btn, '완료');
-        _closeGlosModal();
+        dialogState.pending = false;
+        if (_contentDialogs['glos-modal'] === dialogState) {
+          if (_contentFormSnapshot('glos-modal') === snapshot) _contentCloseDialog('glos-modal', true);
+          else {
+            document.getElementById('glos-id').value = data && data.item && data.item.id || id;
+            dialogState.updatedAt = data && data.item && data.item.updated_at || dialogState.updatedAt;
+            dialogState.baseline = snapshot;
+            GW.showToast('추가 변경 내용은 아직 저장되지 않았습니다.', 'info');
+          }
+        }
         _loadGlossary();
       }).catch(function (e) { GW.showToast(e.message || '저장 실패', 'error'); })
-      .finally(function () { if (btn.classList.contains('is-busy')) _clearButtonBusy(btn); });
+      .finally(function () { dialogState.pending = false; if (btn.classList.contains('is-busy')) _clearButtonBusy(btn); });
   }
   V3.saveGlossary = _saveGlos;
 
   function _deleteGlos(id) {
+    if (!_contentCanWrite('glossary') || (_contentDialogs['glos-modal'] && _contentDialogs['glos-modal'].pending)) return;
     _confirm('용어 삭제', '이 용어를 삭제하시겠습니까?').then(function (ok) {
       if (!ok) return;
       _apiFetch('/api/glossary/' + id, { method: 'DELETE' })
         .then(function () {
           GW.showToast('삭제했습니다', 'success');
-          _closeGlosModal();
+          _contentCloseDialog('glos-modal', true);
           _loadGlossary();
         }).catch(function (e) { GW.showToast(e.message || '삭제 실패', 'error'); });
     });
@@ -4838,11 +5384,15 @@
   function _periodQuery(state, prefix) {
     var p = prefix || '';
     var out = [];
-    if (state && state.days) {
+    if (state && state.all) {
+      out.push(p + 'all=1');
+    } else if (state && state.days) {
       out.push(p + 'days=' + encodeURIComponent(state.days));
     } else if (state && state.start && state.end) {
       out.push(p + 'start=' + encodeURIComponent(state.start));
       out.push(p + 'end=' + encodeURIComponent(state.end));
+    } else if (state && (state.start || state.end)) {
+      throw new Error('시작일과 종료일을 모두 입력해주세요.');
     } else {
       out.push(p + 'days=30');
     }
@@ -4850,9 +5400,40 @@
   }
   // 기간 state → 표시 라벨 ("7일" or "2026-04-01 ~ 2026-04-30")
   function _periodLabel(state) {
+    if (state && state.label) return state.label;
+    if (state && state.all) return '전체 기간';
     if (state && state.days) return state.days + '일';
     if (state && state.start && state.end) return state.start + ' ~ ' + state.end;
     return '30일';
+  }
+
+  // Identical in-flight reads are coalesced; changed filters always get a new
+  // generation. A completed older request cannot update any visible state/cache.
+  function _beginAnalysisRead(key, query, force) {
+    var state = _analysisRequests[key] || { id: 0, data: null, updatedAt: 0 };
+    if (state.pending && state.query === query && !force) return null;
+    state.id += 1; state.query = query; state.pending = true;
+    _analysisRequests[key] = state;
+    return { key: key, id: state.id, query: query };
+  }
+  function _isLatestAnalysisRead(read) { return !!read && _analysisRequests[read.key].id === read.id; }
+  function _finishAnalysisRead(read, data) {
+    if (!_isLatestAnalysisRead(read)) return false;
+    var state = _analysisRequests[read.key];
+    state.pending = false;
+    if (data) { state.data = data; state.updatedAt = Date.now(); state.lastError = ''; }
+    return true;
+  }
+  function _analysisStatus(key, id, message, isError) {
+    var el = _el(id);
+    if (!el) return;
+    var state = _analysisRequests[key] || {};
+    state.lastError = isError ? message : '';
+    var saved = state.data;
+    var previous = saved ? ' · 표시 자료: ' + _periodLabel(saved.range) + ' · 마지막 성공 ' + _formatAdminTimestamp(state.updatedAt) : '';
+    el.textContent = message + previous;
+    el.classList.toggle('is-error', !!isError);
+    el.setAttribute('role', 'status');
   }
 
   // 하위 호환: 기존 _loadAnalytics() 호출부는 방문 분석 패널 로더로 연결
@@ -5055,6 +5636,9 @@
     if (isHour) titleText = '시각별 방문자';
     var subTitle = periodLabel ? GW.escapeHtml(periodLabel) : '';
 
+    var tableRows = visits.map(function (item, index) {
+      return '<tr><td>' + GW.escapeHtml(fmtTooltipLabel(item)) + '</td><td>' + _fmt(item.visits || 0) + '</td><td>' + _fmt(views[index] && views[index].views || 0) + '</td></tr>';
+    }).join('');
     return '<div class="v3-card v3-mt-16 v3-analytics-trend-card">' +
       '<div class="v3-card-head">' +
         '<div><h2 class="v3-card-title">' + titleText +
@@ -5081,6 +5665,7 @@
         '</svg>' +
         '<div class="v3-chart-tooltip" hidden role="tooltip" aria-live="polite"></div>' +
       '</div>' +
+      '<details class="v3-content-advanced"><summary>추세 데이터 표 보기</summary><p class="v3-inline-meta">각 날짜·시간의 고유 방문입니다. 같은 사용자가 다른 구간에 방문할 수 있어 기간 고유 방문과 합계가 다를 수 있습니다.</p><div class="v3-geo-table-wrap"><table class="v3-geo-table"><thead><tr><th>' + (isHour ? '시간' : '날짜') + '</th><th>구간 고유 방문</th><th>조회</th></tr></thead><tbody>' + tableRows + '</tbody></table></div></details>' +
     '</div>';
   }
 
@@ -5125,6 +5710,11 @@
       if (guide) guide.setAttribute('opacity', '0');
     }
     zones.forEach(function (zone) {
+      zone.setAttribute('tabindex', '0');
+      zone.setAttribute('role', 'img');
+      zone.setAttribute('aria-label', zone.getAttribute('data-label') + ' · 구간 고유 방문 ' + zone.getAttribute('data-visits') + ' · 조회 ' + zone.getAttribute('data-views'));
+      zone.addEventListener('focus', function () { showAt(zone); });
+      zone.addEventListener('blur', hideAll);
       zone.addEventListener('pointerenter', function () { showAt(zone); });
       zone.addEventListener('pointermove',  function () { showAt(zone); });
       zone.addEventListener('pointerleave', hideAll);
@@ -5144,20 +5734,26 @@
   }
 
   function _loadAnalyticsVisits() {
-    if (_analyticsLoading) return;
     var statsEl = document.getElementById('analytics-stats');
     var bodyEl  = document.getElementById('analytics-body');
     if (!statsEl || !bodyEl) return;
+    var selected = Object.assign({}, _analyticsPeriodState);
+    var qs = _periodQuery(selected);
+    var read = _beginAnalysisRead('visits', qs);
+    if (!read) return;
     var noteHtml = '';
     _analyticsLoading = true;
-    _updateAnalyticsRefreshMeta(true);
-    statsEl.innerHTML = '<div class="v3-loading" style="grid-column:1/-1;"><div class="v3-spinner"></div>로딩 중…</div>';
-    bodyEl.innerHTML  = '';
+    _analysisStatus('visits', 'analytics-live-meta', _periodLabel(selected) + ' 조회 중…');
+    bodyEl.setAttribute('aria-busy', 'true');
+    if (!_analysisRequests.visits.data) {
+      statsEl.innerHTML = '<div class="v3-loading" style="grid-column:1/-1;"><div class="v3-spinner"></div>로딩 중…</div>';
+      bodyEl.innerHTML = '';
+    }
 
-    var period = _analyticsPeriodState.days || 30;
     // 방문 분석은 visits 기간만 서버로 전송. tag_* 는 사용 안 함.
-    var qs = _periodQuery(_analyticsPeriodState);
     _apiFetch('/api/admin/analytics?' + qs).then(function (data) {
+      if (!_isLatestAnalysisRead(read)) return;
+      data.range = data.range || { label: _periodLabel(selected), days: selected.days };
       var today    = data.today    || {};
       var summary  = data.summary  || {};
       var visitors = data.visitors || {};
@@ -5169,14 +5765,14 @@
       statsEl.innerHTML =
         _statCard('오늘 방문',       _fmt(today.visits  || visitors.today_visits || summary.today_visits || 0), '오늘') +
         _statCard('오늘 조회',       _fmt(today.views   || summary.today_pageviews || summary.today_views || 0), '오늘') +
-        _statCard(period + '일 방문', _fmt(summary.range_visits || visitors.range_visits || 0), '기간 합계') +
-        _statCard(period + '일 조회', _fmt(summary.range_pageviews || views.range_pageviews || views.total || 0), '기간 합계') +
+        _statCard('기간 고유 방문', _fmt(summary.range_visits || visitors.range_visits || 0), _periodLabel(data.range)) +
+        _statCard('기간 조회', _fmt(summary.range_pageviews || views.range_pageviews || views.total || 0), _periodLabel(data.range)) +
         _statCard('인기 기사 평균 체류', _fmt(summary.popular_post_average_dwell_seconds || 0) + '초', summary.popular_post_title || '대표 기사 기준') +
         _statCard('평균 체류',       _fmt(summary.average_dwell_seconds || 0) + '초', '기간 평균');
 
       var html = '';
       var trendGranularity = (data.range && data.range.granularity) || 'day';
-      var trendPeriodLabel = _periodLabel(_analyticsPeriodState);
+      var trendPeriodLabel = _periodLabel(data.range);
       html += _renderAnalyticsTrendChart(visitors.series || [], views.series || [], trendGranularity, trendPeriodLabel);
 
       if (topPosts.length) {
@@ -5215,46 +5811,66 @@
           '</div>';
       }
 
+      var tableWasOpen = !!bodyEl.querySelector('.v3-content-advanced[open]');
       bodyEl.innerHTML = (noteHtml + html) || '<div class="v3-card"><div class="v3-empty"><div class="v3-empty-text">분석 데이터가 없습니다</div></div></div>';
+      var tableDetails = bodyEl.querySelector('.v3-content-advanced');
+      if (tableWasOpen && tableDetails) tableDetails.open = true;
       var trendCard = bodyEl.querySelector('.v3-analytics-trend-card');
       if (trendCard) {
         _wireAnalyticsChartHover(trendCard);
         _wireChartPrefsControl(trendCard);
       }
       _analyticsLastUpdatedAt = Date.now();
+      _finishAnalysisRead(read, data);
       _updateAnalyticsRefreshMeta();
     }).catch(function (e) {
-      statsEl.innerHTML = '<div class="v3-empty" style="grid-column:1/-1;"><div class="v3-empty-text">불러오기 실패: ' + GW.escapeHtml(e.message || '') + '</div></div>';
-      bodyEl.innerHTML  = '<div class="v3-card"><div class="v3-empty"><div class="v3-empty-text">분석 API 응답을 불러오지 못했습니다</div></div></div>';
-      _updateAnalyticsRefreshMeta(false, e && e.message ? String(e.message) : '분석 API 응답을 불러오지 못했습니다');
+      if (!_isLatestAnalysisRead(read)) return;
+      if (!_analysisRequests.visits.data) {
+        statsEl.innerHTML = '<div class="v3-empty" style="grid-column:1/-1;"><div class="v3-empty-text">불러오기 실패: ' + GW.escapeHtml(e.message || '') + '</div></div>';
+        bodyEl.innerHTML = '<div class="v3-card"><div class="v3-empty"><div class="v3-empty-text">분석 API 응답을 불러오지 못했습니다. 지금 새로고침으로 다시 시도해주세요.</div></div></div>';
+      }
+      _analysisStatus('visits', 'analytics-live-meta', _periodLabel(selected) + ' 갱신 실패 · ' + (e.message || '조회 오류') + ' · 지금 새로고침으로 재시도', true);
     }).finally(function () {
+      if (!_finishAnalysisRead(read)) return;
       _analyticsLoading = false;
+      bodyEl.setAttribute('aria-busy', 'false');
     });
     // 검색 유입 키워드도 같은 타이밍에 새로고침
-    _loadSearchKeywords();
+    _loadSearchKeywords(null, selected);
+    if (!_searchPerformanceLoaded) _loadSearchPerformance();
   }
 
   /* ── 검색 유입 키워드 로드/렌더 ─────────────────────────── */
-  function _loadSearchKeywords(triggerBtn) {
-    _loadSearchPerformance();
+  function _loadSearchKeywords(triggerBtn, selected) {
     var summaryEl = document.getElementById('search-keywords-summary');
     var enginesEl = document.getElementById('search-keywords-engines');
     var listEl    = document.getElementById('search-keywords-list');
     if (!summaryEl || !listEl) return;
+    var qs = _periodQuery(selected || _analyticsPeriodState) + '&limit=100';
+    var read = _beginAnalysisRead('keywords', qs);
+    if (!read) return;
     if (triggerBtn) _setButtonBusy(triggerBtn, '로딩…');
-    summaryEl.innerHTML = '<div class="v3-loading"><div class="v3-spinner"></div>로딩 중…</div>';
+    _analysisStatus('keywords', 'search-keywords-status', '검색엔진 유입 기록 조회 중…');
+    if (!_analysisRequests.keywords.data) summaryEl.innerHTML = '<div class="v3-loading"><div class="v3-spinner"></div>로딩 중…</div>';
 
-    var qs = _periodQuery(_analyticsPeriodState) + '&limit=100';
     _apiFetch('/api/admin/search-keywords?' + qs)
       .then(function (data) {
+        if (!_isLatestAnalysisRead(read)) return;
         _renderSearchKeywords(data);
+        _finishAnalysisRead(read, data);
+        _analysisStatus('keywords', 'search-keywords-status', '브라우저가 전달한 검색 유입 · 공식 보고서와 별도 집계');
       })
       .catch(function (err) {
-        summaryEl.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">불러오기 실패: ' + GW.escapeHtml((err && err.message) || '') + '</div></div>';
-        if (enginesEl) enginesEl.innerHTML = '';
-        if (listEl) listEl.innerHTML = '';
+        if (!_isLatestAnalysisRead(read)) return;
+        if (!_analysisRequests.keywords.data) {
+          summaryEl.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">검색 유입을 불러오지 못했습니다.</div></div>';
+          if (enginesEl) enginesEl.innerHTML = '';
+          if (listEl) listEl.innerHTML = '';
+        }
+        _analysisStatus('keywords', 'search-keywords-status', '검색 유입 갱신 실패 · ' + (err.message || '조회 오류') + ' · 새로고침으로 재시도', true);
       })
       .finally(function () {
+        _finishAnalysisRead(read);
         if (triggerBtn) _clearButtonBusy(triggerBtn);
       });
   }
@@ -5269,8 +5885,8 @@
     var hidden = Number(data && data.hidden_visits || 0);
     var unique = Number(data && data.total_unique || 0);
     var range = (data && data.range) || {};
-    var rangeLabel = range.days ? ('최근 ' + range.days + '일') :
-                     (range.start && range.end ? (range.start + ' ~ ' + range.end) : '전체');
+    var rangeLabel = range.label || (range.days ? ('최근 ' + range.days + '일') :
+                     (range.start && range.end ? (range.start + ' ~ ' + range.end) : '전체'));
 
     summaryEl.innerHTML =
       '<div class="v3-sk-stat">' +
@@ -5324,6 +5940,7 @@
 
   var _searchPerformanceReports = [];
   var _searchPerformancePage = 0;
+  var _searchPerformanceLoaded = false;
 
   function _fetchOfficialSearchPerformance() {
     var button = document.getElementById('search-performance-fetch');
@@ -5333,7 +5950,7 @@
     status.textContent = '구글 공식 API에서 검색어를 불러오는 중…';
     _apiFetch('/api/admin/search-performance', { method: 'POST', body: JSON.stringify({ action: 'fetch-google' }) })
       .then(function (result) {
-        return _loadSearchPerformance().then(function (loaded) {
+        return _loadSearchPerformance(true).then(function (loaded) {
           status.textContent = '구글 검색어 ' + result.row_count + '개 저장 완료' + (loaded ? '' : ' · 화면 조회 실패, 저장된 보고서 보기를 다시 눌러주세요.');
         });
       }).catch(function (error) {
@@ -5358,7 +5975,7 @@
     status.textContent = '네이버 표를 검사하고 저장하는 중…';
     _apiFetch('/api/admin/search-performance', { method: 'POST', body: JSON.stringify(payload) })
       .then(function (result) {
-        return _loadSearchPerformance().then(function (loaded) {
+        return _loadSearchPerformance(true).then(function (loaded) {
           status.textContent = '네이버 검색어 ' + result.row_count + '개 저장 완료' + (loaded ? '' : ' · 화면 조회 실패, 저장된 보고서 보기를 다시 눌러주세요.');
         });
       }).catch(function (error) {
@@ -5366,14 +5983,18 @@
       }).finally(function () { button.disabled = false; });
   }
 
-  function _loadSearchPerformance() {
+  function _loadSearchPerformance(force) {
     var status = document.getElementById('search-performance-status');
     if (!status) return;
+    var read = _beginAnalysisRead('search-reports', 'saved', force === true);
+    if (!read) return Promise.resolve(false);
     var button = document.getElementById('search-performance-refresh');
     if (button) button.disabled = true;
     status.textContent = '저장된 공식 보고서를 불러오는 중…';
     return _apiFetch('/api/admin/search-performance').then(function (data) {
+      if (!_isLatestAnalysisRead(read)) return false;
       _searchPerformanceReports = data.reports || [];
+      _searchPerformanceLoaded = true;
       var sources = document.getElementById('search-performance-sources');
       var stale = false;
       sources.innerHTML = ['naver', 'google'].map(function (engine) {
@@ -5399,12 +6020,13 @@
         ? '구글 불러오기 또는 네이버 표 붙여넣기로 보고서를 저장하면 여기에 표시됩니다.'
         : stale ? '7일 이상 지난 보고서가 있습니다. 해당 엔진의 보고서를 다시 가져와주세요.'
         : '마지막 성공한 공식 보고서입니다. 엔진별 기간이 달라 클릭 수를 합산하지 않습니다.';
-      _searchPerformancePage = 0;
       _renderSearchPerformanceRows();
+      _finishAnalysisRead(read, data);
       return true;
     }).catch(function () {
+      if (!_isLatestAnalysisRead(read)) return false;
       status.textContent = '보고서를 불러오지 못했습니다. 이전 표시를 유지합니다. 다시 시도해주세요.';
-    }).finally(function () { if (button) button.disabled = false; });
+    }).finally(function () { if (_finishAnalysisRead(read) && button) button.disabled = false; });
   }
 
   function _renderSearchPerformanceRows() {
@@ -5433,28 +6055,44 @@
   function _loadAnalyticsTags() {
     var bodyEl = document.getElementById('analytics-tags-body');
     if (!bodyEl) return;
-    bodyEl.innerHTML = '<div class="v3-loading"><div class="v3-spinner"></div>태그 인사이트 분석 중…</div>';
+    var selected = Object.assign({}, _analyticsTagPeriodState);
+    var qs = _periodQuery(selected);
+    var read = _beginAnalysisRead('tags', qs);
+    if (!read) return;
+    _analysisStatus('tags', 'analytics-tags-status', _periodLabel(selected) + ' 분석 중…');
+    bodyEl.setAttribute('aria-busy', 'true');
+    if (!_analysisRequests.tags.data) bodyEl.innerHTML = '<div class="v3-loading"><div class="v3-spinner"></div>태그 인사이트 분석 중…</div>';
     // /api/admin/tag-insights — functions/_shared/tag-insights.js 모듈 사용.
     // 전면 개편: §1 통계 / §2 관계도 / §3 건강성 / §4 커버리지 / §5 제안 다섯 섹션 렌더.
-    var allFlag = _analyticsTagPeriodState.days ? '0' : '1';
-    var qs = _periodQuery(_analyticsTagPeriodState);
-    _apiFetch('/api/admin/tag-insights?' + qs + '&all=' + allFlag).then(function (data) {
+    _apiFetch('/api/admin/tag-insights?' + qs).then(function (data) {
+      if (!_isLatestAnalysisRead(read)) return;
+      data.range = data.range || { label: _periodLabel(selected), days: selected.days, start_date: selected.start, end_date: selected.end };
       _tagInsightsCache = data;
+      var searchWasFocused = document.activeElement && document.activeElement.id === 'v3-ti-graph-search';
       bodyEl.innerHTML = _renderTagInsightsSections(data);
       _mountTagInsightsGraph(data);
+      if (searchWasFocused && _el('v3-ti-graph-search')) _el('v3-ti-graph-search').focus();
+      _finishAnalysisRead(read, data);
+      _analysisStatus('tags', 'analytics-tags-status', '공개 기사 · 정확한 메타 태그 기준');
     }).catch(function (e) {
-      bodyEl.innerHTML = '<div class="v3-card"><div class="v3-empty"><div class="v3-empty-text">태그 인사이트를 불러오지 못했습니다: ' + GW.escapeHtml(e.message || '') + '</div></div></div>';
-      _analyticsTagGraphState = null;
+      if (!_isLatestAnalysisRead(read)) return;
+      if (!_analysisRequests.tags.data) {
+        bodyEl.innerHTML = '<div class="v3-card"><div class="v3-empty"><div class="v3-empty-text">태그 인사이트를 불러오지 못했습니다. 새로고침으로 다시 시도해주세요.</div></div></div>';
+        _tagInsightsCache = null;
+      }
+      _analysisStatus('tags', 'analytics-tags-status', _periodLabel(selected) + ' 갱신 실패 · ' + (e.message || '조회 오류'), true);
+    }).finally(function () {
+      if (_finishAnalysisRead(read)) bodyEl.setAttribute('aria-busy', 'false');
     });
   }
 
   function _renderTagInsightsSections(data) {
     if (!data) return '';
-    // 순서: 관계도(가장 중요한 시각) → 통계 → 건강성 → 커버리지 → 제안
+    // 승인 KMS: 업무 요약/검토 후보를 먼저, 관계도는 보조 상세.
     return [
-      _renderTiGraph(data),
       _renderTiStatistics(data),
       _renderTiHealth(data),
+      _renderTiGraph(data),
       _renderTiCoverage(data),
       _renderTiSuggestions(data),
     ].join('');
@@ -5481,9 +6119,9 @@
     return '<section class="v3-card v3-ti-section-gap">' +
       '<div class="v3-card-head"><h2 class="v3-card-title">기초 통계</h2></div>' +
       '<div class="v3-stats-grid">' +
-        '<div class="v3-stat"><div class="v3-stat-label">전체 기사</div><div class="v3-stat-value">' + _fmt(s.total_posts || 0) + '</div><div class="v3-stat-sub">published=1</div></div>' +
-        '<div class="v3-stat"><div class="v3-stat-label">고유 글머리 태그</div><div class="v3-stat-value">' + _fmt(s.unique_header_tags || 0) + '</div><div class="v3-stat-sub">tag 필드</div></div>' +
-        '<div class="v3-stat"><div class="v3-stat-label">고유 메타 태그</div><div class="v3-stat-value">' + _fmt(s.unique_meta_tags || 0) + '</div><div class="v3-stat-sub">meta_tags 필드</div></div>' +
+        '<div class="v3-stat"><div class="v3-stat-label">분석 기사</div><div class="v3-stat-value">' + _fmt(s.total_posts || 0) + '</div><div class="v3-stat-sub">선택 기간의 공개 기사</div></div>' +
+        '<div class="v3-stat"><div class="v3-stat-label">글머리 태그 종류</div><div class="v3-stat-value">' + _fmt(s.unique_header_tags || 0) + '</div><div class="v3-stat-sub">기사의 주제 분류</div></div>' +
+        '<div class="v3-stat"><div class="v3-stat-label">메타 태그 종류</div><div class="v3-stat-value">' + _fmt(s.unique_meta_tags || 0) + '</div><div class="v3-stat-sub">검색·연결용 세부 주제</div></div>' +
         '<div class="v3-stat"><div class="v3-stat-label">평균 메타 태그/기사</div><div class="v3-stat-value">' + (s.avg_meta_per_post || 0).toFixed(2) + '</div><div class="v3-stat-sub">메타 있는 기사 기준</div></div>' +
       '</div>' +
       '<div class="v3-ti-grid v3-mt-16">' +
@@ -5491,8 +6129,8 @@
           '<table class="v3-geo-table"><thead><tr><th>태그</th><th>기사</th><th>%</th></tr></thead><tbody>' + headerTop + '</tbody></table>' +
           '<button class="v3-btn v3-btn-ghost v3-btn-xs v3-mt-8" type="button" onclick="V3._tiMore(\'header\')">전체 ' + (data.header_ranking || []).length + '개 보기</button>' +
         '</div>' +
-        '<div><h3 class="v3-ti-subtitle">category별 평균 메타 태그</h3>' +
-          '<table class="v3-geo-table"><thead><tr><th>category</th><th>기사</th><th>메타 있음</th><th>평균</th></tr></thead><tbody>' + catRows + '</tbody></table>' +
+        '<div><h3 class="v3-ti-subtitle">분류별 평균 메타 태그</h3>' +
+          '<table class="v3-geo-table"><thead><tr><th>분류</th><th>기사</th><th>메타 있음</th><th>평균</th></tr></thead><tbody>' + catRows + '</tbody></table>' +
         '</div>' +
       '</div>' +
       '<div class="v3-ti-grid v3-mt-16">' +
@@ -5510,19 +6148,22 @@
 
   function _renderTiGraph(data) {
     var g = data.graph || { nodes: [], links: [] };
+    if (!(g.nodes || []).length) return '<section class="v3-card"><div class="v3-card-head"><h2 class="v3-card-title">태그 관계도</h2></div><p class="v3-empty-text">선택 기간의 공개 기사에 메타 태그가 없습니다. 기간을 바꾸거나 기사 태그를 확인해주세요.</p></section>';
     var topN = Math.min(80, (g.nodes || []).length);
     var linkCount = Math.min(200, (g.links || []).length);
     return '<section class="v3-card">' +
       '<div class="v3-card-head"><h2 class="v3-card-title">태그 관계도</h2><p class="v3-card-desc">노드 크기 = 등장 빈도, 연결선 굵기 = 공출현, 색 = 우세 글머리 태그. 태그를 검색하거나 노드를 클릭하면 관련 기사 목록이 열립니다.</p></div>' +
       '<div class="v3-ti-graph-search">' +
+        '<label for="v3-ti-graph-search">전체 메타 태그 검색</label>' +
         '<svg class="v3-ti-graph-search-icon" width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="7" cy="7" r="5"/><line x1="12" y1="12" x2="15" y2="15"/></svg>' +
         '<input class="v3-ti-graph-search-input" type="search" id="v3-ti-graph-search" placeholder="태그 검색 (예: 스카우트, 잼버리, SDGs)" autocomplete="off" />' +
         '<button class="v3-ti-graph-search-clear" type="button" id="v3-ti-graph-search-clear" hidden>지우기</button>' +
         '<span class="v3-ti-graph-search-meta" id="v3-ti-graph-search-meta"></span>' +
       '</div>' +
-      '<div class="v3-inline-meta">상위 노드 ' + topN + '개 · 링크 ' + linkCount + '개</div>' +
+      '<div id="v3-ti-graph-search-results" class="v3-ti-search-results" aria-live="polite"></div>' +
+      '<div class="v3-inline-meta" id="v3-ti-graph-scope">전체 검색 가능 · 그래프는 상위 ' + topN + '개 태그 · 최대 ' + linkCount + '개 연결</div>' +
       '<div class="v3-ti-graph-stage">' +
-        '<svg class="v3-ti-graph-svg" id="analytics-tag-graph" viewBox="0 0 1280 720" role="img" aria-label="태그 관계도"></svg>' +
+        '<svg class="v3-ti-graph-svg" id="analytics-tag-graph" viewBox="0 0 1280 720" role="group" tabindex="0" aria-label="태그 관계도, 방향키로 화면 이동, 태그를 선택하면 관련 기사 열기"></svg>' +
         '<div class="v3-ti-graph-zoom-ctrl">' +
           '<button class="v3-ti-graph-zoom-btn" type="button" id="v3-ti-graph-zoom-in" title="확대">＋</button>' +
           '<button class="v3-ti-graph-zoom-btn" type="button" id="v3-ti-graph-zoom-out" title="축소">－</button>' +
@@ -5626,16 +6267,16 @@
   var _tiGraphState = null;
 
   function _mountTagInsightsGraph(data) {
+    if (_tiGraphState && _tiGraphState.destroy) _tiGraphState.destroy();
+    _tiGraphState = null;
     if (!data || !data.graph) return;
     var svg = _el('analytics-tag-graph');
     if (!svg) return;
-    // 기존 핸들러 해제
-    if (_tiGraphState && _tiGraphState.destroy) _tiGraphState.destroy();
 
-    // 모바일 감지: 데스크톱 상위 80·label 25, 모바일 상위 50·label 15로 축소해 가독성 확보.
+    // Narrow screens keep the same node population, with fewer persistent names.
     var isMobile = (typeof window !== 'undefined' && window.innerWidth && window.innerWidth < 700);
     var NODE_LIMIT = isMobile ? 50 : 80;
-    var LABEL_ALWAYS = isMobile ? 15 : 25;
+    var LABEL_ALWAYS = isMobile ? 5 : 25;
     var topNodes = data.graph.nodes.slice(0, NODE_LIMIT);
     var nodeIds = new Set(topNodes.map(function (n) { return n.id; }));
     var maxCount = Math.max.apply(null, topNodes.map(function (n) { return n.count || 1; }));
@@ -5664,6 +6305,8 @@
       .slice(0, 200)
       .map(function (l) { return { source: byId[l.source], target: byId[l.target], count: l.count }; });
     var maxLinkCount = links.length ? Math.max.apply(null, links.map(function (l) { return l.count; })) : 1;
+    var scopeEl = _el('v3-ti-graph-scope');
+    if (scopeEl) scopeEl.textContent = '전체 ' + data.graph.nodes.length + '개 태그 검색 가능 · 그래프 표시 ' + nodes.length + '개 태그 / ' + links.length + '개 연결';
 
     // 각 노드의 이웃 id 집합 (hover 시 강조용)
     var neighborsById = {};
@@ -5811,6 +6454,12 @@
       var g = document.createElementNS(NS, 'g');
       g.setAttribute('class', 'v3-ti-graph-node' + (n.isPrimary ? ' is-primary' : ' is-secondary'));
       g.setAttribute('data-node-id', n.id);
+      g.setAttribute('role', 'button');
+      g.setAttribute('tabindex', '0');
+      g.setAttribute('aria-label', n.label + ' · 공개 기사 ' + n.count + '건 · 관련 기사 열기');
+      g.addEventListener('keydown', function (event) {
+        if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); _tiOpenArticlesModal(n.id); }
+      });
       g.setAttribute('transform', 'translate(' + n.x.toFixed(1) + ',' + n.y.toFixed(1) + ')');
       var circle = document.createElementNS(NS, 'circle');
       circle.setAttribute('r', String(n.r));
@@ -5844,6 +6493,7 @@
         nodesG.classList.remove('is-focusing');
         nodeEls.forEach(function (e) { e.g.classList.remove('is-focused', 'is-neighbor', 'is-dimmed'); });
         linkEls.forEach(function (le) { le.line.classList.remove('is-focused', 'is-dimmed'); });
+        updateLabelVisibility();
         return;
       }
       nodesG.classList.add('is-focusing');
@@ -5864,6 +6514,7 @@
         if (focusSet.has(le.source.id) || focusSet.has(le.target.id)) le.line.classList.add('is-focused');
         else le.line.classList.add('is-dimmed');
       });
+      updateLabelVisibility();
     }
 
     function setHoverFocus(focusId) {
@@ -5880,6 +6531,8 @@
       var q = String(query || '').trim().toLowerCase();
       var metaEl = _el('v3-ti-graph-search-meta');
       var clearBtn = _el('v3-ti-graph-search-clear');
+      var resultsEl = _el('v3-ti-graph-search-results');
+      if (resultsEl) resultsEl.innerHTML = '';
       if (!q) {
         spotlightIds = null;
         applyFocus(null);
@@ -5889,19 +6542,23 @@
       }
       // 부분 일치 (case-insensitive)
       var matched = new Set();
+      var allMatches = (data.meta_ranking || []).filter(function (item) { return item.tag.toLowerCase().indexOf(q) >= 0; });
+      if (resultsEl) resultsEl.innerHTML = allMatches.slice(0, 20).map(function (item) {
+        return '<button type="button" class="v3-btn v3-btn-outline" data-ti-result-tag="' + GW.escapeHtml(item.tag) + '">' + GW.escapeHtml(item.tag) + ' · ' + _fmt(item.count) + '건</button>';
+      }).join('');
       nodes.forEach(function (n) {
         if (String(n.id).toLowerCase().indexOf(q) >= 0) matched.add(n.id);
       });
       if (!matched.size) {
         spotlightIds = null;
         applyFocus(null);
-        if (metaEl) metaEl.textContent = '"' + query + '" 일치 노드 없음';
+        if (metaEl) metaEl.textContent = allMatches.length ? allMatches.length + '개 태그 검색됨 · 그래프 표시 범위 밖, 결과 버튼으로 기사 열기' : '"' + query + '" 일치 태그 없음';
         if (clearBtn) clearBtn.hidden = false;
         return;
       }
       spotlightIds = matched;
       applyFocus(matched);
-      if (metaEl) metaEl.textContent = matched.size + '개 태그 강조됨';
+      if (metaEl) metaEl.textContent = allMatches.length + '개 태그 검색됨 · 그래프 ' + matched.size + '개 강조' + (allMatches.length > 20 ? ' · 결과는 처음 20개, 검색어를 구체화해주세요' : '');
       if (clearBtn) clearBtn.hidden = false;
     }
 
@@ -5915,14 +6572,77 @@
         if (drag && drag.moved) return;
         setHoverFocus(null);
       });
+      entry.g.addEventListener('focus', function () { setHoverFocus(entry.node.id); });
+      entry.g.addEventListener('blur', function () { setHoverFocus(null); });
     });
 
     // ── Zoom + Pan + Node Drag ──
     var zoom = { k: 1, x: 0, y: 0 };
+    var lastLabelScale = 0;
+    function updateLabelVisibility() {
+      var focusing = nodesG.classList.contains('is-focusing');
+      var accepted = [];
+      nodeEls.slice().sort(function (a, b) {
+        return Number(b.g.classList.contains('is-focused')) - Number(a.g.classList.contains('is-focused')) || a.node.rank - b.node.rank;
+      }).forEach(function (entry) {
+        var candidate = entry.g.classList.contains('is-focused') || (focusing ? entry.g.classList.contains('is-neighbor') : entry.node.isPrimary);
+        var box = candidate ? entry.text.getBoundingClientRect() : null;
+        var overlap = box && accepted.some(function (other) {
+          return box.left < other.right + 4 && box.right + 4 > other.left && box.top < other.bottom + 4 && box.bottom + 4 > other.top;
+        });
+        entry.g.classList.toggle('is-label-suppressed', !candidate || !!overlap);
+        if (box && !overlap) accepted.push(box);
+      });
+    }
     function applyTransform() {
       world.setAttribute('transform', 'translate(' + zoom.x + ',' + zoom.y + ') scale(' + zoom.k + ')');
+      var matrix = svg.getScreenCTM();
+      var screenScale = matrix ? Math.hypot(matrix.a, matrix.b) * zoom.k : 0;
+      if (!screenScale) return;
+      if (Math.abs(screenScale - lastLabelScale) >= 0.001) {
+        lastLabelScale = screenScale;
+        var tokens = getComputedStyle(svg);
+        var smallSize = Math.max(12, parseFloat(tokens.getPropertyValue('--fs-meta')) || 12);
+        var primarySize = Math.max(smallSize, parseFloat(tokens.getPropertyValue('--fs-body')) || 14);
+        nodeEls.forEach(function (entry) {
+          var size = (entry.node.isPrimary ? primarySize : smallSize) / screenScale;
+          entry.text.style.fontSize = size + 'px';
+          entry.text.style.strokeWidth = (3 / screenScale) + 'px';
+          entry.text.setAttribute('dy', String(entry.node.r + size));
+        });
+      }
+      updateLabelVisibility();
     }
-    applyTransform();
+    function fitGraph() {
+      if (!nodes.length || !svg.clientWidth) return;
+      var matrix = svg.getScreenCTM();
+      var scale = matrix ? Math.hypot(matrix.a, matrix.b) : 1;
+      var left = Math.min.apply(null, nodes.map(function (node) { return node.x - node.r; }));
+      var right = Math.max.apply(null, nodes.map(function (node) { return node.x + node.r; }));
+      var top = Math.min.apply(null, nodes.map(function (node) { return node.y - node.r; }));
+      var bottom = Math.max.apply(null, nodes.map(function (node) { return node.y + node.r; }));
+      var padding = 16 / scale;
+      var controlsSpace = 64 / scale;
+      var width = Math.max(1, W - padding - controlsSpace);
+      var height = Math.max(1, H - padding * 2);
+      zoom.k = Math.max(0.25, Math.min(4, width / Math.max(1, right - left), height / Math.max(1, bottom - top)));
+      zoom.x = padding + width / 2 - (left + right) / 2 * zoom.k;
+      zoom.y = H / 2 - (top + bottom) / 2 * zoom.k;
+      applyTransform();
+    }
+    fitGraph();
+    var labelResizeObserver = typeof ResizeObserver === 'function' ? new ResizeObserver(fitGraph) : null;
+    if (labelResizeObserver) labelResizeObserver.observe(svg);
+    function onGraphKeyDown(event) {
+      if (event.target !== svg || ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].indexOf(event.key) < 0) return;
+      event.preventDefault();
+      var matrix = svg.getScreenCTM();
+      var step = 40 / (matrix ? Math.hypot(matrix.a, matrix.b) : 1);
+      zoom.x += event.key === 'ArrowLeft' ? step : event.key === 'ArrowRight' ? -step : 0;
+      zoom.y += event.key === 'ArrowUp' ? step : event.key === 'ArrowDown' ? -step : 0;
+      applyTransform();
+    }
+    svg.addEventListener('keydown', onGraphKeyDown);
 
     // 스크린 좌표 → SVG 좌표 변환 (viewBox 기준)
     function svgPoint(clientX, clientY) {
@@ -6063,6 +6783,7 @@
             le.line.setAttribute('y2', drag.entry.node.y.toFixed(1));
           }
         });
+        updateLabelVisibility();
       } else if (pan) {
         var dx = ev.clientX - pan.start.x;
         var dy = ev.clientY - pan.start.y;
@@ -6089,17 +6810,17 @@
         pan = null;
       }
     }
+    function onPointerCancel(ev) { if (drag) drag.moved = true; onPointerUp(ev); }
     svg.addEventListener('pointerdown', onPointerDown);
     svg.addEventListener('pointermove', onPointerMove);
     svg.addEventListener('pointerup', onPointerUp);
-    svg.addEventListener('pointercancel', onPointerUp);
-    svg.addEventListener('pointerleave', onPointerUp);
+    svg.addEventListener('pointercancel', onPointerCancel);
+    svg.addEventListener('pointerleave', onPointerCancel);
 
     // --- 원위치 / 확대·축소 버튼 ---
     var resetBtn = document.getElementById('v3-ti-graph-reset');
     function onReset() {
-      zoom = { k: 1, x: 0, y: 0 };
-      applyTransform();
+      fitGraph();
     }
     if (resetBtn) resetBtn.addEventListener('click', onReset);
 
@@ -6125,14 +6846,23 @@
     function onSearchInput() {
       clearTimeout(searchTimer);
       var q = searchInput ? searchInput.value : '';
+      _tagInsightsSearch = q;
       searchTimer = setTimeout(function () { setSearchSpotlight(q); }, 180);
     }
     function onSearchClear() {
       if (searchInput) searchInput.value = '';
+      _tagInsightsSearch = '';
       setSearchSpotlight('');
     }
     if (searchInput) searchInput.addEventListener('input', onSearchInput);
     if (searchClear) searchClear.addEventListener('click', onSearchClear);
+    var searchResults = _el('v3-ti-graph-search-results');
+    function onSearchResult(event) {
+      var button = event.target.closest('[data-ti-result-tag]');
+      if (button) _tiOpenArticlesModal(button.getAttribute('data-ti-result-tag'));
+    }
+    if (searchResults) searchResults.addEventListener('click', onSearchResult);
+    if (searchInput && _tagInsightsSearch) { searchInput.value = _tagInsightsSearch; setSearchSpotlight(_tagInsightsSearch); }
 
     // ── 범례 ──
     var stage = svg.parentElement;
@@ -6157,15 +6887,18 @@
     // teardown 등록
     _tiGraphState = {
       destroy: function () {
+        if (labelResizeObserver) labelResizeObserver.disconnect();
+        svg.removeEventListener('keydown', onGraphKeyDown);
         svg.removeEventListener('wheel', onWheel);
         svg.removeEventListener('pointerdown', onPointerDown);
         svg.removeEventListener('pointermove', onPointerMove);
         svg.removeEventListener('pointerup', onPointerUp);
-        svg.removeEventListener('pointercancel', onPointerUp);
-        svg.removeEventListener('pointerleave', onPointerUp);
+        svg.removeEventListener('pointercancel', onPointerCancel);
+        svg.removeEventListener('pointerleave', onPointerCancel);
         if (resetBtn) resetBtn.removeEventListener('click', onReset);
         if (searchInput) searchInput.removeEventListener('input', onSearchInput);
         if (searchClear) searchClear.removeEventListener('click', onSearchClear);
+        if (searchResults) searchResults.removeEventListener('click', onSearchResult);
         clearTimeout(searchTimer);
       },
     };
@@ -6259,13 +6992,20 @@
     render();
   }
 
-  // 노드 클릭 시 호출 — 해당 태그가 포함된 기사 목록을 서버 페이지네이션으로 보여줌.
-  // /api/posts?tag=TAG&page=N&limit=20&scope=admin — 기존 posts API 재사용.
+  // Exact meta-tag drilldown shares the displayed published population and KST range.
+  // /api/admin/tag-articles?tag=TAG&start=DATE&end=DATE&page=N&limit=20 (or all=1).
   function _tiOpenArticlesModal(tag) {
     var page = 1;
     var PAGE_SIZE = 20;
     var overlay = document.createElement('div');
     overlay.className = 'v3-ti-articles-modal';
+    overlay.setAttribute('role', 'dialog');
+    overlay.setAttribute('aria-modal', 'true');
+    overlay.setAttribute('aria-label', '메타 태그 ' + tag + ' 관련 기사');
+    var range = _tagInsightsCache && _tagInsightsCache.range || {};
+    var selected = range.start_date && range.end_date ? { start: range.start_date, end: range.end_date } : (range.days ? { days: range.days } : { all: true });
+    var closed = false;
+    var generation = 0;
     overlay.innerHTML =
       '<div class="v3-modal-panel v3-ti-articles-panel">' +
         '<div class="v3-modal-head v3-ti-articles-head">' +
@@ -6286,11 +7026,10 @@
       '</div>';
     document.body.appendChild(overlay);
 
-    function close() { overlay.remove(); document.removeEventListener('keydown', onKey); }
-    function onKey(e) { if (e.key === 'Escape') close(); }
-    document.addEventListener('keydown', onKey);
+    function close() { closed = true; generation += 1; overlay.remove(); }
 
     function loadPage(p) {
+      var requestId = ++generation;
       page = p;
       var bodyEl = overlay.querySelector('#v3-ti-articles-body');
       var metaEl = overlay.querySelector('#v3-ti-articles-meta');
@@ -6305,13 +7044,14 @@
         tag: tag,
         page: String(p),
         limit: String(PAGE_SIZE),
-        scope: 'admin',
       });
-      _apiFetch('/api/posts?' + params.toString()).then(function (data) {
+      _apiFetch('/api/admin/tag-articles?' + params.toString() + '&' + _periodQuery(selected)).then(function (data) {
+        if (closed || requestId !== generation) return;
         var posts = (data && data.posts) || [];
         var total = (data && data.total) || 0;
         var totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
-        if (metaEl) metaEl.textContent = '총 ' + total + '건 · ' + PAGE_SIZE + '개씩 · 페이지 ' + p + ' / ' + totalPages;
+        page = data.page || p;
+        if (metaEl) metaEl.textContent = '선택 기간 ' + _periodLabel(data.range || range) + ' · 공개 기사/정확한 메타 태그 · 총 ' + total + '건 · 페이지 ' + page + ' / ' + totalPages;
         if (pageEl) pageEl.textContent = p + ' / ' + totalPages;
         prevBtn.disabled = p <= 1;
         nextBtn.disabled = p >= totalPages;
@@ -6342,6 +7082,7 @@
           '</li>';
         }).join('') + '</ul>';
       }).catch(function (e) {
+        if (closed || requestId !== generation) return;
         bodyEl.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">불러오지 못했습니다: ' + GW.escapeHtml(e.message || '') + '</div></div>';
       });
     }
@@ -6366,6 +7107,8 @@
     if (shouldRun) {
       _analyticsAutoRefreshTimer = window.setInterval(function () {
         if (!(_panel === 'analytics-visits' || _panel === 'analytics') || document.hidden) return;
+        var body = _el('analytics-body');
+        if (body && body.contains(document.activeElement)) return;
         _loadAnalyticsVisits();
       }, 30000);
     }
@@ -6375,6 +7118,12 @@
   function _updateAnalyticsRefreshMeta(isLoading, errorMessage) {
     var el = _el('analytics-live-meta');
     if (!el) return;
+    var savedState = _analysisRequests.visits;
+    if (savedState && savedState.pending && !isLoading && !errorMessage) return;
+    if (savedState && savedState.lastError && !isLoading && !errorMessage) {
+      _analysisStatus('visits', 'analytics-live-meta', savedState.lastError, true); return;
+    }
+    el.classList.toggle('is-error', !!errorMessage);
     if (isLoading) {
       el.textContent = '분석 데이터를 새로 불러오는 중입니다…';
       return;
@@ -6390,6 +7139,7 @@
       parts.push('아직 갱신 이력이 없습니다');
     }
     parts.push(_analyticsAutoRefresh ? '30초 자동 새로고침 켜짐' : '자동 새로고침 꺼짐');
+    if (_analysisRequests.visits && _analysisRequests.visits.data) parts.push('표시 범위 ' + _periodLabel(_analysisRequests.visits.data.range));
     parts.push('카카오·페이스북은 UTM/리퍼러 기준으로 최대한 분리되지만, 앱이 정보를 넘기지 않으면 직접 방문으로 잡힐 수 있습니다.');
     el.textContent = parts.join(' · ');
   }
@@ -6397,7 +7147,7 @@
   function _formatAdminTimestamp(value) {
     var date = value instanceof Date ? value : new Date(value);
     if (!(date instanceof Date) || isNaN(date.getTime())) return '—';
-    return date.toLocaleString('ko-KR', {
+    var parts = new Intl.DateTimeFormat('en-CA', {
       timeZone: 'Asia/Seoul',
       year: 'numeric',
       month: '2-digit',
@@ -6405,8 +7155,9 @@
       hour: '2-digit',
       minute: '2-digit',
       second: '2-digit',
-      hour12: false,
-    }).replace(/\.\s/g, '-').replace('.', '').trim();
+      hourCycle: 'h23',
+    }).formatToParts(date).reduce(function (result, part) { result[part.type] = part.value; return result; }, {});
+    return parts.year + '-' + parts.month + '-' + parts.day + ' ' + parts.hour + ':' + parts.minute + ':' + parts.second + ' KST';
   }
 
   function _statCard(label, value, sub) {
@@ -6860,58 +7611,84 @@
     _bindAnalyticsTagSelectionButtons();
   }
 
-  function _loadGeoAudience() {
+  function _geoAudienceMetadata(force) {
+    if (!force && _geoAudienceWosmCache && Date.now() - _geoAudienceWosmFetchedAt < 60000 && (!_wosmMembersRevision || _geoAudienceWosmCache.revision === _wosmMembersRevision)) return Promise.resolve(_geoAudienceWosmCache);
+    if (_geoAudienceWosmPending) return _geoAudienceWosmPending;
+    _geoAudienceWosmPending = _apiFetch('/api/settings/wosm-members?scope=admin', { cache: 'no-store' }).then(function (data) {
+      _geoAudienceWosmCache = data; _geoAudienceWosmFetchedAt = Date.now(); return data;
+    }).catch(function (error) {
+      _geoAudienceWosmFetchedAt = 0;
+      throw error;
+    }).finally(function () { _geoAudienceWosmPending = null; });
+    return _geoAudienceWosmPending;
+  }
+
+  function _loadGeoAudience(trigger) {
     var statsEl = document.getElementById('geo-audience-stats');
     var noteEl = document.getElementById('geo-audience-note');
-    var countryEl = document.getElementById('geo-audience-country-list');
     var cityEl = document.getElementById('geo-audience-city-list');
-    if (!statsEl || !countryEl || !cityEl) return;
-    statsEl.innerHTML = '<div class="v3-loading" style="grid-column:1/-1;"><div class="v3-spinner"></div>로딩 중…</div>';
-    if (noteEl) noteEl.textContent = '불러오는 중…';
-    countryEl.innerHTML = '<div class="v3-loading"><div class="v3-spinner"></div>로딩 중…</div>';
-    cityEl.innerHTML = '<div class="v3-loading"><div class="v3-spinner"></div>로딩 중…</div>';
-
-    var period = _geoAudiencePeriodState.days || 30;
-    var qs = _periodQuery(_geoAudiencePeriodState);
+    if (!statsEl || !cityEl) return;
+    var selected = Object.assign({}, _geoAudiencePeriodState);
+    var qs = _periodQuery(selected);
+    var read = _beginAnalysisRead('geo', qs);
+    if (!read) return;
+    cityEl.setAttribute('aria-busy', 'true');
+    _analysisStatus('geo', 'geo-audience-status', _periodLabel(selected) + ' 조회 중…');
+    if (!_analysisRequests.geo.data) {
+      statsEl.innerHTML = '<div class="v3-loading" style="grid-column:1/-1;"><div class="v3-spinner"></div>로딩 중…</div>';
+      cityEl.innerHTML = '<div class="v3-loading"><div class="v3-spinner"></div>로딩 중…</div>';
+    }
     Promise.allSettled([
       _apiFetch('/api/admin/geo-audience?' + qs),
-      _apiFetch('/api/settings/wosm-members')
+      _geoAudienceMetadata(!!(trigger && (trigger.id === 'geo-audience-refresh-btn' || trigger.target && trigger.target.id === 'geo-audience-refresh-btn')))
     ]).then(function (results) {
+      if (!_isLatestAnalysisRead(read)) return;
       if (results[0].status !== 'fulfilled') throw (results[0].reason || new Error('지리 집계를 불러오지 못했습니다.'));
       var data = results[0].status === 'fulfilled' ? (results[0].value || {}) : {};
-      var wosm = results[1].status === 'fulfilled' ? (results[1].value || {}) : {};
+      var wosm = results[1].status === 'fulfilled' ? (results[1].value || {}) : (_geoAudienceWosmCache || {});
       _geoAudienceData = data || {};
+      _geoAudienceData.range = _geoAudienceData.range || { label: _periodLabel(selected), days: selected.days };
       var summary = _geoAudienceData.summary || {};
       var range = _geoAudienceData.range || {};
       var regionMap = _buildGeoAudienceRegionMap(Array.isArray(wosm.items) ? wosm.items : [], Array.isArray(wosm.columns) ? wosm.columns : []);
       var countries = _enrichGeoAudienceItems(Array.isArray(_geoAudienceData.countries) ? _geoAudienceData.countries : [], regionMap);
       var cities = _enrichGeoAudienceItems(Array.isArray(_geoAudienceData.cities) ? _geoAudienceData.cities : [], regionMap);
-      var regionStats = _buildGeoAudienceRegionStats(countries);
+      var regionStats = _buildGeoAudienceRegionStats(countries.filter(function (item) { return item.country_code !== 'ZZ'; }));
       var warmupNote = String(_geoAudienceData.warmup_note || '').trim();
 
       statsEl.innerHTML =
-        _statCard('국가 수', _fmt(summary.countries || countries.length || 0), range.label || '집계 기간') +
+        _statCard('국가 수', _fmt(summary.countries != null ? summary.countries : countries.filter(function (item) { return item.country_code !== 'ZZ'; }).length), range.label || '집계 기간') +
         _statCard('도시 수', _fmt(summary.cities || 0), '도시 식별 기준') +
-        _statCard('방문 수', _fmt(summary.visits || 0), (range.days || period) + '일 고유 방문') +
-        _statCard('페이지뷰', _fmt(summary.pageviews || 0), (range.days || period) + '일 전체 조회') +
-        regionStats.map(function (item) {
-          return _statCard(item.label, _fmt(item.count), '방문 국가 수');
-        }).join('');
+        _statCard('고유 방문', _fmt(summary.visits || 0), '선택 기간 고유 사용자') +
+        _statCard('페이지뷰', _fmt(summary.pageviews || 0), '선택 기간 전체 조회');
+      var regionEl = _el('geo-audience-region-summary');
+      if (regionEl) regionEl.innerHTML = '<span>지역별 방문 국가</span> ' + regionStats.map(function (item) {
+        return '<span class="v3-badge v3-badge-gray">' + GW.escapeHtml(item.label) + ' ' + _fmt(item.count) + '</span>';
+      }).join('');
 
       noteEl.textContent = (_geoAudienceData.tracking_note || '') + (range.label ? ' · ' + range.label + ' 기준' : '');
       if (!countries.length && warmupNote) {
         noteEl.textContent += ' · ' + warmupNote;
       }
-      countryEl.innerHTML = _renderGeoCountryTable(countries);
+      _geoAudienceCountriesCache = countries;
       cityEl.innerHTML = _renderGeoCityTable(cities);
-      noteEl.innerHTML = GW.escapeHtml(noteEl.textContent) + '<div class="v3-geo-map-hint">지도를 축소하면 국가 분포, 확대하면 도시 분포가 표시됩니다. 지역연맹 색상은 세계연맹 회원국 현황 기준이며, 매칭되지 않는 국가는 별도 색으로 표시됩니다.</div>' + _renderGeoRegionLegend();
+      _syncGeoCityToggleLabel();
+      noteEl.innerHTML = GW.escapeHtml(noteEl.textContent) + '<div class="v3-geo-map-hint">국가 미확인 조회 ' + _fmt(summary.unknown_country_pageviews || 0) + '회 · 좌표 없는 조회 ' + _fmt(summary.missing_coordinate_pageviews || 0) + '회(지도 제외). 국가별 원은 방문 좌표 평균으로, 국가의 중심이나 경계를 뜻하지 않습니다.</div>' + _renderGeoRegionLegend();
       _renderGeoAudienceMap(countries, cities);
+      _finishAnalysisRead(read, data);
+      _analysisStatus('geo', 'geo-audience-status', '전체 국가·도시 집계' + (results[1].status === 'rejected' ? ' · 지역연맹 분류 조회 실패, ' + (_geoAudienceWosmCache ? '마지막 성공 분류를 표시합니다. ' : '') + '방문 집계는 정상입니다' : ''));
     }).catch(function (e) {
-      statsEl.innerHTML = '<div class="v3-empty" style="grid-column:1/-1;"><div class="v3-empty-text">불러오기 실패: ' + GW.escapeHtml(e.message || '') + '</div></div>';
-      noteEl.textContent = '지리 집계를 불러오지 못했습니다.';
-      countryEl.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">국가 데이터를 불러오지 못했습니다.</div></div>';
-      cityEl.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">도시 데이터를 불러오지 못했습니다.</div></div>';
-      _renderGeoAudienceMap([], []);
+      if (!_isLatestAnalysisRead(read)) return;
+      if (!_analysisRequests.geo.data) {
+        _geoAudienceCitiesCache = []; _geoAudienceCountriesCache = []; _geoAudienceData = null;
+        statsEl.innerHTML = '<div class="v3-empty" style="grid-column:1/-1;"><div class="v3-empty-text">국가·도시 집계를 불러오지 못했습니다.</div></div>';
+        cityEl.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">새로고침으로 다시 시도해주세요.</div></div>';
+        noteEl.textContent = '지리 집계를 불러오지 못했습니다.';
+        _renderGeoAudienceMap([], []);
+      }
+      _analysisStatus('geo', 'geo-audience-status', _periodLabel(selected) + ' 갱신 실패 · ' + (e.message || '조회 오류') + ' · 표시 범위 확인 후 새로고침으로 재시도', true);
+    }).finally(function () {
+      if (_finishAnalysisRead(read)) cityEl.setAttribute('aria-busy', 'false');
     });
   }
 
@@ -6922,7 +7699,7 @@
     return '<div class="v3-geo-table-wrap"><table class="v3-geo-table"><thead><tr>' +
       '<th>국가</th><th>방문</th><th>페이지뷰</th><th>도시 수</th><th>최근 접속</th>' +
       '</tr></thead><tbody>' +
-      items.slice(0, 120).map(function (item) {
+      items.map(function (item) {
         return '<tr>' +
           '<td><div class="v3-geo-country-cell"><strong>' + GW.escapeHtml(item.country_name || item.country_code || 'Unknown') + '</strong><span class="v3-geo-sub">' + GW.escapeHtml(item.country_code || 'N/A') + '</span>' + _renderGeoRegionMeta(item) + '</div></td>' +
           '<td>' + _fmt(item.visits || 0) + '</td>' +
@@ -6945,8 +7722,8 @@
   // - 검색: 국가명·도시명 부분일치. 매칭된 국가는 자동 펼침 + 매칭 도시만 표시
   //         (국가명만 매칭되면 해당 국가의 모든 도시 표시)
   function _renderGeoCityGroupedByCountry(cities, rawQuery) {
-    if (!cities.length) {
-      return '<div class="v3-empty"><div class="v3-empty-text">도시별 접속 기록이 아직 없습니다.</div><div class="v3-issues-note">일부 요청은 Cloudflare에서 도시 정보를 주지 않아 `도시 미확인`으로 집계될 수 있습니다.</div></div>';
+    if (!cities.length && !_geoAudienceCountriesCache.length) {
+      return '<div class="v3-empty"><div class="v3-empty-text">선택 기간의 국가·도시 접속 기록이 없습니다.</div><div class="v3-issues-note">기간을 바꿔 다시 조회해주세요. 추정 위치를 확인할 수 없는 방문은 국가·도시 미확인으로 표시됩니다.</div></div>';
     }
 
     var query = String(rawQuery || '').trim().toLowerCase();
@@ -6954,6 +7731,17 @@
     // group by country_code (fallback: country_name)
     var groups = Object.create(null);
     var order = []; // 그룹 등장 순서 보존 (API가 이미 방문 desc로 보내옴)
+    _geoAudienceCountriesCache.forEach(function (item) {
+      var key = item.country_code || item.country_name || '__unknown__';
+      groups[key] = {
+        key: key, country_code: item.country_code, country_name: item.country_name,
+        country_name_original: item.country_name_original || '', region_tone_class: item.region_tone_class || 'is-unassigned',
+        region_label: item.region_label || '지역연맹 미분류', cities: [],
+        totalVisits: Number(item.visits || 0), totalPageviews: Number(item.pageviews || 0),
+        cityCount: Number(item.city_count || 0), lastVisitAt: item.last_visit_at || '',
+      };
+      order.push(key);
+    });
     cities.forEach(function (item) {
       var key = item.country_code || item.country_name || '__unknown__';
       if (!groups[key]) {
@@ -6965,18 +7753,15 @@
           region_tone_class: item.region_tone_class || 'is-unassigned',
           region_label: item.region_label || '지역연맹 미분류',
           cities: [],
-          totalVisits: 0,
-          totalPageviews: 0,
+          totalVisits: null,
+          totalPageviews: null,
+          cityCount: null,
           lastVisitAt: '',
         };
         order.push(key);
       }
       var g = groups[key];
       g.cities.push(item);
-      g.totalVisits += Number(item.visits || 0);
-      g.totalPageviews += Number(item.pageviews || 0);
-      var lastTs = String(item.last_visit_at || '');
-      if (lastTs > g.lastVisitAt) g.lastVisitAt = lastTs;
     });
 
     // 검색 필터: 매칭된 국가/도시만 통과
@@ -7036,7 +7821,7 @@
       var g = groups[key];
       var citiesToShow = g._filteredCities || g.cities;
       // 검색 중이면 매칭된 국가는 자동 펼침, 아니면 사용자 토글 상태 반영
-      var expanded = query ? true : !!_geoAudienceExpandedCountries[key];
+      var expanded = query ? !_geoAudienceSearchCollapsed[key] : !!_geoAudienceExpandedCountries[key];
       html += _renderGeoCountryGroup(g, citiesToShow, expanded, query);
     });
     html += '</div>';
@@ -7048,32 +7833,32 @@
     var safeKey = GW.escapeHtml(key);
     var headerClass = 'v3-geo-country-row' + (expanded ? ' is-expanded' : '');
     var bodyStyle = expanded ? '' : ' hidden';
-    var cityCountText = cities.length === g.cities.length
-      ? _fmt(g.cities.length) + '개 도시'
-      : _fmt(cities.length) + '/' + _fmt(g.cities.length) + '개 도시';
+    var cityCountText = g.cityCount == null ? '집계 미확인' : _fmt(g.cityCount) + '개 도시';
+    if (query) cityCountText += ' · 검색 ' + _fmt(cities.length) + '행';
+    var bodyId = 'geo-country-cities-' + encodeURIComponent(key);
 
     var header =
-      '<button type="button" class="' + headerClass + '" data-geo-country-toggle="' + safeKey + '" aria-expanded="' + (expanded ? 'true' : 'false') + '">' +
+      '<button type="button" class="' + headerClass + '" data-geo-country-toggle="' + safeKey + '" aria-controls="' + bodyId + '" aria-expanded="' + (expanded ? 'true' : 'false') + '">' +
         '<span class="v3-geo-country-chevron" aria-hidden="true">▶</span>' +
         '<span class="v3-geo-country-name">' +
           '<span class="v3-geo-pill ' + GW.escapeHtml(g.region_tone_class) + '">' + GW.escapeHtml(g.country_name) + '</span>' +
           '<span class="v3-geo-sub">' + GW.escapeHtml(g.country_code || 'N/A') + '</span>' +
         '</span>' +
-        '<span class="v3-geo-country-stat">' +
-          '<span class="v3-geo-country-stat-num">' + _fmt(g.totalVisits) + '</span>' +
+        '<span class="v3-geo-country-stat is-visits">' +
+          '<span class="v3-geo-country-stat-num">' + (g.totalVisits == null ? '—' : _fmt(g.totalVisits)) + '</span>' +
           '<span class="v3-geo-country-stat-label">방문</span>' +
         '</span>' +
-        '<span class="v3-geo-country-stat">' +
-          '<span class="v3-geo-country-stat-num">' + _fmt(g.totalPageviews) + '</span>' +
+        '<span class="v3-geo-country-stat is-pageviews">' +
+          '<span class="v3-geo-country-stat-num">' + (g.totalPageviews == null ? '—' : _fmt(g.totalPageviews)) + '</span>' +
           '<span class="v3-geo-country-stat-label">PV</span>' +
         '</span>' +
-        '<span class="v3-geo-country-stat">' +
+        '<span class="v3-geo-country-stat is-city-count">' +
           '<span class="v3-geo-country-stat-num">' + GW.escapeHtml(cityCountText) + '</span>' +
         '</span>' +
         '<span class="v3-geo-country-last">' + GW.escapeHtml(_formatDateTimeCompact(g.lastVisitAt)) + '</span>' +
       '</button>';
 
-    var body = '<div class="v3-geo-city-sublist"' + bodyStyle + '>' +
+    var body = '<div class="v3-geo-city-sublist" id="' + bodyId + '"' + bodyStyle + '>' +
       '<table class="v3-geo-table v3-geo-city-subtable"><thead><tr>' +
         '<th>도시</th><th>방문</th><th>페이지뷰</th><th>최근 접속</th>' +
       '</tr></thead><tbody>' +
@@ -7111,38 +7896,49 @@
     var value = event && event.target ? String(event.target.value || '') : '';
     if (_geoAudienceCitySearchDebounce) clearTimeout(_geoAudienceCitySearchDebounce);
     _geoAudienceCitySearchDebounce = setTimeout(function () {
+      if (_geoAudienceCityQuery !== value) _geoAudienceSearchCollapsed = Object.create(null);
       _geoAudienceCityQuery = value;
       _rerenderGeoCityList();
     }, 120);
   }
 
   function _onGeoCityToggleAll() {
-    var btn = _el('geo-audience-city-toggle-all');
-    if (!_geoAudienceCitiesCache.length) return;
-    // 현재 펼쳐진 국가 수가 전체의 절반 이상이면 모두 접기, 아니면 모두 펼치기
-    var totalCountries = 0;
-    var seen = Object.create(null);
-    _geoAudienceCitiesCache.forEach(function (c) {
-      var k = c.country_code || c.country_name || '__unknown__';
-      if (!seen[k]) { seen[k] = true; totalCountries += 1; }
+    var rows = document.querySelectorAll('#geo-audience-city-list [data-geo-country-toggle]');
+    var shouldExpandAll = Array.from(rows).some(function (row) { return row.getAttribute('aria-expanded') !== 'true'; });
+    rows.forEach(function (row) {
+      var key = row.getAttribute('data-geo-country-toggle');
+      if (_geoAudienceCityQuery) _geoAudienceSearchCollapsed[key] = !shouldExpandAll;
+      else _geoAudienceExpandedCountries[key] = shouldExpandAll;
     });
-    var expandedCount = 0;
-    Object.keys(_geoAudienceExpandedCountries).forEach(function (k) {
-      if (_geoAudienceExpandedCountries[k] && seen[k]) expandedCount += 1;
-    });
-    var shouldExpandAll = expandedCount * 2 < totalCountries;
-    _geoAudienceExpandedCountries = Object.create(null);
-    if (shouldExpandAll) {
-      Object.keys(seen).forEach(function (k) { _geoAudienceExpandedCountries[k] = true; });
-    }
-    if (btn) btn.textContent = shouldExpandAll ? '모두 접기' : '모두 펼치기';
     _rerenderGeoCityList();
+  }
+
+  function _syncGeoCityToggleLabel() {
+    var rows = document.querySelectorAll('#geo-audience-city-list [data-geo-country-toggle]');
+    var button = _el('geo-audience-city-toggle-all');
+    if (button) {
+      button.disabled = rows.length === 0;
+      button.textContent = rows.length && Array.from(rows).every(function (row) { return row.getAttribute('aria-expanded') === 'true'; }) ? '모두 접기' : '모두 펼치기';
+    }
   }
 
   function _rerenderGeoCityList() {
     var cityEl = document.getElementById('geo-audience-city-list');
-    if (!cityEl) return;
+    if (!cityEl || !_geoAudienceData) return;
+    var focused = document.activeElement;
+    var focusKey = focused && focused.getAttribute('data-geo-country-toggle');
     cityEl.innerHTML = _renderGeoCityGroupedByCountry(_geoAudienceCitiesCache, _geoAudienceCityQuery);
+    _syncGeoCityToggleLabel();
+    if (focusKey) Array.from(cityEl.querySelectorAll('[data-geo-country-toggle]')).some(function (button) {
+      if (button.getAttribute('data-geo-country-toggle') !== focusKey) return false;
+      button.focus({ preventScroll: true }); return true;
+    });
+  }
+
+  function _hasGeoCoordinates(item) {
+    if (item.latitude == null || item.longitude == null || item.latitude === '' || item.longitude === '') return false;
+    var latitude = Number(item.latitude), longitude = Number(item.longitude);
+    return Number.isFinite(latitude) && Number.isFinite(longitude) && latitude >= -90 && latitude <= 90 && longitude >= -180 && longitude <= 180;
   }
 
   function _renderGeoAudienceMap(countryItems, cityItems) {
@@ -7170,6 +7966,7 @@
       // 커스텀 휠 줌 (RAF 스로틀 — Windows 3이벤트/틱 대응)
       var _gWheelRaf = 0, _gWheelDir = 0;
       mapEl.addEventListener('wheel', function (ev) {
+        if (!ev.ctrlKey && !ev.metaKey) return;
         ev.preventDefault();
         _gWheelDir += ev.deltaY > 0 ? 1 : -1;
         if (_gWheelRaf) return;
@@ -7202,11 +7999,11 @@
     };
 
     var validCountries = (Array.isArray(countryItems) ? countryItems : []).filter(function (item) {
-      return Number.isFinite(Number(item.latitude)) && Number.isFinite(Number(item.longitude));
+      return _hasGeoCoordinates(item);
     });
     var validCities = (Array.isArray(cityItems) ? cityItems : []).filter(function (item) {
       return item.city_name && item.city_name !== '도시 미확인' &&
-        Number.isFinite(Number(item.latitude)) && Number.isFinite(Number(item.longitude));
+        _hasGeoCoordinates(item);
     });
     if (!validCountries.length && !validCities.length) {
       window.setTimeout(function () { _geoAudienceMap.invalidateSize(); }, 30);
@@ -7224,7 +8021,7 @@
         fillColor: tone.fill,
         fillOpacity: tone.opacity,
       }).on('click', function () {
-        _geoAudienceMap.flyTo([Number(item.latitude), Number(item.longitude)], 4, { duration: 0.45 });
+        _geoAudienceMap.flyTo([Number(item.latitude), Number(item.longitude)], 4, { duration: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 0.45 });
       }).bindPopup(
         '<strong>' + GW.escapeHtml(item.country_name || item.country_code || 'Unknown') + '</strong><br>' +
         GW.escapeHtml(item.region_label || '지역연맹 미분류') + '<br>' +
@@ -7540,22 +8337,28 @@
 
   function _getReleaseScopeLabel(scope) { return GW.releaseScopeLabel(scope); }
 
-  function _loadReleases() {
+  var _releaseLoadSerial = 0;
+  function _loadReleases(force) {
     var el = document.getElementById('releases-list');
-    if (_releasesData) {
+    if (_releasesData && force !== true) {
       _renderReleases(el, _releasesData, _releasesScope);
       return;
     }
     el.innerHTML = '<div class="v3-loading"><div class="v3-spinner"></div>불러오는 중…</div>';
+    var serial = ++_releaseLoadSerial;
+    var refresh = _el('releases-refresh-btn');
+    if (refresh) refresh.disabled = true;
     fetch('/data/changelog.json', { cache: 'no-store' })
       .then(function (r) { if (!r.ok) throw new Error('not ok'); return r.json(); })
       .then(function (data) {
+        if (serial !== _releaseLoadSerial) return;
         _releasesData = (data && Array.isArray(data.items)) ? data.items : [];
         _renderReleases(el, _releasesData, _releasesScope);
       })
       .catch(function () {
+        if (serial !== _releaseLoadSerial) return;
         el.innerHTML = '<div class="v3-empty"><div class="v3-empty-icon">⚠️</div><div class="v3-empty-text">버전 기록을 불러오지 못했습니다</div></div>';
-      });
+      }).finally(function () { if (refresh && serial === _releaseLoadSerial) refresh.disabled = false; });
   }
 
   // released_at("YYYY-MM-DD HH:MM:SS KST") 또는 date 의 앞 10글자 — GW 공용에 단일화.
@@ -8350,16 +9153,19 @@
     meta.style.color = dirty ? '#b0393a' : '';
   }
   function _loadRubric() {
+    if (_rubricSavePending) return;
     var ta = document.getElementById('rubric-textarea');
     var badge = document.getElementById('rubric-state-badge');
     if (!ta) return;
-    ta.value = '불러오는 중…';
+    if (_rubricSavedText !== null && ta.value !== _rubricSavedText && !window.confirm('저장하지 않은 평가 기준이 있습니다. 서버의 기준을 다시 불러올까요?')) return;
+    var previous = ta.value;
     ta.disabled = true;
     GW.apiFetch('/api/settings/score-rubric')
       .then(function (data) {
         var content = (data && data.content) || '';
         ta.value = content;
         _rubricLastLoaded = content;
+        _rubricSavedText = content;
         if (badge) {
           badge.textContent = (data && data.isDefault) ? '기본값' : '사용자 정의';
           badge.style.color = (data && data.isDefault) ? '' : 'var(--v3-primary)';
@@ -8367,17 +9173,19 @@
         _updateRubricMeta();
       })
       .catch(function () {
-        ta.value = '';
+        ta.value = previous;
         GW.showToast('평가 기준을 불러오지 못했습니다', 'error');
       })
-      .finally(function () { ta.disabled = false; });
+      .finally(function () { ta.disabled = !_contentCanWrite('article-scorer'); });
   }
   function _saveRubric(btn) {
+    if (!_contentCanWrite('article-scorer') || _rubricSavePending || (btn && btn.classList.contains('is-busy'))) return;
     var ta = document.getElementById('rubric-textarea');
     if (!ta) return;
     var content = ta.value || '';
     if (!content.trim()) { GW.showToast('내용이 비어 있습니다. 기본값으로 복원하려면 되돌리기 버튼을 사용하세요.', 'error'); return; }
     _setButtonBusy(btn, '저장 중…');
+    _rubricSavePending = true;
     GW.apiFetch('/api/settings/score-rubric', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
@@ -8385,6 +9193,7 @@
     })
       .then(function (data) {
         _rubricLastLoaded = (data && data.content) || content;
+        _rubricSavedText = _rubricLastLoaded;
         var badge = document.getElementById('rubric-state-badge');
         if (badge) {
           badge.textContent = (data && data.isDefault) ? '기본값' : '사용자 정의';
@@ -8394,23 +9203,27 @@
         GW.showToast('평가 기준을 저장했습니다. 다음 채점부터 반영됩니다.', 'success');
       })
       .catch(function (err) { GW.showToast((err && err.message) || '저장 실패', 'error'); })
-      .finally(function () { _clearButtonBusy(btn); });
+      .finally(function () { _rubricSavePending = false; _clearButtonBusy(btn); });
   }
   function _resetRubric(btn) {
+    if (!_contentCanWrite('article-scorer') || _rubricSavePending || (btn && btn.classList.contains('is-busy'))) return;
     if (!confirm('평가 기준을 기본 평가 기준으로 되돌리시겠습니까?')) return;
+    var previous = (_el('rubric-textarea') || {}).value;
     _setButtonBusy(btn, '복원 중…');
+    _rubricSavePending = true;
     GW.apiFetch('/api/settings/score-rubric', { method: 'DELETE' })
       .then(function (data) {
         var ta = document.getElementById('rubric-textarea');
-        if (ta) ta.value = (data && data.content) || '';
+        if (ta && ta.value === previous) ta.value = (data && data.content) || '';
         _rubricLastLoaded = (data && data.content) || '';
+        _rubricSavedText = _rubricLastLoaded;
         var badge = document.getElementById('rubric-state-badge');
         if (badge) { badge.textContent = '기본값'; badge.style.color = ''; }
         _updateRubricMeta();
         GW.showToast('기본값으로 복원했습니다.', 'success');
       })
       .catch(function (err) { GW.showToast((err && err.message) || '복원 실패', 'error'); })
-      .finally(function () { _clearButtonBusy(btn); });
+      .finally(function () { _rubricSavePending = false; _clearButtonBusy(btn); });
   }
 
   /* ══════════════════════════════════════════════════════════
@@ -8427,6 +9240,7 @@
   };
 
   function _loadAiScoreHistory(opts) {
+    var sequence = ++_contentLoadSequence.history;
     var state = _aiScoreHistoryState;
     opts = opts || {};
     if (opts.reset) {
@@ -8443,6 +9257,8 @@
     var metaEl = document.getElementById('ai-score-history-pagination-meta');
     if (listEl) listEl.innerHTML = '<div class="v3-loading"><div class="v3-spinner"></div>로딩 중…</div>';
     if (statsEl) statsEl.innerHTML = '<div class="v3-loading"><div class="v3-spinner"></div>집계 중…</div>';
+    if (metaEl) metaEl.textContent = '검색 결과를 불러오는 중…';
+    ['ai-score-history-prev-btn', 'ai-score-history-next-btn'].forEach(function (id) { if (_el(id)) _el(id).disabled = true; });
 
     var params = new URLSearchParams();
     params.set('limit', String(state.limit));
@@ -8453,14 +9269,17 @@
 
     GW.apiFetch('/api/admin/ai-score-history?' + params.toString())
       .then(function (data) {
+        if (sequence !== _contentLoadSequence.history) return;
         state.total = (data && data.pagination && data.pagination.total) || 0;
         _renderAiScoreHistoryStats(statsEl, data && data.stats);
         _renderAiScoreHistoryList(listEl, data && data.items);
         _renderAiScoreHistoryPagination(metaEl, data && data.pagination);
       })
       .catch(function (err) {
+        if (sequence !== _contentLoadSequence.history) return;
         if (listEl) listEl.innerHTML = '<div class="v3-empty" style="color:var(--v3-danger,#c0392b);">불러오기 실패: ' + GW.escapeHtml((err && err.message) || String(err)) + '</div>';
         if (statsEl) statsEl.innerHTML = '';
+        if (metaEl) metaEl.textContent = '조회 실패 · 검색 조건을 유지했습니다';
       });
   }
 
@@ -8585,6 +9404,7 @@
   }
 
   function _initArticleScorer() {
+    if (_scorerInputBaseline === null) _scorerInputBaseline = _scorerInputSnapshot();
     var runBtn   = document.getElementById('scorer-run-btn');
     var clearBtn = document.getElementById('scorer-clear-btn');
     var loadBtn  = document.getElementById('scorer-load-btn');
@@ -8627,22 +9447,32 @@
       _scorerShowEmpty();
     });
 
-    // 검색 자동완성
-    searchIn.addEventListener('input', function () {
-      var q = searchIn.value.trim().toLowerCase();
+    // 서버 검색으로 전체 기사에서 찾는다. 목록 API의 페이지 상한과 무관하다.
+    var searchTimer = null;
+    function searchPosts() {
+      var q = searchIn.value.trim();
+      var sequence = ++_contentLoadSequence.scorer;
       var list = document.getElementById('scorer-post-list');
       if (!q) { list.hidden = true; return; }
-      var matches = _scorerPosts.filter(function (p) {
-        return (p.title || '').toLowerCase().indexOf(q) !== -1;
-      }).slice(0, 10);
-      if (!matches.length) { list.hidden = true; return; }
-      list.innerHTML = matches.map(function (p) {
-        return '<div class="v3-scorer-post-item" data-post-id="' + p.id + '">' +
-          GW.escapeHtml(p.title || '(제목 없음)') +
-          '<span class="v3-scorer-post-meta">' + GW.escapeHtml(p.category || '') + '</span>' +
-          '</div>';
-      }).join('');
       list.hidden = false;
+      list.innerHTML = '<div class="v3-input-hint" role="status">전체 기사에서 검색 중…</div>';
+      return _apiFetch('/api/posts?limit=10&published=all&scope=admin&q=' + encodeURIComponent(q)).then(function (data) {
+        if (sequence !== _contentLoadSequence.scorer || searchIn.value.trim() !== q) return;
+        var matches = data && data.posts || [];
+        _scorerPosts = matches;
+        list.innerHTML = matches.length ? matches.map(function (p) {
+          return '<button type="button" class="v3-scorer-post-item" data-post-id="' + p.id + '">' + GW.escapeHtml(p.title || '(제목 없음)') + '<span class="v3-scorer-post-meta">' + GW.escapeHtml(p.category || '') + '</span></button>';
+        }).join('') : '<div class="v3-input-hint">일치하는 기사가 없습니다.</div>';
+      }).catch(function (err) {
+        if (sequence !== _contentLoadSequence.scorer) return;
+        list.innerHTML = '<div class="v3-input-hint" role="alert">기사 검색 실패. 불러오기 버튼으로 다시 시도해주세요.</div>';
+        GW.showToast(err.message || '기사 검색 실패', 'error');
+      });
+    }
+    searchIn.addEventListener('input', function () {
+      if (searchTimer) clearTimeout(searchTimer);
+      ++_contentLoadSequence.scorer;
+      searchTimer = setTimeout(searchPosts, 250);
     });
 
     // 검색창 외부 클릭 시 닫기
@@ -8664,41 +9494,24 @@
       });
     }
 
-    // 불러오기 버튼 — 목록 갱신
+    // 불러오기 버튼 — 현재 검색을 다시 실행
     loadBtn.addEventListener('click', function () {
+      if (!searchIn.value.trim()) { searchIn.focus(); GW.showToast('찾을 기사 제목을 입력해주세요.', 'info'); return; }
       _setButtonBusy(loadBtn, '불러오는 중…');
-      _apiFetch('/api/posts?limit=300&published=all&scope=admin')
-        .then(function (data) {
-          _scorerPosts = (data && data.posts) ? data.posts : [];
-          _clearButtonBusy(loadBtn);
-          loadBtn.textContent = _scorerPosts.length + '개 기사 로드됨';
-          setTimeout(function () {
-            loadBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 9v4H3V9"/><path d="M8 2v8"/><path d="M5 8l3 3 3-3"/></svg> 불러오기';
-          }, 2500);
-          searchIn.focus();
-        })
-        .catch(function () { _clearButtonBusy(loadBtn); });
+      Promise.resolve(searchPosts()).finally(function () { _clearButtonBusy(loadBtn); });
     });
-
-    // 패널 첫 진입 시 자동 로드
-    if (!_scorerPosts.length) {
-      _apiFetch('/api/posts?limit=300&published=all&scope=admin')
-        .then(function (data) {
-          _scorerPosts = (data && data.posts) ? data.posts : [];
-          if (loadBtn) loadBtn.textContent = _scorerPosts.length + '개 기사 로드됨';
-          setTimeout(function () {
-            if (loadBtn) loadBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 9v4H3V9"/><path d="M8 2v8"/><path d="M5 8l3 3 3-3"/></svg> 불러오기';
-          }, 2500);
-        })
-        .catch(function () {});
-    }
+    searchIn.placeholder = '전체 기사 제목 검색';
   }
 
   function _scorerLoadPost(id) {
+    var sequence = ++_scorerDetailSequence;
+    var snapshot = _scorerInputSnapshot();
     var bodyField = document.getElementById('scorer-body');
     if (bodyField) bodyField.placeholder = '본문 불러오는 중…';
     _apiFetch('/api/posts/' + id)
       .then(function (data) {
+        if (sequence !== _scorerDetailSequence || _panel !== 'article-scorer') return;
+        if (_scorerInputSnapshot() !== snapshot) { GW.showToast('불러오는 동안 입력한 내용을 유지했습니다. 필요하면 기사를 다시 선택해주세요.', 'info'); return; }
         var post = data && (data.post || data);
         if (!post) return;
         var titleEl    = document.getElementById('scorer-title');
@@ -8729,6 +9542,7 @@
         _scorerShowEmpty();
       })
       .catch(function () {
+        if (sequence !== _scorerDetailSequence) return;
         if (bodyField) bodyField.placeholder = '불러오기 실패. 직접 붙여넣으세요.';
       });
   }
@@ -8821,6 +9635,7 @@
   }
 
   function _runScorer() {
+    if (!_contentCanWrite('article-scorer')) { GW.showToast('기사 채점 실행 권한이 없습니다.', 'error'); return; }
     var title    = (document.getElementById('scorer-title').value || '').trim();
     var subtitle = (document.getElementById('scorer-subtitle').value || '').trim();
     var body     = (document.getElementById('scorer-body').value || '').trim();
@@ -8878,6 +9693,10 @@
   /* ══════════════════════════════════════════════════════════
      HOMEPAGE ISSUES
   ══════════════════════════════════════════════════════════ */
+  var _issueLoadSerial = 0;
+  var _issueSaving = {};
+  var _historyLoadSerial = 0;
+  var _historyCoverage = '';
   function _loadHomepageIssues(actionBtn) {
     var listEl = document.getElementById('homepage-issues-list');
     var metaEl = document.getElementById('homepage-issues-meta');
@@ -8885,12 +9704,15 @@
     if (actionBtn) _setButtonBusy(actionBtn, '불러오는 중…');
     listEl.innerHTML = '<div class="v3-loading"><div class="v3-spinner"></div>로딩 중…</div>';
     if (metaEl) metaEl.textContent = '불러오는 중…';
+    var serial = ++_issueLoadSerial;
     _apiFetch('/api/admin/homepage-issues?limit=200')
       .then(function (data) {
+        if (serial !== _issueLoadSerial) return;
         _homepageIssues = Array.isArray(data && data.items) ? data.items : [];
         _renderHomepageIssues();
       })
       .catch(function (e) {
+        if (serial !== _issueLoadSerial) return;
         listEl.innerHTML = '<div class="v3-empty v3-issues-empty"><div class="v3-empty-text">' + GW.escapeHtml((e && e.message) || '불러오기 실패') + '</div></div>';
         if (metaEl) metaEl.textContent = '기록을 불러오지 못했습니다.';
       })
@@ -8919,7 +9741,7 @@
       return haystack.indexOf(_homepageIssuesSearch) >= 0;
     });
     if (metaEl) {
-      metaEl.textContent = items.length + '건 표시 · 전체 ' + (_homepageIssues || []).length + '건';
+      metaEl.textContent = items.length + '건 표시 · 최근 최대 200건 중 ' + (_homepageIssues || []).length + '건을 불러왔습니다.';
     }
     if (!items.length) {
       listEl.innerHTML = '<div class="v3-empty v3-issues-empty"><div class="v3-empty-text">조건에 맞는 사이트 오류/이슈 기록이 없습니다.</div></div>';
@@ -8931,7 +9753,7 @@
           '<thead><tr><th>이슈</th><th>상태</th><th>심각도</th><th>영역</th><th>업데이트</th><th>관리</th></tr></thead>' +
           '<tbody>' +
             items.map(function (item) {
-              return '<tr>' +
+              return '<tr' + (_issueSaving[item.id] ? ' aria-busy="true"' : '') + '>' +
                 '<td>' +
                   '<div class="v3-table-title">' + GW.escapeHtml(item.title || '(제목 없음)') + '</div>' +
                   '<div class="v3-issues-meta-line">' +
@@ -8956,43 +9778,52 @@
 
   function _homepageIssueStatusAction(item) {
     var current = String(item && item.status || 'open');
+    var busy = _issueSaving[item.id] ? ' disabled' : '';
+    if (!_settingsWritable('homepage-issues')) return '<span class="v3-inline-meta">읽기 전용</span>';
     return '<div class="v3-inline-actions v3-inline-actions-tight">' +
-      '<select class="v3-filter-select v3-filter-select-sm" id="homepage-issue-status-' + Number(item.id || 0) + '">' +
+      '<select aria-label="' + GW.escapeHtml(item.title || '이슈') + ' 상태" class="v3-filter-select v3-filter-select-sm" id="homepage-issue-status-' + Number(item.id || 0) + '"' + busy + '>' +
         ['open', 'monitoring', 'resolved', 'archived'].map(function (status) {
           return '<option value="' + status + '"' + (status === current ? ' selected' : '') + '>' + GW.escapeHtml(_homepageIssueStatusLabel(status)) + '</option>';
         }).join('') +
       '</select>' +
-      '<button type="button" class="v3-btn v3-btn-outline v3-btn-xs" onclick="V3.updateHomepageIssueStatus(' + Number(item.id || 0) + ')">적용</button>' +
+      '<button type="button" class="v3-btn v3-btn-outline v3-btn-xs" onclick="V3.updateHomepageIssueStatus(' + Number(item.id || 0) + ')"' + busy + '>적용</button>' +
     '</div>';
   }
 
   V3.updateHomepageIssueStatus = function (id) {
     var issueId = parseInt(id, 10);
     if (!Number.isFinite(issueId) || issueId <= 0) return;
+    if (!_settingsWritable('homepage-issues') || _issueSaving[issueId]) return;
     var select = document.getElementById('homepage-issue-status-' + issueId);
     if (!select) return;
     var nextStatus = String(select.value || '').trim();
+    var row = select.closest('tr');
+    _issueSaving[issueId] = true;
+    if (row) { row.setAttribute('aria-busy', 'true'); row.querySelectorAll('select, button').forEach(function (node) { node.disabled = true; }); }
     _apiFetch('/api/admin/homepage-issues/' + issueId, {
       method: 'PATCH',
       body: JSON.stringify({ status: nextStatus })
     })
       .then(function (data) {
+        _issueLoadSerial += 1;
         var item = data && data.item ? data.item : null;
         if (!item) {
           _loadHomepageIssues();
-          _loadSiteHistory();
+          if (_canAccessPanel('site-history')) _loadSiteHistory();
           return;
         }
         _homepageIssues = (_homepageIssues || []).map(function (row) {
           return Number(row && row.id || 0) === issueId ? item : row;
         });
         _renderHomepageIssues();
-        _loadSiteHistory();
+        if (_canAccessPanel('site-history')) _loadSiteHistory();
         GW.showToast('이슈 상태를 ' + _homepageIssueStatusLabel(item.status) + '로 변경했습니다.', 'success');
       })
       .catch(function (err) {
         GW.showToast((err && err.message) || '상태 변경에 실패했습니다.', 'error');
-        _loadHomepageIssues();
+      }).finally(function () {
+        delete _issueSaving[issueId];
+        if (row) { row.removeAttribute('aria-busy'); row.querySelectorAll('select, button').forEach(function (node) { node.disabled = false; }); }
       });
   };
 
@@ -9003,12 +9834,18 @@
     if (actionBtn) _setButtonBusy(actionBtn, '불러오는 중…');
     listEl.innerHTML = '<div class="v3-loading"><div class="v3-spinner"></div>로딩 중…</div>';
     if (metaEl) metaEl.textContent = '불러오는 중…';
+    var serial = ++_historyLoadSerial;
     _apiFetch('/api/admin/site-history?limit=350')
       .then(function (data) {
+        if (serial !== _historyLoadSerial) return;
         _siteHistoryItems = Array.isArray(data && data.items) ? data.items : [];
+        var missing = Object.keys((data && data.sources) || {}).filter(function (key) { return !data.sources[key]; });
+        var labels = { operational: '운영 기록', issues: '이슈', settings: '설정 이력', posts: '기사 이력' };
+        _historyCoverage = missing.length ? ' · 일부 원천 조회 실패: ' + missing.map(function (key) { return labels[key] || key; }).join(', ') + '. 새로고침으로 다시 확인해주세요.' : '';
         _renderSiteHistory();
       })
       .catch(function (e) {
+        if (serial !== _historyLoadSerial) return;
         listEl.innerHTML = '<div class="v3-empty v3-issues-empty"><div class="v3-empty-text">' + GW.escapeHtml((e && e.message) || '불러오기 실패') + '</div></div>';
         if (metaEl) metaEl.textContent = '히스토리 로그를 불러오지 못했습니다.';
       })
@@ -9028,7 +9865,7 @@
       return String(item.search_text || '').indexOf(_siteHistorySearch) >= 0;
     });
     if (metaEl) {
-      metaEl.textContent = items.length + '건 표시 · 전체 ' + (_siteHistoryItems || []).length + '건';
+      metaEl.textContent = items.length + '건 표시 · 최근 최대 350건 중 ' + (_siteHistoryItems || []).length + '건을 불러왔습니다.' + _historyCoverage;
     }
     if (!items.length) {
       listEl.innerHTML = '<div class="v3-empty v3-issues-empty"><div class="v3-empty-text">조건에 맞는 사이트 히스토리 로그가 없습니다.</div></div>';
@@ -9256,18 +10093,20 @@
     var el = document.getElementById('marketing-body');
     var fromEl = document.getElementById('mkt-date-from');
     var toEl   = document.getElementById('mkt-date-to');
-    var today  = _kstToday();
-    var start  = (fromEl && fromEl.value) || _shiftDate(today, -6);
-    var end    = (toEl && toEl.value)   || today;
-    // Clamp max range to 180 days (client-side guard)
-    var startD = new Date(start + 'T00:00:00+09:00');
-    var endD   = new Date(end   + 'T00:00:00+09:00');
-    var diffDays = Math.round((endD - startD) / 86400000);
-    if (diffDays > 180) { start = _shiftDate(end, -180); if (fromEl) fromEl.value = start; }
-    if (startD > endD)  { var tmp = start; start = end; end = tmp; }
+    var selected = _readAnalysisRange(fromEl, toEl);
+    if (!selected || !el) return;
+    var qs = _periodQuery(selected);
+    var read = _beginAnalysisRead('marketing', qs);
+    if (!read) return;
+    var succeeded = false;
+    el.setAttribute('aria-busy', 'true');
+    _analysisStatus('marketing', 'marketing-status', _periodLabel(selected) + ' 조회 중…');
     if (actionBtn) _setButtonBusy(actionBtn, '조회 중…');
-    el.innerHTML = '<div class="v3-loading"><div class="v3-spinner"></div>로딩 중…</div>';
-    _apiFetch('/api/admin/marketing?start=' + encodeURIComponent(start) + '&end=' + encodeURIComponent(end)).then(function (data) {
+    if (actionBtn) actionBtn.dataset.analysisRequestId = String(read.id);
+    if (!_analysisRequests.marketing.data) el.innerHTML = '<div class="v3-loading"><div class="v3-spinner"></div>로딩 중…</div>';
+    _apiFetch('/api/admin/marketing?' + qs).then(function (data) {
+      if (!_isLatestAnalysisRead(read)) return;
+      data.range = data.range || { label: _periodLabel(selected), start_date: selected.start, end_date: selected.end };
       var funnel = data.funnel || [];
       var utms   = data.utm_campaigns || [];
       var transitions = data.top_transitions || [];
@@ -9277,10 +10116,11 @@
         '<div class="v3-analytics-stats marketing-stats-row">' +
           _statCard('고유 사용자', _fmt(summary.unique_users || 0), '기간 사용자') +
           _statCard('페이지뷰', _fmt(summary.total_pageviews || 0), '기간 합계') +
-          _statCard('Awareness', _fmt(summary.awareness_users || 0), '첫 노출 단계') +
-          _statCard('Interest', _fmt(summary.interest_users || 0), '관심 탐색 단계') +
-          _statCard('Consideration', _fmt(summary.consideration_users || 0), '기사 읽기 단계') +
+          _statCard('입구 페이지 도달', _fmt(summary.awareness_users || 0), '홈·일정 등') +
+          _statCard('탐색 페이지 도달', _fmt(summary.interest_users || 0), '분류·자료 등') +
+          _statCard('기사 읽기 도달', _fmt(summary.consideration_users || 0), '기사 상세 페이지') +
         '</div>' +
+        '<p class="v3-inline-meta">' + GW.escapeHtml(_periodLabel(data.range)) + ' KST · 단계별 도달은 중복될 수 있습니다. 흐름은 기간 내 첫 유입과 최고 도달 단계의 대표 페이지를 재구성하며, 세션 전환율이 아닙니다.</p>' +
         '<div class="marketing-grid">' +
           '<section class="v3-card marketing-panel marketing-panel-wide">' +
             '<div class="v3-card-head">' +
@@ -9297,7 +10137,7 @@
             '<div id="marketing-scatter" class="marketing-scatter-wrap"></div>' +
           '</section>' +
           '<section class="v3-card marketing-panel">' +
-            '<div class="v3-card-head"><h2 class="v3-card-title">퍼널 (Funnel)</h2></div>' +
+            '<div class="v3-card-head"><h2 class="v3-card-title">단계별 도달 사용자</h2></div>' +
             '<div id="marketing-funnel" class="marketing-funnel-list"></div>' +
           '</section>' +
           '<section class="v3-card marketing-panel">' +
@@ -9305,7 +10145,7 @@
             '<div id="marketing-utm"></div>' +
           '</section>' +
           '<section class="v3-card marketing-panel">' +
-            '<div class="v3-card-head"><h2 class="v3-card-title">대표 이동 경로</h2></div>' +
+            '<div class="v3-card-head"><h2 class="v3-card-title">기간 내 인접 조회 경로 · 상위 8개</h2></div>' +
             '<div id="marketing-transitions" class="v3-bar-list"></div>' +
           '</section>' +
           '<section class="v3-card marketing-panel">' +
@@ -9314,6 +10154,7 @@
           '</section>' +
         '</div>' +
         '</div>';
+      var chartsWereOpen = !!el.querySelector('.marketing-chart-details[open]');
       el.innerHTML = html;
       _renderMarketingFunnel(funnel);
       _renderMarketingUtm(utms);
@@ -9321,16 +10162,50 @@
       _renderMarketingNotes(data.notes || []);
       _renderMarketingFlow(data.journey_flow || null);
       _renderMarketingScatter(data.page_opportunities || []);
+      var grid = el.querySelector('.marketing-grid');
+      var advanced = document.createElement('details');
+      advanced.className = 'v3-content-advanced marketing-chart-details';
+      advanced.innerHTML = '<summary>흐름도·페이지 기회 맵 자세히 보기</summary>';
+      ['marketing-flow', 'marketing-scatter'].forEach(function (id) {
+        var card = _el(id).closest('.v3-card');
+        advanced.appendChild(card);
+      });
+      grid.appendChild(advanced);
+      advanced.open = chartsWereOpen;
+      advanced.addEventListener('toggle', function () {
+        if (advanced.open) advanced.querySelectorAll('.marketing-flow-shell').forEach(function (shell) { if (shell._marketingFit) shell._marketingFit(); });
+      });
+      _renderMarketingOpportunityTable(data.page_opportunities || []);
       var hasFlow = !!(data.journey_flow && Array.isArray(data.journey_flow.links) && data.journey_flow.links.length);
       var hasScatter = !!(data.page_opportunities && data.page_opportunities.length);
       if (!hasFlow && !hasScatter) {
-        el.insertAdjacentHTML('beforeend', '<div class="v3-card v3-mt-16"><div class="v3-empty"><div class="v3-empty-text">마케팅 차트용 데이터가 아직 충분하지 않거나 응답 구조를 확인해야 합니다.</div></div></div>');
+        el.insertAdjacentHTML('beforeend', '<div class="v3-card v3-mt-16"><div class="v3-empty"><div class="v3-empty-text">선택 기간에 차트로 표시할 방문 자료가 없습니다.</div></div></div>');
       }
+      _finishAnalysisRead(read, data);
+      succeeded = true;
+      _analysisStatus('marketing', 'marketing-status', '공개 페이지 방문 집계 · KST 날짜 기준');
     }).catch(function (e) {
-      el.innerHTML = '<div class="v3-card"><div class="v3-empty"><div class="v3-empty-text">데이터를 불러올 수 없습니다: ' + GW.escapeHtml((e && e.message) || 'API 오류') + '</div></div></div>';
+      if (!_isLatestAnalysisRead(read)) return;
+      if (!_analysisRequests.marketing.data) el.innerHTML = '<div class="v3-card"><div class="v3-empty"><div class="v3-empty-text">데이터를 불러올 수 없습니다. 조회 버튼으로 다시 시도해주세요.</div></div></div>';
+      _analysisStatus('marketing', 'marketing-status', _periodLabel(selected) + ' 갱신 실패 · ' + ((e && e.message) || 'API 오류'), true);
     }).finally(function () {
-      if (actionBtn) _clearButtonBusy(actionBtn, '완료');
+      if (actionBtn && actionBtn.dataset.analysisRequestId === String(read.id)) {
+        delete actionBtn.dataset.analysisRequestId;
+        _clearButtonBusy(actionBtn, succeeded ? '완료' : null);
+      }
+      if (_finishAnalysisRead(read)) el.setAttribute('aria-busy', 'false');
     });
+  }
+
+  function _renderMarketingOpportunityTable(items) {
+    var grid = _el('marketing-body').querySelector('.marketing-grid');
+    var section = document.createElement('section');
+    section.className = 'v3-card marketing-panel-wide';
+    section.innerHTML = '<div class="v3-card-head"><h2 class="v3-card-title">페이지 성과 · 고유 방문 상위 40개</h2></div><div class="v3-geo-table-wrap"><table class="v3-geo-table"><thead><tr><th>페이지</th><th>고유 방문</th><th>조회</th><th>1인당 조회</th><th>공유 유입 비중</th></tr></thead><tbody>' + (items.length ? items.map(function (item) {
+      var path = /^\/[^/]/.test(item.path || '') || item.path === '/' ? item.path : '';
+      return '<tr><td>' + (path ? '<a href="' + GW.escapeHtml(path) + '" target="_blank" rel="noopener noreferrer">' + GW.escapeHtml(item.title || path) + '</a>' : GW.escapeHtml(item.title || '페이지 미확인')) + '</td><td>' + _fmt(item.unique_users || 0) + '</td><td>' + _fmt(item.pageviews || 0) + '</td><td>' + Number(item.views_per_user || 0).toFixed(2) + '</td><td>' + Math.round(Number(item.share_ratio || 0) * 100) + '%</td></tr>';
+    }).join('') : '<tr><td colspan="5">선택 기간의 페이지 방문이 없습니다.</td></tr>') + '</tbody></table></div>';
+    grid.insertBefore(section, grid.querySelector('.marketing-chart-details'));
   }
 
   function _renderMarketingFunnel(items) {
@@ -9492,7 +10367,7 @@
       }
       var displayLabel = _trimMarketingTitle(node.label, node.x === colX[2] ? 42 : 22);
       var tip = node.label + ' · ' + _fmt(node.value || 0);
-      return '<g class="marketing-flow-node" data-tip="' + GW.escapeHtml(tip) + '">' +
+      return '<g class="marketing-flow-node" tabindex="0" role="img" aria-label="' + GW.escapeHtml(tip) + '" data-tip="' + GW.escapeHtml(tip) + '">' +
         '<rect x="' + node.x + '" y="' + node.y + '" width="' + node.w + '" height="' + node.h + '" rx="7" fill="' + GW.escapeHtml(node.color) + '"></rect>' +
         '<text x="' + labelX + '" y="' + (node.y + 18) + '" text-anchor="' + labelAnchor + '" class="marketing-flow-label">' + GW.escapeHtml(displayLabel) + '</text>' +
         '<text x="' + labelX + '" y="' + (node.y + 34) + '" text-anchor="' + labelAnchor + '" class="marketing-flow-value">' + GW.escapeHtml(_fmt(node.value || 0)) + '</text>' +
@@ -9501,11 +10376,11 @@
 
     el.innerHTML =
       '<div class="marketing-flow-zoom-bar">' +
-        '<button type="button" class="marketing-flow-zoom-btn" data-pz="out">−</button>' +
-        '<button type="button" class="marketing-flow-zoom-btn" data-pz="reset">100%</button>' +
-        '<button type="button" class="marketing-flow-zoom-btn" data-pz="in">+</button>' +
+        '<button type="button" class="marketing-flow-zoom-btn" data-pz="out" aria-label="흐름도 축소">−</button>' +
+        '<button type="button" class="marketing-flow-zoom-btn" data-pz="reset">맞춤 보기</button>' +
+        '<button type="button" class="marketing-flow-zoom-btn" data-pz="in" aria-label="흐름도 확대">+</button>' +
       '</div>' +
-      '<div class="marketing-flow-shell"><div class="marketing-hover-tip" aria-hidden="true"></div><div class="marketing-chart-stage"><svg class="marketing-flow-svg" viewBox="0 0 ' + W + ' ' + H + '" width="' + W + '" height="' + H + '" role="img" aria-label="고객 여정 흐름">' + linkParts + nodeParts + '</svg></div></div>';
+      '<div class="marketing-flow-shell"><div class="marketing-hover-tip" aria-hidden="true"></div><div class="marketing-chart-stage"><svg class="marketing-flow-svg" viewBox="0 0 ' + W + ' ' + H + '" width="' + W + '" height="' + H + '" role="group" aria-label="고객 여정 흐름">' + linkParts + nodeParts + '</svg></div></div>';
     _bindMarketingHoverTips(el);
   }
 
@@ -9567,7 +10442,7 @@
       var label = index < 8 ? '<text x="' + labelX + '" y="' + (cy + 4) + '" text-anchor="' + labelAnchor + '" class="marketing-scatter-label">' + GW.escapeHtml(_trimMarketingTitle(item.title, 16)) + '</text>' : '';
       var tip = item.title + ' · 경로 ' + item.path + ' · 사용자 ' + _fmt(item.unique_users) + ' · 페이지뷰 ' + _fmt(item.pageviews) + ' · 1인당 조회 ' + item.views_per_user + '회 · 공유 유입 ' + Math.round((item.share_ratio || 0) * 100) + '%';
       var href = String(item.path || '').indexOf('/post/') === 0 ? item.path : '';
-      return '<g class="marketing-scatter-point' + (href ? ' is-clickable' : '') + '" data-tip="' + GW.escapeHtml(tip) + '"' + (href ? ' data-href="' + GW.escapeHtml(href) + '"' : '') + '>' +
+      return '<g class="marketing-scatter-point' + (href ? ' is-clickable' : '') + '" tabindex="0" role="' + (href ? 'link' : 'img') + '" aria-label="' + GW.escapeHtml(tip) + '" data-tip="' + GW.escapeHtml(tip) + '"' + (href ? ' data-href="' + GW.escapeHtml(href) + '"' : '') + '>' +
         '<circle cx="' + cx.toFixed(2) + '" cy="' + cy.toFixed(2) + '" r="' + radius.toFixed(2) + '" fill="' + color + '" fill-opacity="0.72" stroke="' + color + '" stroke-width="2"></circle>' +
         label +
       '</g>';
@@ -9585,7 +10460,7 @@
     ].map(function (item) {
       return '<span><i style="background:' + _marketingStageColor(item.key) + ';"></i>' + GW.escapeHtml(item.label) + '</span>';
     }).join('');
-    el.innerHTML = '<div class="marketing-scatter-legend">' + legend + '</div><div class="marketing-scatter-shell"><div class="marketing-hover-tip" aria-hidden="true"></div><div class="marketing-chart-stage"><svg class="marketing-scatter-svg" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="페이지 기회 맵">' + axis + points + '</svg></div></div>';
+    el.innerHTML = '<div class="marketing-scatter-legend">' + legend + '</div><div class="marketing-scatter-shell"><div class="marketing-hover-tip" aria-hidden="true"></div><div class="marketing-chart-stage"><svg class="marketing-scatter-svg" viewBox="0 0 ' + W + ' ' + H + '" role="group" aria-label="페이지 기회 맵">' + axis + points + '</svg></div></div>';
     _bindMarketingHoverTips(el);
   }
 
@@ -9595,7 +10470,8 @@
     var shell = root.querySelector('.marketing-flow-shell, .marketing-scatter-shell');
     var tooltip = root.querySelector('.marketing-hover-tip');
     if (!shell || !tooltip) return;
-    shell.addEventListener('mousemove', function (event) {
+    tooltip.classList.remove('open');
+    function showTip(event) {
       if (shell._pzDragging) { tooltip.classList.remove('open'); return; }
       var target = event.target.closest('[data-tip]');
       if (!target || !shell.contains(target)) {
@@ -9605,11 +10481,22 @@
       tooltip.textContent = target.getAttribute('data-tip') || '';
       tooltip.classList.add('open');
       var bounds = shell.getBoundingClientRect();
-      tooltip.style.left = (event.clientX - bounds.left + 16) + 'px';
-      tooltip.style.top = (event.clientY - bounds.top + 16) + 'px';
-    });
-    shell.addEventListener('mouseleave', function () {
+      tooltip.style.left = Math.max(0, Math.min(shell.clientWidth - Math.min(260, shell.clientWidth), (event.clientX || bounds.left) - bounds.left + 16)) + 'px';
+      tooltip.style.top = Math.max(0, (event.clientY || bounds.top) - bounds.top + 16) + 'px';
+    }
+    shell.addEventListener('pointermove', showTip);
+    shell.addEventListener('pointerdown', showTip);
+    shell.addEventListener('focusin', showTip);
+    shell.addEventListener('pointerleave', function () {
       tooltip.classList.remove('open');
+    });
+    shell.addEventListener('focusout', function () { tooltip.classList.remove('open'); });
+    shell.addEventListener('keydown', function (event) {
+      var target = event.target.closest('[data-href]');
+      if (target && (event.key === 'Enter' || event.key === ' ')) {
+        event.preventDefault();
+        window.open(target.getAttribute('data-href'), '_blank', 'noopener,noreferrer');
+      }
     });
     shell.addEventListener('click', function (event) {
       if (shell._pzHasDragged) return;
@@ -9627,18 +10514,37 @@
     var svg = shell.querySelector('svg');
     if (!svg) return;
     shell.classList.add('is-panzoom');
+    shell.classList.remove('is-dragging');
     var pz = { zoom: 1, x: 0, y: 0 };
     shell._pzDragging = false;
     shell._pzHasDragged = false;
     var _startX = 0, _startY = 0, _startPanX = 0, _startPanY = 0;
+    var pointerId = null;
+    shell.setAttribute('tabindex', '0');
+    shell.setAttribute('role', 'group');
+    shell.setAttribute('aria-label', '흐름도. 터치 또는 드래그로 이동, 화살표 키로 이동, 확대·축소와 맞춤 보기 버튼 사용');
 
     function applyTransform() {
       svg.style.transform = 'translate(' + pz.x + 'px,' + pz.y + 'px) scale(' + pz.zoom + ')';
     }
 
     function adjustZoom(delta) {
-      pz.zoom = Math.max(0.25, Math.min(5, Number((pz.zoom + delta).toFixed(3))));
+      pz.zoom = Math.max(0.1, Math.min(5, Number((pz.zoom + delta).toFixed(3))));
       applyTransform();
+    }
+    function fit() {
+      if (!shell.clientWidth) return;
+      var width = svg.viewBox.baseVal.width || svg.getBoundingClientRect().width;
+      pz.zoom = Math.min(1, Math.max(0.1, shell.clientWidth / width)); pz.x = 0; pz.y = 0;
+      applyTransform();
+    }
+    shell._marketingFit = fit;
+    fit();
+    if (!_marketingPanZoomResizeBound) {
+      _marketingPanZoomResizeBound = true;
+      window.addEventListener('resize', function () {
+        document.querySelectorAll('.marketing-flow-shell').forEach(function (item) { if (item._marketingFit) item._marketingFit(); });
+      });
     }
 
     // 버튼 줌 (shell의 부모 wrap에서 버튼 찾기)
@@ -9649,13 +10555,15 @@
           var action = btn.getAttribute('data-pz');
           if (action === 'in')    adjustZoom(0.2);
           else if (action === 'out')   adjustZoom(-0.2);
-          else if (action === 'reset') { pz.zoom = 1; pz.x = 0; pz.y = 0; applyTransform(); }
+          else if (action === 'reset') fit();
         });
       });
     }
 
-    shell.addEventListener('mousedown', function (e) {
-      if (e.button !== 0) return;
+    shell.addEventListener('pointerdown', function (e) {
+      if (e.button !== 0 || pointerId != null) return;
+      pointerId = e.pointerId;
+      shell.setPointerCapture(e.pointerId);
       shell._pzDragging = true;
       shell._pzHasDragged = false;
       _startX = e.clientX; _startY = e.clientY;
@@ -9663,8 +10571,8 @@
       shell.classList.add('is-dragging');
     });
 
-    document.addEventListener('mousemove', function (e) {
-      if (!shell._pzDragging) return;
+    shell.addEventListener('pointermove', function (e) {
+      if (!shell._pzDragging || e.pointerId !== pointerId) return;
       var dx = e.clientX - _startX;
       var dy = e.clientY - _startY;
       if (Math.abs(dx) > 3 || Math.abs(dy) > 3) shell._pzHasDragged = true;
@@ -9673,11 +10581,20 @@
       applyTransform();
     });
 
-    document.addEventListener('mouseup', function () {
+    function endPan() {
       if (!shell._pzDragging) return;
+      pointerId = null;
       shell._pzDragging = false;
       shell.classList.remove('is-dragging');
       setTimeout(function () { shell._pzHasDragged = false; }, 0);
+    }
+    shell.addEventListener('pointerup', endPan);
+    shell.addEventListener('pointercancel', endPan);
+    shell.addEventListener('keydown', function (event) {
+      if (event.target !== shell) return;
+      var delta = { ArrowLeft: [48, 0], ArrowRight: [-48, 0], ArrowUp: [0, 48], ArrowDown: [0, -48] }[event.key];
+      if (!delta) return;
+      event.preventDefault(); pz.x += delta[0]; pz.y += delta[1]; applyTransform();
     });
 
   }
@@ -9708,7 +10625,10 @@
     var sourceEl = document.getElementById(sourceId);
     if (!sourceEl) return;
     _marketingFullscreenZoom = 1;
+    delete body.dataset.hoverTipsBound;
     body.innerHTML = '<div id="marketing-fullscreen-zoom-stage" class="marketing-fullscreen-zoom-stage">' + sourceEl.innerHTML + '</div>';
+    // innerHTML copies dataset markers, but never their event listeners.
+    body.querySelectorAll('[data-pan-zoom-bound]').forEach(function (shell) { delete shell.dataset.panZoomBound; });
     title.textContent = kind === 'scatter' ? '페이지 기회 맵' : '고객 여정 흐름';
     meta.textContent = kind === 'scatter'
       ? '고유 사용자 · 재읽기 강도 · 공유 비중을 크게 확인합니다.'
@@ -9751,9 +10671,11 @@
      SETTINGS – HERO
   ══════════════════════════════════════════════════════════ */
   function _loadHero() {
+    _heroRenderSerial += 1; _heroSearchSerial += 1;
     var el = document.getElementById('hero-slots');
     el.innerHTML = '<div class="v3-loading"><div class="v3-spinner"></div>로딩 중…</div>';
-    _apiFetch('/api/settings/hero').then(function (data) {
+    _settingsFetch('hero', '/api/settings/hero').then(function (data) {
+      if (!_settingsResponseCurrent('hero', data)) return;
       _heroPostIds  = (data && data.manual_post_ids) || (data && data.post_ids) || [];
       _heroInterval = (data && data.interval_ms) || 3000;
       _heroManualPosition = (data && data.manual_position) === 'before_auto' ? 'before_auto' : 'after_auto';
@@ -9762,10 +10684,15 @@
       }
       document.getElementById('hero-interval').value = _heroInterval;
       _renderHeroSlots();
-    }).catch(function () { el.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">불러오기 실패</div></div>'; });
+    }).catch(function (error) { if (error && error.settingsStale) return; el.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">불러오기 실패</div></div>'; });
   }
 
+  var _heroRenderSerial = 0;
+  var _heroSearchSerial = 0;
+  var _homeLeadSearchSerial = 0;
+  var _homeLeadSelectSerial = 0;
   function _renderHeroSlots() {
+    var serial = ++_heroRenderSerial;
     var el = document.getElementById('hero-slots');
     if (!_heroPostIds.length) {
       el.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">수동 고정 기사가 없습니다. 비워두면 최신 기사 3개만 자동 노출됩니다.</div></div>';
@@ -9775,6 +10702,7 @@
     Promise.all(_heroPostIds.map(function (id) {
       return _apiFetch('/api/posts/' + id).catch(function () { return null; });
     })).then(function (posts) {
+      if (serial !== _heroRenderSerial) return;
       el.innerHTML = posts.map(function (data, i) {
         var p = data && (data.post || data);
         if (!p) return '<div class="v3-hero-slot"><div class="v3-hero-slot-num">' + (i + 1) + '</div><div class="v3-text-m">불러오기 실패</div><button class="v3-btn v3-btn-ghost v3-btn-xs" onclick="V3._removeHero(' + i + ')">×</button></div>';
@@ -9785,9 +10713,9 @@
             '<div class="v3-hero-post-title">' + GW.escapeHtml(p.title || '') + '</div>' +
             '<div class="v3-hero-post-cat">' + GW.escapeHtml(p.category || '') + '</div>' +
           '</div>' +
-          '<button class="v3-btn v3-btn-ghost v3-btn-xs" onclick="V3._moveHero(' + i + ',-1)" ' + (i === 0 ? 'disabled' : '') + '>↑</button>' +
-          '<button class="v3-btn v3-btn-ghost v3-btn-xs" onclick="V3._moveHero(' + i + ',1)" ' + (i === _heroPostIds.length - 1 ? 'disabled' : '') + '>↓</button>' +
-          '<button class="v3-btn v3-btn-ghost v3-btn-xs" style="color:var(--v3-ink-destructive);" onclick="V3._removeHero(' + i + ')">×</button>' +
+          '<button aria-label="수동 기사 위로" class="v3-btn v3-btn-ghost v3-btn-xs" onclick="V3._moveHero(' + i + ',-1)" ' + (i === 0 ? 'disabled' : '') + '>↑</button>' +
+          '<button aria-label="수동 기사 아래로" class="v3-btn v3-btn-ghost v3-btn-xs" onclick="V3._moveHero(' + i + ',1)" ' + (i === _heroPostIds.length - 1 ? 'disabled' : '') + '>↓</button>' +
+          '<button aria-label="수동 기사 해제" class="v3-btn v3-btn-ghost v3-btn-xs" style="color:var(--v3-ink-destructive);" onclick="V3._removeHero(' + i + ')">×</button>' +
         '</div>';
       }).join('');
     });
@@ -9803,7 +10731,9 @@
 
   function _searchHero(q) {
     var el = document.getElementById('hero-search-results');
+    var serial = ++_heroSearchSerial;
     _apiFetch('/api/posts?q=' + encodeURIComponent(q) + '&limit=8&published=1').then(function (data) {
+      if (serial !== _heroSearchSerial || _settingsSection !== 'hero') return;
       var posts = (data && data.posts) || [];
       if (!posts.length) { el.style.display = 'none'; return; }
       el.innerHTML = posts.map(function (p) {
@@ -9813,7 +10743,7 @@
         '</div>';
       }).join('');
       el.style.display = 'block';
-    }).catch(function () { el.style.display = 'none'; });
+    }).catch(function () { if (serial === _heroSearchSerial) el.style.display = 'none'; });
   }
 
   V3._addHeroPost = function (id) {
@@ -9831,7 +10761,7 @@
     _heroManualPosition = manualPosition && manualPosition.value === 'before_auto' ? 'before_auto' : 'after_auto';
     var btn = document.getElementById('hero-save-btn');
     _setButtonBusy(btn, '저장 중…');
-    _apiFetch('/api/settings/hero', {
+    _settingsFetch('hero', '/api/settings/hero', {
       method: 'PUT',
       body: JSON.stringify({ manual_post_ids: _heroPostIds, manual_position: _heroManualPosition, interval_ms: interval }),
     }).then(function () {
@@ -9872,15 +10802,17 @@
   }
 
   function _loadHomeLeadUI() {
+    _homeLeadSelectSerial += 1; _homeLeadSearchSerial += 1;
     var wrap = document.getElementById('home-lead-selected');
     if (wrap) wrap.innerHTML = '<div class="v3-loading"><div class="v3-spinner"></div>로딩 중…</div>';
-    _apiFetch('/api/settings/home-lead').then(function (data) {
+    _settingsFetch('home-lead', '/api/settings/home-lead').then(function (data) {
+      if (!_settingsResponseCurrent('home-lead', data)) return;
       _homeLeadPost = data && data.post ? data.post : null;
       _homeLeadMedia = _cloneHomeLeadMedia(data && data.media);
       _renderHomeLeadMode(data);
       _syncHomeLeadControls();
       _renderHomeLeadSelected();
-    }).catch(function () {
+    }).catch(function (error) { if (error && error.settingsStale) return;
       if (wrap) wrap.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">불러오기 실패</div></div>';
     });
   }
@@ -9917,7 +10849,7 @@
     if (!confirm('메인 스토리를 자동 선정으로 되돌릴까요?\n\n최근 한 달 안에 발행된 글 중 가장 많이 읽힌 글이 지금 바로 적용되고, 이후 매일 자정에 다시 선정됩니다.')) return;
     var btn = document.getElementById('home-lead-auto-btn');
     _setButtonBusy(btn, '전환 중…');
-    _apiFetch('/api/settings/home-lead', {
+    _settingsFetch('home-lead', '/api/settings/home-lead', {
       method: 'PUT',
       body: JSON.stringify({ mode: 'auto' }),
     }).then(function (res) {
@@ -9991,8 +10923,10 @@
   }
 
   function _searchHomeLead(q) {
+    var serial = ++_homeLeadSearchSerial;
     var el = document.getElementById('home-lead-search-results');
     _apiFetch('/api/posts?q=' + encodeURIComponent(q) + '&limit=8&published=1').then(function (data) {
+      if (serial !== _homeLeadSearchSerial || _settingsSection !== 'home-lead') return;
       var posts = (data && data.posts) || [];
       if (!posts.length) {
         el.style.display = 'none';
@@ -10011,7 +10945,12 @@
   }
 
   V3._selectHomeLead = function (id) {
+    var state = _settingsState('home-lead');
+    if (!state.loaded || state.busy || !_settingsWritable('home-lead')) return;
+    var serial = ++_homeLeadSelectSerial;
+    state.busy = true; state.error = ''; _settingsStatus('home-lead');
     _apiFetch('/api/posts/' + id).then(function (data) {
+      if (serial !== _homeLeadSelectSerial || _settingsSection !== 'home-lead') return;
       var post = data && (data.post || data);
       if (!post || !post.published) {
         GW.showToast('공개된 게시글만 선택할 수 있습니다', 'error');
@@ -10024,8 +10963,10 @@
       document.getElementById('home-lead-search-results').style.display = 'none';
       document.getElementById('home-lead-search').value = '';
     }).catch(function (e) {
+      if (serial !== _homeLeadSelectSerial || _settingsSection !== 'home-lead') return;
+      state.error = (e.message || '게시글을 불러오지 못했습니다') + '. 이전 선택을 유지했습니다.';
       GW.showToast(e.message || '게시글을 불러오지 못했습니다', 'error');
-    });
+    }).finally(function () { if (serial === _homeLeadSelectSerial) { state.busy = false; _settingsStatus('home-lead'); } });
   };
 
   V3._clearHomeLead = function () {
@@ -10033,6 +10974,8 @@
   };
 
   function _clearHomeLeadSelection() {
+    if (_settingsState('home-lead').busy) return;
+    _homeLeadSelectSerial += 1;
     _homeLeadPost = null;
     _homeLeadMedia = _defaultHomeLeadMedia();
     _syncHomeLeadControls();
@@ -10056,7 +10999,7 @@
     var btn = document.getElementById('home-lead-save-btn');
     var payload = _homeLeadPost ? { post_id: _homeLeadPost.id, media: _homeLeadMedia || _defaultHomeLeadMedia() } : { post_id: null };
     _setButtonBusy(btn, '저장 중…');
-    _apiFetch('/api/settings/home-lead', {
+    _settingsFetch('home-lead', '/api/settings/home-lead', {
       method: 'PUT',
       body: JSON.stringify(payload),
     }).then(function () {
@@ -10102,10 +11045,11 @@
   function _loadTagSettingsUI() {
     var el = document.getElementById('tags-editor');
     el.innerHTML = '<div class="v3-loading"><div class="v3-spinner"></div>로딩 중…</div>';
-    _apiFetch('/api/settings/tags').then(function (data) {
+    _settingsFetch('tags', '/api/settings/tags').then(function (data) {
+      if (!_settingsResponseCurrent('tags', data)) return;
       _tagSettings = (GW.normalizeTagSettings ? GW.normalizeTagSettings(data) : data) || {};
       _renderTagsEditor();
-    }).catch(function () { el.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">불러오기 실패</div></div>'; });
+    }).catch(function (error) { if (error && error.settingsStale) return; el.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">불러오기 실패</div></div>'; });
   }
 
   function _renderTagsEditor() {
@@ -10297,7 +11241,7 @@
     });
     var btn = document.getElementById('tags-save-btn');
     _setButtonBusy(btn, '저장 중…');
-    _apiFetch('/api/settings/tags', {
+    _settingsFetch('tags', '/api/settings/tags', {
       method: 'PUT',
       body: JSON.stringify({ common: common, categories: cats }),
     }).then(function () {
@@ -10319,10 +11263,11 @@
   function _loadMetaUI() {
     var el = document.getElementById('meta-editor');
     el.innerHTML = '<div class="v3-loading"><div class="v3-spinner"></div>로딩 중…</div>';
-    _apiFetch('/api/settings/site-meta').then(function (data) {
+    _settingsFetch('meta', '/api/settings/site-meta').then(function (data) {
+      if (!_settingsResponseCurrent('meta', data)) return;
       _siteMeta = data || {};
       _renderMetaEditor();
-    }).catch(function () { el.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">불러오기 실패</div></div>'; });
+    }).catch(function (error) { if (error && error.settingsStale) return; el.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">불러오기 실패</div></div>'; });
   }
 
   function _renderMetaEditor() {
@@ -10331,11 +11276,11 @@
     var footer = (_siteMeta && _siteMeta.footer) || {};
     var html = META_PAGES.map(function (key) {
       var p = pages[key] || {};
-      return '<div class="v3-form-group v3-mt-16">' +
-        '<div class="v3-label v3-mb-16">' + GW.escapeHtml((GW.getMetaPageLabel && GW.getMetaPageLabel(key)) || key) + '</div>' +
-        '<input class="v3-input" type="text" id="meta-title-' + key + '" value="' + GW.escapeHtml(p.title || '') + '" placeholder="페이지 제목 (title 태그)" />' +
-        '<input class="v3-input v3-mt-8" type="text" id="meta-desc-' + key + '" value="' + GW.escapeHtml(p.description || '') + '" placeholder="설명 (description 태그)" />' +
-      '</div>';
+      return '<details class="v3-content-advanced v3-meta-page"' + (key === 'home' ? ' open' : '') + '>' +
+        '<summary>' + GW.escapeHtml((GW.getMetaPageLabel && GW.getMetaPageLabel(key)) || key) + '</summary><div class="v3-form-grid">' +
+        _metaField('meta-title-' + key, '페이지 제목', p.title || '') +
+        _metaField('meta-desc-' + key, '검색 결과 설명', p.description || '') +
+      '</div></details>';
     }).join('');
     html += '<hr class="v3-divider" />';
     html += '<div class="v3-label v3-mt-16 v3-mb-16" style="display:block;margin-bottom:12px;font-weight:700;">푸터</div>';
@@ -10367,22 +11312,24 @@
         description: (document.getElementById('meta-desc-'  + key) || {}).value || '',
       };
     });
-    var footer = {
+    var footer = Object.assign({}, (_siteMeta && _siteMeta.footer) || {}, {
       title:         (document.getElementById('site-footer-title')   || {}).value || '',
       description:   (document.getElementById('site-footer-desc')    || {}).value || '',
       domain_label:  (document.getElementById('site-footer-domain')  || {}).value || '',
       tip_email:     (document.getElementById('site-footer-tip')     || {}).value || '',
       contact_email: (document.getElementById('site-footer-contact') || {}).value || '',
-    };
-    var body = {
+    });
+    var body = Object.assign({}, _siteMeta, {
       pages: pages, footer: footer,
+      if_revision: Number(_siteMeta.revision) || 0,
       google_verification: (document.getElementById('meta-google-verify') || {}).value || '',
       naver_verification:  (document.getElementById('meta-naver-verify')  || {}).value || '',
-    };
+    });
     var btn = document.getElementById('meta-save-btn');
     _setButtonBusy(btn, '저장 중…');
-    _apiFetch('/api/settings/site-meta', { method: 'PUT', body: JSON.stringify(body) })
-      .then(function () {
+    _settingsFetch('meta', '/api/settings/site-meta', { method: 'PUT', body: JSON.stringify(body) })
+      .then(function (data) {
+        _siteMeta = data || body;
         GW.showToast('메타태그 설정을 저장했습니다', 'success');
         _clearButtonBusy(btn, '완료');
       })
@@ -10409,11 +11356,12 @@
     var el = document.getElementById('board-copy-editor');
     if (!el) return;
     el.innerHTML = '<div class="v3-loading"><div class="v3-spinner"></div>로딩 중…</div>';
-    _apiFetch('/api/settings/board-copy').then(function (data) {
+    _settingsFetch('board-copy', '/api/settings/board-copy').then(function (data) {
+      if (!_settingsResponseCurrent('board-copy', data)) return;
       _boardCopy = data || {};
       _boardCopyRevision = parseInt(data && data.revision, 10) || 0;
       _renderBoardCopyEditor();
-    }).catch(function () {
+    }).catch(function (error) { if (error && error.settingsStale) return;
       el.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">불러오기 실패</div></div>';
     });
   }
@@ -10426,7 +11374,7 @@
       return '<div class="v3-board-copy-card">' +
         '<strong>' + GW.escapeHtml(page.label) + '</strong>' +
         '<span>' + GW.escapeHtml(page.note) + '</span>' +
-        '<textarea class="v3-textarea" rows="4" id="board-copy-' + page.key + '" placeholder="게시판 설명을 입력하세요.">' + GW.escapeHtml(item.description || '') + '</textarea>' +
+        '<label class="v3-label" for="board-copy-' + page.key + '">게시판 설명</label><textarea class="v3-textarea" rows="4" id="board-copy-' + page.key + '" placeholder="게시판 설명을 입력하세요.">' + GW.escapeHtml(item.description || '') + '</textarea>' +
       '</div>';
     }).join('') + '</div>';
   }
@@ -10441,7 +11389,7 @@
     payload.if_revision = _boardCopyRevision;
     var btn = document.getElementById('board-copy-save-btn');
     _setButtonBusy(btn, '저장 중…');
-    _apiFetch('/api/settings/board-copy', { method: 'PUT', body: JSON.stringify(payload) })
+    _settingsFetch('board-copy', '/api/settings/board-copy', { method: 'PUT', body: JSON.stringify(payload) })
       .then(function (data) {
         _boardCopy = data || payload;
         _boardCopyRevision = parseInt(data && data.revision, 10) || (_boardCopyRevision + 1);
@@ -10457,27 +11405,39 @@
   ══════════════════════════════════════════════════════════ */
   function _loadAuthorUI() {
     Promise.all([
-      _apiFetch('/api/settings/author').catch(function () { return {}; }),
-      _apiFetch('/api/settings/ai-disclaimer').catch(function () { return {}; }),
+      _settingsFetch('author', '/api/settings/author'),
+      _settingsFetch('author', '/api/settings/ai-disclaimer'),
     ]).then(function (results) {
+      if (results.some(function (data) { return !_settingsResponseCurrent('author', data); })) return;
       document.getElementById('s-author-name').value  = (results[0] && (results[0].author || results[0].name)) || '';
       document.getElementById('s-ai-disclaimer').value = (results[1] && results[1].text) || '';
-    });
+    }).catch(function () {});
   }
 
   function _saveAuthor() {
+    var state = _settingsState('author');
+    if (!state.loaded || state.busy || !_settingsWritable('author')) return;
     var name = document.getElementById('s-author-name').value.trim();
     var disc = document.getElementById('s-ai-disclaimer').value.trim();
     var btn = document.getElementById('author-save-btn');
     _setButtonBusy(btn, '저장 중…');
-    Promise.all([
-      _apiFetch('/api/settings/author', { method: 'PUT', body: JSON.stringify({ author: name }) }),
-      _apiFetch('/api/settings/ai-disclaimer', { method: 'PUT', body: JSON.stringify({ text: disc }) }),
-    ]).then(function () {
-      GW.showToast('저장했습니다', 'success');
-      _clearButtonBusy(btn, '완료');
-    }).catch(function (e) { GW.showToast(e.message || '저장 실패', 'error'); })
-      .finally(function () { if (btn.classList.contains('is-busy')) _clearButtonBusy(btn); });
+    state.busy = true; state.error = ''; _settingsStatus('author');
+    Promise.allSettled([
+      _apiFetch('/api/settings/author', { method: 'PUT', body: JSON.stringify({ author: name, if_current: _settingsSnapshots['/api/settings/author'] }) }),
+      _apiFetch('/api/settings/ai-disclaimer', { method: 'PUT', body: JSON.stringify({ text: disc, if_current: _settingsSnapshots['/api/settings/ai-disclaimer'] }) }),
+    ]).then(function (results) {
+      var failures = [];
+      ['기본 저자명', 'AI 고지 문구'].forEach(function (label, index) {
+        if (results[index].status === 'rejected') failures.push(label + ': ' + (results[index].reason.message || '저장 실패'));
+        else _settingsSnapshots[index === 0 ? '/api/settings/author' : '/api/settings/ai-disclaimer'] = results[index].value;
+      });
+      state.busy = false;
+      if (failures.length) {
+        state.error = (failures.length === 1 ? '일부 항목만 저장되었습니다. ' : '저장하지 못했습니다. ') + failures.join(' · ') + ' 입력을 확인하고 다시 저장해주세요.';
+        state.dirty = true; GW.showToast(state.error, 'error');
+      } else { state.dirty = false; state.saved = true; _clearButtonBusy(btn, '완료'); GW.showToast('저자명과 AI 고지 문구를 저장했습니다.', 'success'); }
+      _settingsStatus('author');
+    }).finally(function () { if (btn.classList.contains('is-busy')) _clearButtonBusy(btn); });
   }
 
   /* ══════════════════════════════════════════════════════════
@@ -10487,13 +11447,16 @@
   // 게시판 배너(_loadBannerUI)와는 다른 기능이다. 이쪽은 홈 첫 진입 시 화면
   // 중앙에 뜨는 이미지 팝업이며, 최대 2개까지만 등록된다(서버에서도 강제).
   var _homeBanners = [];
+  var _homeBannersSnapshot = [];
   var HOME_BANNER_MAX = 2;
 
   function _loadHomeBannersUI() {
-    _apiFetch('/api/settings/home-banners').then(function (data) {
+    _settingsFetch('home-banners', '/api/settings/home-banners').then(function (data) {
+      if (!_settingsResponseCurrent('home-banners', data)) return;
       _homeBanners = (data && data.banners) || [];
+      _homeBannersSnapshot = JSON.parse(JSON.stringify(_homeBanners));
       _renderHomeBanners();
-    }).catch(function () { _homeBanners = []; _renderHomeBanners(); });
+    }).catch(function (error) { if (error && error.settingsStale) return; var list = _el('banner-editor-list'); if (list) list.textContent = '홈 배너를 불러오지 못했습니다. 기존 설정을 확인한 뒤 저장할 수 있습니다.'; });
   }
 
   function _renderHomeBanners() {
@@ -10505,16 +11468,17 @@
         '<div class="v3-card v3-mt-16" data-banner-index="' + i + '">' +
           '<div class="v3-form-row"><label class="v3-label">이미지</label>' +
             '<input type="file" accept="image/*" class="hb-file" />' +
-            (b.image_url ? '<img src="' + E(b.image_url) + '" alt="" style="max-width:220px;display:block;margin-top:8px;border-radius:8px" />' : '<span class="v3-hint">아직 이미지가 없습니다</span>') +
+            (b.image_url ? '<img src="' + E(b.image_url) + '" alt="" style="width:220px;max-width:100%;height:auto;display:block;margin-top:8px;border-radius:8px" />' : '<span class="v3-hint">아직 이미지가 없습니다</span>') +
           '</div>' +
           '<div class="v3-form-row"><label class="v3-label">설명 (대체 텍스트, 필수)</label>' +
             '<input type="text" class="v3-input hb-title" value="' + E(b.title || '') + '" placeholder="예: 제16회 한국잼버리 운영요원 모집 안내" /></div>' +
           '<div class="v3-form-row"><label class="v3-label">링크 (선택)</label>' +
             '<input type="text" class="v3-input hb-link" value="' + E(b.link_url || '') + '" placeholder="https://..." /></div>' +
           '<div class="v3-form-row"><label class="v3-label">노출 시작 (선택)</label>' +
-            '<input type="date" class="v3-input hb-start" value="' + E((b.starts_at || '').slice(0, 10)) + '" /></div>' +
+            '<input type="date" class="v3-input hb-start" value="' + E((b.starts_at || '').slice(0, 10)) + '" />' + (b.starts_at ? '<span class="v3-hint">저장된 시작: ' + E(_formatKstTimestamp(b.starts_at)) + ' KST</span>' : '') + '</div>' +
           '<div class="v3-form-row"><label class="v3-label">노출 종료 (선택)</label>' +
-            '<input type="date" class="v3-input hb-end" value="' + E((b.ends_at || '').slice(0, 10)) + '" /></div>' +
+            '<input type="date" class="v3-input hb-end" value="' + E((b.ends_at || '').slice(0, 10)) + '" />' + (b.ends_at ? '<span class="v3-hint">저장된 종료: ' + E(_formatKstTimestamp(b.ends_at)) + ' KST</span>' : '') + '</div>' +
+          '<p class="v3-hint">날짜 입력은 UTC 기준입니다. 날짜를 바꾸면 선택한 날짜의 한국 시각 09:00가 적용됩니다. 날짜를 바꾸지 않으면 기존 시각을 유지합니다.</p>' +
           '<div class="v3-form-row"><label class="v3-check-row"><input type="checkbox" class="hb-active"' + (b.active ? ' checked' : '') + ' /><span>노출</span></label></div>' +
           '<button class="v3-btn v3-btn-sm hb-remove" type="button">이 배너 삭제</button>' +
         '</div>';
@@ -10523,13 +11487,25 @@
     Array.prototype.forEach.call(wrap.querySelectorAll('[data-banner-index]'), function (card) {
       var i = parseInt(card.getAttribute('data-banner-index'), 10);
       card.querySelector('.hb-remove').addEventListener('click', function () {
+        _homeBanners = _collectHomeBanners();
         _homeBanners.splice(i, 1); _renderHomeBanners();
       });
       card.querySelector('.hb-file').addEventListener('change', function (e) {
         var f = e.target.files && e.target.files[0];
         if (!f) return;
+        if (!/^image\/(jpeg|png|webp|gif)$/.test(f.type)) { GW.showToast('JPEG / PNG / WebP / GIF 이미지를 선택해주세요.', 'error'); return; }
+        _homeBanners = _collectHomeBanners();
+        var banner = _homeBanners[i];
         var fr = new FileReader();
-        fr.onload = function () { _homeBanners[i].image_url = String(fr.result); _renderHomeBanners(); };
+        _settingsState('home-banners').busy = true; _settingsStatus('home-banners');
+        fr.onload = function () {
+          _homeBanners = _collectHomeBanners();
+          var index = _homeBanners.indexOf(banner);
+          if (index < 0) index = i;
+          if (_homeBanners[index]) _homeBanners[index].image_url = String(fr.result);
+          _settingsState('home-banners').busy = false; _settingsStatus('home-banners'); _renderHomeBanners();
+        };
+        fr.onerror = function () { _settingsState('home-banners').busy = false; _settingsState('home-banners').error = '이미지를 읽지 못했습니다. 다시 선택해주세요.'; _settingsStatus('home-banners'); };
         fr.readAsDataURL(f);
       });
     });
@@ -10548,35 +11524,48 @@
         image_url: _homeBanners[i] ? _homeBanners[i].image_url : '',
         title: card.querySelector('.hb-title').value.trim(),
         link_url: card.querySelector('.hb-link').value.trim(),
-        starts_at: card.querySelector('.hb-start').value || '',
-        ends_at: card.querySelector('.hb-end').value || '',
+        starts_at: _preserveHomeBannerTimestamp(card.querySelector('.hb-start').value || '', _homeBanners[i] && _homeBanners[i].starts_at),
+        ends_at: _preserveHomeBannerTimestamp(card.querySelector('.hb-end').value || '', _homeBanners[i] && _homeBanners[i].ends_at),
         active: card.querySelector('.hb-active').checked ? 1 : 0,
         sort_order: i
       };
     });
   }
 
+  function _preserveHomeBannerTimestamp(date, previous) {
+    return previous && String(previous).slice(0, 10) === date ? previous : date;
+  }
+
   function _saveHomeBanners() {
-    _apiFetch('/api/settings/home-banners', {
+    var banners = _collectHomeBanners();
+    for (var i = 0; i < banners.length; i++) {
+      var item = banners[i];
+      if (!item.image_url || !item.title) { GW.showToast((i + 1) + '번 배너의 이미지와 대체 텍스트를 입력해주세요.', 'error'); return; }
+      if (item.link_url && !/^(https?:\/\/|\/)/i.test(item.link_url)) { GW.showToast('링크는 https:// 또는 사이트 내부 경로로 입력해주세요.', 'error'); return; }
+      if (item.starts_at && item.ends_at && Date.parse(item.starts_at) > Date.parse(item.ends_at)) { GW.showToast('노출 종료는 시작보다 빠를 수 없습니다.', 'error'); return; }
+    }
+    _settingsFetch('home-banners', '/api/settings/home-banners', {
       method: 'PUT',
-      body: JSON.stringify({ banners: _collectHomeBanners() })
+      body: JSON.stringify({ banners: banners, if_snapshot: _homeBannersSnapshot })
     }).then(function (data) {
       if (data && data.error) { GW.showToast(data.error, 'error'); return; }
       _homeBanners = (data && data.banners) || [];
+      _homeBannersSnapshot = JSON.parse(JSON.stringify(_homeBanners));
       _renderHomeBanners();
       GW.showToast('홈 배너를 저장했습니다.');
     }).catch(function (e) { GW.showToast((e && e.message) || '저장에 실패했습니다.', 'error'); });
   }
 
   function _loadBannerUI() {
-    _apiFetch('/api/settings/board-banner').then(function (data) {
+    _settingsFetch('banner', '/api/settings/board-banner').then(function (data) {
+      if (!_settingsResponseCurrent('banner', data)) return;
       _boardBanner = (data && data.items) || {};
       ['korea','apr','wosm','people'].forEach(function (cat) {
         var b = _boardBanner[cat] || {};
         document.getElementById('banner-' + cat + '-name').value = b.event_name || '';
         document.getElementById('banner-' + cat + '-date').value = b.event_date ? b.event_date.slice(0, 10) : '';
       });
-    }).catch(function () {});
+    }).catch(function (error) { if (error && error.settingsStale) return;});
   }
 
   function _saveBanner() {
@@ -10589,7 +11578,7 @@
     });
     var btn = document.getElementById('banner-save-btn');
     _setButtonBusy(btn, '저장 중…');
-    _apiFetch('/api/settings/board-banner', { method: 'PUT', body: JSON.stringify({ items: items }) })
+    _settingsFetch('banner', '/api/settings/board-banner', { method: 'PUT', body: JSON.stringify({ items: items }) })
       .then(function () {
         GW.showToast('배너 설정을 저장했습니다', 'success');
         _clearButtonBusy(btn, '완료');
@@ -10602,13 +11591,14 @@
      SETTINGS – TICKER
   ══════════════════════════════════════════════════════════ */
   function _loadTickerUI() {
-    _apiFetch('/api/settings/ticker').then(function (data) {
+    _settingsFetch('ticker', '/api/settings/ticker').then(function (data) {
+      if (!_settingsResponseCurrent('ticker', data)) return;
       var lines = Array.isArray(data) ? data : (data && data.items) || (data && data.lines) || [];
       var text  = typeof data === 'string' ? data : lines.join('\n');
       _ticker = text;
       document.getElementById('s-ticker').value = text;
       _renderTickerPreview(text);
-    }).catch(function () {});
+    }).catch(function (error) { if (error && error.settingsStale) return;});
   }
 
   function _renderTickerPreview(text) {
@@ -10622,7 +11612,7 @@
     var lines = text.split('\n').map(function (l) { return l.trim(); }).filter(Boolean);
     var btn = document.getElementById('ticker-save-btn');
     _setButtonBusy(btn, '저장 중…');
-    _apiFetch('/api/settings/ticker', { method: 'PUT', body: JSON.stringify({ items: lines }) })
+    _settingsFetch('ticker', '/api/settings/ticker', { method: 'PUT', body: JSON.stringify({ items: lines }) })
       .then(function () {
         GW.showToast('티커를 저장했습니다', 'success');
         _clearButtonBusy(btn, '완료');
@@ -10637,7 +11627,8 @@
   function _loadContributorsUI() {
     var el = document.getElementById('contrib-list');
     el.innerHTML = '<div class="v3-loading"><div class="v3-spinner"></div>로딩 중…</div>';
-    _apiFetch('/api/settings/contributors').then(function (data) {
+    _settingsFetch('contributors', '/api/settings/contributors').then(function (data) {
+      if (!_settingsResponseCurrent('contributors', data)) return;
       _contributors = (Array.isArray(data) ? data : (data && data.items) || []).map(function (item) {
         return {
           name: item && item.name || '',
@@ -10646,7 +11637,7 @@
         };
       });
       _renderContributors();
-    }).catch(function () { el.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">불러오기 실패</div></div>'; });
+    }).catch(function (error) { if (error && error.settingsStale) return; el.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">불러오기 실패</div></div>'; });
   }
 
   function _renderContributors() {
@@ -10658,9 +11649,11 @@
     el.innerHTML = _contributors.map(function (c, i) {
       return '<div class="v3-person-row v3-sortable-row">' +
         '<span class="v3-drag-handle" aria-hidden="true" title="드래그해서 순서 변경">⋮⋮</span>' +
-        '<input class="v3-input" type="text" value="' + GW.escapeHtml(c.name || '') + '" placeholder="이름" data-contrib-i="' + i + '" data-field="name" style="flex:1.2;" />' +
-        '<input class="v3-input" type="text" value="' + GW.escapeHtml(c.role || '') + '" placeholder="역할 / 도와주신 내용" data-contrib-i="' + i + '" data-field="role" style="flex:2;" />' +
-        '<input class="v3-input" type="date" value="' + GW.escapeHtml(c.date || '') + '" data-contrib-i="' + i + '" data-field="date" style="flex:0 0 150px;" title="기록 날짜 (선택)" />' +
+        '<label class="v3-person-field"><span class="v3-label">이름</span><input class="v3-input" type="text" value="' + GW.escapeHtml(c.name || '') + '" placeholder="이름" data-contrib-i="' + i + '" data-field="name" /></label>' +
+        '<label class="v3-person-field"><span class="v3-label">도와주신 내용</span><input class="v3-input" type="text" value="' + GW.escapeHtml(c.role || '') + '" placeholder="역할 / 도와주신 내용" data-contrib-i="' + i + '" data-field="role" /></label>' +
+        '<label class="v3-person-field"><span class="v3-label">기록 날짜 (선택)</span><input class="v3-input" type="date" value="' + GW.escapeHtml(c.date || '') + '" data-contrib-i="' + i + '" data-field="date" /></label>' +
+        '<div class="v3-person-actions"><button type="button" class="v3-btn v3-btn-outline" data-contrib-move="' + i + '" data-direction="-1" aria-label="이름 ' + GW.escapeHtml(c.name || String(i + 1)) + ' 항목 위로"' + (i === 0 ? ' disabled' : '') + '>↑</button>' +
+        '<button type="button" class="v3-btn v3-btn-outline" data-contrib-move="' + i + '" data-direction="1" aria-label="이름 ' + GW.escapeHtml(c.name || String(i + 1)) + ' 항목 아래로"' + (i === _contributors.length - 1 ? ' disabled' : '') + '>↓</button></div>' +
         '<button type="button" class="v3-btn v3-btn-ghost v3-btn-xs" style="color:var(--v3-ink-destructive);" data-contrib-remove="' + i + '" aria-label="이 항목 삭제">×</button>' +
       '</div>';
     }).join('');
@@ -10682,6 +11675,14 @@
         _renderContributors();
       });
     });
+    el.querySelectorAll('[data-contrib-move]').forEach(function (button) {
+      button.addEventListener('click', function () {
+        var from = Number(button.getAttribute('data-contrib-move')); var to = from + Number(button.getAttribute('data-direction'));
+        if (to < 0 || to >= _contributors.length) return;
+        var item = _contributors.splice(from, 1)[0]; _contributors.splice(to, 0, item); _renderContributors();
+        var next = el.querySelector('[data-contrib-move="' + to + '"][data-direction="' + button.getAttribute('data-direction') + '"]'); if (next) next.focus();
+      });
+    });
     _makeListSortable(el, function (from, to) {
       // Sync any in-flight input values before reordering so the new index
       // mapping in _renderContributors doesn't drop the user's typing.
@@ -10692,6 +11693,7 @@
       });
       var item = _contributors.splice(from, 1)[0];
       _contributors.splice(to, 0, item);
+      _settingsState('contributors').dirty = true;
       _renderContributors();
     });
   }
@@ -10719,7 +11721,7 @@
         date: /^\d{4}-\d{2}-\d{2}$/.test(dateRaw) ? dateRaw : '',
       };
     }).filter(function (item) { return item.name; });
-    _apiFetch('/api/settings/contributors', { method: 'PUT', body: JSON.stringify({ items: payload }) })
+    _settingsFetch('contributors', '/api/settings/contributors', { method: 'PUT', body: JSON.stringify({ items: payload }) })
       .then(function () {
         GW.showToast('도움 주신 분들 목록을 저장했습니다', 'success');
         _clearButtonBusy(btn, '완료');
@@ -10752,11 +11754,12 @@
   function _loadEditorsUI() {
     var el = document.getElementById('editors-list');
     el.innerHTML = '<div class="v3-loading"><div class="v3-spinner"></div>로딩 중…</div>';
-    _apiFetch('/api/settings/editors').then(function (data) {
+    _settingsFetch('editors', '/api/settings/editors').then(function (data) {
+      if (!_settingsResponseCurrent('editors', data)) return;
       var source = (data && data.editors) || data || {};
       _editors = _normalizeEditorsResponse(source);
       _renderEditors();
-    }).catch(function () { el.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">불러오기 실패</div></div>'; });
+    }).catch(function (error) { if (error && error.settingsStale) return; el.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">불러오기 실패</div></div>'; });
   }
 
   function _renderEditors() {
@@ -10773,7 +11776,7 @@
         : '<button type="button" class="v3-btn v3-btn-ghost v3-btn-xs" data-editor-remove="' + i + '" style="color:var(--v3-ink-destructive);" aria-label="Editor ' + GW.escapeHtml(letter) + ' 슬롯 삭제">×</button>';
       return '<div class="v3-person-row">' +
         '<div class="v3-badge v3-badge-gray" style="width:84px;text-align:center;flex:0 0 84px;">Editor ' + GW.escapeHtml(letter) + '</div>' +
-        '<input class="v3-input" type="text" value="' + GW.escapeHtml(e.name || '') + '" placeholder="편집자명 (선택)" data-editor-i="' + i + '" data-field="name" style="flex:1;" />' +
+        '<label class="v3-person-field"><span class="v3-label">저자명 (선택)</span><input class="v3-input" type="text" value="' + GW.escapeHtml(e.name || '') + '" placeholder="저자명" data-editor-i="' + i + '" data-field="name" /></label>' +
         removeBtn +
       '</div>';
     }).join('');
@@ -10854,9 +11857,9 @@
     EDITOR_REQUIRED_LETTERS.forEach(function (letter) {
       if (!(letter in editorsPayload)) editorsPayload[letter] = '';
     });
-    _apiFetch('/api/settings/editors', { method: 'PUT', body: JSON.stringify({ editors: editorsPayload }) })
+    _settingsFetch('editors', '/api/settings/editors', { method: 'PUT', body: JSON.stringify({ editors: editorsPayload }) })
       .then(function () {
-        GW.showToast('편집자 설정을 저장했습니다', 'success');
+        GW.showToast('저자명 설정을 저장했습니다', 'success');
         _clearButtonBusy(btn, '완료');
         _loadEditorsUI();
       })
@@ -10870,10 +11873,11 @@
   function _loadNavLabelsUI() {
     var el = document.getElementById('nav-labels-editor');
     el.innerHTML = '<div class="v3-loading"><div class="v3-spinner"></div>로딩 중…</div>';
-    _apiFetch('/api/settings/nav-labels').then(function (data) {
+    _settingsFetch('nav-labels', '/api/settings/nav-labels').then(function (data) {
+      if (!_settingsResponseCurrent('nav-labels', data)) return;
       _navLabels = (data && data.labels) || {};
       _renderNavLabels();
-    }).catch(function () {
+    }).catch(function (error) { if (error && error.settingsStale) return;
       el.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">불러오기 실패</div></div>';
     });
   }
@@ -10896,9 +11900,9 @@
       var value = _navLabels[row.key] || {};
       return '<div class="v3-trans-row">' +
         '<div class="v3-trans-key">' + GW.escapeHtml(row.label) + '<div class="v3-help">키: ' + GW.escapeHtml(row.key) + '</div></div>' +
-        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">' +
-          '<input class="v3-input" type="text" id="nav-label-' + _escId(row.key) + '-ko" value="' + GW.escapeHtml(value.ko || '') + '" placeholder="국문" />' +
-          '<input class="v3-input" type="text" id="nav-label-' + _escId(row.key) + '-en" value="' + GW.escapeHtml(value.en || '') + '" placeholder="영문" />' +
+        '<div class="v3-form-grid">' +
+          _metaField('nav-label-' + _escId(row.key) + '-ko', '국문 메뉴명', value.ko || '') +
+          _metaField('nav-label-' + _escId(row.key) + '-en', '영문 메뉴명', value.en || '') +
         '</div>' +
       '</div>';
     }).join('');
@@ -10931,7 +11935,7 @@
     });
     var btn = document.getElementById('nav-labels-save-btn');
     _setButtonBusy(btn, '저장 중…');
-    _apiFetch('/api/settings/nav-labels', { method: 'PUT', body: JSON.stringify({ labels: result }) })
+    _settingsFetch('nav-labels', '/api/settings/nav-labels', { method: 'PUT', body: JSON.stringify({ labels: result }) })
       .then(function (data) {
         GW.showToast('상단 메뉴명을 저장했습니다', 'success');
         _navLabels = (data && data.labels) || result;
@@ -10948,10 +11952,11 @@
   function _loadTranslationsUI() {
     var el = document.getElementById('trans-editor');
     el.innerHTML = '<div class="v3-loading"><div class="v3-spinner"></div>로딩 중…</div>';
-    _apiFetch('/api/settings/translations').then(function (data) {
+    _settingsFetch('translations', '/api/settings/translations').then(function (data) {
+      if (!_settingsResponseCurrent('translations', data)) return;
       _translations = (data && data.strings) || data || {};
       _renderTranslations();
-    }).catch(function () { el.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">불러오기 실패</div></div>'; });
+    }).catch(function (error) { if (error && error.settingsStale) return; el.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">불러오기 실패</div></div>'; });
   }
 
   function _renderTranslations() {
@@ -10966,15 +11971,15 @@
       if (value && typeof value === 'object') {
         return '<div class="v3-trans-row">' +
           '<div class="v3-trans-key">' + GW.escapeHtml(k) + '</div>' +
-          '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">' +
-            '<input class="v3-input" type="text" id="trans-' + _escId(k) + '-ko" value="' + GW.escapeHtml(value.ko || '') + '" placeholder="국문" />' +
-            '<input class="v3-input" type="text" id="trans-' + _escId(k) + '-en" value="' + GW.escapeHtml(value.en || '') + '" placeholder="영문" />' +
+          '<div class="v3-form-grid">' +
+            _metaField('trans-' + _escId(k) + '-ko', '국문', value.ko || '') +
+            _metaField('trans-' + _escId(k) + '-en', '영문', value.en || '') +
           '</div>' +
         '</div>';
       }
       return '<div class="v3-trans-row">' +
         '<div class="v3-trans-key">' + GW.escapeHtml(k) + '</div>' +
-        '<input class="v3-input" type="text" id="trans-' + _escId(k) + '" value="' + GW.escapeHtml(value || '') + '" />' +
+        _metaField('trans-' + _escId(k), '표시 문구', value || '') +
       '</div>';
     }).join('');
   }
@@ -10997,7 +12002,7 @@
     });
     var btn = document.getElementById('trans-save-btn');
     _setButtonBusy(btn, '저장 중…');
-    _apiFetch('/api/settings/translations', { method: 'PUT', body: JSON.stringify({ strings: result }) })
+    _settingsFetch('translations', '/api/settings/translations', { method: 'PUT', body: JSON.stringify({ strings: result }) })
       .then(function () {
         GW.showToast('번역 설정을 저장했습니다', 'success');
         _translations = result;
@@ -11011,21 +12016,32 @@
      SETTINGS – WOSM MEMBERS
   ══════════════════════════════════════════════════════════ */
   function _loadWosmMembersUI() {
+    if (_wosmSavePending) return;
+    if (_wosmSavedSnapshot !== null && _wosmSnapshot() !== _wosmSavedSnapshot && !window.confirm('저장하지 않은 회원국 변경이 있습니다. 서버 데이터를 다시 불러올까요?')) return;
+    var sequence = ++_contentLoadSequence.wosm;
+    _contentReady.wosm = false;
+    ['wosm-members-save-btn', 'wosm-columns-save-btn', 'wosm-members-add-btn', 'wosm-members-add-btn-inline', 'wosm-members-import-btn', 'wosm-members-import-btn-inline', 'wosm-column-add-btn'].forEach(function (id) { if (_el(id)) _el(id).disabled = true; });
     var el = document.getElementById('wosm-members-editor');
     var columnsEl = document.getElementById('wosm-columns-editor');
     var meta = document.getElementById('wosm-members-meta');
     if (el) el.innerHTML = '<div class="v3-loading"><div class="v3-spinner"></div>로딩 중…</div>';
     if (columnsEl) columnsEl.innerHTML = '<div class="v3-loading"><div class="v3-spinner"></div>로딩 중…</div>';
     if (meta) meta.textContent = '불러오는 중…';
-    _apiFetch('/api/settings/wosm-members').then(function (data) {
+    _apiFetch('/api/settings/wosm-members?scope=admin').then(function (data) {
+      if (sequence !== _contentLoadSequence.wosm) return;
+      _wosmSavedSnapshot = null;
       _wosmMembers = Array.isArray(data && data.items) ? data.items : [];
       _wosmColumns = Array.isArray(data && data.columns) ? data.columns : _getDefaultWosmColumns();
       _wosmImportSavedMapping = Object.assign({}, _wosmImportSavedMapping, data && data.import_mapping || {});
-      _wosmRegisteredCount = Math.max(0, parseInt(data && data.registered_count, 10) || 176);
+      _wosmRegisteredCount = Number.isFinite(Number(data && data.registered_count)) ? Math.max(0, Number(data.registered_count)) : 176;
       _wosmPublicCopy = _normalizeWosmPublicCopy(data && data.public_copy);
       _wosmMembersRevision = parseInt(data && data.revision, 10) || 0;
       _renderWosmMembersEditor();
+      _wosmSavedSnapshot = _wosmSnapshot();
+      _contentReady.wosm = true;
+      ['wosm-members-save-btn', 'wosm-columns-save-btn', 'wosm-members-add-btn', 'wosm-members-add-btn-inline', 'wosm-members-import-btn', 'wosm-members-import-btn-inline', 'wosm-column-add-btn'].forEach(function (id) { if (_el(id)) _el(id).disabled = !_contentCanWrite('wosm-members'); });
     }).catch(function () {
+      if (sequence !== _contentLoadSequence.wosm) return;
       if (el) el.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">불러오기 실패</div></div>';
       if (columnsEl) columnsEl.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">불러오기 실패</div></div>';
       if (meta) meta.textContent = '불러오기 실패';
@@ -11036,6 +12052,11 @@
     var el = document.getElementById('wosm-members-editor');
     var meta = document.getElementById('wosm-members-meta');
     if (!el) return;
+    if (_wosmSavedSnapshot !== null) {
+      _wosmPublicCopy = _collectWosmPublicCopyFields();
+      _wosmImportSavedMapping = _collectWosmImportDefaultFields();
+      _wosmRegisteredCount = Math.max(0, Number((_el('wosm-registered-count') || {}).value) || 0);
+    }
     _renderWosmImportDefaultFields();
     _renderWosmColumnsEditor();
     _renderWosmPublicCopyFields();
@@ -11044,7 +12065,7 @@
     var visibleItems = _getFilteredWosmMembers();
     var editableColumns = _getEditableWosmColumns();
     if (meta) {
-      meta.textContent = '총 ' + _wosmMembers.length + '개 항목 · 현재 표시 ' + visibleItems.length + '개 · 표 열 ' + _wosmColumns.length + '개 · revision ' + _wosmMembersRevision;
+      meta.textContent = '총 ' + _wosmMembers.length + '개 항목 · 현재 표시 ' + visibleItems.length + '개 · 표 열 ' + _wosmColumns.length + '개';
     }
     if (!visibleItems.length) {
       el.innerHTML = '<div class="v3-members-empty">조건에 맞는 항목이 없습니다. XLSX를 가져오거나 새 항목을 추가하세요.</div>';
@@ -11093,6 +12114,10 @@
         _renderWosmMembersEditor();
       });
     });
+    if (!_contentCanWrite('wosm-members')) {
+      var section = _el('settings-wosm-members');
+      if (section) Array.prototype.forEach.call(section.querySelectorAll('input:not([type="search"]),textarea,button:not([data-content-read])'), function (control) { control.disabled = true; });
+    }
   }
 
   function _renderWosmImportDefaultFields() {
@@ -11187,6 +12212,7 @@
   }
 
   function _addWosmMemberRow() {
+    if (!_contentReady.wosm || !_contentCanWrite('wosm-members')) return;
     _wosmMembers.push({
       country_ko: '',
       country_en: '',
@@ -11199,6 +12225,7 @@
   }
 
   function _addWosmColumnRow() {
+    if (!_contentReady.wosm || !_contentCanWrite('wosm-members')) return;
     var key = _createUniqueWosmColumnKey();
     _wosmColumns.push({
       key: key,
@@ -11271,6 +12298,8 @@
         var index = parseInt(btn.getAttribute('data-wosm-column-remove'), 10);
         var column = _wosmColumns[index];
         if (!column || column.key === 'country_names') return;
+        var populated = _wosmMembers.some(function (item) { return String(_getWosmColumnValue(item, column) || '').trim(); });
+        if (populated && !window.confirm('이 열을 삭제하면 모든 회원국 항목의 해당 값도 삭제됩니다. 저장하기 전까지 되돌릴 수 있습니다. 삭제할까요?')) return;
         _wosmColumns.splice(index, 1);
         _removeWosmColumnFromItems(column.key);
         _renderWosmMembersEditor();
@@ -11286,6 +12315,13 @@
   }
 
   function _saveWosmMembers() {
+    if (!_contentReady.wosm || !_contentCanWrite('wosm-members') || _wosmSavePending) return;
+    var incomplete = _wosmMembers.some(function (item) {
+      return !String(item.country_ko || '').trim() && !String(item.country_en || '').trim() &&
+        [item.membership_category, item.status_description].concat(Object.values(item.extra_fields || {})).some(function (value) { return String(value || '').trim(); });
+    });
+    if (incomplete) { GW.showToast('값을 입력한 항목에는 국문 또는 영문 국가명이 필요합니다. 입력 내용을 유지했습니다.', 'error'); return; }
+    var snapshot = _wosmSnapshot();
     var btn = document.getElementById('wosm-members-save-btn');
     var payload = _wosmMembers.map(function (item, index) {
       var normalized = {
@@ -11305,43 +12341,60 @@
     var publicCopy = _collectWosmPublicCopyFields();
     var registeredCount = Math.max(0, parseInt(((document.getElementById('wosm-registered-count') || {}).value || _wosmRegisteredCount), 10) || 0);
     _setButtonBusy(btn, '저장 중…');
+    _wosmSavePending = true;
     _apiFetch('/api/settings/wosm-members', {
       method: 'PUT',
       body: JSON.stringify({ items: payload, columns: columns, import_mapping: importMapping, registered_count: registeredCount, public_copy: publicCopy, if_revision: _wosmMembersRevision }),
     }).then(function (data) {
+      var newer = _wosmSnapshot() !== snapshot;
+      _wosmMembersRevision = parseInt(data && data.revision, 10) || (_wosmMembersRevision + 1);
+      if (newer) {
+        _wosmSavedSnapshot = snapshot;
+        GW.showToast('저장했습니다. 저장 중 추가로 변경한 내용은 유지되며 다시 저장해야 합니다.', 'info');
+        return;
+      }
+      _wosmSavedSnapshot = null;
       _wosmMembers = Array.isArray(data && data.items) ? data.items : payload;
       _wosmColumns = Array.isArray(data && data.columns) ? data.columns : columns;
       _wosmImportSavedMapping = Object.assign({}, _wosmImportSavedMapping, data && data.import_mapping || importMapping);
       _wosmRegisteredCount = Math.max(0, parseInt(data && data.registered_count, 10) || registeredCount);
       _wosmPublicCopy = _normalizeWosmPublicCopy(data && data.public_copy || publicCopy);
-      _wosmMembersRevision = parseInt(data && data.revision, 10) || (_wosmMembersRevision + 1);
       GW.showToast('세계연맹 회원국 현황을 저장했습니다', 'success');
       _renderWosmMembersEditor();
+      _wosmSavedSnapshot = _wosmSnapshot();
       _clearButtonBusy(btn, '완료');
     }).catch(function (e) {
       GW.showToast(e.message || '저장 실패', 'error');
     }).finally(function () {
+      _wosmSavePending = false;
       if (btn.classList.contains('is-busy')) _clearButtonBusy(btn);
     });
   }
 
   function _loadReferenceSitesUI() {
+    var sequence = ++_contentLoadSequence.references;
+    _contentReady.references = false;
+    if (_el('reference-sites-add-btn')) _el('reference-sites-add-btn').disabled = true;
     var listEl = document.getElementById('reference-sites-saved-list');
     var meta = document.getElementById('reference-sites-meta');
     if (listEl) listEl.innerHTML = '<div class="v3-loading"><div class="v3-spinner"></div>로딩 중…</div>';
     if (meta) meta.textContent = '불러오는 중…';
     Promise.all([
       _apiFetch('/api/settings/reference-sites'),
-      _apiFetch('/api/settings/wosm-members').catch(function () { return { items: [], columns: [] }; })
+      _apiFetch('/api/settings/wosm-members?scope=admin')
     ]).then(function (results) {
+      if (sequence !== _contentLoadSequence.references) return;
       var data = results[0] || {};
       var wosm = results[1] || {};
       _referenceSites = Array.isArray(data.items) ? data.items.map(_normalizeReferenceSiteEntry) : [];
       _referenceSitesRevision = parseInt(data.revision, 10) || 0;
-      _wosmMembers = Array.isArray(wosm.items) ? wosm.items : _wosmMembers;
-      _wosmColumns = Array.isArray(wosm.columns) ? wosm.columns : _wosmColumns;
+      _referenceWosmMembers = Array.isArray(wosm.items) ? wosm.items : [];
+      _referenceWosmColumns = Array.isArray(wosm.columns) ? wosm.columns : [];
       _renderReferenceSitesEditor(Array.isArray(wosm.items) ? wosm.items : [], Array.isArray(wosm.columns) ? wosm.columns : []);
+      _contentReady.references = true;
+      if (_el('reference-sites-add-btn')) _el('reference-sites-add-btn').disabled = !_contentCanWrite('reference-sites');
     }).catch(function () {
+      if (sequence !== _contentLoadSequence.references) return;
       if (listEl) listEl.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">불러오기 실패</div></div>';
       if (meta) meta.textContent = '불러오기 실패';
     });
@@ -11412,8 +12465,8 @@
       }).join('');
       var actions = '<div class="v3-flex" style="gap:4px;flex-wrap:wrap;">' +
         (item.url ? '<a class="v3-btn v3-btn-outline v3-btn-xs" href="' + GW.escapeHtml(item.url) + '" target="_blank" rel="noopener noreferrer">열기</a>' : '') +
-        '<button type="button" class="v3-btn v3-btn-outline v3-btn-xs" data-refsite-edit="' + entry.index + '">편집</button>' +
-        '<button type="button" class="v3-btn v3-btn-danger v3-btn-xs" data-refsite-delete="' + entry.index + '">삭제</button>' +
+        '<button type="button" class="v3-btn v3-btn-outline v3-btn-xs" data-refsite-edit="' + entry.index + '">' + (_contentCanWrite('reference-sites') ? '편집' : '보기') + '</button>' +
+        (_contentCanWrite('reference-sites') ? '<button type="button" class="v3-btn v3-btn-danger v3-btn-xs" data-refsite-delete="' + entry.index + '">삭제</button>' : '') +
       '</div>';
       return '<tr>' +
         '<td><div class="v3-table-title">' + GW.escapeHtml(item.name || ('참고 사이트 ' + (entry.index + 1))) + '</div></td>' +
@@ -11548,6 +12601,8 @@
   }
 
   function _openReferenceSiteModal(index) {
+    if (!_contentReady.references) { GW.showToast('참고 사이트 조회가 완료된 뒤 열어주세요.', 'info'); return; }
+    if (_contentDialogs['refsite-modal'] && !_contentCloseDialog('refsite-modal')) return;
     var modal = document.getElementById('refsite-modal');
     var title = document.getElementById('refsite-modal-title');
     var nameEl = document.getElementById('refsite-modal-name');
@@ -11575,11 +12630,12 @@
     if (statusEl) statusEl.textContent = '';
     _renderReferenceSiteModalFederations(federationsEl);
     modal.style.display = 'flex';
+    _contentOpenDialog('refsite-modal', 'reference-sites');
     setTimeout(function () { try { nameEl.focus(); } catch (_) {} }, 50);
   }
 
   function _renderReferenceSiteModalFederations(container) {
-    var regionOptions = _buildReferenceSiteRegionOptions(_wosmMembers, _wosmColumns);
+    var regionOptions = _buildReferenceSiteRegionOptions(_referenceWosmMembers, _referenceWosmColumns);
     var selected = (_referenceSiteModalDraft && _referenceSiteModalDraft.related_federations) || [];
     container.innerHTML = regionOptions.map(function (region) {
       var checked = selected.indexOf(region.settingValue) >= 0;
@@ -11604,8 +12660,7 @@
   }
 
   function _closeReferenceSiteModal() {
-    var modal = document.getElementById('refsite-modal');
-    if (modal) modal.style.display = 'none';
+    if (!_contentCloseDialog('refsite-modal')) return false;
     _referenceSiteModalIndex = -1;
     _referenceSiteModalDraft = null;
   }
@@ -11613,6 +12668,10 @@
   function _submitReferenceSiteModal(event) {
     if (event && event.preventDefault) event.preventDefault();
     if (!_referenceSiteModalDraft) return;
+    if (!_contentReady.references || !_contentCanWrite('reference-sites') || _referenceSavePending) return;
+    var dialogState = _contentDialogs['refsite-modal'];
+    var snapshot = _contentFormSnapshot('refsite-modal');
+    var editingIndex = _referenceSiteModalIndex;
     var nameEl = document.getElementById('refsite-modal-name');
     var urlEl = document.getElementById('refsite-modal-url');
     var summaryEl = document.getElementById('refsite-modal-summary');
@@ -11629,6 +12688,10 @@
       GW.showToast('사이트명·링크·주요 내용 중 하나 이상을 입력하세요', 'error');
       return;
     }
+    if (draft.url) {
+      try { var parsedUrl = new URL(draft.url); if (parsedUrl.protocol !== 'https:' && parsedUrl.protocol !== 'http:') throw new Error('protocol'); }
+      catch (_) { if (statusEl) statusEl.textContent = '사이트 링크는 http:// 또는 https://로 시작하는 주소여야 합니다.'; if (urlEl) urlEl.focus(); GW.showToast('올바른 사이트 링크를 입력해주세요.', 'error'); return; }
+    }
     var nextItems = _referenceSites.slice();
     if (_referenceSiteModalIndex >= 0 && nextItems[_referenceSiteModalIndex]) {
       nextItems[_referenceSiteModalIndex] = draft;
@@ -11637,19 +12700,31 @@
     }
     if (statusEl) statusEl.textContent = '저장 중…';
     _setButtonBusy(submitBtn, '저장 중…');
+    if (dialogState) dialogState.pending = true;
     _persistReferenceSites(nextItems).then(function () {
       if (statusEl) statusEl.textContent = '';
-      _closeReferenceSiteModal();
-      GW.showToast(_referenceSiteModalIndex >= 0 ? '참고 사이트를 수정했습니다' : '참고 사이트를 추가했습니다', 'success');
+      if (dialogState) dialogState.pending = false;
+      if (_contentFormSnapshot('refsite-modal') === snapshot) {
+        _contentCloseDialog('refsite-modal', true);
+        _referenceSiteModalIndex = -1;
+        _referenceSiteModalDraft = null;
+      } else {
+        if (editingIndex < 0) _referenceSiteModalIndex = nextItems.length - 1;
+        if (dialogState) dialogState.baseline = snapshot;
+        if (statusEl) statusEl.textContent = '추가 변경 내용은 아직 저장되지 않았습니다.';
+      }
+      GW.showToast(editingIndex >= 0 ? '참고 사이트를 수정했습니다' : '참고 사이트를 추가했습니다', 'success');
     }).catch(function (err) {
       if (statusEl) statusEl.textContent = '';
       GW.showToast((err && err.message) || '저장 실패', 'error');
     }).finally(function () {
+      if (dialogState) dialogState.pending = false;
       if (submitBtn) _clearButtonBusy(submitBtn);
     });
   }
 
   function _deleteReferenceSiteAt(index) {
+    if (!_contentCanWrite('reference-sites') || _referenceSavePending) return;
     if (!Number.isFinite(index) || !_referenceSites[index]) return;
     var nextItems = _referenceSites.slice();
     nextItems.splice(index, 1);
@@ -11661,6 +12736,8 @@
   }
 
   function _persistReferenceSites(items) {
+    if (_referenceSavePending) return Promise.reject(new Error('진행 중인 저장이 끝난 뒤 다시 시도해주세요.'));
+    _referenceSavePending = true;
     var payload = items.map(_normalizeReferenceSiteEntry).filter(function (item) {
       return item.name || item.url || item.summary;
     });
@@ -11670,12 +12747,13 @@
     }).then(function (data) {
       _referenceSites = Array.isArray(data && data.items) ? data.items.map(_normalizeReferenceSiteEntry) : payload;
       _referenceSitesRevision = parseInt(data && data.revision, 10) || (_referenceSitesRevision + 1);
-      _renderReferenceSitesEditor(_wosmMembers, _wosmColumns);
+      _renderReferenceSitesEditor(_referenceWosmMembers, _referenceWosmColumns);
       return data;
-    });
+    }).finally(function () { _referenceSavePending = false; });
   }
 
   function _handleWosmMembersImport(event) {
+    if (!_contentReady.wosm || !_contentCanWrite('wosm-members') || _wosmSavePending) return;
     var file = event && event.target && event.target.files ? event.target.files[0] : null;
     if (!file) return;
     if (!window.XLSX) {
@@ -11932,11 +13010,13 @@
   }
 
   function _applyWosmImportMapping() {
+    if (!_contentCanWrite('wosm-members') || _wosmSavePending) return;
     var mapped = _mapWosmMemberRows(_getCurrentWosmImportSheet().rows || [], _wosmImportMapping);
     if (!mapped.length) {
       GW.showToast('현재 매핑으로 가져올 항목이 없습니다.', 'error');
       return;
     }
+    if (!window.confirm('가져온 ' + mapped.length + '개 항목으로 현재 회원국 표 전체를 바꿉니다. 아직 서버에 저장되지 않습니다. 적용할까요?')) return;
     _wosmMembers = mapped;
     _closeWosmImportModal();
     _renderWosmMembersEditor();

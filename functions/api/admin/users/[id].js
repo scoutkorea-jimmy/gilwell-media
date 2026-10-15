@@ -12,7 +12,7 @@
  * Posts are never cascaded. The owner promise is: users go away, articles stay.
  */
 import { bumpAdminUserTokenEpoch } from '../../../_shared/auth.js';
-import { countActiveOwners, loadAdminUserById, serializeAdminUser } from '../../../_shared/admin-users.js';
+import { countActiveOwners, loadAdminUserById, serializeAdminUser, parsePermissions } from '../../../_shared/admin-users.js';
 import { requireOwner } from '../../../_shared/admin-permissions.js';
 import {
   validateAiDailyLimit,
@@ -60,6 +60,15 @@ export async function onRequestPut({ params, request, env }) {
   let body;
   try { body = await request.json(); } catch {
     return json({ error: 'Invalid JSON body' }, 400);
+  }
+  if (body.permissions !== undefined && body.if_permissions !== undefined) {
+    const previous = validatePermissions(body.if_permissions);
+    const parsed = parsePermissions(target.permissions);
+    const current = { ok: true, value: { access_admin: parsed.access_admin, permissions: Array.from(parsed.permissions) } };
+    const canonical = (value) => JSON.stringify({ access_admin: value.access_admin, permissions: [...value.permissions].sort() });
+    if (!previous.ok || !current.ok || canonical(previous.value) !== canonical(current.value)) {
+      return json({ error: '사용자 권한이 다른 화면에서 변경되었습니다. 입력을 보존하고 최신 권한을 다시 확인해주세요.' }, 409);
+    }
   }
 
   const fields = [];
@@ -149,9 +158,11 @@ export async function onRequestPut({ params, request, env }) {
   fields.push("updated_at = datetime('now')");
 
   try {
-    await env.DB.prepare(
-      `UPDATE admin_users SET ${fields.join(', ')} WHERE id = ?`
-    ).bind(...values, id).run();
+    const guarded = body.permissions !== undefined && body.if_permissions !== undefined;
+    const result = await env.DB.prepare(
+      `UPDATE admin_users SET ${fields.join(', ')} WHERE id = ?${guarded ? ' AND permissions = ?' : ''}`
+    ).bind(...values, id, ...(guarded ? [target.permissions] : [])).run();
+    if (guarded && (!result.meta || result.meta.changes !== 1)) return json({ error: '동시 권한 변경이 감지되었습니다. 입력을 보존하고 최신 권한을 다시 확인해주세요.' }, 409);
 
     // status → disabled should invalidate every outstanding session for that user.
     if (statusChanged && newStatus === 'disabled') {

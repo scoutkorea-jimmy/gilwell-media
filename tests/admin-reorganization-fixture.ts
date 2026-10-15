@@ -59,11 +59,13 @@ export async function installSyntheticAdmin(page: Page, options: {
     if (!local && ['cdn.jsdelivr.net', 'unpkg.com', 'esm.sh'].includes(url.hostname) && request.method() === 'GET') {
       let cached = cdnCache.get(request.url());
       if (!cached) {
-        const response = await route.fetch();
-        expect(response.ok(), `Runtime library ${request.url()}`).toBe(true);
-        cached = { body: await response.body(), contentType: response.headers()['content-type'] || 'application/javascript' };
+        // A page may close while a real library is loading; its context must not dispose this response.
+        const response = await fetch(request.url(), { signal: AbortSignal.timeout(20_000) });
+        expect(response.ok, `Runtime library ${request.url()}`).toBe(true);
+        cached = { body: Buffer.from(await response.arrayBuffer()), contentType: response.headers.get('content-type') || 'application/javascript' };
         cdnCache.set(request.url(), cached);
       }
+      if (page.isClosed()) return;
       return route.fulfill({ status: 200, body: cached.body, contentType: cached.contentType, headers: { 'Access-Control-Allow-Origin': '*' } });
     }
     if (!local) return route.abort();

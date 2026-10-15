@@ -32,13 +32,10 @@ const DEFAULT_HERO_MEDIA = {
 export async function onRequestGet({ env, request }) {
   try {
     const origin = new URL(request.url).origin;
-    const [row, intervalRow, revRow, mediaRow] = await Promise.all([
-      env.DB.prepare(`SELECT value FROM settings WHERE key = 'hero'`).first(),
-      env.DB.prepare(`SELECT value FROM settings WHERE key = 'hero_interval'`).first(),
-      env.DB.prepare(`SELECT value FROM settings WHERE key = 'hero_rev'`).first(),
-      env.DB.prepare(`SELECT value FROM settings WHERE key = 'hero_media'`).first(),
-    ]);
-    const revision = revRow ? parseInt(revRow.value, 10) : 0;
+    const { results } = await env.DB.prepare(`SELECT key, value FROM settings WHERE key IN ('hero', 'hero_interval', 'hero_rev', 'hero_media')`).all();
+    const rows = Object.fromEntries((results || []).map((row) => [row.key, row]));
+    const row = rows.hero, intervalRow = rows.hero_interval, mediaRow = rows.hero_media;
+    const revision = rows.hero_rev ? parseInt(rows.hero_rev.value, 10) || 0 : 0;
 
     const heroSettings = parseHeroSettings(row && row.value);
     const mediaMap = normalizeHeroMediaMap(parseJsonValue(mediaRow && mediaRow.value), heroSettings.manual_post_ids);
@@ -63,7 +60,7 @@ export async function onRequestGet({ env, request }) {
 
 // ── PUT /api/settings/hero ────────────────────────────────────
 export async function onRequestPut({ request, env }) {
-  const __gate = await gateMenuAccess(request, env, 'hero', 'view'); if (__gate) return __gate
+  const __gate = await gateMenuAccess(request, env, 'hero', 'write'); if (__gate) return __gate
 
   let body;
   try { body = await request.json(); } catch {
@@ -90,13 +87,10 @@ export async function onRequestPut({ request, env }) {
   const requestedMediaMap = hasMediaMap ? normalizeHeroMediaMap(body.media_map, safeIds) : null;
 
   try {
-    const [revRow, prevHero, prevInterval, prevHeroMedia] = await Promise.all([
-      env.DB.prepare(`SELECT value FROM settings WHERE key = 'hero_rev'`).first(),
-      env.DB.prepare(`SELECT value FROM settings WHERE key = 'hero'`).first(),
-      env.DB.prepare(`SELECT value FROM settings WHERE key = 'hero_interval'`).first(),
-      env.DB.prepare(`SELECT value FROM settings WHERE key = 'hero_media'`).first(),
-    ]);
-    const currentRev = revRow ? parseInt(revRow.value, 10) : 0;
+    const { results } = await env.DB.prepare(`SELECT key, value FROM settings WHERE key IN ('hero', 'hero_interval', 'hero_rev', 'hero_media')`).all();
+    const rows = Object.fromEntries((results || []).map((row) => [row.key, row]));
+    const prevHero = rows.hero, prevInterval = rows.hero_interval, prevHeroMedia = rows.hero_media;
+    const currentRev = rows.hero_rev ? parseInt(rows.hero_rev.value, 10) || 0 : 0;
     if (Number.isFinite(if_revision) && parseInt(if_revision, 10) !== currentRev) {
       return json({ error: '다른 변경이 감지되었습니다', revision: currentRev }, 409);
     }
@@ -104,27 +98,26 @@ export async function onRequestPut({ request, env }) {
     const currentMediaMap = normalizeHeroMediaMap(parseJsonValue(prevHeroMedia && prevHeroMedia.value), safeIds);
     const nextMediaMap = hasMediaMap ? requestedMediaMap : currentMediaMap;
 
-    await Promise.all([
+    const writes = await env.DB.batch([
+      env.DB.prepare(`INSERT INTO settings (key, value) VALUES ('hero_rev', ?)
+        ON CONFLICT(key) DO UPDATE SET value = excluded.value WHERE CAST(settings.value AS INTEGER) = ?`).bind(String(nextRev), currentRev),
       env.DB.prepare(
-        `INSERT INTO settings (key, value) VALUES ('hero', ?)
+        `INSERT INTO settings (key, value) SELECT 'hero', ? WHERE changes() = 1
          ON CONFLICT(key) DO UPDATE SET value = excluded.value`
       ).bind(JSON.stringify({
         manual_post_ids: safeIds,
         manual_position: manualPosition,
-      })).run(),
+      })),
       env.DB.prepare(
-        `INSERT INTO settings (key, value) VALUES ('hero_interval', ?)
+        `INSERT INTO settings (key, value) SELECT 'hero_interval', ? WHERE changes() = 1
          ON CONFLICT(key) DO UPDATE SET value = excluded.value`
-      ).bind(String(safeInterval)).run(),
+      ).bind(String(safeInterval)),
       env.DB.prepare(
-        `INSERT INTO settings (key, value) VALUES ('hero_media', ?)
+        `INSERT INTO settings (key, value) SELECT 'hero_media', ? WHERE changes() = 1
          ON CONFLICT(key) DO UPDATE SET value = excluded.value`
-      ).bind(JSON.stringify(nextMediaMap)).run(),
-      env.DB.prepare(
-        `INSERT INTO settings (key, value) VALUES ('hero_rev', ?)
-         ON CONFLICT(key) DO UPDATE SET value = excluded.value`
-      ).bind(String(nextRev)).run(),
+      ).bind(JSON.stringify(nextMediaMap)),
     ]);
+    if (!writes[0] || !writes[0].meta || writes[0].meta.changes !== 1) return json({ error: '동시 변경이 감지되었습니다. 입력을 보존하고 최신 설정을 확인해주세요.' }, 409);
     await Promise.all([
       recordSettingChange(env, {
         key: 'hero',

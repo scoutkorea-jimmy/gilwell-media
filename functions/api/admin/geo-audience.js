@@ -1,6 +1,6 @@
 import { extractToken, verifyTokenRole } from '../../_shared/auth.js';
 import { gateMenuAccess } from '../../_shared/admin-permissions.js';
-import { resolveAnalyticsRange } from '../../_shared/cloudflare-analytics.js';
+import { resolveAdminAnalyticsRange } from '../../_shared/admin-analytics-range.js';
 import { ensureSiteVisitColumns } from '../../_shared/analytics.js';
 import { resolveCountryLabelKo } from '../../_shared/country-code-labels.js';
 import { resolveCityLabelKo } from '../../_shared/city-name-ko.js';
@@ -13,16 +13,9 @@ export async function onRequestGet({ request, env }) {
 
   const url = new URL(request.url);
   // 기간 선택 통일: days 프리셋 또는 custom start/end 둘 다 허용. 마케팅/분석/대시보드와 동일 규약.
-  const startParam = url.searchParams.get('start');
-  const endParam = url.searchParams.get('end');
-  const today = getKstDateString(new Date());
   let range;
-  if (startParam || endParam) {
-    range = resolveAnalyticsRange(startParam || today, endParam || today);
-  } else {
-    const days = Math.max(1, Math.min(180, Number(url.searchParams.get('days') || 30) || 30));
-    range = resolveAnalyticsRange(shiftKstDate(today, -(days - 1)), today);
-  }
+  try { range = resolveAdminAnalyticsRange(url.searchParams); }
+  catch (err) { return json({ error: err.message }, 400); }
 
   try {
     await ensureSiteVisitColumns(env);
@@ -32,47 +25,46 @@ export async function onRequestGet({ request, env }) {
     const [countryRows, cityRows, totals] = await Promise.all([
       env.DB.prepare(
         `SELECT
-            COALESCE(country_code, 'ZZ') AS country_code,
-            COALESCE(NULLIF(country_name, ''), COALESCE(country_code, 'Unknown')) AS country_name,
+            COALESCE(NULLIF(country_code, ''), 'ZZ') AS country_code,
+            MAX(COALESCE(NULLIF(country_name, ''), NULLIF(country_code, ''), '국가 미확인')) AS country_name,
             COUNT(DISTINCT viewer_key) AS visits,
             COUNT(*) AS pageviews,
             COUNT(DISTINCT NULLIF(city_name, '')) AS city_count,
-            ROUND(AVG(latitude), 6) AS latitude,
-            ROUND(AVG(longitude), 6) AS longitude,
+            ROUND(AVG(CASE WHEN latitude BETWEEN -90 AND 90 AND longitude BETWEEN -180 AND 180 THEN latitude END), 6) AS latitude,
+            ROUND(AVG(CASE WHEN latitude BETWEEN -90 AND 90 AND longitude BETWEEN -180 AND 180 THEN longitude END), 6) AS longitude,
             MAX(visited_at) AS last_visit_at
            FROM site_visits
           WHERE ${VISIT_SCOPE_SQL}
             AND datetime(visited_at, '+9 hours') >= datetime(?)
             AND datetime(visited_at, '+9 hours') < datetime(?)
-            AND COALESCE(country_code, '') != ''
-          GROUP BY COALESCE(country_code, 'ZZ'), COALESCE(NULLIF(country_name, ''), COALESCE(country_code, 'Unknown'))
+          GROUP BY COALESCE(NULLIF(country_code, ''), 'ZZ')
           ORDER BY visits DESC, pageviews DESC, country_name ASC`
       ).bind(start, endExclusive).all(),
       env.DB.prepare(
         `SELECT
-            COALESCE(country_code, 'ZZ') AS country_code,
-            COALESCE(NULLIF(country_name, ''), COALESCE(country_code, 'Unknown')) AS country_name,
+            COALESCE(NULLIF(country_code, ''), 'ZZ') AS country_code,
+            MAX(COALESCE(NULLIF(country_name, ''), NULLIF(country_code, ''), '국가 미확인')) AS country_name,
             COALESCE(NULLIF(city_name, ''), '도시 미확인') AS city_name,
             COUNT(DISTINCT viewer_key) AS visits,
             COUNT(*) AS pageviews,
-            ROUND(AVG(latitude), 6) AS latitude,
-            ROUND(AVG(longitude), 6) AS longitude,
+            ROUND(AVG(CASE WHEN latitude BETWEEN -90 AND 90 AND longitude BETWEEN -180 AND 180 THEN latitude END), 6) AS latitude,
+            ROUND(AVG(CASE WHEN latitude BETWEEN -90 AND 90 AND longitude BETWEEN -180 AND 180 THEN longitude END), 6) AS longitude,
             MAX(visited_at) AS last_visit_at
            FROM site_visits
           WHERE ${VISIT_SCOPE_SQL}
             AND datetime(visited_at, '+9 hours') >= datetime(?)
             AND datetime(visited_at, '+9 hours') < datetime(?)
-            AND COALESCE(country_code, '') != ''
-          GROUP BY COALESCE(country_code, 'ZZ'), COALESCE(NULLIF(country_name, ''), COALESCE(country_code, 'Unknown')), COALESCE(NULLIF(city_name, ''), '도시 미확인')
-          ORDER BY visits DESC, pageviews DESC, country_name ASC, city_name ASC
-          LIMIT 300`
+          GROUP BY COALESCE(NULLIF(country_code, ''), 'ZZ'), COALESCE(NULLIF(city_name, ''), '도시 미확인')
+          ORDER BY visits DESC, pageviews DESC, country_name ASC, city_name ASC`
       ).bind(start, endExclusive).all(),
       env.DB.prepare(
         `SELECT
             COUNT(DISTINCT CASE WHEN COALESCE(country_code, '') != '' THEN country_code END) AS country_count,
-            COUNT(DISTINCT CASE WHEN COALESCE(city_name, '') != '' THEN country_code || '::' || city_name END) AS city_count,
+            COUNT(DISTINCT CASE WHEN COALESCE(city_name, '') != '' THEN COALESCE(NULLIF(country_code, ''), 'ZZ') || '::' || city_name END) AS city_count,
             COUNT(DISTINCT viewer_key) AS visits,
-            COUNT(*) AS pageviews
+            COUNT(*) AS pageviews,
+            COUNT(CASE WHEN COALESCE(country_code, '') = '' THEN 1 END) AS unknown_country_pageviews,
+            COUNT(CASE WHEN latitude IS NULL OR longitude IS NULL OR latitude NOT BETWEEN -90 AND 90 OR longitude NOT BETWEEN -180 AND 180 THEN 1 END) AS missing_coordinate_pageviews
            FROM site_visits
           WHERE ${VISIT_SCOPE_SQL}
             AND datetime(visited_at, '+9 hours') >= datetime(?)
@@ -92,10 +84,13 @@ export async function onRequestGet({ request, env }) {
         cities: Number((totals && totals.city_count) || 0),
         visits: Number((totals && totals.visits) || 0),
         pageviews: Number((totals && totals.pageviews) || 0),
+        unknown_country_pageviews: Number((totals && totals.unknown_country_pageviews) || 0),
+        missing_coordinate_pageviews: Number((totals && totals.missing_coordinate_pageviews) || 0),
       },
       countries: normalizeRows(countryRows.results || []),
       cities: normalizeRows(cityRows.results || []),
-      tracking_note: '사용자 추가 입력 없이 Cloudflare 요청 메타의 국가/도시/좌표를 바탕으로 집계합니다. IP 원문은 저장하지 않습니다.',
+      list_scope: '전체 국가·도시 집계',
+      tracking_note: '방문은 선택 기간의 고유 사용자, 페이지뷰는 전체 조회입니다. 국가·도시별 고유 사용자는 이동으로 중복될 수 있어 합산하지 않습니다. 위치는 Cloudflare의 추정 위치이며 실제 거주지나 정확한 좌표를 뜻하지 않습니다. IP 원문은 저장하지 않습니다.',
       warmup_note: '위치 데이터는 2026-04-09 배포 이후 새 방문부터 누적됩니다. 초기에는 국가/도시 목록이 비어 있을 수 있습니다.',
     });
   } catch (err) {
@@ -112,7 +107,7 @@ function normalizeRows(rows) {
     const cityNameOriginal = row.city_name || '';
     return {
       country_code: countryCode,
-      country_name: resolveCountryLabelKo(countryCode, countryNameOriginal),
+      country_name: countryCode === 'ZZ' ? '국가 미확인' : resolveCountryLabelKo(countryCode, countryNameOriginal),
       country_name_original: countryNameOriginal,
       city_name: resolveCityLabelKo(countryCode, cityNameOriginal),
       city_name_original: cityNameOriginal,

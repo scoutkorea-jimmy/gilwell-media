@@ -14,7 +14,7 @@ scope: project
 - 일부 계정은 히어로 설정만 접근 가능 (게시글 권한 제한)
 - 모바일: 단일 폭 1단 흐름 기본
 - 탐색 기준: 좌측 사이드바 (메인 영역에 보조 메뉴 중복 금지)
-- 관리자 업무 영역: 대시보드, 기사 운영, 자료 관리, 노출 관리, 성과 분석, 운영·설정
+- 관리자 업무 영역: 대시보드, 성과 분석, 기사 운영, 자료 관리, 노출 관리, 운영·설정. 성과 분석은 대시보드 바로 아래에 둔다.
 - 관리자 날짜 형식: **ISO 기반 KST** — 감사 `YYYY-MM-DD HH:MM:SS KST` / 테이블 `YYYY-MM-DD HH:MM` / 필요 시 한글 변형. 상세는 KMS 2.1.
 - 관리자 기본 서체: 시스템 서체 (`-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif`) — `NixgonFont` 사용 금지
 - `admin.html` 은 `css/style.css` 를 로드하지 않는다 — `style.css` 안의 `body.admin-page` 규칙은 죽은 코드이며 공개 사이트 용량만 늘린다.

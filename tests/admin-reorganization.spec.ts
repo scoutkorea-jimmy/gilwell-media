@@ -59,6 +59,9 @@ for (const width of widths) {
     await expect(page.locator('#v3-login')).toBeHidden();
     expect(await page.locator('#v3-nav .v3-nav-item').count()).toBe(40);
     expect(await page.locator('#v3-nav .v3-nav-section').count()).toBe(6);
+    expect(await page.locator('#v3-nav .v3-nav-section').evaluateAll(nodes => nodes.map(node => (node as HTMLElement).dataset.navSection))).toEqual([
+      'dashboard', 'analytics', 'article-operations', 'reference-data', 'display', 'operations-settings',
+    ]);
     await expect(page.locator('#v3-nav a[href="/kms"]')).toHaveAttribute('target', '_blank');
     const entries = await page.locator('#v3-nav button.v3-nav-item').evaluateAll(nodes => nodes.map(node => ({
       panel: (node as HTMLElement).dataset.panel!, section: (node as HTMLElement).dataset.settingsSection,
@@ -269,10 +272,13 @@ for (const width of [280, 390, 1280]) {
     await expect(page.locator('#hero-slots')).toContainText(SYNTHETIC_POST.title);
     await assertRenderedBounds(page, `${width}px populated hero`);
     state.populated = false;
-    await page.evaluate(() => (window as any).V3.showPanel('settings', 'hero'));
+    expect(await page.evaluate(() => (window as any).V3.showPanel('settings', 'hero'))).toBe(false);
+    await selectNavigation(page, 'dashboard');
+    await selectNavigation(page, 'settings', 'hero');
     await expect(page.locator('#hero-slots')).toContainText('수동 고정 기사가 없습니다');
     state.errors.set('/api/settings/hero', 503);
-    await page.evaluate(() => (window as any).V3.showPanel('settings', 'hero'));
+    await selectNavigation(page, 'dashboard');
+    await selectNavigation(page, 'settings', 'hero');
     await expect(page.locator('#hero-slots')).toContainText('불러오기 실패');
     state.errors.delete('/api/settings/hero'); state.populated = true;
 
@@ -285,7 +291,9 @@ for (const width of [280, 390, 1280]) {
     state.errors.set('/api/admin/analytics', 503);
     await expect(page.locator('#analytics-refresh-btn')).toBeEnabled();
     await page.locator('#analytics-refresh-btn').click();
-    await expect(page.locator('#analytics-body')).toContainText('분석 API 응답을 불러오지 못했습니다');
+    await expect(page.locator('#analytics-live-meta')).toContainText('갱신 실패');
+    await expect(page.locator('#analytics-live-meta')).toContainText('마지막 성공');
+    await expect(page.locator('#analytics-body')).toContainText(SYNTHETIC_POST.title);
     state.errors.delete('/api/admin/analytics');
 
     await selectNavigation(page, 'ai-score-history');

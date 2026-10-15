@@ -22,6 +22,10 @@
     changelogItems: null,
     saveBusy: false,
     docContent: '',
+    revision: 0,
+    definitionLoaded: false,
+    dirty: false,
+    canWrite: false,
   };
 
   // ── API 가이드 데이터 ──────────────────────────────────────────
@@ -458,6 +462,7 @@
   }
 
   function showKms() {
+    _state.canWrite = false; _syncDefinitionControls();
     var loginEl = document.getElementById('kms-login-screen');
     var screenEl = document.getElementById('kms-screen');
     if (loginEl) loginEl.style.display = 'none';
@@ -468,6 +473,11 @@
       renderApiGuide();
       loadChangelog();
     }
+    GW.apiFetch('/api/admin/users/me').then(function (data) {
+      var user = data && data.user;
+      _state.canWrite = !!(user && (user.role === 'owner' || (user.permissions && user.permissions.access_admin && (user.permissions.permissions || []).indexOf('write:kms') >= 0)));
+      _syncDefinitionControls();
+    }).catch(function () { _state.canWrite = false; _syncDefinitionControls(); });
     updateVersionDisplay();
     setMode('read');
     var pathTab = _tabFromPath(window.location.pathname);
@@ -511,6 +521,10 @@
   }
 
   function bindUiEvents() {
+    window.addEventListener('beforeunload', function (event) {
+      if (!_state.dirty && !_state.saveBusy) return;
+      event.preventDefault(); event.returnValue = '';
+    });
     // 탭 전환
     document.querySelectorAll('[data-kms-tab]').forEach(function (btn) {
       btn.addEventListener('click', function () { setTab(btn.getAttribute('data-kms-tab')); });
@@ -571,6 +585,7 @@
     var editorInput = document.getElementById('kms-editor-input');
     if (editorInput) {
       editorInput.addEventListener('input', function () {
+        _state.dirty = normalizeFeatureDefinitionContent(editorInput.value || '').trim() !== _state.docContent.trim();
         renderDocument(editorInput.value || '');
         renderSectionList(editorInput.value || '');
         updateDocMeta(editorInput.value || '');
@@ -676,6 +691,7 @@
 
   // ── 탭 시스템 ─────────────────────────────────────────────────
   function setTab(tab, skipPush) {
+    if (_state.saveBusy && tab !== _state.tab) { GW.showToast('저장 완료 후 이동해주세요.', 'info'); return; }
     _state.tab = tab;
     var panels = ['docs', 'api', 'changelog', 'design', 'editorial'];
     panels.forEach(function (id) {
@@ -697,7 +713,7 @@
     // 모드 스위치 / 저장 버튼: 기능정의서 탭에서만 표시
     var modeSwitchEl = document.getElementById('kms-mode-switch');
     var saveBtn = document.getElementById('kms-save-btn');
-    var showEdit = tab === 'docs';
+    var showEdit = tab === 'docs' && _state.canWrite;
     if (modeSwitchEl) modeSwitchEl.style.display = showEdit ? '' : 'none';
     if (saveBtn) saveBtn.style.display = showEdit ? '' : 'none';
     // 탭 전환 시 사이드바 섹션 목록을 해당 탭에 맞게 업데이트
@@ -772,10 +788,14 @@
     var body = document.getElementById('kms-document-body');
     var list = document.getElementById('kms-section-list');
     if (body) body.innerHTML = '<div class="kms-list-empty">불러오는 중…</div>';
+    _state.definitionLoaded = false; _syncDefinitionControls();
     GW.apiFetch('/api/settings/feature-definition')
       .then(function (data) {
         var content = normalizeFeatureDefinitionContent(data && typeof data.content === 'string' ? data.content : '');
         _state.docContent = content;
+        _state.revision = Number(data && data.revision) || 0;
+        _state.definitionLoaded = true; _state.dirty = false;
+        _syncDefinitionControls();
         _state.docUpdatedAt = data && data.updated_at ? String(data.updated_at) : '';
         var editorInput = document.getElementById('kms-editor-input');
         if (editorInput) editorInput.value = content;
@@ -791,35 +811,57 @@
   }
 
   function saveDefinition() {
-    if (_state.saveBusy) return;
+    if (_state.saveBusy || !_state.definitionLoaded || !_state.canWrite) return;
     var editorInput = document.getElementById('kms-editor-input');
     var content = normalizeFeatureDefinitionContent(editorInput && editorInput.value || '').trim();
     if (!content) { GW.showToast('기능 정의서 내용이 비어 있습니다.', 'error'); return; }
     var btn = document.getElementById('kms-save-btn');
     _state.saveBusy = true;
+    _syncDefinitionControls();
     if (btn) { btn.disabled = true; btn.textContent = '저장 중…'; }
     GW.apiFetch('/api/settings/feature-definition', {
       method: 'PUT',
-      body: JSON.stringify({ content: content }),
+      body: JSON.stringify({ content: content, if_revision: _state.revision }),
     })
-      .then(function () {
+      .then(function (data) {
         _state.docContent = content;
+        _state.revision = Number(data && data.revision) || (_state.revision + 1);
+        _state.dirty = false;
         GW.showToast('기능 정의서가 저장됐습니다.', 'success');
         renderDocument(content);
         renderSectionList(content);
         updateDocMeta(content);
-        setMode('read');
+        setMode('read', true);
       })
       .catch(function (err) {
         GW.showToast(err.message || '저장 실패', 'error');
       })
       .finally(function () {
         _state.saveBusy = false;
-        if (btn) { btn.disabled = false; btn.textContent = '저장'; }
+        _syncDefinitionControls();
+        if (btn) btn.textContent = '저장';
       });
   }
 
-  function setMode(mode) {
+  function _syncDefinitionControls() {
+    var editor = document.getElementById('kms-editor-input');
+    var save = document.getElementById('kms-save-btn');
+    var locked = _state.saveBusy || !_state.definitionLoaded || !_state.canWrite;
+    if (editor) editor.disabled = locked;
+    if (save) { save.disabled = locked; save.style.display = _state.tab === 'docs' && _state.canWrite ? '' : 'none'; }
+    var modes = document.getElementById('kms-mode-switch');
+    if (modes) modes.style.display = _state.tab === 'docs' && _state.canWrite ? '' : 'none';
+    document.querySelectorAll('[data-kms-mode]').forEach(function (button) { button.disabled = locked; });
+  }
+  function setMode(mode, force) {
+    if (!force && _state.saveBusy) return;
+    if (mode === 'edit' && (!_state.definitionLoaded || !_state.canWrite)) return;
+    if (!force && mode !== 'edit' && _state.dirty) {
+      if (!window.confirm('저장하지 않은 운영 기준 변경사항을 버리고 보기 모드로 이동할까요?')) return;
+      var editor = document.getElementById('kms-editor-input');
+      if (editor) editor.value = _state.docContent;
+      _state.dirty = false; renderDocument(_state.docContent); renderSectionList(_state.docContent); updateDocMeta(_state.docContent);
+    }
     _state.mode = mode === 'edit' ? 'edit' : 'read';
     var editorPanel = document.getElementById('kms-editor-panel');
     if (editorPanel) editorPanel.hidden = _state.mode !== 'edit';

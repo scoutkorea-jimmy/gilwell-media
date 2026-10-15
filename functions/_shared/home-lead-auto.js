@@ -122,6 +122,57 @@ export async function readHomeLeadMode(env) {
   return String(row && row.value) === 'manual' ? 'manual' : 'auto';
 }
 
+// One SELECT gives editors and the scheduled job a consistent generation of
+// the related keys. The raw values also guard writers outside this helper.
+export async function readHomeLeadState(env) {
+  const { results } = await env.DB.prepare(`SELECT key, value FROM settings WHERE key IN ('home_lead_post', 'home_lead_media', 'home_lead_mode', 'home_lead_rev')`).all();
+  const values = Object.fromEntries((results || []).map((row) => [row.key, row.value]));
+  return {
+    mode: values.home_lead_mode === 'manual' ? 'manual' : 'auto',
+    postId: parseInt(values.home_lead_post, 10) || 0,
+    mediaValue: values.home_lead_media ?? null,
+    revision: parseInt(values.home_lead_rev, 10) || 0,
+    rawMode: values.home_lead_mode ?? null,
+    rawPost: values.home_lead_post ?? null,
+  };
+}
+
+// Claim ownership inside one D1 transaction. Every subsequent statement uses
+// this request's token so a losing writer also performs zero DELETEs on empty
+// settings. No token survives the transaction's final revision update.
+export async function commitHomeLeadState(env, previous, next, lastRun = '') {
+  const revision = previous.revision + 1;
+  const claim = String(revision) + '|' + crypto.randomUUID();
+  const owned = `EXISTS(SELECT 1 FROM settings WHERE key = 'home_lead_rev' AND value = ?)`;
+  const statements = [env.DB.prepare(`INSERT INTO settings(key, value)
+    SELECT 'home_lead_rev', ?
+    WHERE (SELECT value FROM settings WHERE key = 'home_lead_mode') IS ?
+      AND (SELECT value FROM settings WHERE key = 'home_lead_post') IS ?
+      AND (SELECT value FROM settings WHERE key = 'home_lead_media') IS ?
+      AND (? = 0 OR EXISTS(SELECT 1 FROM posts WHERE id = ? AND published = 1))
+    ON CONFLICT(key) DO UPDATE SET value = excluded.value WHERE CAST(settings.value AS INTEGER) = ?`
+  ).bind(claim, previous.rawMode, previous.rawPost, previous.mediaValue, next.postId || 0, next.postId || 0, previous.revision)];
+  statements.push(env.DB.prepare(`INSERT INTO settings(key, value) SELECT 'home_lead_mode', ? WHERE ${owned}
+    ON CONFLICT(key) DO UPDATE SET value = excluded.value`).bind(next.mode === 'manual' ? 'manual' : 'auto', claim));
+  if (next.postId) statements.push(env.DB.prepare(`INSERT INTO settings(key, value) SELECT 'home_lead_post', ? WHERE ${owned}
+    ON CONFLICT(key) DO UPDATE SET value = excluded.value`).bind(String(next.postId), claim));
+  else statements.push(env.DB.prepare(`DELETE FROM settings WHERE key = 'home_lead_post' AND ${owned}`).bind(claim));
+  if (next.mediaValue != null) statements.push(env.DB.prepare(`INSERT INTO settings(key, value) SELECT 'home_lead_media', ? WHERE ${owned}
+    ON CONFLICT(key) DO UPDATE SET value = excluded.value`).bind(next.mediaValue, claim));
+  else statements.push(env.DB.prepare(`DELETE FROM settings WHERE key = 'home_lead_media' AND ${owned}`).bind(claim));
+  if (lastRun) statements.push(env.DB.prepare(`INSERT INTO settings(key, value) SELECT 'home_lead_auto_last_run', ? WHERE ${owned}
+    ON CONFLICT(key) DO UPDATE SET value = excluded.value`).bind(lastRun, claim));
+  statements.push(env.DB.prepare(`UPDATE settings SET value = ? WHERE key = 'home_lead_rev' AND value = ?`).bind(String(revision), claim));
+  const writes = await env.DB.batch(statements);
+  return { committed: !!(writes[0].meta && writes[0].meta.changes === 1), revision };
+}
+
+export async function clearHomeLeadForPost(env, postId) {
+  const previous = await readHomeLeadState(env);
+  if (previous.postId !== Number(postId)) return false;
+  return (await commitHomeLeadState(env, previous, { mode: previous.mode, postId: 0, mediaValue: null })).committed;
+}
+
 /**
  * 자동 모드일 때만 메인 스토리를 다시 고른다.
  * 수동 모드면 아무것도 건드리지 않는다.
@@ -130,35 +181,27 @@ export async function readHomeLeadMode(env) {
  *                     previous_post_id:number, reason:string, candidates:number }>}
  */
 export async function refreshAutoHomeLead(env) {
-  const mode = await readHomeLeadMode(env);
+  const previousState = await readHomeLeadState(env);
+  const mode = previousState.mode;
   if (mode !== 'auto') {
     return { skipped: true, mode, changed: false, post_id: 0, previous_post_id: 0, reason: '수동 지정 모드', candidates: 0 };
   }
 
   const picked = await selectAutoHomeLeadId(env);
-  const currentRow = await env.DB.prepare(
-    `SELECT value FROM settings WHERE key = 'home_lead_post'`
-  ).first();
-  const previous = currentRow ? parseInt(currentRow.value, 10) || 0 : 0;
+  const previous = previousState.postId;
 
   if (!picked.id) {
     return { skipped: false, mode, changed: false, post_id: 0, previous_post_id: previous, reason: '선정할 공개글이 없음', candidates: picked.candidates };
   }
 
   const changed = picked.id !== previous;
-  if (changed) {
-    await env.DB.prepare(
-      `INSERT INTO settings (key, value) VALUES ('home_lead_post', ?)
-       ON CONFLICT(key) DO UPDATE SET value = excluded.value`
-    ).bind(String(picked.id)).run();
-    // 글이 바뀌면 이전 글에 맞춰 둔 이미지 프레이밍은 의미가 없다 — 기본값으로 되돌린다.
-    await env.DB.prepare(`DELETE FROM settings WHERE key = 'home_lead_media'`).run();
+  const result = await commitHomeLeadState(env, previousState, {
+    mode: 'auto', postId: picked.id, mediaValue: changed ? null : previousState.mediaValue,
+  }, new Date().toISOString());
+  if (!result.committed) {
+    const latest = await readHomeLeadState(env);
+    return { skipped: true, mode: latest.mode, changed: false, post_id: latest.postId, previous_post_id: previous, reason: '동시 운영 변경을 보존했습니다.', candidates: picked.candidates };
   }
-
-  await env.DB.prepare(
-    `INSERT INTO settings (key, value) VALUES ('home_lead_auto_last_run', ?)
-     ON CONFLICT(key) DO UPDATE SET value = excluded.value`
-  ).bind(new Date().toISOString()).run().catch(() => {});
 
   return {
     skipped: false,

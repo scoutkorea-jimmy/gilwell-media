@@ -19,7 +19,7 @@ export async function onRequestGet({ request, env }) {
     return json({ items, revision });
   } catch (err) {
     console.error('GET /api/settings/reference-sites error:', err);
-    return json({ items: [], revision: 0 });
+    return json({ error: '참고 사이트를 불러오지 못했습니다. 다시 시도해주세요.' }, 503);
   }
 }
 
@@ -45,16 +45,17 @@ export async function onRequestPut({ request, env }) {
     }
 
     const nextRev = currentRev + 1;
-    await Promise.all([
+    const writes = await env.DB.batch([
       env.DB.prepare(
         `INSERT INTO settings (key, value) VALUES (?, ?)
-         ON CONFLICT(key) DO UPDATE SET value = excluded.value`
-      ).bind(SETTING_KEY, JSON.stringify(items)).run(),
+         ON CONFLICT(key) DO UPDATE SET value = excluded.value WHERE CAST(settings.value AS INTEGER) = ?`
+      ).bind(REV_KEY, String(nextRev), currentRev),
       env.DB.prepare(
-        `INSERT INTO settings (key, value) VALUES (?, ?)
+        `INSERT INTO settings (key, value) SELECT ?, ? WHERE changes() = 1
          ON CONFLICT(key) DO UPDATE SET value = excluded.value`
-      ).bind(REV_KEY, String(nextRev)).run(),
+      ).bind(SETTING_KEY, JSON.stringify(items)),
     ]);
+    if (!writes[0] || !writes[0].meta || writes[0].meta.changes !== 1) return json({ error: '다른 변경이 감지되었습니다. 입력은 유지됩니다.' }, 409);
     await recordSettingChange(env, {
       key: SETTING_KEY,
       previousValue: prevRow && prevRow.value,

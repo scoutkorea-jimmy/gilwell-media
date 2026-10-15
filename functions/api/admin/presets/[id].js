@@ -2,7 +2,7 @@
  * Gilwell Media · /api/admin/presets/:id
  *
  *   PUT    — update a custom preset's name/description/permissions (owner only).
- *            Built-in presets are read-only at this endpoint.
+ *            Built-in slugs are immutable; their names and permissions are editable.
  *   DELETE — delete a custom preset (owner only). Built-ins cannot be removed.
  */
 import { requireOwner } from '../../../_shared/admin-permissions.js';
@@ -22,7 +22,7 @@ export async function onRequestPut({ params, request, env }) {
   if (!id) return json({ error: '유효하지 않은 프리셋 ID입니다.' }, 400);
 
   const row = await env.DB.prepare(
-    `SELECT id, slug, is_builtin, permissions FROM admin_user_presets WHERE id = ?`
+    `SELECT id, slug, name, description, is_builtin, permissions, updated_at FROM admin_user_presets WHERE id = ?`
   ).bind(id).first();
   if (!row) return json({ error: '프리셋을 찾을 수 없습니다.' }, 404);
   // NOTE: owner may edit built-in presets (rebalancing permission defaults is
@@ -32,6 +32,9 @@ export async function onRequestPut({ params, request, env }) {
   let body;
   try { body = await request.json(); } catch {
     return json({ error: 'Invalid JSON body' }, 400);
+  }
+  if (body.if_permissions !== undefined && canonicalizePerms(body.if_permissions) !== canonicalizePerms(parsePermBlob(row.permissions))) {
+    return json({ error: '프리셋 권한이 다른 화면에서 변경되었습니다. 최신 값을 다시 확인해주세요.' }, 409);
   }
 
   const fields = [];
@@ -60,10 +63,6 @@ export async function onRequestPut({ params, request, env }) {
   fields.push("updated_at = datetime('now')");
 
   try {
-    await env.DB.prepare(
-      `UPDATE admin_user_presets SET ${fields.join(', ')} WHERE id = ?`
-    ).bind(...values, id).run();
-
     // Preset-to-user auto propagation. When permissions change, find every
     // active member whose permissions matched the *previous* preset exactly
     // and push the new permissions down to them. Resolves the "I edited the
@@ -71,17 +70,12 @@ export async function onRequestPut({ params, request, env }) {
     // model is that presets are the source of truth.
     // Safeguards:
     //   - Owner rows are never touched (only role='member').
-    //   - access_admin is forced to true on the propagated payload so a
-    //     preset accidentally saved with access_admin=false can't lock every
-    //     linked member out of the admin panel on their next login.
+    //   - Each matched member keeps their existing access_admin state.
+    //   - A conditional update preserves independently changed member data.
     let propagatedCount = 0;
+    const statements = [];
     if (validatedNewPerms) {
       const oldCanonical = canonicalizePerms(parsePermBlob(row.permissions));
-      const newPermsForMember = {
-        access_admin: true,
-        permissions: validatedNewPerms.permissions,
-      };
-      const newSerialized = JSON.stringify(newPermsForMember);
       const members = await env.DB.prepare(
         `SELECT id, username, permissions FROM admin_users
            WHERE status = 'active' AND role = 'member'`
@@ -89,13 +83,22 @@ export async function onRequestPut({ params, request, env }) {
       for (const m of (members.results || [])) {
         const parsed = parsePermBlob(m.permissions);
         if (canonicalizePerms(parsed) === oldCanonical) {
-          await env.DB.prepare(
-            `UPDATE admin_users SET permissions = ?, updated_at = datetime('now') WHERE id = ?`
-          ).bind(newSerialized, m.id).run();
-          propagatedCount += 1;
+          const newSerialized = JSON.stringify({ access_admin: !!parsed.access_admin, permissions: validatedNewPerms.permissions });
+          statements.push(env.DB.prepare(
+            `UPDATE admin_users SET permissions = ?, updated_at = datetime('now') WHERE id = ? AND role = 'member' AND status = 'active' AND permissions = ?
+             AND EXISTS (SELECT 1 FROM admin_user_presets WHERE id = ? AND permissions = ? AND updated_at = ? AND name = ? AND COALESCE(description, '') = ?)`
+          ).bind(newSerialized, m.id, m.permissions, id, row.permissions, row.updated_at, row.name, row.description || ''));
         }
       }
     }
+
+    // D1 batch is transactional: no partially updated preset/member cohort.
+    statements.push(env.DB.prepare(
+      `UPDATE admin_user_presets SET ${fields.join(', ')} WHERE id = ? AND permissions = ? AND updated_at = ? AND name = ? AND COALESCE(description, '') = ?`
+    ).bind(...values, id, row.permissions, row.updated_at, row.name, row.description || ''));
+    const results = await env.DB.batch(statements);
+    if (!results[results.length - 1].meta || results[results.length - 1].meta.changes !== 1) return json({ error: '동시 프리셋 변경이 감지되었습니다. 입력을 보존하고 최신 값을 다시 확인해주세요.' }, 409);
+    propagatedCount = results.slice(0, -1).reduce((sum, result) => sum + ((result.meta && result.meta.changes) || 0), 0);
 
     await logOperationalEvent(env, {
       channel: 'admin', type: 'admin_preset_updated', level: 'info',

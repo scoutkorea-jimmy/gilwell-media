@@ -1,4 +1,5 @@
 import { gateMenuAccess } from '../../_shared/admin-permissions.js';
+import { resolveAdminAnalyticsRange, analyticsRangeMeta, shiftAnalyticsDate } from '../../_shared/admin-analytics-range.js';
 
 const json = (data, status = 200) =>
   new Response(JSON.stringify(data), {
@@ -108,43 +109,29 @@ export function summarizeSearchRows(rows, limit = 100) {
   };
 }
 
-function resolveRange(searchParams) {
-  const start = searchParams.get('start');
-  const end   = searchParams.get('end');
-  if (start && end) return { start, end, days: null };
-  const daysParam = Number(searchParams.get('days'));
-  const days = Number.isFinite(daysParam) && daysParam > 0 ? Math.min(365, Math.round(daysParam)) : 30;
-  return { start: null, end: null, days };
-}
-
 export async function onRequestGet({ request, env }) {
   const __gate = await gateMenuAccess(request, env, 'analytics-visits', 'view'); if (__gate) return __gate
   if (!env.DB) return json({ error: 'DB 바인딩이 없습니다.' }, 503);
 
   const url = new URL(request.url);
-  const range = resolveRange(url.searchParams);
+  let applied;
+  try { applied = resolveAdminAnalyticsRange(url.searchParams); }
+  catch (err) { return json({ error: err.message }, 400); }
+  const custom = !!(url.searchParams.get('start') || url.searchParams.get('end'));
+  const range = { ...analyticsRangeMeta(applied), start: custom ? applied.startDate : null, end: custom ? applied.endDate : null,
+    days: custom ? null : applied.days, effective_days: applied.days };
   const limit = Math.max(10, Math.min(500, Number(url.searchParams.get('limit')) || 100));
 
   try {
-    let sql, args;
-    if (range.start && range.end) {
-      sql = `
+    const sql = `
         SELECT referrer_url, referrer_host, COUNT(*) AS visits
           FROM site_visits
          WHERE datetime(visited_at) >= datetime(?, '-9 hours')
-           AND datetime(visited_at) < datetime(?, '+1 day', '-9 hours')
+           AND datetime(visited_at) < datetime(?, '-9 hours')
+           AND path NOT LIKE '/api/%' AND path NOT IN ('/admin', '/admin.html')
          GROUP BY referrer_url, referrer_host
       `;
-      args = [range.start, range.end];
-    } else {
-      sql = `
-        SELECT referrer_url, referrer_host, COUNT(*) AS visits
-          FROM site_visits
-         WHERE datetime(visited_at) >= datetime('now', '+9 hours', 'start of day', ?, '-9 hours')
-         GROUP BY referrer_url, referrer_host
-      `;
-      args = [`-${range.days - 1} days`];
-    }
+    const args = [applied.startDate, shiftAnalyticsDate(applied.endDate, 1)];
     const { results } = await env.DB.prepare(sql).bind(...args).all();
 
     return json({

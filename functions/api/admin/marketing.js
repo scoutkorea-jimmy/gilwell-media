@@ -1,6 +1,6 @@
 import { extractToken, verifyTokenRole } from '../../_shared/auth.js';
 import { gateMenuAccess } from '../../_shared/admin-permissions.js';
-import { resolveAnalyticsRange } from '../../_shared/cloudflare-analytics.js';
+import { resolveAdminAnalyticsRange } from '../../_shared/admin-analytics-range.js';
 import { logApiError } from '../../_shared/ops-log.js';
 import { SITE_PATH_TITLE_FALLBACKS } from '../../_shared/site-structure.mjs';
 
@@ -8,7 +8,9 @@ export async function onRequestGet({ request, env }) {
   const __gate = await gateMenuAccess(request, env, 'marketing', 'view'); if (__gate) return __gate
 
   const url = new URL(request.url);
-  const range = resolveAnalyticsRange(url.searchParams.get('start'), url.searchParams.get('end'));
+  let range;
+  try { range = resolveAdminAnalyticsRange(url.searchParams, { days: 7 }); }
+  catch (err) { return json({ error: err.message }, 400); }
   const chosen = rangeStartEnd(range);
 
   try {
@@ -121,9 +123,9 @@ function buildMarketingPayload(range, rows, postRows) {
 
   const totalUniqueUsers = byViewer.size;
   const stageSummary = [
-    buildStageSummaryItem('awareness', 'Awareness', '첫 노출과 입구 역할 페이지', stageViewerSets.awareness.size, totalUniqueUsers),
-    buildStageSummaryItem('interest', 'Interest', '카테고리 탐색과 관심 축적 단계', stageViewerSets.interest.size, totalUniqueUsers),
-    buildStageSummaryItem('consideration', 'Consideration', '기사 상세 읽기 단계', stageViewerSets.consideration.size, totalUniqueUsers),
+    buildStageSummaryItem('awareness', '입구 페이지', '홈·일정 등 입구 역할 페이지 도달', stageViewerSets.awareness.size, totalUniqueUsers),
+    buildStageSummaryItem('interest', '탐색 페이지', '분류·자료 페이지 도달', stageViewerSets.interest.size, totalUniqueUsers),
+    buildStageSummaryItem('consideration', '기사 읽기', '기사 상세 페이지 도달', stageViewerSets.consideration.size, totalUniqueUsers),
   ];
 
   const sourceItems = Array.from(sourceStageSets.keys()).reduce((acc, key) => {
@@ -151,11 +153,13 @@ function buildMarketingPayload(range, rows, postRows) {
     .slice(0, 8);
 
   const allowedSourceKeys = new Set(sources.map((item) => item.key));
+  const otherSourceValue = Object.keys(sourceItems).filter(key => !allowedSourceKeys.has(key)).reduce((sum, key) => sum + sourceItems[key], 0);
+  if (otherSourceValue) sources.push({ id: 'source:other', key: 'other', label: '기타 유입', type: 'other', value: otherSourceValue, color: '#666666' });
   const stages = stageSummary.map((item) => ({
     id: 'stage:' + item.key,
     key: item.key,
     label: item.label,
-    value: item.users,
+    value: Array.from(sourceStageSets.entries()).filter(([key]) => key.endsWith('|' + item.key)).reduce((sum, [, viewers]) => sum + viewers.size, 0),
     color: stageColor(item.key),
   }));
 
@@ -189,6 +193,10 @@ function buildMarketingPayload(range, rows, postRows) {
       });
   });
   const allowedDestKeys = new Set(destinations.map((item) => item.key));
+  ['awareness', 'interest', 'consideration'].forEach(stage => {
+    const value = destinationCandidates.filter(item => item.stage === stage && !allowedDestKeys.has(item.path)).reduce((sum, item) => sum + item.value, 0);
+    if (value) destinations.push({ id: 'dest:other:' + stage, key: 'other:' + stage, stage, label: '기타 대표 페이지', value, color: stageColor(stage) });
+  });
 
   const sourceStageLinks = Array.from(sourceStageSets.entries())
     .map(([key, viewerSet]) => {
@@ -196,14 +204,13 @@ function buildMarketingPayload(range, rows, postRows) {
       const sourceKey = parts[0];
       const stage = parts[1];
       return {
-        source: 'source:' + sourceKey,
+        source: allowedSourceKeys.has(sourceKey) ? 'source:' + sourceKey : 'source:other',
         target: 'stage:' + stage,
         value: viewerSet.size,
         color: sourceColor(sourceKey, sourceMeta[sourceKey] && sourceMeta[sourceKey].type),
         sourceKey,
       };
     })
-    .filter((item) => allowedSourceKeys.has(item.sourceKey))
     .sort((a, b) => b.value - a.value);
 
   const stageDestLinks = Array.from(stageDestSets.entries())
@@ -213,16 +220,22 @@ function buildMarketingPayload(range, rows, postRows) {
       const path = parts.join('|');
       return {
         source: 'stage:' + stage,
-        target: 'dest:' + path,
+        target: allowedDestKeys.has(path) ? 'dest:' + path : 'dest:other:' + stage,
         value: viewerSet.size,
         color: stageColor(stage),
         path,
       };
     })
-    .filter((item) => allowedDestKeys.has(item.path))
     .sort((a, b) => b.value - a.value);
 
-  const flowLinks = sourceStageLinks.concat(stageDestLinks);
+  const flowMap = new Map();
+  sourceStageLinks.concat(stageDestLinks).forEach(link => {
+    const key = link.source + '|' + link.target;
+    const existing = flowMap.get(key);
+    if (existing) existing.value += link.value;
+    else flowMap.set(key, { ...link });
+  });
+  const flowLinks = [...flowMap.values()];
 
   const scatter = Array.from(pathStats.values())
     .map((item) => {
@@ -290,6 +303,7 @@ function buildMarketingPayload(range, rows, postRows) {
       stages,
       destinations,
       links: flowLinks,
+      definition: '기간 내 첫 유입 → 최고 도달 단계 → 가장 많이 조회한 해당 단계 페이지. 세션 전환율 아님. 상위 유입 8개·단계별 대표 페이지 4개 외에는 기타로 포함.',
     },
     utm_campaigns: utmCampaigns,
     page_opportunities: scatter,

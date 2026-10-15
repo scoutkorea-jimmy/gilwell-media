@@ -3,11 +3,14 @@ import { gateMenuAccess } from '../../_shared/admin-permissions.js';
 import { loadNavLabels, normalizeNavLabels } from '../../_shared/nav-labels.js';
 import { recordSettingChange } from '../../_shared/settings-audit.js';
 
-export async function onRequestGet({ env }) {
+export async function onRequestGet({ env, request }) {
   try {
-    const labels = await loadNavLabels(env);
+    const strict = request && new URL(request.url).searchParams.get('scope') === 'admin';
+    const row = strict ? await env.DB.prepare(`SELECT value FROM settings WHERE key = 'nav_labels'`).first() : null;
+    const labels = strict ? normalizeNavLabels(row ? JSON.parse(row.value) : {}) : await loadNavLabels(env);
     return json({ labels }, 200, publicCacheHeaders(300, 1800));
   } catch (err) {
+    if (request && new URL(request.url).searchParams.get('scope') === 'admin') return json({ error: '공개 메뉴명을 불러오지 못했습니다.' }, 500);
     console.error('GET /api/settings/nav-labels error:', err);
     return json({ labels: normalizeNavLabels({}) }, 200, publicCacheHeaders(300, 1800));
   }
@@ -25,10 +28,12 @@ export async function onRequestPut({ request, env }) {
 
   try {
     const prevRow = await env.DB.prepare(`SELECT value FROM settings WHERE key = 'nav_labels'`).first();
-    await env.DB.prepare(
+    if (body.if_current && JSON.stringify(normalizeNavLabels(body.if_current.labels)) !== JSON.stringify(normalizeNavLabels(prevRow ? JSON.parse(prevRow.value) : {}))) return json({ error: '공개 메뉴명이 다른 화면에서 변경되었습니다. 입력을 보존하고 최신 값을 확인해주세요.' }, 409);
+    const write = await env.DB.prepare(
       `INSERT INTO settings (key, value) VALUES ('nav_labels', ?)
-       ON CONFLICT(key) DO UPDATE SET value = excluded.value`
-    ).bind(JSON.stringify(labels)).run();
+       ON CONFLICT(key) DO UPDATE SET value = excluded.value WHERE settings.value IS ?`
+    ).bind(JSON.stringify(labels), prevRow ? prevRow.value : null).run();
+    if (write.meta && write.meta.changes !== 1) return json({ error: '동시 공개 메뉴명 변경이 감지되었습니다.' }, 409);
     await recordSettingChange(env, {
       key: 'nav_labels',
       previousValue: prevRow && prevRow.value,

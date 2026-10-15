@@ -6,6 +6,7 @@ import {
 
 export async function onRequestGet({ request, env }) {
   const url = new URL(request.url);
+  const adminScope = url.searchParams.get('scope') === 'admin';
   const bucketFilter = String(url.searchParams.get('bucket') || '').trim();
   const query = String(url.searchParams.get('q') || '').trim().toLowerCase();
   const view = String(url.searchParams.get('view') || 'flat').trim().toLowerCase();
@@ -47,7 +48,7 @@ export async function onRequestGet({ request, env }) {
       }, []);
     }
     return json(payload, 200, {
-      'Cache-Control': 'public, max-age=300, s-maxage=300, stale-while-revalidate=1800',
+      'Cache-Control': adminScope ? 'no-store' : 'public, max-age=300, s-maxage=300, stale-while-revalidate=1800',
     });
   } catch (err) {
     console.error('GET /api/glossary error:', err);

@@ -6,7 +6,7 @@ import { isPlaceholderAuthor, publicAuthor } from '../../_shared/post-author.js'
  * POST /api/posts                          ← admin only, create post
  */
 import { verifyTokenRole, extractToken } from '../../_shared/auth.js';
-import { loadAdminSession, requirePublishAllowed } from '../../_shared/admin-permissions.js';
+import { loadAdminSession, requirePublishAllowed, requireMenu } from '../../_shared/admin-permissions.js';
 import { hasMenuPermission } from '../../_shared/admin-users.js';
 import { verifyTurnstile } from '../../_shared/turnstile.js';
 import { enforceRateLimit, getClientIp, rateLimitResponse } from '../../_shared/rate-limit.js';
@@ -77,7 +77,7 @@ export async function onRequestGet({ request, env }) {
   // 패널에 들어왔다면(=view:list 권한 통과) 운영 데이터 일관성 위해 dwell 함께 응답.
   // 비공개 글 SELECT 등 다른 admin 전용 기능은 isAdmin 게이트 그대로 유지.
   const includeDwell = adminScopeRequested && token
-    ? (isAdmin || await verifyTokenRole(token, env, ['full', 'member']).catch(() => false))
+    ? (isAdmin || !(await requireMenu(request, env, 'list', 'view')).error)
     : false;
 
   // Search-heavy workload rate limit (non-admins only). We cap at 30 searches

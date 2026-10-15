@@ -4,6 +4,7 @@
  */
 
 import { gateMenuAccess, loadAdminSession } from '../../_shared/admin-permissions.js';
+import { hasMenuPermission } from '../../_shared/admin-users.js';
 import {
   normalizeMemorabiliaInput,
   createMemorabilia,
@@ -16,7 +17,8 @@ const ADMIN_PAGE_SIZE = 50;
 export async function onRequestGet({ request, env }) {
   const url = new URL(request.url);
   const session = await loadAdminSession(request, env).catch(() => null);
-  const isAdmin = !!session;
+  const isAdmin = !!(session && (session.isOwner || (session.permissions.access_admin && hasMenuPermission(session.permissions, 'memorabilia', 'view'))));
+  if (url.searchParams.get('scope') === 'admin' && !isAdmin) return (await gateMenuAccess(request, env, 'memorabilia', 'view')) || json({ error: '관리자 권한을 확인하지 못했습니다. 다시 시도해주세요.' }, 503);
   const includeDrafts = isAdmin && url.searchParams.get('include_drafts') === '1';
 
   const pageSize = Math.min(
@@ -28,6 +30,12 @@ export async function onRequestGet({ request, env }) {
 
   const whereParts = [];
   const bindings = [];
+  const query = isAdmin && url.searchParams.get('scope') === 'admin' ? String(url.searchParams.get('q') || '').trim().slice(0, 200) : '';
+  if (query) {
+    whereParts.push(`(LOWER(m.title_en) LIKE ? ESCAPE '\\' OR LOWER(m.title_ko) LIKE ? ESCAPE '\\')`);
+    const pattern = '%' + query.toLowerCase().replace(/[\\%_]/g, '\\$&') + '%';
+    bindings.push(pattern, pattern);
+  }
   if (!includeDrafts) {
     whereParts.push(`m.status = 'public'`);
   }
@@ -88,7 +96,7 @@ export async function onRequestGet({ request, env }) {
       page,
       page_size: pageSize,
       total: totalRow?.n || 0,
-    });
+    }, 200, isAdmin ? { 'Cache-Control': 'no-store' } : {});
   } catch (err) {
     console.error('GET /api/memorabilia error:', err);
     return json({ items: [], error: 'list_failed' }, 500);
@@ -120,9 +128,9 @@ export async function onRequestPost({ request, env }) {
   }
 }
 
-function json(data, status = 200) {
+function json(data, status = 200, extraHeaders = {}) {
   return new Response(JSON.stringify(data), {
     status,
-    headers: { 'Content-Type': 'application/json; charset=utf-8' },
+    headers: { 'Content-Type': 'application/json; charset=utf-8', ...extraHeaders },
   });
 }

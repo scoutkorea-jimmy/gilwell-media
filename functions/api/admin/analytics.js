@@ -1,6 +1,7 @@
 import { extractToken, verifyTokenRole } from '../../_shared/auth.js';
 import { gateMenuAccess } from '../../_shared/admin-permissions.js';
 import { resolveAnalyticsRange } from '../../_shared/cloudflare-analytics.js';
+import { resolveAdminAnalyticsRange } from '../../_shared/admin-analytics-range.js';
 import { logApiError } from '../../_shared/ops-log.js';
 
 const VISIT_SCOPE_SQL = "(path NOT LIKE '/api/%' AND path NOT IN ('/admin', '/admin.html'))";
@@ -21,9 +22,12 @@ export async function onRequestGet({ request, env }) {
   const __gate = await gateMenuAccess(request, env, 'analytics-visits', 'view'); if (__gate) return __gate
 
   const url = new URL(request.url);
-  const range = resolveRequestedRange(url.searchParams);
-  const tagRange = resolveRequestedRange(url.searchParams, 'tag_');
-  const heatmapRange = resolveRequestedRange(url.searchParams, 'heatmap_');
+  let range, tagRange, heatmapRange;
+  try {
+    range = resolveRequestedRange(url.searchParams);
+    tagRange = resolveRequestedRange(url.searchParams, 'tag_');
+    heatmapRange = resolveRequestedRange(url.searchParams, 'heatmap_');
+  } catch (err) { return json({ error: err.message }, 400); }
 
   try {
     const internalData = await getInternalMetrics(env, range, tagRange, heatmapRange);
@@ -36,6 +40,7 @@ export async function onRequestGet({ request, env }) {
 }
 
 function resolveRequestedRange(searchParams, prefix = '') {
+  if (prefix !== 'heatmap_') return resolveAdminAnalyticsRange(searchParams, { prefix });
   if (searchParams.get(prefix + 'all') === '1') {
     const today = getKstDateString(new Date());
     return prefix === 'heatmap_'
@@ -108,6 +113,7 @@ async function getInternalMetrics(env, range, tagRange, heatmapRange) {
     tagRows,
     heatmapRows,
     publishHeatmapRows,
+    rangeUniqueVisits,
   ] = await Promise.all([
     scalar(env, `SELECT COUNT(DISTINCT viewer_key) AS count FROM site_visits WHERE ${VISIT_SCOPE_SQL} AND datetime(visited_at, '+9 hours') >= datetime(?) AND datetime(visited_at, '+9 hours') < datetime(?)`, [today.start, today.endExclusive]),
     scalar(env, `SELECT COUNT(*) AS count FROM site_visits WHERE ${VISIT_SCOPE_SQL} AND datetime(visited_at, '+9 hours') >= datetime(?) AND datetime(visited_at, '+9 hours') < datetime(?)`, [today.start, today.endExclusive]),
@@ -318,6 +324,7 @@ async function getInternalMetrics(env, range, tagRange, heatmapRange) {
         GROUP BY weekday, publish_hour
         ORDER BY weekday ASC, publish_hour ASC`
     ).bind(chosenHeatmap.start, chosenHeatmap.endExclusive).all(),
+    scalar(env, `SELECT COUNT(DISTINCT viewer_key) AS count FROM site_visits WHERE ${VISIT_SCOPE_SQL} AND datetime(visited_at, '+9 hours') >= datetime(?) AND datetime(visited_at, '+9 hours') < datetime(?)`, [chosen.start, chosen.endExclusive]),
   ]);
 
   const visitSeries = useHourlySeries
@@ -342,7 +349,8 @@ async function getInternalMetrics(env, range, tagRange, heatmapRange) {
       label: dateKey,
       views: row.views || 0,
     }));
-  const rangeVisits = visitSeries.reduce((sum, item) => sum + Number(item.visits || 0), 0);
+  const periodVisitSum = visitSeries.reduce((sum, item) => sum + Number(item.visits || 0), 0);
+  const rangeVisits = rangeUniqueVisits;
   const rangeViews = viewSeries.reduce((sum, item) => sum + Number(item.views || 0), 0);
 
   return {
@@ -374,7 +382,7 @@ async function getInternalMetrics(env, range, tagRange, heatmapRange) {
       average_dwell_seconds: averageDwellSeconds,
       popular_post_average_dwell_seconds: Number(popularPostDwellRow && popularPostDwellRow.avg_dwell_seconds || 0),
       popular_post_title: popularPostDwellRow && popularPostDwellRow.title ? popularPostDwellRow.title : '',
-      average_daily_visits: range.days ? Math.round((rangeVisits / range.days) * 10) / 10 : 0,
+      average_daily_visits: range.days ? Math.round((periodVisitSum / range.days) * 10) / 10 : 0,
       average_daily_pageviews: range.days ? Math.round((rangeViews / range.days) * 10) / 10 : 0,
     },
     visitors: {

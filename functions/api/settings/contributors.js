@@ -8,16 +8,15 @@ import { verifyTokenRole, extractToken } from '../../_shared/auth.js';
 import { gateMenuAccess } from '../../_shared/admin-permissions.js';
 import { recordSettingChange } from '../../_shared/settings-audit.js';
 
-export async function onRequestGet({ env }) {
+export async function onRequestGet({ env, request }) {
   try {
-    const [row, revRow] = await Promise.all([
-      env.DB.prepare(`SELECT value FROM settings WHERE key = 'contributors'`).first(),
-      env.DB.prepare(`SELECT value FROM settings WHERE key = 'contributors_rev'`).first(),
-    ]);
-    const items = row ? JSON.parse(row.value) : [];
-    const revision = revRow ? parseInt(revRow.value, 10) : 0;
+    const { results } = await env.DB.prepare(`SELECT key, value FROM settings WHERE key IN ('contributors', 'contributors_rev')`).all();
+    const values = Object.fromEntries((results || []).map((row) => [row.key, row.value]));
+    const items = values.contributors ? JSON.parse(values.contributors) : [];
+    const revision = parseInt(values.contributors_rev, 10) || 0;
     return json({ items, revision });
   } catch (err) {
+    if (request && new URL(request.url).searchParams.get('scope') === 'admin') return json({ error: '설정을 불러오지 못했습니다. 다시 시도해주세요.' }, 500);
     console.error('GET /api/settings/contributors error:', err);
     return json({ items: [] });
   }
@@ -48,24 +47,22 @@ export async function onRequestPut({ request, env }) {
     .filter(function (item) { return item.name.length > 0; });
 
   try {
-    const revRow = await env.DB.prepare(`SELECT value FROM settings WHERE key = 'contributors_rev'`).first();
-    const currentRev = revRow ? parseInt(revRow.value, 10) : 0;
+    const { results } = await env.DB.prepare(`SELECT key, value FROM settings WHERE key IN ('contributors', 'contributors_rev')`).all();
+    const rows = Object.fromEntries((results || []).map((row) => [row.key, row]));
+    const currentRev = rows.contributors_rev ? parseInt(rows.contributors_rev.value, 10) || 0 : 0;
     if (Number.isFinite(if_revision) && parseInt(if_revision, 10) !== currentRev) {
       return json({ error: '다른 변경이 감지되었습니다', revision: currentRev }, 409);
     }
-    const prev = await env.DB.prepare(`SELECT value FROM settings WHERE key = 'contributors'`).first();
+    const prev = rows.contributors;
     const nextRev = currentRev + 1;
 
-    await Promise.all([
-      env.DB.prepare(
-        `INSERT INTO settings (key, value) VALUES ('contributors', ?)
-         ON CONFLICT(key) DO UPDATE SET value = excluded.value`
-      ).bind(JSON.stringify(safe)).run(),
-      env.DB.prepare(
-        `INSERT INTO settings (key, value) VALUES ('contributors_rev', ?)
-         ON CONFLICT(key) DO UPDATE SET value = excluded.value`
-      ).bind(String(nextRev)).run(),
+    const writes = await env.DB.batch([
+      env.DB.prepare(`INSERT INTO settings (key, value) VALUES ('contributors_rev', ?)
+        ON CONFLICT(key) DO UPDATE SET value = excluded.value WHERE CAST(settings.value AS INTEGER) = ?`).bind(String(nextRev), currentRev),
+      env.DB.prepare(`INSERT INTO settings (key, value) SELECT 'contributors', ? WHERE changes() = 1
+        ON CONFLICT(key) DO UPDATE SET value = excluded.value`).bind(JSON.stringify(safe)),
     ]);
+    if (!writes[0] || !writes[0].meta || writes[0].meta.changes !== 1) return json({ error: '동시 변경이 감지되었습니다. 입력을 보존하고 최신 명단을 확인해주세요.' }, 409);
     await recordSettingChange(env, {
       key: 'contributors',
       previousValue: prev && prev.value,

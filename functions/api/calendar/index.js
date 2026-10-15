@@ -1,7 +1,7 @@
 import { gateMenuAccess } from '../../_shared/admin-permissions.js';
 import { ensureCalendarTable, normalizeCalendarInput, normalizeCalendarRows } from '../../_shared/calendar.js';
 
-export async function onRequestGet({ env }) {
+export async function onRequestGet({ request, env }) {
   try {
     await ensureCalendarTable(env);
     const { results } = await env.DB.prepare(`
@@ -34,7 +34,7 @@ export async function onRequestGet({ env }) {
       ORDER BY c.start_at ASC, c.id ASC
     `).all();
     return json({ items: normalizeCalendarRows(results || []) }, 200, {
-      'Cache-Control': 'public, max-age=120, s-maxage=120, stale-while-revalidate=600',
+      'Cache-Control': request && new URL(request.url).searchParams.get('scope') === 'admin' ? 'no-store' : 'public, max-age=120, s-maxage=120, stale-while-revalidate=600',
     });
   } catch (err) {
     console.error('GET /api/calendar error:', err);

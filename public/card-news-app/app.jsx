@@ -123,6 +123,12 @@ function ExportButtons({ tweaks, active, setActive }) {
     const id = window.CARD_NEWS_ID;
     if (!id) { alert('저장 대상이 없습니다 (CARD_NEWS_ID 누락).'); return; }
     setSaving(true);
+    const notifyAdmin = (type) => {
+      if (window.parent !== window && new URLSearchParams(window.location.search).get('edit') === '1') {
+        try { window.parent.postMessage({ type, id }, window.location.origin); } catch (_) {}
+      }
+    };
+    notifyAdmin('__card_news_saving');
     try {
       const res = await fetch('/api/admin/card-news/' + id, {
         method: 'PUT',
@@ -132,9 +138,10 @@ function ExportButtons({ tweaks, active, setActive }) {
       });
       const j = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(j.reason || j.error || ('HTTP ' + res.status));
-      try { window.parent.postMessage({ type: '__card_news_saved', id: id }, '*'); } catch (_) {}
+      notifyAdmin('__card_news_saved');
       alert(isEn ? 'Saved to server.' : '서버에 저장했습니다.');
     } catch (e) {
+      notifyAdmin('__card_news_save_failed');
       alert((isEn ? 'Save failed: ' : '저장 실패: ') + (e && e.message ? e.message : e));
     }
     setSaving(false);

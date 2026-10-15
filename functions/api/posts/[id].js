@@ -22,6 +22,7 @@ import { purgeContentCache } from '../../_shared/cache-purge.js';
 import { ensureDuePostsPublished } from '../../_shared/publish-due-posts.js';
 import { VALID_POST_CATEGORIES } from '../../_shared/site-structure.mjs';
 import { logOperationalEvent } from '../../_shared/ops-log.js';
+import { clearHomeLeadForPost } from '../../_shared/home-lead-auto.js';
 
 // ── GET /api/posts/:id ────────────────────────────────────────
 // Returns the full post including content body.
@@ -809,8 +810,7 @@ async function removePostFromHomepageSettings(env, postId) {
   ]);
 
   if (leadRow && Number(leadRow.value || 0) === safePostId) {
-    await env.DB.prepare(`DELETE FROM settings WHERE key = 'home_lead_post'`).run().catch(() => {});
-    await env.DB.prepare(`DELETE FROM settings WHERE key = 'home_lead_media'`).run().catch(() => {});
+    await clearHomeLeadForPost(env, safePostId);
   }
 
   const heroIds = parseIdArray(heroRow && heroRow.value);

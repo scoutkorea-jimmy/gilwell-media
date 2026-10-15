@@ -47,7 +47,7 @@ export async function loadAllHomeBanners(env) {
   return (results || []).map((row) => ({ ...serializeBanner(row), created_at: row.created_at, updated_at: row.updated_at }));
 }
 
-function serializeBanner(row) {
+export function serializeBanner(row) {
   return {
     id: row.id,
     image_url: row.image_url || '',

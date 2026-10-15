@@ -581,14 +581,14 @@
   background: var(--v3-surface); border: 1px solid var(--v3-border);
   border-radius: var(--radius-xl); padding: var(--gap-section); min-width: 0; box-shadow: var(--v3-shadow);
 }
-.v3-card + .v3-card { margin-top: var(--gap-card); }
+.v3-card + .v3-card { margin-top: var(--gap-section); }
 :is(.v3-dash-cols, .marketing-grid) > .v3-card + .v3-card { margin-top: 0; }
 .v3-card-head {
   display: flex; align-items: center; justify-content: space-between;
   margin-bottom: var(--gap-card); gap: var(--gap-card); flex-wrap: wrap;
 }
 .v3-card-head > * { min-width: 0; max-width: 100%; }
-.v3-card-title { font-size: var(--fs-reading); font-weight: 700; color: var(--v3-text); margin: 0; letter-spacing: -0.02em; }
+.v3-card-title { font-size: var(--fs-lead); font-weight: 700; color: var(--v3-text); margin: 0; letter-spacing: -0.02em; }
 .v3-card-title-tight-md { margin-bottom: var(--gap-element); }
 .v3-card-title-tight-sm { margin-bottom: var(--gap-tight); }
 .v3-card-desc { font-size: var(--v3-fs-dense); color: var(--v3-text-s); line-height: 1.6; margin-top: 6px; max-width: 68ch; }
@@ -717,7 +717,7 @@
 .v3-input, .v3-select, .v3-textarea {
   min-height: var(--v3-control-h); min-width: 0; max-width: 100%;
   padding: var(--gap-tight) 11px; border: 1.5px solid var(--v3-border);
-  border-radius: var(--v3-radius-s); font-size: var(--fs-small); color: var(--v3-text);
+  border-radius: var(--v3-radius-s); font-size: var(--fs-body); color: var(--v3-text);
   background: var(--v3-surface); outline: none; width: 100%;
   transition: border-color .15s;
 }
@@ -1433,8 +1433,8 @@ body:not(.admin-session-loaded) [data-owner-only="1"] {
   gap: 4px;
 }
 .v3-geo-zoom-btn {
-  width: 32px;
-  height: 32px;
+  width: var(--v3-control-h);
+  height: var(--v3-control-h);
   background: var(--v3-surface);
   border: 1px solid var(--v3-border);
   border-radius: var(--radius-sm);
@@ -1719,17 +1719,19 @@ body:not(.admin-session-loaded) [data-owner-only="1"] {
 }
 @media (max-width: 720px) {
   .v3-geo-country-row {
-    grid-template-columns: 18px 1fr auto;
+    grid-template-columns: 18px minmax(0, 1fr) minmax(0, 1fr);
     grid-template-areas:
-      "chev name stat1"
-      ".    name last";
-    row-gap: 4px;
+      "chev name name"
+      ".    stat1 stat2"
+      ".    cities cities"
+      ".    last last";
+    row-gap: var(--gap-tight);
   }
   .v3-geo-country-row .v3-geo-country-chevron { grid-area: chev; }
   .v3-geo-country-row .v3-geo-country-name { grid-area: name; }
-  .v3-geo-country-row .v3-geo-country-stat:nth-of-type(1) { grid-area: stat1; }
-  .v3-geo-country-row .v3-geo-country-stat:nth-of-type(2),
-  .v3-geo-country-row .v3-geo-country-stat:nth-of-type(3) { display: none; }
+  .v3-geo-country-row .v3-geo-country-stat.is-visits { grid-area: stat1; align-items: flex-start; }
+  .v3-geo-country-row .v3-geo-country-stat.is-pageviews { grid-area: stat2; align-items: flex-start; }
+  .v3-geo-country-row .v3-geo-country-stat.is-city-count { grid-area: cities; align-items: flex-start; }
   .v3-geo-country-row .v3-geo-country-last { grid-area: last; text-align: left; }
 }
 @media (max-width: 900px) {
@@ -3420,8 +3422,8 @@ body.marketing-fullscreen-open { overflow: hidden; }
   gap: 4px;
 }
 .v3-ti-graph-zoom-btn {
-  width: 32px;
-  height: 32px;
+  width: var(--v3-control-h);
+  height: var(--v3-control-h);
   background: rgba(255,255,255,0.88);
   border: 1px solid var(--v3-border);
   border-radius: var(--radius-sm);
@@ -3695,7 +3697,8 @@ body.marketing-fullscreen-open { overflow: hidden; }
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: var(--chip-height);
+  min-height: var(--v3-control-h);
+  min-width: var(--v3-control-h);
   padding: 0 var(--gap-element);
   font-size: var(--fs-micro);
   letter-spacing: 0.12em;
@@ -3718,6 +3721,7 @@ body.marketing-fullscreen-open { overflow: hidden; }
   overflow: hidden;
   cursor: grab;
   user-select: none;
+  touch-action: pan-y;
 }
 .marketing-flow-shell.is-panzoom.is-dragging { cursor: grabbing; }
 .marketing-flow-shell.is-panzoom svg {
@@ -5645,6 +5649,44 @@ body.marketing-fullscreen-open { overflow: hidden; }
 }
 
 /* 공유 조작·폼 상태는 개별 화면의 밀도와 관계없이 같은 접근성을 유지한다. */
+details.v3-content-advanced {
+  margin-block: var(--gap-section);
+  border: 1px solid var(--v3-border);
+  border-radius: var(--radius-lg);
+  background: var(--v3-surface);
+  padding: 0 var(--gap-section);
+}
+details.v3-content-advanced > summary {
+  min-height: var(--v3-control-h);
+  padding-block: var(--gap-card);
+  color: var(--v3-text-s);
+  font-size: var(--fs-body);
+  font-weight: 600;
+  cursor: pointer;
+  overflow-wrap: anywhere;
+}
+details.v3-content-advanced[open] { padding-bottom: var(--gap-section); }
+details.v3-content-advanced[open] > summary { margin-bottom: var(--gap-card); border-bottom: 1px solid var(--v3-border); }
+.v3-state-message,
+.v3-form-save-state {
+  padding: var(--gap-element) var(--gap-card);
+  border-radius: var(--radius-md);
+  background: var(--v3-content-bg);
+  color: var(--v3-text-s);
+  font-size: var(--fs-body);
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+.v3-state-message.is-error,
+.v3-form-save-state[data-state="error"] { background: var(--v3-bg-danger-strong); color: var(--v3-ink-danger-max); }
+.v3-state-message.is-warning,
+.v3-form-save-state[data-state="dirty"] { background: var(--v3-bg-warning-strong); color: var(--v3-ink-warning-s); }
+.v3-state-message.is-success,
+.v3-form-save-state[data-state="saved"] { background: var(--v3-bg-success-strong); color: var(--v3-ink-success-max); }
+.admin-v3 [aria-busy="true"] { cursor: progress; }
+#otp-verify-overlay :is(input, button) { min-height: var(--v3-control-h); }
+#otp-verify-overlay #otp-use-backup { min-height: 40px; padding-inline: var(--gap-tight) !important; }
+.admin-v3 [role="dialog"]:focus { outline: none; }
 .admin-v3 :is(button, a, input, select, textarea, summary, [tabindex]):focus-visible {
   outline: 2px solid var(--v3-primary);
   outline-offset: 2px;
@@ -5714,6 +5756,12 @@ body.marketing-fullscreen-open { overflow: hidden; }
   .v3-sk-row { grid-template-columns: minmax(0, 1fr) auto; }
   .v3-sk-engine { grid-column: 1; grid-row: 2; }
 }
+/* Content catalog tables scroll inside their own card on narrow screens. */
+#memo-list-wrap, #memo-cat-list-wrap, #memo-ev-list-wrap, #memo-ev-cats-list-wrap, #memoc-table-wrap {
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: auto;
+}
 @media (prefers-reduced-motion: reduce) {
   .admin-v3 *, .admin-v3 *::before, .admin-v3 *::after {
     animation-duration: .01ms !important;
@@ -5721,4 +5769,100 @@ body.marketing-fullscreen-open { overflow: hidden; }
     transition-duration: .01ms !important;
     scroll-behavior: auto !important;
   }
+}
+
+/* Analysis detail states share the existing card, table and control tokens. */
+.v3-analysis-status { margin: 0 0 var(--gap-card); padding: var(--gap-element); background: var(--v3-surface); border-left: 3px solid var(--v3-primary); font-size: var(--fs-body); overflow-wrap: anywhere; }
+.v3-analysis-status:empty { display: none; }
+.v3-period-bar .v3-date-range label { font-size: var(--fs-body); }
+:is(#panel-analytics-visits, #panel-analytics-tags, #panel-geo-audience) .v3-analytics-head-tools { min-width: 0; max-width: 100%; }
+:is(#panel-analytics-visits, #panel-analytics-tags, #panel-geo-audience) .v3-analytics-head-tools > .v3-btn { white-space: nowrap; }
+:is(#panel-analytics-visits, #panel-analytics-tags, #panel-geo-audience) .v3-date-range,
+#panel-marketing .mkt-date-range { display: grid; grid-template-columns: repeat(2, minmax(0, 160px)) auto; grid-template-areas: "start-label end-label ." "start end apply"; align-items: end; }
+:is(#panel-analytics-visits, #panel-analytics-tags, #panel-geo-audience) .v3-date-range label:first-of-type,
+#panel-marketing .mkt-date-range label:first-of-type { grid-area: start-label; }
+:is(#panel-analytics-visits, #panel-analytics-tags, #panel-geo-audience) .v3-date-range label:last-of-type,
+#panel-marketing .mkt-date-range label:last-of-type { grid-area: end-label; }
+:is(#panel-analytics-visits, #panel-analytics-tags, #panel-geo-audience) .v3-date-range input:first-of-type,
+#panel-marketing .mkt-date-range input:first-of-type { grid-area: start; width: 100%; }
+:is(#panel-analytics-visits, #panel-analytics-tags, #panel-geo-audience) .v3-date-range input:last-of-type,
+#panel-marketing .mkt-date-range input:last-of-type { grid-area: end; width: 100%; }
+:is(#panel-analytics-visits, #panel-analytics-tags, #panel-geo-audience) .v3-date-range .v3-apply-btn,
+#panel-marketing .mkt-date-range .mkt-apply-btn { grid-area: apply; }
+:is(#panel-analytics-visits, #panel-analytics-tags, #panel-geo-audience) .v3-date-sep,
+#panel-marketing .mkt-date-sep { display: none; }
+.v3-analysis-status.is-error { border-color: var(--v3-ink-destructive); color: var(--v3-ink-destructive); }
+.v3-geo-region-summary { display: flex; flex-wrap: wrap; align-items: center; gap: var(--gap-tight); margin: var(--gap-card) 0; font-size: var(--fs-meta); }
+.v3-geo-country-row { min-height: var(--v3-control-h); }
+.v3-geo-country-name { flex-wrap: wrap; overflow: visible; }
+.v3-geo-country-name .v3-geo-pill { white-space: normal; overflow-wrap: anywhere; }
+#panel-geo-audience :is(.v3-geo-pill, .v3-geo-region-badge) { color: var(--v3-text); }
+.v3-geo-country-last { min-width: 0; overflow-wrap: anywhere; }
+.v3-geo-city-sublist { overflow-x: auto; }
+.v3-geo-city-toolbar label { width: 100%; font-size: var(--fs-body); }
+.v3-ti-graph-search { flex-wrap: wrap; }
+.v3-ti-graph-search label { width: 100%; font-size: var(--fs-body); }
+.v3-ti-search-results { display: flex; flex-wrap: wrap; gap: var(--gap-tight); margin-bottom: var(--gap-element); }
+.v3-ti-search-results:empty { display: none; }
+.v3-ti-search-results .v3-btn { white-space: normal; overflow-wrap: anywhere; max-width: 100%; }
+#panel-analytics-tags .v3-geo-table { table-layout: fixed; }
+#panel-analytics-tags .v3-geo-table :is(th, td) { white-space: normal; overflow-wrap: anywhere; font-size: var(--fs-body); }
+#panel-analytics-tags .v3-ti-grid > div { min-width: 0; }
+.marketing-chart-details { grid-column: 1 / -1; min-width: 0; }
+.marketing-chart-details > .v3-card { margin-top: var(--gap-card); }
+.marketing-flow-shell:focus-visible, .marketing-flow-node:focus-visible, .marketing-scatter-point:focus-visible, .v3-ti-graph-node:focus-visible { outline: 2px solid var(--v3-primary); outline-offset: 2px; }
+.v3-ti-graph-svg:focus-visible { outline: 2px solid var(--v3-primary); outline-offset: -2px; }
+.v3-ti-graph-node.is-label-suppressed .v3-ti-graph-label { opacity: 0; }
+.marketing-hover-tip { max-width: min(260px, 100%); white-space: normal; overflow-wrap: anywhere; }
+.v3-analytics-trend-card .v3-chart-axis-text { font-size: 12px; }
+@media (max-width: 600px) {
+  #panel-analytics-tags .v3-geo-table :is(th, td) { padding: var(--gap-tight); }
+  .v3-geo-country-stat { min-width: 0; }
+  :is(#panel-analytics-visits, #panel-analytics-tags, #panel-geo-audience) .v3-date-range,
+  #panel-marketing .mkt-date-range { width: 100%; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-areas: "start-label end-label" "start end" "apply apply"; }
+  .v3-ti-graph-search-icon { display: none; }
+  .v3-ti-graph-search-input { flex-basis: 100%; min-width: 0; }
+  .marketing-fullscreen-card { width: calc(100vw - 24px); height: calc(100dvh - 24px); margin: 12px auto; }
+  .marketing-fullscreen-head { flex-direction: column; padding: var(--gap-card); }
+}
+@media (min-width: 360px) and (max-width: 900px) {
+  #geo-audience-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (min-width: 360px) and (max-width: 1200px) {
+  .marketing-stats-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .marketing-stats-row .v3-stat:last-child { grid-column: 1 / -1; }
+}
+@media (max-width: 359px) {
+  :is(#panel-analytics-visits, #panel-analytics-tags, #panel-geo-audience) .v3-date-range,
+  #panel-marketing .mkt-date-range { grid-template-columns: minmax(0, 1fr); grid-template-areas: "start-label" "start" "end-label" "end" "apply"; }
+}
+
+/* Settings internals use the existing cards and forms with one clear save state. */
+#panel-settings .v3-card-head { align-items: flex-start; gap: 16px; }
+#panel-settings .v3-card-head .v3-flex { flex-wrap: wrap; justify-content: flex-end; }
+#panel-settings .v3-card-desc { max-width: 78ch; line-height: 1.65; }
+#panel-settings .v3-form-save-state { margin-top: 24px; display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+#panel-settings [data-settings-managed] .v3-card-head button { min-height: 48px; }
+#panel-settings .v3-form-row { margin-top: 16px; display: grid; gap: 8px; }
+#panel-settings .v3-form-row { min-width: 0; }
+#panel-settings input[type="file"] { min-width: 0; width: 100%; max-width: 100%; }
+#panel-settings .v3-trans-row { align-items: start; padding-block: 20px; gap: 24px; }
+#panel-settings .v3-trans-key { overflow-wrap: anywhere; line-height: 1.6; }
+#panel-settings .v3-person-row { align-items: flex-end; flex-wrap: wrap; gap: 12px; padding-block: 16px; }
+#panel-settings .v3-person-field { flex: 1 1 160px; min-width: 0; display: grid; gap: 8px; }
+#panel-settings .v3-person-actions { display: flex; gap: 4px; }
+#panel-settings .v3-person-actions button { min-width: 44px; min-height: 44px; }
+#panel-settings .v3-hero-slot button { min-width: 44px; min-height: 44px; }
+#panel-settings [aria-busy="true"] { cursor: progress; }
+#panel-account-users .v3-page-desc, #panel-account-presets .v3-page-desc { max-width: 80ch; line-height: 1.65; }
+.v3-overlay[id^="account-"] .v3-modal-close { min-width: 44px; min-height: 44px; }
+.v3-overlay[id^="account-"] [aria-live].is-error { display: block; margin-block: 8px; color: var(--v3-ink-destructive); }
+@media (max-width: 600px) {
+  #panel-settings .v3-card-head { flex-wrap: wrap; }
+  #panel-settings .v3-card-head .v3-flex { justify-content: flex-start; }
+  #panel-settings .v3-card-head > button { width: 100%; }
+  #panel-settings .v3-trans-row { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  #panel-settings .v3-form-grid { grid-template-columns: minmax(0, 1fr); }
+  #panel-settings .v3-person-field { flex-basis: 100%; }
+  #panel-settings .v3-hero-info { min-width: 0; }
 }

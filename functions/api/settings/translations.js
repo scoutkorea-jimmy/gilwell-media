@@ -39,7 +39,7 @@ export async function onRequestGet({ env }) {
 
 // ── PUT /api/settings/translations ───────────────────────────
 export async function onRequestPut({ request, env }) {
-  const __gate = await gateMenuAccess(request, env, 'translations', 'view'); if (__gate) return __gate
+  const __gate = await gateMenuAccess(request, env, 'translations', 'write'); if (__gate) return __gate
 
   let body;
   try { body = await request.json(); } catch {
@@ -50,10 +50,12 @@ export async function onRequestPut({ request, env }) {
 
   try {
     const prevRow = await env.DB.prepare(`SELECT value FROM settings WHERE key = 'translations'`).first();
-    await env.DB.prepare(
+    if (body.if_current && JSON.stringify(sanitizeTranslationStrings(body.if_current.strings || {})) !== JSON.stringify(sanitizeTranslationStrings(prevRow ? JSON.parse(prevRow.value) : {}))) return json({ error: 'UI 번역이 다른 화면에서 변경되었습니다. 입력을 보존하고 최신 값을 확인해주세요.' }, 409);
+    const write = await env.DB.prepare(
       `INSERT INTO settings (key, value) VALUES ('translations', ?)
-       ON CONFLICT(key) DO UPDATE SET value = excluded.value`
-    ).bind(JSON.stringify(strings)).run();
+       ON CONFLICT(key) DO UPDATE SET value = excluded.value WHERE settings.value IS ?`
+    ).bind(JSON.stringify(strings), prevRow ? prevRow.value : null).run();
+    if (write.meta && write.meta.changes !== 1) return json({ error: '동시 번역 변경이 감지되었습니다.' }, 409);
     await recordSettingChange(env, {
       key: 'translations',
       previousValue: prevRow && prevRow.value,

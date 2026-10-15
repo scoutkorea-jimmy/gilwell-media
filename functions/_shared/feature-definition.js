@@ -5,7 +5,7 @@ import { DEFAULT_FEATURE_DEFINITION } from './feature-definition-default.js';
 
 export { DEFAULT_FEATURE_DEFINITION };
 
-function isLegacyFeatureDefinition(value) {
+export function isLegacyFeatureDefinition(value) {
   var text = String(value || '').trim();
   if (!text) return true;
   if (text.indexOf('# Feature Definition') === 0) return true;

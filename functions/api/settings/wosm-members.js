@@ -3,7 +3,7 @@ import { gateMenuAccess } from '../../_shared/admin-permissions.js';
 import { normalizeWosmImportMapping, normalizeWosmMembersColumns, normalizeWosmMembersResponse, normalizeWosmPublicCopy, normalizeWosmRegisteredCount, parseWosmImportMapping, parseWosmMembersColumns, parseWosmMembersPayload, parseWosmPublicCopy, sanitizeWosmMembersItems } from '../../_shared/wosm-members.js';
 import { recordSettingChange } from '../../_shared/settings-audit.js';
 
-export async function onRequestGet({ env }) {
+export async function onRequestGet({ request, env }) {
   try {
     const [row, columnsRow, mappingRow, countRow, copyRow, revRow] = await Promise.all([
       env.DB.prepare(`SELECT value FROM settings WHERE key = 'wosm_members'`).first(),
@@ -22,12 +22,15 @@ export async function onRequestGet({ env }) {
     return json(normalizeWosmMembersResponse(items, columns, importMapping, registeredCount, revision, publicCopy));
   } catch (err) {
     console.error('GET /api/settings/wosm-members error:', err);
+    if (request && new URL(request.url).searchParams.get('scope') === 'admin') {
+      return json({ error: '회원국 현황을 불러오지 못했습니다. 다시 시도해주세요.' }, 503);
+    }
     return json(normalizeWosmMembersResponse([], [], {}, 176, 0, {}));
   }
 }
 
 export async function onRequestPut({ request, env }) {
-  const __gate = await gateMenuAccess(request, env, 'wosm-members', 'view'); if (__gate) return __gate
+  const __gate = await gateMenuAccess(request, env, 'wosm-members', 'write'); if (__gate) return __gate
 
   let body;
   try { body = await request.json(); } catch {
@@ -52,32 +55,33 @@ export async function onRequestPut({ request, env }) {
     }
     const nextRev = currentRev + 1;
     const payload = JSON.stringify(items);
-    await Promise.all([
-      env.DB.prepare(
-        `INSERT INTO settings (key, value) VALUES ('wosm_members', ?)
-         ON CONFLICT(key) DO UPDATE SET value = excluded.value`
-      ).bind(payload).run(),
+    const writes = await env.DB.batch([
       env.DB.prepare(
         `INSERT INTO settings (key, value) VALUES ('wosm_members_rev', ?)
-         ON CONFLICT(key) DO UPDATE SET value = excluded.value`
-      ).bind(String(nextRev)).run(),
+         ON CONFLICT(key) DO UPDATE SET value = excluded.value WHERE CAST(settings.value AS INTEGER) = ?`
+      ).bind(String(nextRev), currentRev),
       env.DB.prepare(
-        `INSERT INTO settings (key, value) VALUES ('wosm_members_columns', ?)
+        `INSERT INTO settings (key, value) SELECT 'wosm_members', ? WHERE changes() = 1
          ON CONFLICT(key) DO UPDATE SET value = excluded.value`
-      ).bind(JSON.stringify(columns)).run(),
+      ).bind(payload),
       env.DB.prepare(
-        `INSERT INTO settings (key, value) VALUES ('wosm_members_import_mapping', ?)
+        `INSERT INTO settings (key, value) SELECT 'wosm_members_columns', ? WHERE changes() = 1
          ON CONFLICT(key) DO UPDATE SET value = excluded.value`
-      ).bind(JSON.stringify(importMapping)).run(),
+      ).bind(JSON.stringify(columns)),
       env.DB.prepare(
-        `INSERT INTO settings (key, value) VALUES ('wosm_members_registered_count', ?)
+        `INSERT INTO settings (key, value) SELECT 'wosm_members_import_mapping', ? WHERE changes() = 1
          ON CONFLICT(key) DO UPDATE SET value = excluded.value`
-      ).bind(String(registeredCount)).run(),
+      ).bind(JSON.stringify(importMapping)),
       env.DB.prepare(
-        `INSERT INTO settings (key, value) VALUES ('wosm_members_public_copy', ?)
+        `INSERT INTO settings (key, value) SELECT 'wosm_members_registered_count', ? WHERE changes() = 1
          ON CONFLICT(key) DO UPDATE SET value = excluded.value`
-      ).bind(JSON.stringify(publicCopy)).run(),
+      ).bind(String(registeredCount)),
+      env.DB.prepare(
+        `INSERT INTO settings (key, value) SELECT 'wosm_members_public_copy', ? WHERE changes() = 1
+         ON CONFLICT(key) DO UPDATE SET value = excluded.value`
+      ).bind(JSON.stringify(publicCopy)),
     ]);
+    if (!writes[0] || !writes[0].meta || writes[0].meta.changes !== 1) return json({ error: '다른 변경이 감지되었습니다. 입력은 유지됩니다.' }, 409);
     await recordSettingChange(env, {
       key: 'wosm_members',
       previousValue: prevRow && prevRow.value,
