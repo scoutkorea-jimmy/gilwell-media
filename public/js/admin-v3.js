@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.158.00
+ * Version: 03.158.01
  *
  * Versioning:
  *   V3.aaa.bb
@@ -5690,19 +5690,25 @@
       var width = Math.round(entries[0].contentRect.width);
       if (width < 1 || width === lastWidth) return;
       lastWidth = width;
-      var holder = document.createElement('div');
-      holder.innerHTML = _renderAnalyticsTrendChart(visits, views, granularity, label, width);
-      var plot = holder.querySelector('.v3-chart-wrap');
-      var current = card.querySelector('.v3-chart-wrap');
-      if (!plot || !current) return;
-      var active = current.contains(document.activeElement) ? document.activeElement.getAttribute('data-idx') : null;
-      current.replaceWith(plot);
-      card._chartHoverWired = false;
-      _wireAnalyticsChartHover(card);
-      if (active !== null) {
-        var point = plot.querySelector('.v3-chart-hover-zone[data-idx="' + active + '"]');
-        if (point) point.focus({ preventScroll: true });
-      }
+      if (card._chartResizeFrame) cancelAnimationFrame(card._chartResizeFrame);
+      // Defer DOM changes so the observed card cannot resize during this delivery.
+      card._chartResizeFrame = requestAnimationFrame(function () {
+        card._chartResizeFrame = 0;
+        if (!card.isConnected || card._chartResizeObserver !== observer) return;
+        var holder = document.createElement('div');
+        holder.innerHTML = _renderAnalyticsTrendChart(visits, views, granularity, label, width);
+        var plot = holder.querySelector('.v3-chart-wrap');
+        var current = card.querySelector('.v3-chart-wrap');
+        if (!plot || !current) return;
+        var active = current.contains(document.activeElement) ? document.activeElement.getAttribute('data-idx') : null;
+        current.replaceWith(plot);
+        card._chartHoverWired = false;
+        _wireAnalyticsChartHover(card);
+        if (active !== null) {
+          var point = plot.querySelector('.v3-chart-hover-zone[data-idx="' + active + '"]');
+          if (point) point.focus({ preventScroll: true });
+        }
+      });
     });
     observer.observe(card);
     card._chartResizeObserver = observer;
@@ -5858,6 +5864,7 @@
 
       var previousTrend = bodyEl.querySelector('.v3-analytics-trend-card');
       if (previousTrend && previousTrend._chartResizeObserver) previousTrend._chartResizeObserver.disconnect();
+      if (previousTrend && previousTrend._chartResizeFrame) cancelAnimationFrame(previousTrend._chartResizeFrame);
       bodyEl.innerHTML = html + noteHtml;
       var trendData = bodyEl.querySelector('.v3-trend-data');
       if (trendData) { trendData.classList.add('v3-card'); bodyEl.appendChild(trendData); }

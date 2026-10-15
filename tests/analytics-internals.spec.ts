@@ -425,8 +425,12 @@ test('Tag graph fits initial/reset nodes and keeps readable label boxes disjoint
 });
 
 
-for (const width of [280, 390, 1920, 2560, 5120]) test(`${width}px visible visual overview, readable titles and fitted trend`, async ({ page }, testInfo) => {
+for (const width of [280, 390, 1465, 1920, 2560, 5120]) test(`${width}px visible visual overview, readable titles and fitted trend`, async ({ page }, testInfo) => {
   await page.setViewportSize({ width, height: 1200 });
+  await page.addInitScript(() => {
+    (window as any).__resizeErrors = [];
+    window.addEventListener('error', event => { if (/ResizeObserver/.test(event.message)) (window as any).__resizeErrors.push(event.message); });
+  });
   const { boundary } = await open(page);
   await page.route('**/api/admin/analytics?**', async route => {
     const dates = Array.from({ length: 30 }, (_, index) => new Date(Date.UTC(2026, 8, 16 + index)).toISOString().slice(0, 10));
@@ -465,6 +469,8 @@ for (const width of [280, 390, 1920, 2560, 5120]) test(`${width}px visible visua
   expect(metrics.titleOverflow).toBe(false); expect(metrics.titleEllipsis).not.toBe('ellipsis');
   if (width >= 1920) { expect(metrics.headerHeight).toBeLessThan(230); expect(Math.abs(metrics.trend.top - metrics.posts.top)).toBeLessThan(2); expect(metrics.posts.left).toBeGreaterThan(metrics.trend.left); }
   await assertRenderedBounds(page, `${width}px visual visit overview`);
+  await settled(page);
+  expect(await page.evaluate(() => (window as any).__resizeErrors)).toEqual([]);
   await page.locator('#panel-analytics-visits h1').scrollIntoViewIfNeeded();
   await page.screenshot({ path: testInfo.outputPath(`synthetic-visits-visual-${width}.png`) });
   await writeFile(testInfo.outputPath('visual-metrics.json'), JSON.stringify(metrics, null, 2));
