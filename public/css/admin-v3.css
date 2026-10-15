@@ -5969,12 +5969,13 @@ section.v3-content-advanced > div:first-child:not([class]) { font-size: 16px; fo
 #panel-ai-score-history .v3-ai-score-title { font-size: 14px; font-weight: 600; line-height: 1.5; }
 #settings-wosm-members .v3-content-import-guide { padding: 12px 16px; background: var(--v3-content-bg); }
 #settings-wosm-members .v3-content-import-guide strong { margin-bottom: 4px; }
-#settings-wosm-members .v3-wosm-workspace { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(300px, .9fr); gap: 24px; align-items: start; }
+#settings-wosm-members .v3-wosm-workspace { display: grid; grid-template-columns: minmax(0, 1fr); gap: 24px; align-items: start; }
 #settings-wosm-members .v3-wosm-records { min-width: 0; }
-#settings-wosm-members .v3-wosm-workspace > section { margin-top: 0; }
+#settings-wosm-members .v3-wosm-workspace > section { margin-top: 0; padding: 0; border: 0; background: transparent; }
 #settings-wosm-members #wosm-members-editor { max-height: 75dvh; overflow: auto; overscroll-behavior: contain; padding-top: 12px; }
 #settings-wosm-members .v3-members-head, #settings-wosm-members .v3-members-row { grid-template-columns: repeat(var(--v3-member-field-count, 5), minmax(0, 1fr)) 72px; }
 #settings-wosm-members .v3-members-cell input, #settings-wosm-members .v3-members-cell textarea { font-size: 14px; }
+#settings-wosm-members .v3-wosm-columns-editor { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); gap: var(--gap-card); }
 #settings-wosm-members .v3-wosm-columns-editor .v3-members-head { display: none; }
 #settings-wosm-members .v3-wosm-columns-editor .v3-members-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 #settings-wosm-members .v3-wosm-columns-editor .v3-members-actions { grid-column: 1 / -1; flex-wrap: wrap; gap: 8px; }
@@ -5993,6 +5994,11 @@ section.v3-content-advanced > div:first-child:not([class]) { font-size: 16px; fo
 #panel-memorabilia .memo-list-table td { vertical-align: top; overflow-wrap: anywhere; }
 #panel-memorabilia .memo-list-table td[data-label="제목"] { min-width: 240px; width: 30%; }
 #panel-memorabilia .memo-tag-mini-wrap { min-width: 160px; max-width: 280px; flex-wrap: wrap; }
+@media (min-width: 1100px) {
+  #panel-memorabilia .memo-list-table :is(th, td) { padding-inline: 10px; }
+  #panel-memorabilia .memo-list-table td[data-label="행사명"] { min-width: 180px; }
+  #panel-memorabilia .memo-tag-mini-wrap { min-width: 100px; }
+}
 #panel-memorabilia-categories .v3-table td { vertical-align: top; overflow-wrap: anywhere; }
 #panel-memorabilia-events .v3-page-head-right { align-self: end; }
 #panel-memorabilia-events .v3-card-actions { flex: 1 1 420px; justify-content: end; }
@@ -6000,6 +6006,9 @@ section.v3-content-advanced > div:first-child:not([class]) { font-size: 16px; fo
 #panel-memorabilia-events .v3-table td { vertical-align: top; overflow-wrap: anywhere; }
 #panel-memorabilia-comments #memoc-table-wrap td { overflow-wrap: anywhere; vertical-align: top; }
 #panel-memorabilia-comments #memoc-table-wrap td[data-label="댓글"] { width: 34%; min-width: 260px; }
+@media (min-width: 1401px) {
+  #wosm-members-editor > .v3-members-editor { min-width: calc(var(--v3-member-field-count) * (160px + var(--v3-gap-sm)) + 72px + var(--gap-element) * 2 + 2px); }
+}
 @media (max-width: 1400px) {
   #settings-wosm-members .v3-members-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   #panel-ai-score-history .v3-ai-score-summary { grid-template-columns: 48px 80px minmax(160px, 1fr); }

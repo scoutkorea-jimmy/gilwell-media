@@ -147,3 +147,113 @@ test('AI usage chart keeps readable label sizes when its container resizes',asyn
   await expect(chart.locator('circle.chart-point')).toHaveCount(7);await expect(page.locator('#ai-usage-trend-range-label')).toHaveText('2026-10-01 ~ 2026-10-07 (7일)');
   expect(state.pageErrors).toEqual([]);expect(state.externalApi).toEqual([]);expect(controls.writes).toEqual([]);
 });
+
+const wosmWideFields = [
+  ['custom_membership','회원 자격','정식 회원국'], ['custom_note','상태 설명','정식 회원연맹 · 정기 갱신 확인'],
+  ['region','지역연맹','Asia-Pacific'], ['official_languages','공식 언어','한국어 · English'],
+  ['joined_year','가입 연도','1922'], ['nso_name','회원연맹','합성 스카우트 연맹'],
+] as const;
+
+async function openWideWosm(page:Page,role:'owner'|'member'='owner') {
+  const fixture=await open(page,role);
+  const items=Array.from({length:230},(_,index)=>({country_ko:'합성 국가 '+String(index+1).padStart(3,'0'),country_en:'Example Country '+(index+1),
+    extra_fields:Object.fromEntries(wosmWideFields.map(([key,,value])=>[key,value])),sort_order:index}));
+  const columns=[{key:'country_names',label:'국가명',type:'country_names',system:true,default_header:''},
+    ...wosmWideFields.map(([key,label])=>({key,label,type:'field',system:false,default_header:label}))];
+  const saves:any[]=[];let reads=0;
+  await page.route(ORIGIN+'/api/settings/wosm-members**',async route=>{
+    if(route.request().method()==='GET'){reads++;return route.fulfill({json:{items,columns,registered_count:176,revision:17}});}
+    expect(route.request().method()).toBe('PUT');const body=route.request().postDataJSON();saves.push(body);
+    return route.fulfill({json:{...body,revision:18}});
+  });
+  await enter(page,'settings','wosm-members');
+  await expect(page.locator('#wosm-members-meta')).toContainText('총 230개 항목');
+  return {...fixture,saves,getReads:()=>reads};
+}
+
+for(const width of [1465,1920,280]) test(`WOSM six custom columns keep usable editing widths at ${width}px`,async({page},testInfo)=>{
+  await page.setViewportSize({width,height:1049});
+  const {state,controls,saves,getReads}=await openWideWosm(page);
+  const editor=page.locator('#wosm-members-editor'),rows=editor.locator('.v3-members-row');
+  await expect(rows).toHaveCount(230);await expect(page.locator('#wosm-columns-editor .v3-members-row')).toHaveCount(7);
+  expect(await rows.first().locator('[data-wosm-field]').evaluateAll(fields=>fields.map(field=>field.getAttribute('data-wosm-field')))).toEqual(['country_ko','country_en',...wosmWideFields.map(([key])=>key)]);
+  const metrics=await page.evaluate(()=>{
+    const records=document.querySelector('.v3-wosm-records')!,workspace=document.querySelector('.v3-wosm-workspace')!,config=workspace.querySelector('section')!,editor=document.querySelector('#wosm-members-editor')!;
+    const canvas=document.createElement('canvas'),context=canvas.getContext('2d')!;
+    return {records:records.getBoundingClientRect().width,workspace:workspace.getBoundingClientRect().width,recordsBottom:records.getBoundingClientRect().bottom,configTop:config.getBoundingClientRect().top,
+      editor:[editor.clientWidth,editor.scrollWidth],fields:Array.from(records.querySelector('.v3-members-row')!.querySelectorAll('input,textarea')).map(field=>{
+        const input=field as HTMLInputElement,style=getComputedStyle(input);context.font=style.fontSize+' '+style.fontFamily;
+        return {key:input.dataset.wosmField,width:input.getBoundingClientRect().width,font:parseFloat(style.fontSize),height:input.getBoundingClientRect().height,
+          value:input.value,textarea:input.tagName==='TEXTAREA',textWidth:context.measureText(input.value).width,available:input.clientWidth-parseFloat(style.paddingLeft)-parseFloat(style.paddingRight)};
+      }),configWidths:Array.from(document.querySelectorAll('#wosm-columns-editor input')).map(input=>input.getBoundingClientRect().width)};
+  });
+  expect(Math.abs(metrics.records-metrics.workspace)).toBeLessThan(1);expect(metrics.configTop).toBeGreaterThan(metrics.recordsBottom+20);
+  for(const field of metrics.fields){expect(field.width,field.key).toBeGreaterThanOrEqual(159);expect(field.font).toBeGreaterThanOrEqual(14);expect(field.height).toBeGreaterThanOrEqual(48);
+    if(!field.textarea)expect(field.textWidth,field.key+' representative text fits').toBeLessThanOrEqual(field.available+1);
+  }
+  expect(Math.min(...metrics.configWidths)).toBeGreaterThanOrEqual(140);
+  if(width===1465)expect(metrics.editor[1]).toBeGreaterThan(metrics.editor[0]+200);
+  if(width===1920||width===280)expect(metrics.editor[1]).toBeLessThanOrEqual(metrics.editor[0]+1);
+  expect(await page.locator('.v3-wosm-workspace').evaluate(node=>!!node.querySelector('details'))).toBe(false);
+  await assertRenderedBounds(page,'WOSM six custom columns '+width);
+  await page.locator('#settings-wosm-members h2').scrollIntoViewIfNeeded();
+  await page.screenshot({path:testInfo.outputPath(`synthetic-wosm-six-custom-${width}.png`)});
+  await page.locator('#wosm-member-nso_name-0').focus();
+  if(width===1465)expect(await editor.evaluate(node=>node.scrollLeft)).toBeGreaterThan(0);
+  const lastField=await page.locator('#wosm-member-nso_name-0').boundingBox(),region=await editor.boundingBox();
+  expect(lastField!.x).toBeGreaterThanOrEqual(region!.x);expect(lastField!.x+lastField!.width).toBeLessThanOrEqual(region!.x+region!.width+1);
+  await page.screenshot({path:testInfo.outputPath(`synthetic-wosm-six-custom-last-field-${width}.png`)});
+  await page.locator('#wosm-columns-editor').scrollIntoViewIfNeeded();
+  await page.screenshot({path:testInfo.outputPath(`synthetic-wosm-column-settings-${width}.png`)});
+  writeFileSync(testInfo.outputPath('synthetic-wosm-six-custom-metrics.json'),JSON.stringify(metrics,null,2));
+  const reads=getReads();
+  await page.locator('#wosm-members-search').fill('합성 국가 230');await expect(rows).toHaveCount(1);
+  await page.locator('#wosm-member-custom_membership-229').fill('합성 수정 값');await page.locator('#wosm-members-search').fill('');await expect(rows).toHaveCount(230);
+  await expect(page.locator('#wosm-member-custom_membership-229')).toHaveValue('합성 수정 값');
+  if(width===1465){
+    await page.locator('#wosm-members-add-btn').click();await expect(rows).toHaveCount(231);
+    await page.locator('[data-wosm-remove="230"]').click();await expect(rows).toHaveCount(230);
+    await page.locator('[data-wosm-column-index="1"][data-wosm-column-move="down"]').click();
+    expect(await rows.first().locator('[data-wosm-field]').nth(2).getAttribute('data-wosm-field')).toBe('custom_note');
+    await page.locator('[data-wosm-column-index="2"][data-wosm-column-move="up"]').click();
+    expect(await rows.first().locator('[data-wosm-field]').nth(2).getAttribute('data-wosm-field')).toBe('custom_membership');
+    await page.locator('#wosm-members-save-btn').click();await expect.poll(()=>saves.length).toBe(1);
+    expect(saves[0].if_revision).toBe(17);expect(saves[0].items).toHaveLength(230);expect(saves[0].columns).toHaveLength(7);
+    expect(saves[0].items[229].extra_fields.custom_membership).toBe('합성 수정 값');
+    expect(Object.keys(saves[0].items[229].extra_fields).sort()).toEqual(wosmWideFields.map(([key])=>key).sort());
+    await expect(page.locator('#wosm-members-save-btn')).not.toHaveClass(/is-busy/);
+  }else expect(saves).toEqual([]);
+  expect(getReads()).toBe(reads);expect(state.pageErrors).toEqual([]);expect(state.externalApi).toEqual([]);expect(controls.writes).toEqual([]);
+});
+
+test('WOSM wide editor preserves read-only fields and searchable rows',async({page})=>{
+  await page.setViewportSize({width:1465,height:1049});const {state,controls,saves}=await openWideWosm(page,'member');
+  await expect(page.locator('#wosm-members-save-btn')).toBeDisabled();await expect(page.locator('#wosm-columns-save-btn')).toBeDisabled();
+  expect(await page.locator('#settings-wosm-members').evaluate(section=>Array.from(section.querySelectorAll('input:not([type="search"]),textarea,button')).every(control=>(control as HTMLInputElement).disabled))).toBe(true);
+  await page.locator('#wosm-members-search').fill('합성 국가 230');await expect(page.locator('#wosm-members-editor .v3-members-row')).toHaveCount(1);
+  await expect(page.locator('#wosm-member-country_ko-229')).toHaveValue('합성 국가 230');
+  await assertRenderedBounds(page,'read-only wide WOSM');expect(saves).toEqual([]);expect(state.pageErrors).toEqual([]);expect(state.externalApi).toEqual([]);expect(controls.writes).toEqual([]);
+});
+
+for(const width of [1465,1920,820,390,280])test(`memorabilia long event names and bilingual titles remain readable at ${width}px`,async({page})=>{
+  await page.setViewportSize({width,height:1049});const {state,controls}=await open(page);
+  const eventName='27th Asia-Pacific Regional Scout Jamboree International Friendship Camp';
+  const subtitle='제27회 아시아태평양 지역 잼버리 공식 참가자 패치와 우정의 기념품';
+  const tags=['Asia-Pacific','국제 교류','참가자 패치','Jamboree','우정','2027'];
+  const items=Array.from({length:24},(_,i)=>({...memo,id:i+1,title_en:'27th Asia-Pacific Regional Scout Jamboree Official Participant Badge '+(i+1),title_ko:subtitle,has_event:1,event_name_en:eventName,event_name_ko:'제27회 아시아태평양 지역 잼버리 국제 우정 캠프',year:2027,category_label_ko:'기념 패치',status:i%2?'public':'draft',tags}));
+  await page.route(ORIGIN+'/api/memorabilia?**',route=>route.fulfill({json:{items,total:24}}));await enter(page,'memorabilia');
+  const rows=page.locator('[data-memo-row]');await expect(rows).toHaveCount(24);await assertRenderedBounds(page,'memorabilia long bilingual event names');
+  const first=rows.first();await expect(first.locator('[data-label]')).toHaveCount(9);await expect(first.locator('[data-label="제목"]')).toContainText(subtitle);await expect(first.locator('[data-label="행사명"] strong')).toHaveText(eventName);await expect(first.locator('.memo-tag-mini')).toHaveText(tags);
+  const measured=await first.evaluate(row=>({width:innerWidth,rowWidth:row.getBoundingClientRect().width,height:row.getBoundingClientRect().height,columns:Array.from(row.children).map(cell=>({label:cell.getAttribute('data-label'),width:cell.getBoundingClientRect().width})),bodyOverflow:document.documentElement.scrollWidth-innerWidth}));
+  if(width>=1100){
+    expect(measured.columns.find(cell=>cell.label==='행사명')!.width).toBeGreaterThanOrEqual(180);expect(measured.columns.find(cell=>cell.label==='제목')!.width).toBeGreaterThanOrEqual(300);
+    expect(await page.locator('#memo-list-wrap').evaluate(el=>el.scrollWidth<=el.clientWidth+1)).toBeTruthy();
+    for(const [selector,word] of [['[data-label="행사명"] strong','International'],['.memo-tag-mini','Asia-Pacific']]){
+      expect(await first.locator(selector).first().evaluate((el,word)=>{const node=el.firstChild!,index=node.textContent!.indexOf(word),range=document.createRange();range.setStart(node,index);range.setEnd(node,index+word.length);return range.getClientRects().length;},word)).toBe(1);
+    }
+  }
+  if(width<700){expect(await first.locator('[data-label="행사명"]').evaluate(el=>getComputedStyle(el).display)).toBe('block');await expect(page.locator('#memo-list-select-all')).toBeVisible();}
+  await page.locator('#memo-list-select-all').check();await expect(page.locator('.memo-row-check:checked')).toHaveCount(24);await page.locator('#memo-list-select-all').uncheck();
+  writeFileSync(`${artifacts}/memo-columns-${width}.json`,JSON.stringify(measured,null,2));await page.screenshot({path:`${artifacts}/memo-columns-${width}.png`});
+  expect(state.pageErrors).toEqual([]);expect(state.externalApi).toEqual([]);expect(controls.writes).toEqual([]);
+});
