@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.157.00
+ * Version: 03.158.00
  *
  * Versioning:
  *   V3.aaa.bb
@@ -87,16 +87,19 @@
     function clearPresets() {
       presetBtns.forEach(function (b) { b.classList.remove('is-active'); });
     }
-    function clearRange() {
-      if (startInput) { startInput.value = ''; startInput.setCustomValidity(''); }
-      if (endInput) { endInput.value = ''; endInput.setCustomValidity(''); }
+    function showPresetRange(days) {
+      var end = _kstToday();
+      if (startInput) { startInput.value = _shiftDate(end, 1 - days); startInput.setCustomValidity(''); }
+      if (endInput) { endInput.value = end; endInput.setCustomValidity(''); }
     }
+    var initialPreset = bar.querySelector('.v3-preset-btn.is-active');
+    if (initialPreset) showPresetRange(parseInt(initialPreset.getAttribute('data-days'), 10) || 30);
     presetBtns.forEach(function (btn) {
       btn.addEventListener('click', function () {
         clearPresets();
         btn.classList.add('is-active');
-        clearRange();
         var days = parseInt(btn.getAttribute('data-days'), 10) || 30;
+        showPresetRange(days);
         if (typeof onChange === 'function') onChange({ days: days });
       });
     });
@@ -716,7 +719,13 @@
     if (typeof _applyChartPrefs === 'function') _applyChartPrefs();
     if (window.GW && typeof GW.setupScrollTopButton === 'function') GW.setupScrollTopButton();
     if (window.GW && typeof GW.populateCategorySelect === 'function') {
-      GW.populateCategorySelect(document.getElementById('list-cat'), { includeAll: true, allLabel: '전체 카테고리' });
+      var listCategorySelect = document.getElementById('list-cat');
+      GW.populateCategorySelect(listCategorySelect, { includeAll: true, allLabel: '전체 카테고리' });
+      if (listCategorySelect) {
+        var allCategoriesOption = listCategorySelect.querySelector('option[value=""]');
+        if (allCategoriesOption) allCategoriesOption.value = 'all';
+        listCategorySelect.value = _listCat;
+      }
       GW.populateCategorySelect(document.getElementById('w-cat'));
     }
     window.addEventListener('error', function (event) {
@@ -1008,13 +1017,8 @@
       var input = _el('wosm-members-file');
       if (input) input.click();
     });
-    _bindEl('wosm-members-import-btn-inline', 'click', function () {
-      var input = _el('wosm-members-file');
-      if (input) input.click();
-    });
     _bindEl('wosm-members-file', 'change', _handleWosmMembersImport);
     _bindEl('wosm-members-add-btn', 'click', _addWosmMemberRow);
-    _bindEl('wosm-members-add-btn-inline', 'click', _addWosmMemberRow);
     _bindEl('wosm-column-add-btn', 'click', _addWosmColumnRow);
     _bindEl('wosm-columns-save-btn', 'click', _saveWosmMembers);
     _bindEl('wosm-members-save-btn', 'click', _saveWosmMembers);
@@ -1113,17 +1117,21 @@
     _bindEl('geo-audience-refresh-btn', 'click', _loadGeoAudience);
     _bindEl('geo-audience-city-search', 'input', _onGeoCitySearchInput);
     _bindEl('geo-audience-city-toggle-all', 'click', _onGeoCityToggleAll);
-    _bindEl('geo-audience-map-details', 'toggle', function () {
-      if (this.open && _geoAudienceMap) requestAnimationFrame(function () { _geoAudienceMap.invalidateSize(); });
-    });
     // 도시 국가 그룹 헤더 클릭 → 펼침/접힘 (위임)
     var _geoCityListEl = _el('geo-audience-city-list');
     if (_geoCityListEl) {
       _geoCityListEl.addEventListener('click', function (ev) {
+        var cityButton = ev.target && ev.target.closest ? ev.target.closest('[data-geo-map-city]') : null;
+        if (cityButton) {
+          var city = _geoAudienceCitiesCache.find(function (item) { return String(item.country_code || '') === cityButton.dataset.geoCountry && String(item.city_name_original || item.city_name || '') === cityButton.dataset.geoMapCity; });
+          if (city) _focusGeoAudienceLocation(city, 6);
+          return;
+        }
         var btn = ev.target && ev.target.closest ? ev.target.closest('[data-geo-country-toggle]') : null;
         if (!btn) return;
         var key = btn.getAttribute('data-geo-country-toggle');
         if (!key) return;
+        var shouldFocusMap = btn.getAttribute('aria-expanded') !== 'true';
         if (_geoAudienceCityQuery) {
           _geoAudienceSearchCollapsed[key] = !_geoAudienceSearchCollapsed[key];
         } else if (_geoAudienceExpandedCountries[key]) {
@@ -1132,6 +1140,10 @@
           _geoAudienceExpandedCountries[key] = true;
         }
         _rerenderGeoCityList();
+        if (shouldFocusMap) {
+          var country = _geoAudienceCountriesCache.find(function (item) { return (item.country_code || item.country_name || '__unknown__') === key; });
+          if (country) _focusGeoAudienceLocation(country, 4);
+        }
       });
     }
 
@@ -3036,16 +3048,16 @@
               )
               : '<span class="v3-text-m v3-text-s">읽기 전용</span>';
             return '<tr class="v3-row-clickable" tabindex="0" aria-label="' + GW.escapeHtml((p.title || '제목 없음') + ' 미리보기') + '" onkeydown="if(event.target===this&&(event.key===\'Enter\'||event.key===\' \')){event.preventDefault();this.click();}" onclick="V3.openPostPreview(' + p.id + ')">' +
-              '<td><div class="v3-table-title">' + GW.escapeHtml(p.title || '(제목 없음)') + '</div>' +
+              '<td data-label="제목"><div class="v3-table-title">' + GW.escapeHtml(p.title || '(제목 없음)') + '</div>' +
                 (p.subtitle ? '<div class="v3-text-m v3-text-s">' + GW.escapeHtml(p.subtitle) + '</div>' : '') +
               '</td>' +
-              '<td><span class="v3-badge ' + _catBadge(p.category) + '">' + GW.escapeHtml(p.category || '') + '</span></td>' +
-              '<td>' + (p.tag ? '<span class="v3-badge v3-badge-gray">' + GW.escapeHtml(p.tag) + '</span>' : '<span class="v3-text-m">—</span>') + '</td>' +
-              '<td>' + (isPublished ? '<span class="v3-badge v3-badge-green">공개</span>' : '<span class="v3-badge v3-badge-gray">비공개</span>') + '</td>' +
-              '<td class="v3-text-m">' + GW.escapeHtml(_formatDateTimeCompact(p.created_at)) + '</td>' +
-              '<td class="v3-text-m">' + _fmt(p.views || 0) + '</td>' +
-              '<td class="v3-text-m v3-nowrap">' + _formatDwellSeconds(p.avg_dwell_seconds) + '</td>' +
-              '<td class="v3-nowrap">' + actionCell + '</td>' +
+              '<td data-label="카테고리"><span class="v3-badge ' + _catBadge(p.category) + '">' + GW.escapeHtml(p.category || '') + '</span></td>' +
+              '<td data-label="태그">' + (p.tag ? '<span class="v3-badge v3-badge-gray">' + GW.escapeHtml(p.tag) + '</span>' : '<span class="v3-text-m">—</span>') + '</td>' +
+              '<td data-label="상태">' + (isPublished ? '<span class="v3-badge v3-badge-green">공개</span>' : '<span class="v3-badge v3-badge-gray">비공개</span>') + '</td>' +
+              '<td class="v3-text-m" data-label="업로드 시각">' + GW.escapeHtml(_formatDateTimeCompact(p.created_at)) + '</td>' +
+              '<td class="v3-text-m" data-label="조회">' + _fmt(p.views || 0) + '</td>' +
+              '<td class="v3-text-m v3-nowrap" data-label="평균 체류">' + _formatDwellSeconds(p.avg_dwell_seconds) + '</td>' +
+              '<td class="v3-nowrap" data-label="작업">' + actionCell + '</td>' +
             '</tr>';
           }).join('');
         }
@@ -5284,9 +5296,9 @@
       html += '<div class="v3-bucket-head">' + GW.escapeHtml(bucket) + '</div>';
       grouped[bucket].forEach(function (t) {
         html += '<div class="v3-glos-item" role="button" tabindex="0" onkeydown="if(event.target===this&&(event.key===\'Enter\'||event.key===\' \')){event.preventDefault();this.click();}" onclick="V3._openGlosItem(' + t.id + ')">' +
-          '<div class="v3-glos-ko">' + (_glosHasKorean(t.term_ko) ? GW.escapeHtml(t.term_ko || '') : '<span class="v3-glos-ko-empty">국문 미확정</span>') + '</div>' +
-          '<div class="v3-glos-en">' + GW.escapeHtml(t.term_en || '') + '</div>' +
-          '<div class="v3-glos-fr">' + GW.escapeHtml(t.term_fr || '') + '</div>' +
+          '<div class="v3-glos-ko" data-language="한국어">' + (_glosHasKorean(t.term_ko) ? GW.escapeHtml(t.term_ko || '') : '<span class="v3-glos-ko-empty">국문 미확정</span>') + '</div>' +
+          '<div class="v3-glos-en" data-language="English">' + GW.escapeHtml(t.term_en || '—') + '</div>' +
+          '<div class="v3-glos-fr" data-language="Français">' + GW.escapeHtml(t.term_fr || '—') + '</div>' +
           '<button class="v3-btn v3-btn-ghost v3-btn-xs" onclick="event.stopPropagation();V3._openGlosItem(' + t.id + ')">' + (_contentCanWrite('glossary') ? '수정' : '보기') + '</button>' +
         '</div>';
       });
@@ -5534,7 +5546,7 @@
   V3.applyChartPrefs = _applyChartPrefs;
 
   // 일자/시각별 방문자·조회수 라인 차트 (의존성 없이 순수 SVG)
-  function _renderAnalyticsTrendChart(visitSeries, viewSeries, granularity, periodLabel) {
+  function _renderAnalyticsTrendChart(visitSeries, viewSeries, granularity, periodLabel, chartWidth) {
     var visits = Array.isArray(visitSeries) ? visitSeries : [];
     var views  = Array.isArray(viewSeries)  ? viewSeries  : [];
     var n = visits.length;
@@ -5549,7 +5561,8 @@
     }
     var maxY = Math.max(1, maxVisits, maxViews);
     var niceMax = _niceCeil(maxY);
-    var W = 800, H = 240, padL = 44, padR = 16, padT = 18, padB = 36;
+    var W = Math.max(180, Math.round(chartWidth || 800)), H = W < 500 ? 240 : 300;
+    var padL = 44, padR = 24, padT = 18, padB = 36;
     var plotW = W - padL - padR;
     var plotH = H - padT - padB;
     var stepX = n > 1 ? plotW / (n - 1) : 0;
@@ -5574,11 +5587,11 @@
       viewPoints.push(xAt(k).toFixed(1)  + ',' + yAt(views[k]  && views[k].views  || 0).toFixed(1));
     }
     // X축 라벨 sampling — 너무 빽빽하지 않게
-    var labelStep = 1;
-    if (n > 12) labelStep = Math.ceil(n / 8);
+    var labelStep = Math.max(1, Math.ceil((n - 1) / Math.max(1, Math.floor(plotW / 80))));
     var xLabels = '';
     for (var j = 0; j < n; j++) {
       if (j !== 0 && j !== n - 1 && (j % labelStep) !== 0) continue;
+      if (j !== n - 1 && j !== 0 && xAt(n - 1) - xAt(j) < 64) continue;
       xLabels += '<text x="' + xAt(j).toFixed(1) + '" y="' + (H - 14) +
         '" class="v3-chart-axis-text" text-anchor="middle">' +
         GW.escapeHtml(fmtAxisLabel(visits[j])) + '</text>';
@@ -5665,8 +5678,34 @@
         '</svg>' +
         '<div class="v3-chart-tooltip" hidden role="tooltip" aria-live="polite"></div>' +
       '</div>' +
-      '<details class="v3-content-advanced"><summary>추세 데이터 표 보기</summary><p class="v3-inline-meta">각 날짜·시간의 고유 방문입니다. 같은 사용자가 다른 구간에 방문할 수 있어 기간 고유 방문과 합계가 다를 수 있습니다.</p><div class="v3-geo-table-wrap"><table class="v3-geo-table"><thead><tr><th>' + (isHour ? '시간' : '날짜') + '</th><th>구간 고유 방문</th><th>조회</th></tr></thead><tbody>' + tableRows + '</tbody></table></div></details>' +
+      '<section class="v3-content-advanced v3-trend-data"><h3 class="v3-ti-subtitle">추세 데이터</h3><p class="v3-inline-meta">각 날짜·시간의 고유 방문입니다. 같은 사용자가 다른 구간에 방문할 수 있어 기간 고유 방문과 합계가 다를 수 있습니다.</p><div class="v3-geo-table-wrap"><table class="v3-geo-table"><thead><tr><th>' + (isHour ? '시간' : '날짜') + '</th><th>구간 고유 방문</th><th>조회</th></tr></thead><tbody>' + tableRows + '</tbody></table></div></section>' +
     '</div>';
+  }
+
+  function _fitAnalyticsTrendChart(card, visits, views, granularity, label) {
+    if (!card || !window.ResizeObserver) return;
+    var lastWidth = 0;
+    var observer = new ResizeObserver(function (entries) {
+      if (!card.isConnected) { observer.disconnect(); return; }
+      var width = Math.round(entries[0].contentRect.width);
+      if (width < 1 || width === lastWidth) return;
+      lastWidth = width;
+      var holder = document.createElement('div');
+      holder.innerHTML = _renderAnalyticsTrendChart(visits, views, granularity, label, width);
+      var plot = holder.querySelector('.v3-chart-wrap');
+      var current = card.querySelector('.v3-chart-wrap');
+      if (!plot || !current) return;
+      var active = current.contains(document.activeElement) ? document.activeElement.getAttribute('data-idx') : null;
+      current.replaceWith(plot);
+      card._chartHoverWired = false;
+      _wireAnalyticsChartHover(card);
+      if (active !== null) {
+        var point = plot.querySelector('.v3-chart-hover-zone[data-idx="' + active + '"]');
+        if (point) point.focus({ preventScroll: true });
+      }
+    });
+    observer.observe(card);
+    card._chartResizeObserver = observer;
   }
 
   // 차트 호버 시 HTML 툴팁 + 세로 가이드 라인 표시
@@ -5773,25 +5812,28 @@
       var html = '';
       var trendGranularity = (data.range && data.range.granularity) || 'day';
       var trendPeriodLabel = _periodLabel(data.range);
-      html += _renderAnalyticsTrendChart(visitors.series || [], views.series || [], trendGranularity, trendPeriodLabel);
+      html += '<div class="v3-visit-layout">' + _renderAnalyticsTrendChart(visitors.series || [], views.series || [], trendGranularity, trendPeriodLabel);
 
       if (topPosts.length) {
         var maxV = Math.max.apply(null, topPosts.map(function (p) { return p.views || 0; }));
-        html += '<div class="v3-card v3-mt-16"><div class="v3-card-head"><h2 class="v3-card-title">인기 기사 (조회수)</h2></div><div class="v3-bar-list">';
-        topPosts.slice(0, 10).forEach(function (p) {
+        html += '<div class="v3-card v3-visit-posts"><div class="v3-card-head"><div><h2 class="v3-card-title">인기 기사 (조회수)</h2><p class="v3-card-desc">선택 기간에 많이 읽힌 기사 상위 10개</p></div></div><div class="v3-visit-post-list">';
+        topPosts.slice(0, 10).forEach(function (p, index) {
           var pct = maxV > 0 ? Math.round((p.views || 0) / maxV * 100) : 0;
-          html += '<div class="v3-bar-row">' +
-            '<div class="v3-bar-label" title="' + GW.escapeHtml(p.title || p.path || '제목 없음') + '">' + GW.escapeHtml(p.title || p.path || '제목 없음') + '</div>' +
-            '<div class="v3-bar-track"><div class="v3-bar-fill" style="width:' + pct + '%"></div></div>' +
-            '<div class="v3-bar-val">' + _fmt(p.views || p.pageviews || 0) + '</div>' +
+          html += '<div class="v3-visit-post">' +
+            '<span class="v3-visit-rank">' + (index + 1) + '</span>' +
+            '<div class="v3-visit-post-content"><div class="v3-visit-post-title">' + GW.escapeHtml(p.title || p.path || '제목 없음') + '</div>' +
+            '<div class="v3-bar-track"><div class="v3-bar-fill" style="width:' + pct + '%"></div></div></div>' +
+            '<div class="v3-bar-val">' + _fmt(p.views || p.pageviews || 0) + '<span class="v3-visit-unit">조회</span></div>' +
           '</div>';
         });
         html += '</div></div>';
+      } else {
+        html += '<div class="v3-card v3-visit-posts"><h2 class="v3-card-title">인기 기사 (조회수)</h2><p class="v3-empty-text">선택 기간에 조회된 기사가 없습니다.</p></div>';
       }
 
       if (sources.length) {
         var maxS = Math.max.apply(null, sources.map(function (s) { return s.visits || 0; }));
-        html += '<div class="v3-card v3-mt-16"><div class="v3-card-head"><h2 class="v3-card-title">유입 경로</h2></div><div class="v3-bar-list">';
+        html += '<div class="v3-card v3-visit-sources"><div class="v3-card-head"><div><h2 class="v3-card-title">유입 경로</h2><p class="v3-card-desc">방문자가 들어온 경로별 방문 비교</p></div></div><div class="v3-bar-list">';
         sources.slice(0, 10).forEach(function (s) {
           var pct = maxS > 0 ? Math.round((s.visits || 0) / maxS * 100) : 0;
           html += '<div class="v3-bar-row">' +
@@ -5801,24 +5843,29 @@
           '</div>';
         });
         html += '</div></div>';
+      } else {
+        html += '<div class="v3-card v3-visit-sources"><h2 class="v3-card-title">유입 경로</h2><p class="v3-empty-text">선택 기간에 기록된 유입이 없습니다.</p></div>';
       }
+      html += '</div>';
 
       if (trackingNote) {
         noteHtml =
           '<div class="v3-analytics-note">' +
-            '<strong>유입 해석 안내</strong><br>' +
+            '<strong>집계 기준</strong> ' +
             GW.escapeHtml(trackingNote) +
           '</div>';
       }
 
-      var tableWasOpen = !!bodyEl.querySelector('.v3-content-advanced[open]');
-      bodyEl.innerHTML = (noteHtml + html) || '<div class="v3-card"><div class="v3-empty"><div class="v3-empty-text">분석 데이터가 없습니다</div></div></div>';
-      var tableDetails = bodyEl.querySelector('.v3-content-advanced');
-      if (tableWasOpen && tableDetails) tableDetails.open = true;
+      var previousTrend = bodyEl.querySelector('.v3-analytics-trend-card');
+      if (previousTrend && previousTrend._chartResizeObserver) previousTrend._chartResizeObserver.disconnect();
+      bodyEl.innerHTML = html + noteHtml;
+      var trendData = bodyEl.querySelector('.v3-trend-data');
+      if (trendData) { trendData.classList.add('v3-card'); bodyEl.appendChild(trendData); }
       var trendCard = bodyEl.querySelector('.v3-analytics-trend-card');
       if (trendCard) {
         _wireAnalyticsChartHover(trendCard);
         _wireChartPrefsControl(trendCard);
+        _fitAnalyticsTrendChart(trendCard, visitors.series || [], views.series || [], trendGranularity, trendPeriodLabel);
       }
       _analyticsLastUpdatedAt = Date.now();
       _finishAnalysisRead(read, data);
@@ -6088,11 +6135,26 @@
 
   function _renderTagInsightsSections(data) {
     if (!data) return '';
-    // 승인 KMS: 업무 요약/검토 후보를 먼저, 관계도는 보조 상세.
+    var s = data.statistics || {};
+    var ranking = (data.meta_ranking || []).slice(0, 10);
+    var max = Math.max(1, Number(ranking[0] && ranking[0].count || 0));
+    var bars = ranking.map(function (item) {
+      return '<div class="v3-ti-usage-row"><div><span>' + GW.escapeHtml(item.tag) + '</span><strong>' + _fmt(item.count || 0) + '</strong></div>' +
+        '<div class="v3-bar-track"><div class="v3-bar-fill" style="width:' + Math.min(100, Number(item.count || 0) / max * 100) + '%"></div></div></div>';
+    }).join('');
+    var summary = '<div class="v3-stats-grid v3-ti-summary">' +
+      _statCard('분석 기사', _fmt(s.total_posts || 0), '선택 기간의 공개 기사') +
+      _statCard('글머리 태그 종류', _fmt(s.unique_header_tags || 0), '기사의 주제 분류') +
+      _statCard('메타 태그 종류', _fmt(s.unique_meta_tags || 0), '검색·연결용 세부 주제') +
+      _statCard('평균 메타 태그/기사', (s.avg_meta_per_post || 0).toFixed(2), '메타 있는 기사 기준') + '</div>';
     return [
+      summary,
+      '<div class="v3-ti-visual-overview">' + _renderTiGraph(data) +
+        '<section class="v3-card v3-ti-usage"><div class="v3-card-head"><div><h2 class="v3-card-title">많이 사용한 메타 태그</h2><p class="v3-card-desc">선택 기간의 공개 기사 수 · 상위 10개</p></div></div>' +
+        (bars || '<p class="v3-empty-text">선택 기간의 메타 태그가 없습니다.</p>') +
+        '<button class="v3-btn v3-btn-ghost v3-mt-16" type="button" onclick="V3._tiMore(\'meta\')">전체 순위 보기</button></section></div>',
       _renderTiStatistics(data),
       _renderTiHealth(data),
-      _renderTiGraph(data),
       _renderTiCoverage(data),
       _renderTiSuggestions(data),
     ].join('');
@@ -6118,12 +6180,6 @@
     }).join('');
     return '<section class="v3-card v3-ti-section-gap">' +
       '<div class="v3-card-head"><h2 class="v3-card-title">기초 통계</h2></div>' +
-      '<div class="v3-stats-grid">' +
-        '<div class="v3-stat"><div class="v3-stat-label">분석 기사</div><div class="v3-stat-value">' + _fmt(s.total_posts || 0) + '</div><div class="v3-stat-sub">선택 기간의 공개 기사</div></div>' +
-        '<div class="v3-stat"><div class="v3-stat-label">글머리 태그 종류</div><div class="v3-stat-value">' + _fmt(s.unique_header_tags || 0) + '</div><div class="v3-stat-sub">기사의 주제 분류</div></div>' +
-        '<div class="v3-stat"><div class="v3-stat-label">메타 태그 종류</div><div class="v3-stat-value">' + _fmt(s.unique_meta_tags || 0) + '</div><div class="v3-stat-sub">검색·연결용 세부 주제</div></div>' +
-        '<div class="v3-stat"><div class="v3-stat-label">평균 메타 태그/기사</div><div class="v3-stat-value">' + (s.avg_meta_per_post || 0).toFixed(2) + '</div><div class="v3-stat-sub">메타 있는 기사 기준</div></div>' +
-      '</div>' +
       '<div class="v3-ti-grid v3-mt-16">' +
         '<div><h3 class="v3-ti-subtitle">글머리 태그 상위 10</h3>' +
           '<table class="v3-geo-table"><thead><tr><th>태그</th><th>기사</th><th>%</th></tr></thead><tbody>' + headerTop + '</tbody></table>' +
@@ -6172,7 +6228,7 @@
           '<span>마우스 휠 · 핀치: 확대/축소</span>' +
           '<span>빈 공간 드래그: 화면 이동</span>' +
           '<span>노드 드래그: 재배치 · 클릭: 기사 목록</span>' +
-          '<span>굵은 선 = 강한 연결 · 점선 = 약한 연결</span>' +
+          '<span>진한 선 = 잦은 공출현 · 가는 점선 = 드문 공출현</span>' +
           '<button class="v3-btn v3-btn-ghost v3-btn-xs" type="button" id="v3-ti-graph-reset">원위치</button>' +
         '</div>' +
       '</div>' +
@@ -6383,17 +6439,12 @@
     var colorMap = {};
     headerList.forEach(function (h, i) { colorMap[h] = PALETTE[i % PALETTE.length]; });
 
-    // 선 색상: 연결 강도(count/maxLinkCount) 기반 흑백 연속 그라데이션.
-    // 약한 연결 = 밝은 회색(--gray-300 #c4c4c4), 강한 연결 = --ink(#1f1f1f) 검정 근사.
-    // 비선형(power 0.55)으로 중간 연결이 회색에 치우치지 않게 대비 강조.
+    // Keep links subordinate to labels; gray148 retains 3:1 contrast on white.
     function linkStroke(count) {
+      if (count <= weakCutoff) return 'rgb(148,148,148)';
       var r = Math.max(0, Math.min(1, count / maxLinkCount));
-      var v = Math.round(196 - (196 - 31) * Math.pow(r, 0.55));
+      var v = Math.round(148 - 33 * Math.pow(r, 0.8));
       return 'rgb(' + v + ',' + v + ',' + v + ')';
-    }
-    function linkOpacity(count) {
-      var r = Math.max(0, Math.min(1, count / maxLinkCount));
-      return (0.35 + Math.pow(r, 0.55) * 0.45).toFixed(2); // 0.35 ~ 0.80
     }
 
     // ── SVG 마크업 ──
@@ -6410,10 +6461,7 @@
     nodesG.setAttribute('class', 'v3-ti-graph-nodes');
     world.appendChild(nodesG);
 
-    // 링크 tier — count 기준 3단계 + 약한 연결(가장 낮은 tier)은 점선 표시.
-    //   strong: 최상위 30% → 굵고 선명
-    //   medium: 중간 ~ 최하위 15% 위까지 → 기본 선 굵기
-    //   weak:   최하위 15% (또는 count=1) → 얇은 점선
+    // Frequency tiers stay distinct within a restrained stroke range.
     var sortedCounts = links.map(function (l) { return l.count; }).sort(function (a, b) { return a - b; });
     function percentile(arr, p) { if (!arr.length) return 0; var idx = Math.floor(arr.length * p); return arr[Math.min(arr.length - 1, idx)]; }
     var weakCutoff = Math.max(1, percentile(sortedCounts, 0.15));
@@ -6423,10 +6471,10 @@
       if (count >= strongCutoff) return 'strong';
       return 'medium';
     }
-    // 굵기 곡선: 약한 건 더 얇게, 강한 건 훨씬 굵게 (비선형 강조).
     function linkWidth(count) {
+      if (count <= weakCutoff) return '0.6';
       var r = count / maxLinkCount;
-      return (0.6 + Math.pow(r, 0.55) * 5).toFixed(2); // 0.6 ~ 5.6
+      return (0.6 + Math.pow(r, 0.8) * 0.9).toFixed(2);
     }
 
     var linkEls = links.map(function (l) {
@@ -6437,12 +6485,13 @@
       line.setAttribute('x2', l.target.x.toFixed(1));
       line.setAttribute('y2', l.target.y.toFixed(1));
       line.setAttribute('stroke-width', linkWidth(l.count));
+      line.setAttribute('vector-effect', 'non-scaling-stroke');
       // inline style로 stroke/opacity 세팅 — CSS class(hover focus 등)가 !important로 덮어쓸 수 있도록.
       line.style.stroke = linkStroke(l.count);
-      line.style.strokeOpacity = linkOpacity(l.count);
+      line.style.strokeOpacity = '1';
       line.setAttribute('class', 'v3-ti-graph-link');
       if (tier === 'weak') {
-        line.setAttribute('stroke-dasharray', '4 3');  // 가장 약한 연결만 점선.
+        line.setAttribute('stroke-dasharray', '2 5');
       }
       linksG.appendChild(line);
       return { line: line, source: l.source, target: l.target, tier: tier };
@@ -7140,7 +7189,6 @@
     }
     parts.push(_analyticsAutoRefresh ? '30초 자동 새로고침 켜짐' : '자동 새로고침 꺼짐');
     if (_analysisRequests.visits && _analysisRequests.visits.data) parts.push('표시 범위 ' + _periodLabel(_analysisRequests.visits.data.range));
-    parts.push('카카오·페이스북은 UTM/리퍼러 기준으로 최대한 분리되지만, 앱이 정보를 넘기지 않으면 직접 방문으로 잡힐 수 있습니다.');
     el.textContent = parts.join(' · ');
   }
 
@@ -7633,6 +7681,8 @@
     var read = _beginAnalysisRead('geo', qs);
     if (!read) return;
     cityEl.setAttribute('aria-busy', 'true');
+    var mapEl = _el('geo-audience-map');
+    if (mapEl) mapEl.setAttribute('aria-busy', 'true');
     _analysisStatus('geo', 'geo-audience-status', _periodLabel(selected) + ' 조회 중…');
     if (!_analysisRequests.geo.data) {
       statsEl.innerHTML = '<div class="v3-loading" style="grid-column:1/-1;"><div class="v3-spinner"></div>로딩 중…</div>';
@@ -7671,9 +7721,13 @@
         noteEl.textContent += ' · ' + warmupNote;
       }
       _geoAudienceCountriesCache = countries;
+      if (mapEl) delete mapEl.dataset.focusCountry;
+      _el('geo-audience-map-selection').textContent = '국가 행과 도시 이름으로도 지도 위치를 찾을 수 있습니다.';
       cityEl.innerHTML = _renderGeoCityTable(cities);
       _syncGeoCityToggleLabel();
-      noteEl.innerHTML = GW.escapeHtml(noteEl.textContent) + '<div class="v3-geo-map-hint">국가 미확인 조회 ' + _fmt(summary.unknown_country_pageviews || 0) + '회 · 좌표 없는 조회 ' + _fmt(summary.missing_coordinate_pageviews || 0) + '회(지도 제외). 국가별 원은 방문 좌표 평균으로, 국가의 중심이나 경계를 뜻하지 않습니다.</div>' + _renderGeoRegionLegend();
+      noteEl.innerHTML = GW.escapeHtml(noteEl.textContent) + '<div class="v3-geo-map-hint">국가 미확인 조회 ' + _fmt(summary.unknown_country_pageviews || 0) + '회 · 국가별 원은 방문 좌표 평균으로, 국가의 중심이나 경계를 뜻하지 않습니다.</div>';
+      _el('geo-audience-map-legend').innerHTML = _renderGeoRegionLegend();
+      _el('geo-audience-map-summary').textContent = '좌표가 있는 ' + _fmt(countries.filter(_hasGeoCoordinates).length) + '개 국가 · ' + _fmt(cities.filter(function (item) { return item.city_name && item.city_name !== '도시 미확인' && _hasGeoCoordinates(item); }).length) + '개 도시를 표시합니다. 좌표 없는 조회 ' + _fmt(summary.missing_coordinate_pageviews || 0) + '회는 목록 집계에 포함됩니다.';
       _renderGeoAudienceMap(countries, cities);
       _finishAnalysisRead(read, data);
       _analysisStatus('geo', 'geo-audience-status', '전체 국가·도시 집계' + (results[1].status === 'rejected' ? ' · 지역연맹 분류 조회 실패, ' + (_geoAudienceWosmCache ? '마지막 성공 분류를 표시합니다. ' : '') + '방문 집계는 정상입니다' : ''));
@@ -7684,11 +7738,12 @@
         statsEl.innerHTML = '<div class="v3-empty" style="grid-column:1/-1;"><div class="v3-empty-text">국가·도시 집계를 불러오지 못했습니다.</div></div>';
         cityEl.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">새로고침으로 다시 시도해주세요.</div></div>';
         noteEl.textContent = '지리 집계를 불러오지 못했습니다.';
+        _el('geo-audience-map-summary').textContent = '방문 집계를 불러오지 못했습니다. 새로고침으로 다시 시도해주세요.';
         _renderGeoAudienceMap([], []);
       }
       _analysisStatus('geo', 'geo-audience-status', _periodLabel(selected) + ' 갱신 실패 · ' + (e.message || '조회 오류') + ' · 표시 범위 확인 후 새로고침으로 재시도', true);
     }).finally(function () {
-      if (_finishAnalysisRead(read)) cityEl.setAttribute('aria-busy', 'false');
+      if (_finishAnalysisRead(read)) { cityEl.setAttribute('aria-busy', 'false'); if (mapEl) mapEl.setAttribute('aria-busy', 'false'); }
     });
   }
 
@@ -7867,7 +7922,7 @@
           var cityOriginal = String(item.city_name_original || '').trim();
           var showOriginal = cityOriginal && cityOriginal !== cityName && cityOriginal !== '도시 미확인';
           return '<tr>' +
-            '<td><div class="v3-geo-country-cell"><strong>' + _highlightMatch(cityName, query) + '</strong>' + (showOriginal ? '<span class="v3-geo-sub">' + GW.escapeHtml(cityOriginal) + '</span>' : '') + '</div></td>' +
+            '<td><div class="v3-geo-country-cell">' + (_hasGeoCoordinates(item) ? '<button type="button" class="v3-geo-city-map-btn" data-geo-country="' + GW.escapeHtml(String(item.country_code || '')) + '" data-geo-map-city="' + GW.escapeHtml(String(item.city_name_original || item.city_name || '')) + '" aria-label="' + GW.escapeHtml(cityName + ' 지도에서 보기') + '">' + _highlightMatch(cityName, query) + '</button>' : '<strong>' + _highlightMatch(cityName, query) + '</strong><span class="v3-geo-sub">좌표 없음</span>') + (showOriginal ? '<span class="v3-geo-sub">' + GW.escapeHtml(cityOriginal) + '</span>' : '') + '</div></td>' +
             '<td>' + _fmt(item.visits || 0) + '</td>' +
             '<td>' + _fmt(item.pageviews || 0) + '</td>' +
             '<td>' + GW.escapeHtml(_formatDateTimeCompact(item.last_visit_at)) + '</td>' +
@@ -7876,7 +7931,9 @@
       '</tbody></table>' +
     '</div>';
 
-    return '<div class="v3-geo-country-group" role="listitem" data-geo-country-key="' + safeKey + '">' + header + body + '</div>';
+    var mapEl = _el('geo-audience-map');
+    var isMapFocused = mapEl && mapEl.dataset.focusCountry === key;
+    return '<div class="v3-geo-country-group' + (isMapFocused ? ' is-map-focused' : '') + '" role="listitem" data-geo-country-key="' + safeKey + '">' + header + body + '</div>';
   }
 
   function _highlightMatch(text, query) {
@@ -7941,6 +7998,25 @@
     return Number.isFinite(latitude) && Number.isFinite(longitude) && latitude >= -90 && latitude <= 90 && longitude >= -180 && longitude <= 180;
   }
 
+  function _focusGeoAudienceLocation(item, zoom) {
+    var mapEl = _el('geo-audience-map');
+    if (!_geoAudienceMap || !_hasGeoCoordinates(item) || !mapEl) return;
+    var key = item.country_code || item.country_name || '__unknown__';
+    mapEl.dataset.focusCountry = key;
+    _el('geo-audience-map-selection').textContent = (item.city_name || item.country_name || key) + ' · 고유 방문 ' + _fmt(item.visits || 0) + ' · 페이지뷰 ' + _fmt(item.pageviews || 0);
+    document.querySelectorAll('#geo-audience-city-list [data-geo-country-key]').forEach(function (group) { group.classList.toggle('is-map-focused', group.dataset.geoCountryKey === key); });
+    _geoAudienceMap.invalidateSize({ pan: false });
+    _geoAudienceMap.flyTo([Number(item.latitude), Number(item.longitude)], zoom, { duration: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 0.45 });
+  }
+
+  function _openGeoAudienceCountryOnMap(item, zoom) {
+    var key = item.country_code || item.country_name || '__unknown__';
+    _geoAudienceExpandedCountries[key] = true;
+    _geoAudienceSearchCollapsed[key] = false;
+    _focusGeoAudienceLocation(item, zoom);
+    _rerenderGeoCityList();
+  }
+
   function _renderGeoAudienceMap(countryItems, cityItems) {
     var mapEl = document.getElementById('geo-audience-map');
     if (!mapEl) return;
@@ -7962,6 +8038,10 @@
         attribution: '&copy; OpenStreetMap'
       }).addTo(_geoAudienceMap);
       _geoAudienceMap.on('zoomend', _syncGeoAudienceMapZoom);
+      if (typeof ResizeObserver === 'function') {
+        mapEl._geoMapResizeObserver = new ResizeObserver(function () { if (mapEl.clientWidth) _geoAudienceMap.invalidateSize({ pan: false }); });
+        mapEl._geoMapResizeObserver.observe(mapEl);
+      }
 
       // 커스텀 휠 줌 (RAF 스로틀 — Windows 3이벤트/틱 대응)
       var _gWheelRaf = 0, _gWheelDir = 0;
@@ -8021,7 +8101,7 @@
         fillColor: tone.fill,
         fillOpacity: tone.opacity,
       }).on('click', function () {
-        _geoAudienceMap.flyTo([Number(item.latitude), Number(item.longitude)], 4, { duration: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 0.45 });
+        _openGeoAudienceCountryOnMap(item, 4);
       }).bindPopup(
         '<strong>' + GW.escapeHtml(item.country_name || item.country_code || 'Unknown') + '</strong><br>' +
         GW.escapeHtml(item.region_label || '지역연맹 미분류') + '<br>' +
@@ -8040,7 +8120,7 @@
         color: tone.cityStroke,
         fillColor: tone.cityFill,
         fillOpacity: tone.cityOpacity,
-      }).bindPopup(
+      }).on('click', function () { _openGeoAudienceCountryOnMap(item, 6); }).bindPopup(
         '<strong>' + GW.escapeHtml(item.city_name || item.city_name_original || '도시 미확인') + '</strong><br>' +
         GW.escapeHtml(item.country_name || item.country_code || 'Unknown') + '<br>' +
         GW.escapeHtml(item.region_label || '지역연맹 미분류') + '<br>' +
@@ -8344,6 +8424,7 @@
       _renderReleases(el, _releasesData, _releasesScope);
       return;
     }
+    _setRecordOverviewReady('releases-summary', false);
     el.innerHTML = '<div class="v3-loading"><div class="v3-spinner"></div>불러오는 중…</div>';
     var serial = ++_releaseLoadSerial;
     var refresh = _el('releases-refresh-btn');
@@ -8353,6 +8434,7 @@
       .then(function (data) {
         if (serial !== _releaseLoadSerial) return;
         _releasesData = (data && Array.isArray(data.items)) ? data.items : [];
+        _setRecordOverviewReady('releases-summary', true);
         _renderReleases(el, _releasesData, _releasesScope);
       })
       .catch(function () {
@@ -8447,6 +8529,11 @@
 
   function _renderReleases(el, items, scope) {
     var allFiltered = _filterReleases(items, scope, _releasesQuery, _releasesFrom, _releasesTo);
+    _renderRecordOverview('releases-summary', [
+      ['현재 조건의 기록', allFiltered.length],
+      ['Site 기록', allFiltered.filter(function (item) { return _inferReleaseScope(item) === 'site'; }).length],
+      ['Admin 기록', allFiltered.filter(function (item) { return _inferReleaseScope(item) === 'admin'; }).length]
+    ]);
     if (!allFiltered.length) {
       el.innerHTML = '<div class="v3-empty"><div class="v3-empty-icon">📋</div><div class="v3-empty-text">조건에 맞는 버전 기록이 없습니다</div></div>';
       _updateReleasesFilterMeta(0, items.length);
@@ -8518,10 +8605,10 @@
           '</div>' +
           '<span class="v3-release-date">' + GW.escapeHtml(releaseDateText) + '</span>' +
         '</div>' +
-        '<p class="v3-release-summary">' + GW.escapeHtml(item.summary || '') + '</p>' +
+        '<div class="v3-release-content"><p class="v3-release-summary">' + GW.escapeHtml(item.summary || '') + '</p>' +
         issueHtml +
         sectionsHtml +
-      '</div>';
+      '</div></div>';
     }).join('');
 
     // toolbar 노출 + 선택 상태 초기화 + 페이지네이션 갱신
@@ -9013,6 +9100,16 @@
     _bindAiUsageRangeButtonsOnce();
     var svg = document.getElementById('ai-usage-chart');
     if (!svg) return;
+    svg._aiUsageChartData = data;
+    if (window.ResizeObserver && !svg._aiUsageResizeObserver) {
+      svg._aiUsageResizeObserver = new ResizeObserver(function () {
+        var bounds = svg.getBoundingClientRect();
+        if (bounds.width > 0 && (Math.abs(svg.viewBox.baseVal.width - bounds.width) > 0.5 || Math.abs(svg.viewBox.baseVal.height - bounds.height) > 0.5)) {
+          _renderAiUsageChart(svg._aiUsageChartData);
+        }
+      });
+      svg._aiUsageResizeObserver.observe(svg);
+    }
 
     var periodDays = Number(data && data.chart_days) || (_aiUsageChartRange && _aiUsageChartRange.days) || 14;
     var rangeLabel = document.getElementById('ai-usage-trend-range-label');
@@ -9053,9 +9150,11 @@
       }
     }
 
-    // viewBox 800x220. 내부 여백 = 좌 36 / 우 12 / 상 20 / 하 38
-    var VW = 800, VH = 220;
-    var PL = 36, PR = 12, PT = 20, PB = 38;
+    // Match SVG coordinates to CSS pixels so narrow cards do not compress text.
+    var chartBounds = svg.getBoundingClientRect();
+    var VW = chartBounds.width || 800, VH = chartBounds.height || 240;
+    svg.setAttribute('viewBox', '0 0 ' + VW + ' ' + VH);
+    var PL = 40, PR = 20, PT = 20, PB = 38;
     var innerW = VW - PL - PR;
     var innerH = VH - PT - PB;
     var n = points.length;
@@ -9082,10 +9181,14 @@
       parts.push('<text class="chart-axis-y" x="' + (PL - 6) + '" y="' + (y + 3) + '" text-anchor="end">' + Math.round(v) + '</text>');
     });
 
-    // X축 레이블 — 기간이 길면 솎아내기
-    var labelEvery = n <= 14 ? 1 : n <= 30 ? 3 : n <= 60 ? 5 : 10;
+    // Space date labels by the available pixels; retain every data point.
+    var dateLabelCount = Math.min(n, Math.max(2, Math.floor(innerW / 56) + 1));
+    var dateLabelIndexes = {};
+    for (var labelIndex = 0; labelIndex < dateLabelCount; labelIndex += 1) {
+      dateLabelIndexes[Math.round(labelIndex * (n - 1) / Math.max(1, dateLabelCount - 1))] = true;
+    }
     for (var xi = 0; xi < n; xi += 1) {
-      if (xi !== n - 1 && xi !== 0 && (xi % labelEvery) !== 0) continue;
+      if (!dateLabelIndexes[xi]) continue;
       parts.push('<text class="chart-axis-x" x="' + xOf(xi) + '" y="' + (VH - PB + 14) + '" text-anchor="middle">' + points[xi].label + '</text>');
     }
 
@@ -9110,10 +9213,8 @@
         var cx = xOf(i3), cy = yOf(points[i3].calls);
         parts.push('<circle class="chart-point" cx="' + cx + '" cy="' + cy + '" r="3"><title>' + points[i3].date + ' · ' + points[i3].calls + '회</title></circle>');
         // 값 라벨 — 데이터 밀도에 따라 0은 숨기고, 긴 기간은 피크만 표시
-        var showLabel =
-          (n <= 14) ||
-          (n <= 30 && (points[i3].calls > 0 || i3 === 0 || i3 === n - 1)) ||
-          (n > 30 && points[i3].calls > 0 && (points[i3].calls === maxCalls || (i3 % Math.ceil(n / 8)) === 0));
+        var valueLabelEvery = Math.max(1, Math.ceil(n / Math.max(2, Math.floor(innerW / 32))));
+        var showLabel = (i3 % valueLabelEvery) === 0 && (n <= 14 || points[i3].calls > 0);
         if (!showLabel) continue;
         var zeroCls = points[i3].calls === 0 ? ' chart-label-zero' : '';
         var labelY = cy - 7;
@@ -9351,10 +9452,10 @@
         : '';
       return '' +
         '<details class="v3-ai-score-row" style="border-bottom:1px solid var(--v3-border,#eee);padding:12px 4px;">' +
-          '<summary style="display:flex;align-items:center;gap:10px;cursor:pointer;list-style:none;flex-wrap:wrap;">' +
+          '<summary class="v3-ai-score-summary" style="cursor:pointer;list-style:none;">' +
             '<span class="v3-ai-score-grade" style="min-width:44px;text-align:center;font-weight:700;color:' + gradeColor + ';border:1px solid ' + gradeColor + ';padding:3px 8px;">' + GW.escapeHtml(grade) + '</span>' +
             '<span class="v3-ai-score-score" style="min-width:72px;font-variant-numeric:tabular-nums;color:' + gradeColor + ';">' + score + ' / 100</span>' +
-            '<span class="v3-ai-score-title" style="flex:1 1 200px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + GW.escapeHtml(row.input_title || '(제목 없음)') + '</span>' +
+            '<span class="v3-ai-score-title" style="flex:1 1 200px;min-width:0;overflow-wrap:anywhere;">' + GW.escapeHtml(row.input_title || '(제목 없음)') + '</span>' +
             actorHtml +
             tokensHtml +
             '<span class="v3-ai-score-time" style="color:var(--v3-muted);font-size:12px;font-variant-numeric:tabular-nums;white-space:nowrap;">' + GW.escapeHtml(row.created_at_kst || '') + '</span>' +
@@ -9418,13 +9519,11 @@
       refreshBtn.addEventListener('click', function () { _loadAiUsage(refreshBtn); });
     }
 
-    // 평가 기준 카드 — 펼쳤을 때 최초 1회 로드, 이후엔 리로드 버튼으로만
+    // The visible rubric loads on entry; re-entry restores its saved baseline.
     var rubricCard = document.getElementById('rubric-card');
+    if (rubricCard && (!_rubricLastLoaded || _rubricSavedText === null)) _loadRubric();
     if (rubricCard && !rubricCard._rubricInited) {
       rubricCard._rubricInited = true;
-      rubricCard.addEventListener('toggle', function () {
-        if (rubricCard.open && !_rubricLastLoaded) _loadRubric();
-      });
       var ta = document.getElementById('rubric-textarea');
       if (ta) ta.addEventListener('input', _updateRubricMeta);
       var saveBtn   = document.getElementById('rubric-save-btn');
@@ -9701,6 +9800,7 @@
     var listEl = document.getElementById('homepage-issues-list');
     var metaEl = document.getElementById('homepage-issues-meta');
     if (!listEl) return;
+    _setRecordOverviewReady('homepage-issues-summary', false);
     if (actionBtn) _setButtonBusy(actionBtn, '불러오는 중…');
     listEl.innerHTML = '<div class="v3-loading"><div class="v3-spinner"></div>로딩 중…</div>';
     if (metaEl) metaEl.textContent = '불러오는 중…';
@@ -9709,6 +9809,7 @@
       .then(function (data) {
         if (serial !== _issueLoadSerial) return;
         _homepageIssues = Array.isArray(data && data.items) ? data.items : [];
+        _setRecordOverviewReady('homepage-issues-summary', true);
         _renderHomepageIssues();
       })
       .catch(function (e) {
@@ -9719,6 +9820,20 @@
       .finally(function () {
         if (actionBtn && actionBtn.classList.contains('is-busy')) _clearButtonBusy(actionBtn);
       });
+  }
+
+  function _setRecordOverviewReady(id, ready) {
+    var host = document.getElementById(id);
+    if (!host) return;
+    host.dataset.overviewReady = ready ? '1' : '0';
+    if (!ready) host.textContent = '';
+  }
+  function _renderRecordOverview(id, metrics) {
+    var host = document.getElementById(id);
+    if (!host || host.dataset.overviewReady === '0') return;
+    host.innerHTML = '<dl class="v3-overview-metrics">' + metrics.map(function (metric) {
+      return '<div><dt>' + GW.escapeHtml(metric[0]) + '</dt><dd>' + Number(metric[1] || 0).toLocaleString('ko-KR') + '<span>건</span></dd></div>';
+    }).join('') + '</dl>';
   }
 
   function _renderHomepageIssues() {
@@ -9740,6 +9855,11 @@
       ].join(' ').toLowerCase();
       return haystack.indexOf(_homepageIssuesSearch) >= 0;
     });
+    _renderRecordOverview('homepage-issues-summary', [
+      ['현재 조건의 기록', items.length],
+      ['열림 · 모니터링', items.filter(function (item) { return item.status === 'open' || item.status === 'monitoring'; }).length],
+      ['미해결 높은 심각도', items.filter(function (item) { return (item.status === 'open' || item.status === 'monitoring') && (item.severity === 'high' || item.severity === 'critical'); }).length]
+    ]);
     if (metaEl) {
       metaEl.textContent = items.length + '건 표시 · 최근 최대 200건 중 ' + (_homepageIssues || []).length + '건을 불러왔습니다.';
     }
@@ -9754,7 +9874,7 @@
           '<tbody>' +
             items.map(function (item) {
               return '<tr' + (_issueSaving[item.id] ? ' aria-busy="true"' : '') + '>' +
-                '<td>' +
+                '<td data-label="이슈">' +
                   '<div class="v3-table-title">' + GW.escapeHtml(item.title || '(제목 없음)') + '</div>' +
                   '<div class="v3-issues-meta-line">' +
                     '<span class="v3-badge ' + _homepageIssueTypeBadge(item.issue_type) + '">' + GW.escapeHtml(_homepageIssueTypeLabel(item.issue_type)) + '</span>' +
@@ -9764,11 +9884,11 @@
                   '</div>' +
                   (item.summary ? '<div class="v3-issues-note">' + GW.escapeHtml(item.summary) + '</div>' : '') +
                 '</td>' +
-                '<td><span class="v3-badge ' + _homepageIssueStatusBadge(item.status) + '">' + GW.escapeHtml(_homepageIssueStatusLabel(item.status)) + '</span></td>' +
-                '<td><span class="v3-badge ' + _homepageIssueSeverityBadge(item.severity) + '">' + GW.escapeHtml(_homepageIssueSeverityLabel(item.severity)) + '</span></td>' +
-                '<td>' + GW.escapeHtml(_homepageIssueAreaLabel(item.area)) + '</td>' +
-                '<td class="v3-text-m">' + GW.escapeHtml(_shortDate(item.updated_at || item.created_at)) + '</td>' +
-                '<td>' + _homepageIssueStatusAction(item) + '</td>' +
+                '<td data-label="상태"><span class="v3-badge ' + _homepageIssueStatusBadge(item.status) + '">' + GW.escapeHtml(_homepageIssueStatusLabel(item.status)) + '</span></td>' +
+                '<td data-label="심각도"><span class="v3-badge ' + _homepageIssueSeverityBadge(item.severity) + '">' + GW.escapeHtml(_homepageIssueSeverityLabel(item.severity)) + '</span></td>' +
+                '<td data-label="영역">' + GW.escapeHtml(_homepageIssueAreaLabel(item.area)) + '</td>' +
+                '<td data-label="업데이트" class="v3-text-m">' + GW.escapeHtml(_shortDate(item.updated_at || item.created_at)) + '</td>' +
+                '<td data-label="관리">' + _homepageIssueStatusAction(item) + '</td>' +
               '</tr>';
             }).join('') +
           '</tbody>' +
@@ -9831,6 +9951,7 @@
     var listEl = document.getElementById('site-history-list');
     var metaEl = document.getElementById('site-history-meta');
     if (!listEl) return;
+    _setRecordOverviewReady('site-history-summary', false);
     if (actionBtn) _setButtonBusy(actionBtn, '불러오는 중…');
     listEl.innerHTML = '<div class="v3-loading"><div class="v3-spinner"></div>로딩 중…</div>';
     if (metaEl) metaEl.textContent = '불러오는 중…';
@@ -9839,6 +9960,7 @@
       .then(function (data) {
         if (serial !== _historyLoadSerial) return;
         _siteHistoryItems = Array.isArray(data && data.items) ? data.items : [];
+        _setRecordOverviewReady('site-history-summary', true);
         var missing = Object.keys((data && data.sources) || {}).filter(function (key) { return !data.sources[key]; });
         var labels = { operational: '운영 기록', issues: '이슈', settings: '설정 이력', posts: '기사 이력' };
         _historyCoverage = missing.length ? ' · 일부 원천 조회 실패: ' + missing.map(function (key) { return labels[key] || key; }).join(', ') + '. 새로고침으로 다시 확인해주세요.' : '';
@@ -9864,6 +9986,11 @@
       if (!_siteHistorySearch) return true;
       return String(item.search_text || '').indexOf(_siteHistorySearch) >= 0;
     });
+    _renderRecordOverview('site-history-summary', [
+      ['현재 조건의 이벤트', items.length],
+      ['오류 · 이슈', items.filter(function (item) { return item.group === 'error' || item.group === 'issue'; }).length],
+      ['설정 · 콘텐츠 변경', items.filter(function (item) { return item.group === 'settings' || item.group === 'content'; }).length]
+    ]);
     if (metaEl) {
       metaEl.textContent = items.length + '건 표시 · 최근 최대 350건 중 ' + (_siteHistoryItems || []).length + '건을 불러왔습니다.' + _historyCoverage;
     }
@@ -9884,8 +10011,8 @@
             '<tbody>' +
               section.items.map(function (item) {
                 return '<tr>' +
-                  '<td class="v3-text-m">' + GW.escapeHtml(_shortDate(item.occurred_at)) + '</td>' +
-                  '<td>' +
+                  '<td data-label="발생일시" class="v3-text-m">' + GW.escapeHtml(_shortDate(item.occurred_at)) + '</td>' +
+                  '<td data-label="문제">' +
                     '<div class="v3-table-title">' + GW.escapeHtml(item.title || item.problem || '(제목 없음)') + '</div>' +
                     '<div class="v3-issues-meta-line">' +
                       '<span class="v3-badge ' + _siteHistoryGroupBadge(item.group) + '">' + GW.escapeHtml(_siteHistoryGroupLabel(item.group)) + '</span>' +
@@ -9896,8 +10023,8 @@
                     (item.problem ? '<div class="v3-issues-note">' + GW.escapeHtml(item.problem) + '</div>' : '') +
                     (item.detail ? '<div class="v3-search-result-meta">' + GW.escapeHtml(item.detail) + '</div>' : '') +
                   '</td>' +
-                  '<td><div class="v3-issues-note">' + GW.escapeHtml(item.suspected_cause || '원인 추정 정보가 없습니다.') + '</div></td>' +
-                  '<td class="v3-text-m">' + GW.escapeHtml(_siteHistorySourceLabel(item.source)) + '</td>' +
+                  '<td data-label="원인 추정"><div class="v3-issues-note">' + GW.escapeHtml(item.suspected_cause || '원인 추정 정보가 없습니다.') + '</div></td>' +
+                  '<td data-label="분류" class="v3-text-m">' + GW.escapeHtml(_siteHistorySourceLabel(item.source)) + '</td>' +
                 '</tr>';
               }).join('') +
             '</tbody>' +
@@ -10120,22 +10247,24 @@
           _statCard('탐색 페이지 도달', _fmt(summary.interest_users || 0), '분류·자료 등') +
           _statCard('기사 읽기 도달', _fmt(summary.consideration_users || 0), '기사 상세 페이지') +
         '</div>' +
-        '<p class="v3-inline-meta">' + GW.escapeHtml(_periodLabel(data.range)) + ' KST · 단계별 도달은 중복될 수 있습니다. 흐름은 기간 내 첫 유입과 최고 도달 단계의 대표 페이지를 재구성하며, 세션 전환율이 아닙니다.</p>' +
-        '<div class="marketing-grid">' +
-          '<section class="v3-card marketing-panel marketing-panel-wide">' +
+        '<p class="v3-inline-meta marketing-definition">' + GW.escapeHtml(_periodLabel(data.range)) + ' KST · 단계별 도달은 중복될 수 있습니다. 흐름은 기간 내 첫 유입과 최고 도달 단계의 대표 페이지를 재구성하며, 세션 전환율이 아닙니다.</p>' +
+        '<div class="marketing-visual-grid">' +
+          '<section class="v3-card marketing-panel marketing-visual-card">' +
             '<div class="v3-card-head">' +
-              '<div><h2 class="v3-card-title">고객 여정 흐름</h2><div class="marketing-panel-meta" id="marketing-flow-meta">유입 채널 → 단계 → 대표 도착 페이지</div></div>' +
+              '<div><h2 class="v3-card-title">고객 여정 흐름</h2><div class="marketing-panel-meta" id="marketing-flow-meta">첫 유입 → 최고 도달 단계 → 대표 페이지. 세션 전환율이 아닙니다.</div></div>' +
               '<div class="marketing-panel-actions"><button type="button" class="marketing-expand-btn" onclick="V3.openMarketingFullscreen(\'flow\')">전체화면 보기</button></div>' +
             '</div>' +
             '<div id="marketing-flow" class="marketing-flow-wrap"></div>' +
           '</section>' +
-          '<section class="v3-card marketing-panel marketing-panel-wide">' +
+          '<section class="v3-card marketing-panel marketing-visual-card">' +
             '<div class="v3-card-head">' +
               '<div><h2 class="v3-card-title">페이지 기회 맵</h2><div class="marketing-panel-meta">고유 사용자 · 재읽기 강도 · 공유 비중을 크게 확인합니다.</div></div>' +
               '<div class="marketing-panel-actions"><button type="button" class="marketing-expand-btn" onclick="V3.openMarketingFullscreen(\'scatter\')">전체화면 보기</button></div>' +
             '</div>' +
             '<div id="marketing-scatter" class="marketing-scatter-wrap"></div>' +
           '</section>' +
+        '</div>' +
+        '<div class="marketing-grid">' +
           '<section class="v3-card marketing-panel">' +
             '<div class="v3-card-head"><h2 class="v3-card-title">단계별 도달 사용자</h2></div>' +
             '<div id="marketing-funnel" class="marketing-funnel-list"></div>' +
@@ -10154,7 +10283,7 @@
           '</section>' +
         '</div>' +
         '</div>';
-      var chartsWereOpen = !!el.querySelector('.marketing-chart-details[open]');
+      el.querySelectorAll('#marketing-flow, #marketing-scatter').forEach(function (chart) { if (chart._marketingResizeObserver) chart._marketingResizeObserver.disconnect(); });
       el.innerHTML = html;
       _renderMarketingFunnel(funnel);
       _renderMarketingUtm(utms);
@@ -10162,19 +10291,6 @@
       _renderMarketingNotes(data.notes || []);
       _renderMarketingFlow(data.journey_flow || null);
       _renderMarketingScatter(data.page_opportunities || []);
-      var grid = el.querySelector('.marketing-grid');
-      var advanced = document.createElement('details');
-      advanced.className = 'v3-content-advanced marketing-chart-details';
-      advanced.innerHTML = '<summary>흐름도·페이지 기회 맵 자세히 보기</summary>';
-      ['marketing-flow', 'marketing-scatter'].forEach(function (id) {
-        var card = _el(id).closest('.v3-card');
-        advanced.appendChild(card);
-      });
-      grid.appendChild(advanced);
-      advanced.open = chartsWereOpen;
-      advanced.addEventListener('toggle', function () {
-        if (advanced.open) advanced.querySelectorAll('.marketing-flow-shell').forEach(function (shell) { if (shell._marketingFit) shell._marketingFit(); });
-      });
       _renderMarketingOpportunityTable(data.page_opportunities || []);
       var hasFlow = !!(data.journey_flow && Array.isArray(data.journey_flow.links) && data.journey_flow.links.length);
       var hasScatter = !!(data.page_opportunities && data.page_opportunities.length);
@@ -10205,7 +10321,7 @@
       var path = /^\/[^/]/.test(item.path || '') || item.path === '/' ? item.path : '';
       return '<tr><td>' + (path ? '<a href="' + GW.escapeHtml(path) + '" target="_blank" rel="noopener noreferrer">' + GW.escapeHtml(item.title || path) + '</a>' : GW.escapeHtml(item.title || '페이지 미확인')) + '</td><td>' + _fmt(item.unique_users || 0) + '</td><td>' + _fmt(item.pageviews || 0) + '</td><td>' + Number(item.views_per_user || 0).toFixed(2) + '</td><td>' + Math.round(Number(item.share_ratio || 0) * 100) + '%</td></tr>';
     }).join('') : '<tr><td colspan="5">선택 기간의 페이지 방문이 없습니다.</td></tr>') + '</tbody></table></div>';
-    grid.insertBefore(section, grid.querySelector('.marketing-chart-details'));
+    grid.appendChild(section);
   }
 
   function _renderMarketingFunnel(items) {
@@ -10270,9 +10386,20 @@
     }).join('');
   }
 
-  function _renderMarketingFlow(flow) {
-    var el = document.getElementById('marketing-flow');
+  function _observeMarketingChartSize(el, redraw) {
+    if (el._marketingResizeObserver) el._marketingResizeObserver.disconnect();
+    var width = el.clientWidth;
+    if (typeof ResizeObserver !== 'function') return;
+    el._marketingResizeObserver = new ResizeObserver(function () {
+      if (el.clientWidth && Math.abs(el.clientWidth - width) > 1) redraw();
+    });
+    el._marketingResizeObserver.observe(el);
+  }
+
+  function _renderMarketingFlow(flow, targetEl) {
+    var el = targetEl || document.getElementById('marketing-flow');
     if (!el) return;
+    delete el.dataset.hoverTipsBound;
     if (!flow || !Array.isArray(flow.links) || !flow.links.length) {
       el.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">아직 흐름 데이터가 없습니다</div></div>';
       return;
@@ -10283,20 +10410,31 @@
     var links = flow.links.slice();
     var columns = [sources, stages, destinations];
     var nodeMap = new Map();
-    var maxDestinationChars = destinations.reduce(function (acc, item) {
-      return Math.max(acc, String((item && item.label) || '').length);
-    }, 0);
-    var padLeft = 40;
-    var padRight = 40;
+    var W = Math.max(180, Math.min(1600, el.clientWidth || 1080));
+    var columnWidth = W / 3;
     var padTop = 36;
     var padBottom = 40;
     var nodeW = 18;
-    var rightLabelRunway = Math.max(380, Math.min(860, maxDestinationChars * 12));
-    var leftColumnX = padLeft + 44;
-    var middleColumnX = leftColumnX + 520;
-    var rightColumnX = middleColumnX + rightLabelRunway;
-    var colX = [leftColumnX, middleColumnX, rightColumnX];
-    var W = rightColumnX + nodeW + padRight;
+    var colX = [8, columnWidth + 8, columnWidth * 2 + 8];
+    var labelWidth = Math.max(20, columnWidth - nodeW - 24);
+    var measureContext = document.createElement('canvas').getContext('2d');
+    measureContext.font = '600 14px ' + getComputedStyle(el).fontFamily;
+    function labelLines(value) {
+      var remaining = Array.from(String(value || ''));
+      var lines = [], line = '';
+      while (remaining.length && lines.length < 3) {
+        var next = remaining.shift();
+        if (line && measureContext.measureText(line + next).width > labelWidth) { lines.push(line.trim()); line = next.trim() ? next : ''; }
+        else if (line || next.trim()) line += next;
+      }
+      if (line && lines.length < 3) { lines.push(line.trim()); line = ''; }
+      if ((remaining.length || line) && lines.length) {
+        var last = Array.from(lines[lines.length - 1]);
+        while (last.length && measureContext.measureText(last.join('') + '…').width > labelWidth) last.pop();
+        lines[lines.length - 1] = last.join('') + '…';
+      }
+      return lines.length ? lines : [''];
+    }
     var baseH = 460;
     var columnInfo = columns.map(function (items, idx) {
       var totals = items.map(function (item) {
@@ -10311,13 +10449,14 @@
     var maxColumnValue = columnInfo.reduce(function (acc, col) { return Math.max(acc, col.totalValue); }, 1);
     var gap = 14;
     var availableH = baseH - padTop - padBottom;
-    var scale = Math.max(0.25, (availableH - gap * 5) / maxColumnValue);
+    var scale = Math.max(0.00001, (availableH - gap * 5) / maxColumnValue);
     var maxY = padTop;
 
     columnInfo.forEach(function (column, columnIndex) {
       var y = padTop;
       column.items.forEach(function (item, itemIndex) {
-        var h = Math.max(26, Math.round(column.totals[itemIndex] * scale));
+        var h = Math.max(4, Math.round(column.totals[itemIndex] * scale));
+        var lines = labelLines(item.label || item.key || '');
         var node = {
           id: item.id,
           x: colX[columnIndex],
@@ -10326,6 +10465,7 @@
           h: h,
           value: column.totals[itemIndex],
           label: item.label || item.key || '',
+          labelLines: lines,
           // Sankey SVG <rect fill=""> / <path stroke=""> 속성에 직접 삽입되어
           // CSS var() 해석 불가 — hex 리터럴 유지. §3.10 Leaflet 팔레트 동일 예외.
           color: item.color || '#7c4dff',
@@ -10333,8 +10473,9 @@
           outgoingOffset: 0
         };
         nodeMap.set(item.id, node);
-        maxY = Math.max(maxY, y + h);
-        y += h + gap;
+        var rowHeight = Math.max(h, 26 + lines.length * 16);
+        maxY = Math.max(maxY, y + rowHeight);
+        y += rowHeight + gap;
       });
     });
     var H = Math.max(baseH, maxY + padBottom);
@@ -10350,8 +10491,8 @@
       targetNode.incomingOffset += thickness;
       var sx = sourceNode.x + sourceNode.w;
       var tx = targetNode.x;
-      var c1 = sx + 140;
-      var c2 = tx - 140;
+      var c1 = sx + (tx - sx) * 0.4;
+      var c2 = tx - (tx - sx) * 0.4;
       var tipText = (sourceNode.label || '') + ' → ' + (targetNode.label || '') + ' · ' + _fmt(link.value || 0);
       return '<path d="M ' + sx + ' ' + sy + ' C ' + c1 + ' ' + sy + ', ' + c2 + ' ' + ty + ', ' + tx + ' ' + ty + '"' +
         ' stroke="' + GW.escapeHtml(link.color || sourceNode.color) + '"' +
@@ -10359,18 +10500,12 @@
     }).join('');
 
     var nodeParts = Array.from(nodeMap.values()).map(function (node) {
-      var labelX = node.x + node.w + 12;
-      var labelAnchor = 'start';
-      if (node.x === colX[2]) {
-        labelX = node.x - 12;
-        labelAnchor = 'end';
-      }
-      var displayLabel = _trimMarketingTitle(node.label, node.x === colX[2] ? 42 : 22);
+      var labelX = node.x + node.w + 6;
       var tip = node.label + ' · ' + _fmt(node.value || 0);
       return '<g class="marketing-flow-node" tabindex="0" role="img" aria-label="' + GW.escapeHtml(tip) + '" data-tip="' + GW.escapeHtml(tip) + '">' +
         '<rect x="' + node.x + '" y="' + node.y + '" width="' + node.w + '" height="' + node.h + '" rx="7" fill="' + GW.escapeHtml(node.color) + '"></rect>' +
-        '<text x="' + labelX + '" y="' + (node.y + 18) + '" text-anchor="' + labelAnchor + '" class="marketing-flow-label">' + GW.escapeHtml(displayLabel) + '</text>' +
-        '<text x="' + labelX + '" y="' + (node.y + 34) + '" text-anchor="' + labelAnchor + '" class="marketing-flow-value">' + GW.escapeHtml(_fmt(node.value || 0)) + '</text>' +
+        '<text x="' + labelX + '" y="' + (node.y + 14) + '" class="marketing-flow-label">' + node.labelLines.map(function (line, index) { return '<tspan x="' + labelX + '" dy="' + (index ? 16 : 0) + '">' + GW.escapeHtml(line) + '</tspan>'; }).join('') + '</text>' +
+        '<text x="' + labelX + '" y="' + (node.y + 14 + node.labelLines.length * 16) + '" class="marketing-flow-value">' + GW.escapeHtml(_fmt(node.value || 0)) + '</text>' +
       '</g>';
     }).join('');
 
@@ -10382,19 +10517,21 @@
       '</div>' +
       '<div class="marketing-flow-shell"><div class="marketing-hover-tip" aria-hidden="true"></div><div class="marketing-chart-stage"><svg class="marketing-flow-svg" viewBox="0 0 ' + W + ' ' + H + '" width="' + W + '" height="' + H + '" role="group" aria-label="고객 여정 흐름">' + linkParts + nodeParts + '</svg></div></div>';
     _bindMarketingHoverTips(el);
+    _observeMarketingChartSize(el, function () { _renderMarketingFlow(flow, el); });
   }
 
-  function _renderMarketingScatter(items) {
-    var el = document.getElementById('marketing-scatter');
+  function _renderMarketingScatter(items, targetEl) {
+    var el = targetEl || document.getElementById('marketing-scatter');
     if (!el) return;
+    delete el.dataset.hoverTipsBound;
     if (!items || !items.length) {
       el.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">페이지 기회 맵 데이터가 없습니다</div></div>';
       return;
     }
-    var availableWidth = Math.max(920, Math.min(1360, ((el.clientWidth || (el.parentElement && el.parentElement.clientWidth) || 1080) - 8)));
+    var availableWidth = Math.max(180, Math.min(1600, el.clientWidth || 1080));
     var W = availableWidth;
-    var H = Math.max(420, Math.min(560, Math.round(W * 0.42)));
-    var margin = { top: 20, right: 30, bottom: 52, left: 64 };
+    var H = Math.max(340, Math.min(560, Math.round(W * 0.5)));
+    var margin = { top: 20, right: 24, bottom: 52, left: 68 };
     var innerW = W - margin.left - margin.right;
     var innerH = H - margin.top - margin.bottom;
     var maxUsers = items.reduce(function (acc, item) { return Math.max(acc, Number(item.unique_users || 0)); }, 1);
@@ -10439,7 +10576,7 @@
       var labelFitsRight = labelRightX < (margin.left + innerW - 110);
       var labelX = labelFitsRight ? labelRightX : labelLeftX;
       var labelAnchor = labelFitsRight ? 'start' : 'end';
-      var label = index < 8 ? '<text x="' + labelX + '" y="' + (cy + 4) + '" text-anchor="' + labelAnchor + '" class="marketing-scatter-label">' + GW.escapeHtml(_trimMarketingTitle(item.title, 16)) + '</text>' : '';
+      var label = index < 8 ? '<text x="' + labelX + '" y="' + (cy + 4) + '" text-anchor="' + labelAnchor + '" class="marketing-scatter-label">' + GW.escapeHtml(_trimMarketingTitle(item.title, W < 480 ? 8 : 16)) + '</text>' : '';
       var tip = item.title + ' · 경로 ' + item.path + ' · 사용자 ' + _fmt(item.unique_users) + ' · 페이지뷰 ' + _fmt(item.pageviews) + ' · 1인당 조회 ' + item.views_per_user + '회 · 공유 유입 ' + Math.round((item.share_ratio || 0) * 100) + '%';
       var href = String(item.path || '').indexOf('/post/') === 0 ? item.path : '';
       return '<g class="marketing-scatter-point' + (href ? ' is-clickable' : '') + '" tabindex="0" role="' + (href ? 'link' : 'img') + '" aria-label="' + GW.escapeHtml(tip) + '" data-tip="' + GW.escapeHtml(tip) + '"' + (href ? ' data-href="' + GW.escapeHtml(href) + '"' : '') + '>' +
@@ -10447,6 +10584,32 @@
         label +
       '</g>';
     }).join('');
+    var tickCount = W < 600 ? 3 : 5;
+    var xMin = Math.max(1, minUsers || 1);
+    var xMax = Math.max(xMin + 1, maxUsers || 1);
+    var yMin = Math.min(minDepth, 0);
+    var yMax = Math.max(yMin + 0.5, maxDepth || 1);
+    var xTicks = [];
+    var yTicks = [];
+    for (var tickIndex = 0; tickIndex < tickCount; tickIndex++) {
+      var tickRatio = tickIndex / (tickCount - 1);
+      var usersTick = Math.round(Math.exp(Math.log(xMin) + tickRatio * (Math.log(xMax) - Math.log(xMin))));
+      if (xTicks.indexOf(usersTick) === -1) xTicks.push(usersTick);
+      yTicks.push(yMin + tickRatio * (yMax - yMin));
+    }
+    var grid = xTicks.map(function (value) {
+      var x = xScale(value);
+      return '<line x1="' + x + '" y1="' + margin.top + '" x2="' + x + '" y2="' + (margin.top + innerH) + '" class="marketing-grid-line"></line>';
+    }).concat(yTicks.map(function (value) {
+      var y = yScale(value);
+      return '<line x1="' + margin.left + '" y1="' + y + '" x2="' + (margin.left + innerW) + '" y2="' + y + '" class="marketing-grid-line"></line>';
+    })).join('');
+    var ticks = xTicks.map(function (value) {
+      return '<text x="' + xScale(value) + '" y="' + (margin.top + innerH + 22) + '" class="marketing-axis-title marketing-axis-tick is-x" text-anchor="middle" data-value="' + value + '">' + _fmt(value) + '</text>';
+    }).concat(yTicks.map(function (value) {
+      var label = _fmt(Number(value.toFixed(2)));
+      return '<text x="' + (margin.left - 8) + '" y="' + (yScale(value) + 4) + '" class="marketing-axis-title marketing-axis-tick is-y" text-anchor="end" data-value="' + value + '">' + label + '</text>';
+    })).join('');
     var axis = [
       '<line x1="' + margin.left + '" y1="' + (margin.top + innerH) + '" x2="' + (margin.left + innerW) + '" y2="' + (margin.top + innerH) + '" class="marketing-axis"></line>',
       '<line x1="' + margin.left + '" y1="' + margin.top + '" x2="' + margin.left + '" y2="' + (margin.top + innerH) + '" class="marketing-axis"></line>',
@@ -10454,14 +10617,24 @@
       '<text x="18" y="' + (margin.top + innerH / 2) + '" class="marketing-axis-title" transform="rotate(-90 18 ' + (margin.top + innerH / 2) + ')" text-anchor="middle">1인당 조회 수</text>'
     ].join('');
     var legend = [
-      { key: 'awareness', label: 'Awareness' },
-      { key: 'interest', label: 'Interest' },
-      { key: 'consideration', label: 'Consideration' }
+      { key: 'awareness', label: '입구 페이지' },
+      { key: 'interest', label: '탐색 페이지' },
+      { key: 'consideration', label: '기사 읽기' }
     ].map(function (item) {
       return '<span><i style="background:' + _marketingStageColor(item.key) + ';"></i>' + GW.escapeHtml(item.label) + '</span>';
     }).join('');
-    el.innerHTML = '<div class="marketing-scatter-legend">' + legend + '</div><div class="marketing-scatter-shell"><div class="marketing-hover-tip" aria-hidden="true"></div><div class="marketing-chart-stage"><svg class="marketing-scatter-svg" viewBox="0 0 ' + W + ' ' + H + '" role="group" aria-label="페이지 기회 맵">' + axis + points + '</svg></div></div>';
+    el.innerHTML = '<div class="marketing-scatter-legend">' + legend + '</div><div class="marketing-scatter-shell"><div class="marketing-hover-tip" aria-hidden="true"></div><div class="marketing-chart-stage"><svg class="marketing-scatter-svg" viewBox="0 0 ' + W + ' ' + H + '" width="' + W + '" height="' + H + '" role="group" aria-label="페이지 기회 맵">' + grid + axis + ticks + points + '</svg></div></div>';
+    var labelBoxes = [];
+    el.querySelectorAll('.marketing-scatter-label').forEach(function (label) {
+      var box = label.getBBox();
+      var shift = box.x < margin.left ? margin.left - box.x : box.x + box.width > W - margin.right ? W - margin.right - box.x - box.width : 0;
+      if (shift) label.setAttribute('x', String(Number(label.getAttribute('x')) + shift));
+      box = label.getBBox();
+      if (labelBoxes.some(function (other) { return box.x < other.x + other.width + 4 && box.x + box.width + 4 > other.x && box.y < other.y + other.height + 4 && box.y + box.height + 4 > other.y; })) label.style.visibility = 'hidden';
+      else labelBoxes.push(box);
+    });
     _bindMarketingHoverTips(el);
+    _observeMarketingChartSize(el, function () { _renderMarketingScatter(items, el); });
   }
 
   function _bindMarketingHoverTips(root) {
@@ -10625,10 +10798,8 @@
     var sourceEl = document.getElementById(sourceId);
     if (!sourceEl) return;
     _marketingFullscreenZoom = 1;
-    delete body.dataset.hoverTipsBound;
-    body.innerHTML = '<div id="marketing-fullscreen-zoom-stage" class="marketing-fullscreen-zoom-stage">' + sourceEl.innerHTML + '</div>';
-    // innerHTML copies dataset markers, but never their event listeners.
-    body.querySelectorAll('[data-pan-zoom-bound]').forEach(function (shell) { delete shell.dataset.panZoomBound; });
+    body.querySelectorAll('[data-marketing-fullscreen-chart]').forEach(function (chart) { if (chart._marketingResizeObserver) chart._marketingResizeObserver.disconnect(); });
+    body.innerHTML = '<div id="marketing-fullscreen-zoom-stage" class="marketing-fullscreen-zoom-stage"><div data-marketing-fullscreen-chart></div></div>';
     title.textContent = kind === 'scatter' ? '페이지 기회 맵' : '고객 여정 흐름';
     meta.textContent = kind === 'scatter'
       ? '고유 사용자 · 재읽기 강도 · 공유 비중을 크게 확인합니다.'
@@ -10637,7 +10808,10 @@
     modal.setAttribute('aria-hidden', 'false');
     document.body.classList.add('marketing-fullscreen-open');
     V3.resetMarketingFullscreenZoom();
-    _bindMarketingHoverTips(body);
+    var data = (_analysisRequests.marketing || {}).data || {};
+    var target = body.querySelector('[data-marketing-fullscreen-chart]');
+    if (kind === 'scatter') _renderMarketingScatter(data.page_opportunities || [], target);
+    else _renderMarketingFlow(data.journey_flow || null, target);
   };
 
   V3.closeMarketingFullscreen = function () {
@@ -10646,6 +10820,7 @@
     if (!modal || !body) return;
     modal.classList.remove('open');
     modal.setAttribute('aria-hidden', 'true');
+    body.querySelectorAll('[data-marketing-fullscreen-chart]').forEach(function (chart) { if (chart._marketingResizeObserver) chart._marketingResizeObserver.disconnect(); });
     body.innerHTML = '';
     document.body.classList.remove('marketing-fullscreen-open');
     _marketingFullscreenZoom = 1;
@@ -11274,28 +11449,27 @@
     var el = document.getElementById('meta-editor');
     var pages = (_siteMeta && _siteMeta.pages) || {};
     var footer = (_siteMeta && _siteMeta.footer) || {};
-    var html = META_PAGES.map(function (key) {
+    var html = '<section class="v3-work-group"><h3 class="v3-work-heading">페이지별 검색 정보</h3><div class="v3-meta-pages">' + META_PAGES.map(function (key) {
       var p = pages[key] || {};
-      return '<details class="v3-content-advanced v3-meta-page"' + (key === 'home' ? ' open' : '') + '>' +
-        '<summary>' + GW.escapeHtml((GW.getMetaPageLabel && GW.getMetaPageLabel(key)) || key) + '</summary><div class="v3-form-grid">' +
+      return '<section class="v3-meta-page">' +
+        '<h4 class="v3-work-heading">' + GW.escapeHtml((GW.getMetaPageLabel && GW.getMetaPageLabel(key)) || key) + '</h4><div class="v3-form-grid">' +
         _metaField('meta-title-' + key, '페이지 제목', p.title || '') +
         _metaField('meta-desc-' + key, '검색 결과 설명', p.description || '') +
-      '</div></details>';
-    }).join('');
-    html += '<hr class="v3-divider" />';
-    html += '<div class="v3-label v3-mt-16 v3-mb-16" style="display:block;margin-bottom:12px;font-weight:700;">푸터</div>';
+      '</div></section>';
+    }).join('') + '</div></section>';
+    html += '<section class="v3-work-group"><h3 class="v3-work-heading">홈페이지 하단 정보</h3>';
     html += '<div class="v3-form-grid">' +
       _metaField('site-footer-title',    '사이트명', footer.title || '') +
       _metaField('site-footer-desc',     '설명',     footer.description || '') +
       _metaField('site-footer-domain',   '도메인',   footer.domain_label || '') +
       _metaField('site-footer-tip',      '기사 제보 이메일', footer.tip_email || '') +
       _metaField('site-footer-contact',  '문의 이메일',      footer.contact_email || '') +
-    '</div>';
-    html += '<hr class="v3-divider" />';
+    '</div></section>';
+    html += '<section class="v3-work-group"><h3 class="v3-work-heading">검색엔진 소유권 인증</h3>';
     html += '<div class="v3-form-grid">' +
       _metaField('meta-google-verify',  'Google 인증 코드', (_siteMeta.google_verification || '')) +
       _metaField('meta-naver-verify',   'Naver 인증 코드',  (_siteMeta.naver_verification  || '')) +
-    '</div>';
+    '</div></section>';
     el.innerHTML = html;
   }
 
@@ -11465,11 +11639,13 @@
     var E = GW.escapeHtml;
     wrap.innerHTML = _homeBanners.map(function (b, i) {
       return '' +
-        '<div class="v3-card v3-mt-16" data-banner-index="' + i + '">' +
+        '<section class="v3-card v3-banner-editor" data-banner-index="' + i + '">' +
+          '<h3 class="v3-work-heading">배너 ' + (i + 1) + '</h3><div class="v3-banner-workspace">' +
+          '<div class="v3-banner-media">' +
           '<div class="v3-form-row"><label class="v3-label">이미지</label>' +
             '<input type="file" accept="image/*" class="hb-file" />' +
             (b.image_url ? '<img src="' + E(b.image_url) + '" alt="" style="width:220px;max-width:100%;height:auto;display:block;margin-top:8px;border-radius:8px" />' : '<span class="v3-hint">아직 이미지가 없습니다</span>') +
-          '</div>' +
+          '</div></div><div class="v3-banner-fields">' +
           '<div class="v3-form-row"><label class="v3-label">설명 (대체 텍스트, 필수)</label>' +
             '<input type="text" class="v3-input hb-title" value="' + E(b.title || '') + '" placeholder="예: 제16회 한국잼버리 운영요원 모집 안내" /></div>' +
           '<div class="v3-form-row"><label class="v3-label">링크 (선택)</label>' +
@@ -11481,7 +11657,7 @@
           '<p class="v3-hint">날짜 입력은 UTC 기준입니다. 날짜를 바꾸면 선택한 날짜의 한국 시각 09:00가 적용됩니다. 날짜를 바꾸지 않으면 기존 시각을 유지합니다.</p>' +
           '<div class="v3-form-row"><label class="v3-check-row"><input type="checkbox" class="hb-active"' + (b.active ? ' checked' : '') + ' /><span>노출</span></label></div>' +
           '<button class="v3-btn v3-btn-sm hb-remove" type="button">이 배너 삭제</button>' +
-        '</div>';
+        '</div></div></section>';
     }).join('');
 
     Array.prototype.forEach.call(wrap.querySelectorAll('[data-banner-index]'), function (card) {
@@ -12020,7 +12196,7 @@
     if (_wosmSavedSnapshot !== null && _wosmSnapshot() !== _wosmSavedSnapshot && !window.confirm('저장하지 않은 회원국 변경이 있습니다. 서버 데이터를 다시 불러올까요?')) return;
     var sequence = ++_contentLoadSequence.wosm;
     _contentReady.wosm = false;
-    ['wosm-members-save-btn', 'wosm-columns-save-btn', 'wosm-members-add-btn', 'wosm-members-add-btn-inline', 'wosm-members-import-btn', 'wosm-members-import-btn-inline', 'wosm-column-add-btn'].forEach(function (id) { if (_el(id)) _el(id).disabled = true; });
+    ['wosm-members-save-btn', 'wosm-columns-save-btn', 'wosm-members-add-btn', 'wosm-members-import-btn', 'wosm-column-add-btn'].forEach(function (id) { if (_el(id)) _el(id).disabled = true; });
     var el = document.getElementById('wosm-members-editor');
     var columnsEl = document.getElementById('wosm-columns-editor');
     var meta = document.getElementById('wosm-members-meta');
@@ -12039,7 +12215,7 @@
       _renderWosmMembersEditor();
       _wosmSavedSnapshot = _wosmSnapshot();
       _contentReady.wosm = true;
-      ['wosm-members-save-btn', 'wosm-columns-save-btn', 'wosm-members-add-btn', 'wosm-members-add-btn-inline', 'wosm-members-import-btn', 'wosm-members-import-btn-inline', 'wosm-column-add-btn'].forEach(function (id) { if (_el(id)) _el(id).disabled = !_contentCanWrite('wosm-members'); });
+      ['wosm-members-save-btn', 'wosm-columns-save-btn', 'wosm-members-add-btn', 'wosm-members-import-btn', 'wosm-column-add-btn'].forEach(function (id) { if (_el(id)) _el(id).disabled = !_contentCanWrite('wosm-members'); });
     }).catch(function () {
       if (sequence !== _contentLoadSequence.wosm) return;
       if (el) el.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">불러오기 실패</div></div>';
@@ -12071,7 +12247,7 @@
       el.innerHTML = '<div class="v3-members-empty">조건에 맞는 항목이 없습니다. XLSX를 가져오거나 새 항목을 추가하세요.</div>';
       return;
     }
-    el.innerHTML = '<div class="v3-members-editor">' +
+    el.innerHTML = '<div class="v3-members-editor" style="--v3-member-field-count:' + (2 + editableColumns.length) + ';">' +
       '<div class="v3-members-head">' +
         '<span>한국어</span>' +
         '<span>영어</span>' +
@@ -12244,7 +12420,7 @@
   function _renderWosmColumnsEditor() {
     var el = document.getElementById('wosm-columns-editor');
     if (!el) return;
-    el.innerHTML = '<div class="v3-members-editor">' +
+    el.innerHTML = '<div class="v3-members-editor v3-wosm-columns-editor">' +
       '<div class="v3-members-head">' +
         '<span>열 제목</span>' +
         '<span>키</span>' +
@@ -12469,11 +12645,11 @@
         (_contentCanWrite('reference-sites') ? '<button type="button" class="v3-btn v3-btn-danger v3-btn-xs" data-refsite-delete="' + entry.index + '">삭제</button>' : '') +
       '</div>';
       return '<tr>' +
-        '<td><div class="v3-table-title">' + GW.escapeHtml(item.name || ('참고 사이트 ' + (entry.index + 1))) + '</div></td>' +
-        '<td>' + (item.url ? '<a href="' + GW.escapeHtml(item.url) + '" target="_blank" rel="noopener noreferrer">' + GW.escapeHtml(item.url) + '</a>' : '<span class="v3-inline-meta">링크 없음</span>') + '</td>' +
-        '<td>' + (item.summary ? '<div class="v3-refsite-summary-cell">' + GW.escapeHtml(item.summary) + '</div>' : '<span class="v3-inline-meta">입력 없음</span>') + '</td>' +
-        '<td><div class="v3-refsite-badge-cell">' + (badges || '<span class="v3-geo-region-badge is-unassigned">연맹 미지정</span>') + '</div></td>' +
-        '<td>' + actions + '</td>' +
+        '<td data-label="사이트명"><div class="v3-table-title">' + GW.escapeHtml(item.name || ('참고 사이트 ' + (entry.index + 1))) + '</div></td>' +
+        '<td data-label="링크">' + (item.url ? '<a href="' + GW.escapeHtml(item.url) + '" target="_blank" rel="noopener noreferrer">' + GW.escapeHtml(item.url) + '</a>' : '<span class="v3-inline-meta">링크 없음</span>') + '</td>' +
+        '<td data-label="주요 내용">' + (item.summary ? '<div class="v3-refsite-summary-cell">' + GW.escapeHtml(item.summary) + '</div>' : '<span class="v3-inline-meta">입력 없음</span>') + '</td>' +
+        '<td data-label="지역연맹"><div class="v3-refsite-badge-cell">' + (badges || '<span class="v3-geo-region-badge is-unassigned">연맹 미지정</span>') + '</div></td>' +
+        '<td data-label="작업">' + actions + '</td>' +
       '</tr>';
     }).join('') + '</tbody></table></div>';
 

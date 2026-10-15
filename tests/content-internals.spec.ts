@@ -79,7 +79,7 @@ for(const width of [280,320,390,820,1280]) test(`all 14 internal menus populated
   await page.setViewportSize({width,height:900}); const {state,controls}=await open(page);
   for(const [panel,section] of destinations) {await enter(page,panel,section); await assertRenderedBounds(page,panel+(section?' '+section:''));}
   await enter(page,'memorabilia');await page.locator('#memo-list-select-all').check();await assertRenderedBounds(page,'selected memorabilia');
-  await page.locator('[data-memo-edit="1"]').click();await expect(page.locator('#memo-edit-modal')).toBeVisible();await page.locator('#memo-edit-modal details.v3-content-advanced summary').click();
+  await page.locator('[data-memo-edit="1"]').click();await expect(page.locator('#memo-edit-modal')).toBeVisible();await expect(page.locator('#memo-material-en')).toBeVisible();await expect(page.locator('#memo-desc-ko')).toBeVisible();
   const modalBounds=await page.locator('#memo-edit-modal .v3-modal').evaluate(node=>({scroll:node.scrollWidth,client:node.clientWidth,document:document.documentElement.scrollWidth,viewport:innerWidth}));
   expect(modalBounds.scroll).toBeLessThanOrEqual(modalBounds.client+1);expect(modalBounds.document).toBeLessThanOrEqual(modalBounds.viewport+1);
   expect(state.pageErrors).toEqual([]);expect(state.externalApi).toEqual([]);expect(controls.writes).toEqual([]);
@@ -152,8 +152,8 @@ test('all 14 empty menus and failed reads remain distinct and retryable',async({
     controls.errors.delete(path);await enter(page,'dashboard');await enter(page,panel,section);await expect(page.locator(selector)).not.toContainText(/실패|못했습니다/);
   }
   controls.errors.add('/api/admin/operations');await enter(page,'dashboard');await page.locator('#dash-refresh-btn').click();await expect(page.locator('#dash-ops-alerts')).toContainText('불러오지 못했습니다');
-  await enter(page,'article-scorer');controls.errors.add('/api/posts');await page.locator('#scorer-search-input').fill('검색 실패');await expect(page.locator('#scorer-post-list')).toContainText('기사 검색 실패');
-  controls.errors.add('/api/settings/score-rubric');await page.locator('#rubric-card summary').click();await expect(page.locator('#rubric-textarea')).toHaveValue('');
+  controls.errors.add('/api/settings/score-rubric');await enter(page,'article-scorer');controls.errors.add('/api/posts');await page.locator('#scorer-search-input').fill('검색 실패');await expect(page.locator('#scorer-post-list')).toContainText('기사 검색 실패');
+  await expect(page.locator('#rubric-textarea')).toBeVisible();await expect(page.locator('#rubric-textarea')).toHaveValue('');await expect(page.locator('#rubric-textarea')).toBeEnabled();
   await enter(page,'list');controls.errors.add('/api/posts/101');await page.evaluate(()=>(window as any).V3.editPost(101));await expect(page.locator('#write-panel-title')).toContainText('불러오지 못했습니다');await expect(page.locator('#write-publish-btn')).toBeDisabled();
   expect(state.externalApi).toEqual([]);expect(state.pageErrors).toEqual([]);
 });

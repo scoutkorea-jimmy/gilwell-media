@@ -90,7 +90,7 @@ for (const width of [280, 320, 390, 820, 1280]) test(`${width}px populated/empty
       expect(await page.locator('#geo-audience-refresh-btn').evaluate(el => { const range = document.createRange(); range.selectNodeContents(el); return range.getClientRects().length; })).toBe(1);
     }
     if (id === 'marketing') {
-      await page.locator('.marketing-chart-details > summary').click();
+      expect(await page.locator('#marketing-flow').evaluate(el => !!el.closest('details'))).toBe(false);
       await expect(page.locator('.marketing-flow-svg')).toBeVisible();
       await page.locator('[data-pz="in"]').click(); await page.locator('[data-pz="reset"]').click();
       expect(await page.locator('[data-pz="in"]').evaluate(el => el.getBoundingClientRect().height)).toBeGreaterThanOrEqual(48);
@@ -139,14 +139,15 @@ test('visits latest filter wins, exact custom period, partial validation, report
   await page.locator('#analytics-refresh-btn').click(); await settled(page);
   await expect(page.locator('#search-performance-page')).toHaveText(reportPage);
   expect(state.reads.filter(url => url.pathname === '/api/admin/search-performance').length).toBe(reportsBefore);
-  await page.locator('.v3-analytics-trend-card details > summary').click();
+  await expect(page.locator('.v3-trend-data')).toBeVisible();
   await page.locator('#analytics-auto-refresh').check();
   const autoBefore = state.reads.filter(url => url.pathname === '/api/admin/analytics' && !url.searchParams.has('heatmap_days')).length;
   await page.locator('#search-performance-next').focus();
   await page.clock.fastForward(31_000);
   await expect.poll(() => state.reads.filter(url => url.pathname === '/api/admin/analytics' && !url.searchParams.has('heatmap_days')).length).toBe(autoBefore + 1);
   await expect(page.locator('#analytics-body')).toHaveAttribute('aria-busy', 'false');
-  await expect(page.locator('.v3-analytics-trend-card details')).toHaveAttribute('open', '');
+  await expect(page.locator('.v3-trend-data')).toBeVisible();
+  await expect(page.locator('.v3-trend-data tbody tr')).not.toHaveCount(0);
   await expect(page.locator('#search-performance-page')).toHaveText(reportPage);
   assertBoundary(boundary);
 });
@@ -163,7 +164,7 @@ test('Geo uses country counts; search/collapse, complete list, null-map and fail
   await page.locator('#geo-audience-city-toggle-all').click(); await expect(page.locator('.v3-geo-country-row')).toHaveAttribute('aria-expanded', 'false');
   await page.locator('#geo-audience-city-search').fill('합성도시 302');
   await expect(page.locator('.v3-geo-city-sublist')).toContainText('합성도시 302');
-  await page.locator('#geo-audience-map-details > summary').click();
+  expect(await page.locator('#geo-audience-map').evaluate(el => !!el.closest('details'))).toBe(false);
   await expect(page.locator('.leaflet-container')).toBeVisible();
   expect(await page.locator('.leaflet-overlay-pane path').count()).toBe(0);
   state.errors.set('/api/admin/geo-audience', 503); await page.locator('#geo-audience-refresh-btn').click();
@@ -239,7 +240,7 @@ test('Marketing normalizes181day/reverse ranges, latest response, failed state a
   await expect(page.locator('#marketing-status')).toContainText('공개 페이지 방문 집계');
   const latest = await page.locator('#marketing-status').innerText(); state.hold.delete(key); state.defers.get(key)!.forEach(release => release());
   await expect.poll(() => state.delivered.includes(key)).toBe(true); await settled(page); await expect(page.locator('#marketing-status')).toHaveText(latest);
-  await page.locator('.marketing-chart-details > summary').click();
+  await expect(page.locator('#marketing-flow svg')).toBeVisible();
   const flow = page.locator('#marketing-flow .marketing-flow-shell'); await flow.focus();
   const transform = await flow.locator('svg').getAttribute('style'); await page.keyboard.press('ArrowRight'); expect(await flow.locator('svg').getAttribute('style')).not.toBe(transform);
   await flow.scrollIntoViewIfNeeded();
@@ -420,5 +421,97 @@ test('Tag graph fits initial/reset nodes and keeps readable label boxes disjoint
   await page.locator('.v3-ti-graph-stage').screenshot({ path: testInfo.outputPath('synthetic-tag-graph-fitted-1280.png') });
   expect(state.reads.length).toBe(reads);
   await writeFile(testInfo.outputPath('synthetic-tag-graph-label-bounds.json'), JSON.stringify(results, null, 2));
+  assertBoundary(boundary);
+});
+
+
+for (const width of [280, 390, 1920, 2560, 5120]) test(`${width}px visible visual overview, readable titles and fitted trend`, async ({ page }, testInfo) => {
+  await page.setViewportSize({ width, height: 1200 });
+  const { boundary } = await open(page);
+  await page.route('**/api/admin/analytics?**', async route => {
+    const dates = Array.from({ length: 30 }, (_, index) => new Date(Date.UTC(2026, 8, 16 + index)).toISOString().slice(0, 10));
+    const top = Array.from({ length: 10 }, (_, index) => ({ title: `합성 기사 ${index + 1} · 청소년 프로그램의 운영 성과와 지역별 참여 경험을 함께 살펴보는 긴 제목`, views: 37 - index * 3 }));
+    await route.fulfill({ json: { range: { start: dates[0], end: dates[29], label: dates[0] + ' ~ ' + dates[29], granularity: 'day' },
+      today: { visits: 14, views: 30 }, summary: { range_visits: 350, range_pageviews: 928, average_dwell_seconds: 48.5 },
+      visitors: { series: dates.map((date, index) => ({ date, visits: index < 15 ? index % 4 : index * 2 })) },
+      views: { series: dates.map((date, index) => ({ date, views: index === 10 ? 300 : index * 4 })) },
+      article_top_posts: top, sources: ['페이스북', '직접 방문', '내부 이동', '네이버 검색', '구글'].map((source_label, index) => ({ source_label, visits: 190 - index * 30 })),
+      tracking_note: '합성 검증 전용. 고유 방문과 조회를 구별하며 실제 운영 성과가 아닙니다.' } });
+  });
+  await panel(page, 'analytics-visits'); await page.locator('#analytics-auto-refresh').uncheck();
+  await expect(page.locator('#analytics-range-start')).not.toHaveValue('');
+  await expect(page.locator('#analytics-range-end')).not.toHaveValue('');
+  await page.locator('[data-v3-period-scope="analytics"] [data-days="7"]').click();
+  const range = await page.locator('[data-v3-period-scope="analytics"]').evaluate(el => Array.from(el.querySelectorAll('input')).map(input => input.value));
+  expect((Date.parse(range[1]) - Date.parse(range[0])) / 86400000).toBe(6);
+  await page.locator('[data-v3-period-scope="analytics"] [data-days="30"]').click();
+  await expect(page.locator('[data-v3-period-scope="analytics"] [data-days="30"]')).toHaveClass(/is-active/);
+  await expect(page.locator('.v3-visit-post')).toHaveCount(10);
+  await expect(page.locator('.v3-visit-sources .v3-bar-row')).toHaveCount(5);
+  await expect.poll(async () => page.locator('.v3-chart-svg').evaluate(svg => Math.abs(svg.getBoundingClientRect().width - (svg as SVGSVGElement).viewBox.baseVal.width))).toBeLessThan(2);
+  const metrics = await page.locator('#panel-analytics-visits').evaluate(panel => {
+    const chart = panel.querySelector('.v3-chart-svg') as SVGSVGElement;
+    const text = chart.querySelector('.v3-chart-axis-text') as SVGGraphicsElement;
+    const matrix = text.getScreenCTM()!;
+    const title = panel.querySelector('.v3-visit-post-title')!;
+    const header = panel.querySelector('.v3-page-head')!.getBoundingClientRect();
+    const trend = panel.querySelector('.v3-analytics-trend-card')!.getBoundingClientRect();
+    const posts = panel.querySelector('.v3-visit-posts')!.getBoundingClientRect();
+    return { chartWidth: chart.getBoundingClientRect().width, axisFont: parseFloat(getComputedStyle(text).fontSize) * Math.hypot(matrix.a, matrix.b),
+      titleOverflow: title.scrollWidth > title.clientWidth + 1, titleEllipsis: getComputedStyle(title).textOverflow,
+      headerHeight: header.height, trend: { top: trend.top, left: trend.left }, posts: { top: posts.top, left: posts.left } };
+  });
+  expect(metrics.axisFont).toBeGreaterThanOrEqual(11.9);
+  expect(metrics.titleOverflow).toBe(false); expect(metrics.titleEllipsis).not.toBe('ellipsis');
+  if (width >= 1920) { expect(metrics.headerHeight).toBeLessThan(230); expect(Math.abs(metrics.trend.top - metrics.posts.top)).toBeLessThan(2); expect(metrics.posts.left).toBeGreaterThan(metrics.trend.left); }
+  await assertRenderedBounds(page, `${width}px visual visit overview`);
+  await page.locator('#panel-analytics-visits h1').scrollIntoViewIfNeeded();
+  await page.screenshot({ path: testInfo.outputPath(`synthetic-visits-visual-${width}.png`) });
+  await writeFile(testInfo.outputPath('visual-metrics.json'), JSON.stringify(metrics, null, 2));
+  if (width === 1920) {
+    await page.locator('.v3-chart-hover-zone').first().focus();
+    for (const resizeWidth of [390, 2560, 1920]) {
+      await page.setViewportSize({ width: resizeWidth, height: 1200 });
+      await expect.poll(async () => page.locator('.v3-chart-svg').evaluate(svg => Math.abs(svg.getBoundingClientRect().width - (svg as SVGSVGElement).viewBox.baseVal.width))).toBeLessThan(2);
+      await expect(page.locator('.v3-chart-hover-zone').first()).toBeFocused();
+      await expect(page.locator('.v3-chart-tooltip')).toBeVisible();
+    }
+  }
+  await panel(page, 'analytics-tags');
+  await expect(page.locator('#analytics-tag-graph')).toBeVisible();
+  const order = await page.locator('#analytics-tags-body').evaluate(el => ({ graph: el.querySelector('#analytics-tag-graph')!.getBoundingClientRect().top,
+    tables: el.querySelector('.v3-ti-section-gap')!.getBoundingClientRect().top }));
+  expect(order.graph).toBeLessThan(order.tables);
+  await expect(page.locator('.v3-ti-usage-row')).toHaveCount(10);
+  await assertRenderedBounds(page, `${width}px visual tag overview`);
+  await page.locator('#panel-analytics-tags h1').scrollIntoViewIfNeeded();
+  await page.screenshot({ path: testInfo.outputPath(`synthetic-tags-visual-${width}.png`) });
+  assertBoundary(boundary);
+});
+
+test('Tag relationship links stay thin through zoom and retain focus and edge counts', async ({ page }, testInfo) => {
+  await page.setViewportSize({ width: 1920, height: 1200 });
+  const { boundary } = await open(page);
+  const repeated = Array.from({ length: 40 }, (_, index) => ({ ...postRows[0], id: 1000 + index, meta_tags: index < 25 ? '공통,반복 주제,운영 경험' : '공통,반복 주제' }));
+  const graphData = buildTagInsights([...postRows, ...repeated]);
+  await page.route('**/api/admin/tag-insights?**', route => route.fulfill({ json: { ...graphData, range: { start: '2026-09-16', end: '2026-10-15', label: '2026-09-16 ~ 2026-10-15' } } }));
+  await panel(page, 'analytics-tags');
+  const links = page.locator('.v3-ti-graph-link');
+  const edgeCount = await links.count(); expect(edgeCount).toBeGreaterThan(1);
+  const measure = () => links.evaluateAll(lines => lines.map(line => ({ width: parseFloat(getComputedStyle(line).strokeWidth), vectorEffect: getComputedStyle(line).vectorEffect, stroke: getComputedStyle(line).stroke })));
+  for (const zoom of ['initial', 'in', 'in', 'out', 'reset']) {
+    if (zoom !== 'initial') await page.locator(zoom === 'reset' ? '#v3-ti-graph-reset' : '#v3-ti-graph-zoom-' + zoom).click();
+    const result = await measure();
+    for (const link of result) { expect(link.width).toBeGreaterThanOrEqual(0.6); expect(link.width).toBeLessThanOrEqual(1.5); expect(link.vectorEffect).toBe('non-scaling-stroke'); }
+    expect(await links.count()).toBe(edgeCount);
+  }
+  await page.locator('.v3-ti-graph-node').first().focus();
+  await expect(page.locator('.v3-ti-graph-link.is-focused').first()).toHaveCSS('stroke', 'rgb(98, 37, 153)');
+  expect(await links.count()).toBe(edgeCount);
+  await page.mouse.move(0, 0); await page.locator('#v3-ti-graph-search').fill('');
+  await page.locator('#panel-analytics-tags h1').click();
+  await page.locator('#panel-analytics-tags h1').scrollIntoViewIfNeeded();
+  await page.screenshot({ path: testInfo.outputPath('synthetic-tag-links-refined-1920.png') });
+  await writeFile(testInfo.outputPath('tag-link-metrics.json'), JSON.stringify({ edgeCount, links: await measure() }, null, 2));
   assertBoundary(boundary);
 });

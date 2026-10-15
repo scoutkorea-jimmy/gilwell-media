@@ -10,8 +10,8 @@
   <link rel="icon" type="image/svg+xml" href="/img/favicon.svg">
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png">
   <link rel="shortcut icon" href="/img/favicon-48.png">
-  <link rel="stylesheet" href="/css/admin-v3.css?v=20261015030005">
-  <link rel="stylesheet" href="/css/memorabilia.css?v=20261015030005">
+  <link rel="stylesheet" href="/css/admin-v3.css?v=20261015041225">
+  <link rel="stylesheet" href="/css/memorabilia.css?v=20261015041225">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H" crossorigin="anonymous" referrerpolicy="no-referrer">
   <style>
     #v3-login[style*="display: none"] { pointer-events: none !important; }
@@ -94,7 +94,7 @@
     <button class="v3-login-btn" id="v3-login-btn" type="button" onclick="window.__gwAdminFallbackLogin && window.__gwAdminFallbackLogin(event)">관리자 입장</button>
     <div class="v3-login-err" id="v3-login-err"></div>
     <div class="v3-login-ver">
-      Admin <span class="v3-ver-str v3-ver-admin admin-build-version">V03.157.00</span>
+      Admin <span class="v3-ver-str v3-ver-admin admin-build-version">V03.158.00</span>
       &nbsp;·&nbsp;
       Site <span class="v3-ver-str v3-ver-site site-build-version">V00.194.00</span>
     </div>
@@ -109,7 +109,7 @@
   <!-- ── Sidebar ─────────────────────────────────────────── -->
   <aside id="v3-sidebar">
     <div id="v3-sidebar-logo">
-      <div class="v3-logo-mark">BP미디어 <span class="v3-logo-version v3-ver-str v3-ver-admin admin-build-version">V03.157.00</span></div>
+      <div class="v3-logo-mark">BP미디어 <span class="v3-logo-version v3-ver-str v3-ver-admin admin-build-version">V03.158.00</span></div>
       <div class="v3-logo-sub">운영 콘솔 &nbsp;<span class="v3-logo-sub-site">Site <span class="v3-ver-site site-build-version">V00.194.00</span></span></div>
     </div>
 
@@ -403,28 +403,9 @@
           <div class="v3-stat"><div class="v3-stat-label">공개 게시글</div><div class="v3-stat-value" id="dash-stat-pub">—</div><div class="v3-stat-sub">현재 노출 중</div></div>
         </div>
         <div class="v3-inline-meta" id="dash-status-note">집계 상태를 확인하는 중…</div>
-        <div class="v3-dash-cols v3-dash-homepage-overview">
-          <div class="v3-card">
-            <div class="v3-card-head">
-              <div>
-                <h2 class="v3-card-title">홈페이지 스냅샷</h2>
-                <p class="v3-card-desc">현재 공개 홈페이지가 어떤 데이터로 보이는지 핵심 상태를 한눈에 확인합니다.</p>
-              </div>
-            </div>
-            <div id="dash-home-overview"><div class="v3-loading"><div class="v3-spinner"></div>홈페이지 상태를 불러오는 중…</div></div>
-          </div>
-          <div class="v3-card">
-            <div class="v3-card-head">
-              <div>
-                <h2 class="v3-card-title">홈 노출 섹션</h2>
-                <p class="v3-card-desc">메인 스토리와 각 섹션의 노출 수, 홈 이슈 여부를 함께 봅니다.</p>
-              </div>
-            </div>
-            <div id="dash-home-sections"><div class="v3-loading"><div class="v3-spinner"></div>섹션 요약을 불러오는 중…</div></div>
-          </div>
-        </div>
-        <details class="v3-card v3-dash-feature-card v3-content-advanced">
-          <summary>접속 시간 분석 · 기간별 히트맵</summary>
+        <div class="v3-dashboard-primary">
+        <section class="v3-card v3-dash-feature-card v3-content-advanced">
+          <div>접속 시간 분석 · 기간별 히트맵</div>
           <div class="v3-card-head">
             <div>
               <h2 class="v3-card-title">접속 시간 히트맵</h2>
@@ -448,7 +429,38 @@
           </div>
           <div id="dash-traffic-heatmap"><div class="v3-loading"><div class="v3-spinner"></div>로딩 중…</div></div>
           <div id="dash-traffic-insight" class="v3-dash-insight"><div class="v3-inline-meta">히트맵 인사이트를 정리하는 중…</div></div>
-        </details>
+        </section>
+        <div class="v3-dash-cols v3-dash-section-gap">
+          <div class="v3-card">
+            <div class="v3-card-head"><h2 class="v3-card-title">발행 예정 / 초안</h2></div>
+            <div id="dash-ops-editorial"><div class="v3-loading"><div class="v3-spinner"></div>로딩 중…</div></div>
+          </div>
+          <div class="v3-card" data-owner-only="1">
+            <div class="v3-card-head"><h2 class="v3-card-title">오류 / 로그인 시도</h2></div>
+            <div id="dash-ops-alerts"><div class="v3-loading"><div class="v3-spinner"></div>로딩 중…</div></div>
+          </div>
+        </div>
+        </div>
+        <div class="v3-dash-cols v3-dash-homepage-overview">
+          <div class="v3-card">
+            <div class="v3-card-head">
+              <div>
+                <h2 class="v3-card-title">홈페이지 스냅샷</h2>
+                <p class="v3-card-desc">현재 공개 홈페이지가 어떤 데이터로 보이는지 핵심 상태를 한눈에 확인합니다.</p>
+              </div>
+            </div>
+            <div id="dash-home-overview"><div class="v3-loading"><div class="v3-spinner"></div>홈페이지 상태를 불러오는 중…</div></div>
+          </div>
+          <div class="v3-card">
+            <div class="v3-card-head">
+              <div>
+                <h2 class="v3-card-title">홈 노출 섹션</h2>
+                <p class="v3-card-desc">메인 스토리와 각 섹션의 노출 수, 홈 이슈 여부를 함께 봅니다.</p>
+              </div>
+            </div>
+            <div id="dash-home-sections"><div class="v3-loading"><div class="v3-spinner"></div>섹션 요약을 불러오는 중…</div></div>
+          </div>
+        </div>
         <div class="v3-dash-cols">
           <div class="v3-card" id="dash-recent-card">
             <div class="v3-card-head">
@@ -464,16 +476,6 @@
               </div>
               <div id="dash-top-list"><div class="v3-loading"><div class="v3-spinner"></div></div></div>
             </div>
-          </div>
-        </div>
-        <div class="v3-dash-cols v3-dash-section-gap">
-          <div class="v3-card">
-            <div class="v3-card-head"><h2 class="v3-card-title">발행 예정 / 초안</h2></div>
-            <div id="dash-ops-editorial"><div class="v3-loading"><div class="v3-spinner"></div>로딩 중…</div></div>
-          </div>
-          <div class="v3-card" data-owner-only="1">
-            <div class="v3-card-head"><h2 class="v3-card-title">오류 / 로그인 시도</h2></div>
-            <div id="dash-ops-alerts"><div class="v3-loading"><div class="v3-spinner"></div>로딩 중…</div></div>
           </div>
         </div>
         <div class="v3-dash-cols v3-dash-section-gap">
@@ -586,6 +588,10 @@
               <div class="v3-card-head"><h2 class="v3-card-title">기사 기본 정보</h2></div>
               <p class="v3-input-hint">제목과 본문을 먼저 작성하고, 대표 이미지와 공개 상태를 확인한 뒤 저장하세요. 변경 내용은 임시저장에도 보관됩니다.</p>
               <div class="v3-form-grid">
+                <div class="v3-form-group">
+                  <label class="v3-label" for="w-title">제목</label>
+                  <input class="v3-input" type="text" id="w-title" placeholder="기사 제목을 입력하세요" />
+                </div>
                 <div class="v3-form-grid v3-form-2col">
                   <div class="v3-form-group">
                     <label class="v3-label" for="w-cat">카테고리</label>
@@ -606,10 +612,6 @@
                       <button class="v3-btn v3-btn-outline v3-btn-sm" id="w-tag-new-btn">추가</button>
                     </div>
                   </div>
-                </div>
-                <div class="v3-form-group">
-                  <label class="v3-label" for="w-title">제목</label>
-                  <input class="v3-input" type="text" id="w-title" placeholder="기사 제목을 입력하세요" />
                 </div>
                 <div class="v3-form-group">
                   <label class="v3-label" for="w-subtitle">부제목 <span class="v3-label-opt">선택</span></label>
@@ -682,8 +684,8 @@
             </div>
 
             <!-- Gallery -->
-            <details class="v3-content-advanced">
-              <summary>추가 자료 · 갤러리, 위치, 특집, 관련 기사</summary>
+            <section class="v3-content-advanced">
+              <div>추가 자료 · 갤러리, 위치, 특집, 관련 기사</div>
             <div class="v3-card">
               <div class="v3-card-head">
                 <h2 class="v3-card-title">갤러리 슬라이드 <span class="v3-label-opt v3-label-opt-inline">최대 10장</span></h2>
@@ -730,7 +732,7 @@
             </div>
 
             <!-- Inline AI Scorer (기사 작성 하단) -->
-            </details>
+            </section>
             <div class="v3-card" id="write-scorer-card" data-perm-slug="article-scorer" data-perm-action="write" hidden>
               <div class="v3-card-head">
                 <h2 class="v3-card-title">AI 채점 <span class="v3-label-opt v3-label-opt-inline">현재 저장된 평가 기준</span></h2>
@@ -856,9 +858,8 @@
               <option value="finished">행사종료</option>
             </select>
             <!-- 시작일 범위 -->
-            <input class="v3-input v3-width-140" type="date" id="cal-filter-from" title="시작일 이후" />
-            <span class="v3-inline-sep">~</span>
-            <input class="v3-input v3-width-140" type="date" id="cal-filter-to" title="시작일 이전" />
+            <label class="v3-content-filter-field" for="cal-filter-from"><span>시작일 이후</span><input class="v3-input" type="date" id="cal-filter-from" /></label>
+            <label class="v3-content-filter-field" for="cal-filter-to"><span>시작일 이전</span><input class="v3-input" type="date" id="cal-filter-to" /></label>
             <button class="v3-btn v3-btn-ghost v3-btn-sm" id="cal-filter-reset">초기화</button>
           </div>
           <div class="v3-toolbar-right">
@@ -909,97 +910,8 @@
           </div>
         </div>
 
-        <!-- AI 토큰 사용량 배너 (Cloudflare Workers AI 빌링 가시성) -->
-        <details class="v3-card v3-ai-usage-card v3-content-advanced" id="ai-usage-card">
-          <summary>채점 비용 · 사용량과 기간별 추이</summary>
-          <div class="v3-ai-usage-head">
-            <div class="v3-ai-usage-head-text">
-              <h2 class="v3-card-title v3-ai-usage-title">AI 토큰 사용량 <span class="v3-label-opt v3-label-opt-inline">Workers AI · llama-3.1-8b-instruct</span></h2>
-              <p class="v3-ai-usage-desc">기사 채점 1회당 LLM 호출이 발생합니다. 남용을 방지하기 위해 일/주/월 누계를 확인한 뒤 실행해주세요.</p>
-            </div>
-            <div class="v3-ai-usage-actions">
-              <button class="v3-btn v3-btn-ghost v3-btn-sm" type="button" id="ai-usage-refresh-btn">새로고침</button>
-              <a class="v3-btn v3-btn-outline v3-btn-sm" id="ai-usage-dashboard-link" href="https://dash.cloudflare.com/" target="_blank" rel="noopener noreferrer">Cloudflare 대시보드 ↗</a>
-            </div>
-          </div>
-          <div class="v3-ai-usage-grid">
-            <div class="v3-ai-usage-stat">
-              <span class="v3-ai-usage-label">오늘 (24h) · 토큰</span>
-              <span class="v3-ai-usage-value" id="ai-usage-today-calls">—</span>
-              <span class="v3-ai-usage-sub" id="ai-usage-today-tokens">호출 없음</span>
-              <span class="v3-ai-usage-cost" id="ai-usage-today-cost">예상 비용 —</span>
-            </div>
-            <div class="v3-ai-usage-stat">
-              <span class="v3-ai-usage-label">최근 7일 · 토큰</span>
-              <span class="v3-ai-usage-value" id="ai-usage-week-calls">—</span>
-              <span class="v3-ai-usage-sub" id="ai-usage-week-tokens">호출 없음</span>
-              <span class="v3-ai-usage-cost" id="ai-usage-week-cost">예상 비용 —</span>
-            </div>
-            <div class="v3-ai-usage-stat">
-              <span class="v3-ai-usage-label">최근 30일 · 토큰</span>
-              <span class="v3-ai-usage-value" id="ai-usage-month-calls">—</span>
-              <span class="v3-ai-usage-sub" id="ai-usage-month-tokens">호출 없음</span>
-              <span class="v3-ai-usage-cost" id="ai-usage-month-cost">예상 비용 —</span>
-            </div>
-            <div class="v3-ai-usage-stat">
-              <span class="v3-ai-usage-label">평균 지연 / 오류</span>
-              <span class="v3-ai-usage-value" id="ai-usage-latency">—</span>
-              <span class="v3-ai-usage-sub" id="ai-usage-errors">오류 —</span>
-              <span class="v3-ai-usage-cost" id="ai-usage-pricing-note" title="Workers AI 단가">단가 $0.0115/1K토큰</span>
-            </div>
-          </div>
-          <div class="v3-ai-usage-trend">
-            <div class="v3-ai-usage-trend-head">
-              <strong class="v3-ai-usage-trend-title">채점 사용량 추이 <span class="v3-label-opt v3-label-opt-inline" id="ai-usage-trend-range-label">최근 14일</span></strong>
-              <div class="v3-ai-usage-trend-range" role="group" aria-label="차트 기간">
-                <button type="button" class="v3-btn v3-btn-ghost v3-btn-xs" data-ai-usage-range="7">7일</button>
-                <button type="button" class="v3-btn v3-btn-ghost v3-btn-xs active" data-ai-usage-range="14">14일</button>
-                <button type="button" class="v3-btn v3-btn-ghost v3-btn-xs" data-ai-usage-range="30">30일</button>
-                <button type="button" class="v3-btn v3-btn-ghost v3-btn-xs" data-ai-usage-range="90">90일</button>
-                <button type="button" class="v3-btn v3-btn-ghost v3-btn-xs" data-ai-usage-range="custom" id="ai-usage-custom-toggle-btn" aria-expanded="false">사용자 지정…</button>
-              </div>
-            </div>
-            <div class="v3-ai-usage-custom-row" id="ai-usage-custom-row" hidden>
-              <label class="v3-ai-usage-custom-label">
-                <span>시작일</span>
-                <input type="date" id="ai-usage-custom-start">
-              </label>
-              <span class="v3-ai-usage-custom-sep" aria-hidden="true">~</span>
-              <label class="v3-ai-usage-custom-label">
-                <span>종료일</span>
-                <input type="date" id="ai-usage-custom-end">
-              </label>
-              <button type="button" class="v3-btn v3-btn-primary v3-btn-xs" id="ai-usage-custom-apply-btn">적용</button>
-              <span class="v3-ai-usage-custom-hint">최대 365일 · KST 기준</span>
-            </div>
-            <svg id="ai-usage-chart" class="v3-ai-usage-chart" viewBox="0 0 800 220" preserveAspectRatio="none" aria-label="일별 채점 호출 추이"></svg>
-          </div>
-          <div class="v3-ai-usage-footline" id="ai-usage-footline">Cloudflare Workers AI는 neuron 단위로 청구됩니다. 정확한 비용은 Cloudflare 대시보드에서 확인하세요.</div>
-        </details>
-
-        <!-- 평가 기준(rubric) 편집 — settings.score_rubric -->
-        <details class="v3-card v3-rubric-card" id="rubric-card">
-          <summary class="v3-rubric-summary">
-            <div class="v3-rubric-summary-text">
-              <h2 class="v3-card-title">AI 채점 평가 기준 <span class="v3-label-opt v3-label-opt-inline" id="rubric-state-badge">기본값</span></h2>
-              <p class="v3-ai-usage-desc">Workers AI 프롬프트에 그대로 주입되는 기준 텍스트입니다. 수정 저장 시 다음 채점부터 즉시 반영됩니다.</p>
-            </div>
-            <span class="v3-rubric-chevron" aria-hidden="true">▾</span>
-          </summary>
-          <div class="v3-rubric-body">
-            <textarea class="v3-rubric-textarea" id="rubric-textarea" rows="16" placeholder="평가 기준을 입력하세요"></textarea>
-            <div class="v3-rubric-actions">
-              <span class="v3-rubric-meta" id="rubric-meta">—</span>
-              <div class="v3-rubric-btn-group">
-                <button class="v3-btn v3-btn-ghost v3-btn-sm" type="button" id="rubric-reset-btn" data-perm-slug="article-scorer" data-perm-action="write" hidden>기본값으로 되돌리기</button>
-                <button class="v3-btn v3-btn-outline v3-btn-sm" type="button" id="rubric-reload-btn">다시 불러오기</button>
-                <button class="v3-btn v3-btn-primary v3-btn-sm" type="button" id="rubric-save-btn" data-perm-slug="article-scorer" data-perm-action="write" hidden>저장</button>
-              </div>
-            </div>
-            <p class="v3-rubric-hint">변경 기록은 설정 히스토리(settings_history)에 남습니다 · 최대 20,000자.</p>
-          </div>
-        </details>
-
+        <div class="v3-scorer-workspace">
+          <div class="v3-scorer-task">
         <!-- 기존 기사 불러오기 -->
         <div class="v3-card v3-scorer-load-card">
           <div class="v3-scorer-load-row">
@@ -1070,6 +982,100 @@
             </div>
           </div>
         </div>
+          </div>
+          <div class="v3-scorer-context">
+        <!-- AI 토큰 사용량 배너 (Cloudflare Workers AI 빌링 가시성) -->
+        <section class="v3-card v3-ai-usage-card v3-content-advanced" id="ai-usage-card">
+          <div>채점 비용 · 사용량과 기간별 추이</div>
+          <div class="v3-ai-usage-head">
+            <div class="v3-ai-usage-head-text">
+              <h2 class="v3-card-title v3-ai-usage-title">AI 토큰 사용량 <span class="v3-label-opt v3-label-opt-inline">Workers AI · llama-3.1-8b-instruct</span></h2>
+              <p class="v3-ai-usage-desc">기사 채점 1회당 LLM 호출이 발생합니다. 남용을 방지하기 위해 일/주/월 누계를 확인한 뒤 실행해주세요.</p>
+            </div>
+            <div class="v3-ai-usage-actions">
+              <button class="v3-btn v3-btn-ghost v3-btn-sm" type="button" id="ai-usage-refresh-btn">새로고침</button>
+              <a class="v3-btn v3-btn-outline v3-btn-sm" id="ai-usage-dashboard-link" href="https://dash.cloudflare.com/" target="_blank" rel="noopener noreferrer">Cloudflare 대시보드 ↗</a>
+            </div>
+          </div>
+          <div class="v3-ai-usage-grid">
+            <div class="v3-ai-usage-stat">
+              <span class="v3-ai-usage-label">오늘 (24h) · 토큰</span>
+              <span class="v3-ai-usage-value" id="ai-usage-today-calls">—</span>
+              <span class="v3-ai-usage-sub" id="ai-usage-today-tokens">호출 없음</span>
+              <span class="v3-ai-usage-cost" id="ai-usage-today-cost">예상 비용 —</span>
+            </div>
+            <div class="v3-ai-usage-stat">
+              <span class="v3-ai-usage-label">최근 7일 · 토큰</span>
+              <span class="v3-ai-usage-value" id="ai-usage-week-calls">—</span>
+              <span class="v3-ai-usage-sub" id="ai-usage-week-tokens">호출 없음</span>
+              <span class="v3-ai-usage-cost" id="ai-usage-week-cost">예상 비용 —</span>
+            </div>
+            <div class="v3-ai-usage-stat">
+              <span class="v3-ai-usage-label">최근 30일 · 토큰</span>
+              <span class="v3-ai-usage-value" id="ai-usage-month-calls">—</span>
+              <span class="v3-ai-usage-sub" id="ai-usage-month-tokens">호출 없음</span>
+              <span class="v3-ai-usage-cost" id="ai-usage-month-cost">예상 비용 —</span>
+            </div>
+            <div class="v3-ai-usage-stat">
+              <span class="v3-ai-usage-label">평균 지연 / 오류</span>
+              <span class="v3-ai-usage-value" id="ai-usage-latency">—</span>
+              <span class="v3-ai-usage-sub" id="ai-usage-errors">오류 —</span>
+              <span class="v3-ai-usage-cost" id="ai-usage-pricing-note" title="Workers AI 단가">단가 $0.0115/1K토큰</span>
+            </div>
+          </div>
+          <div class="v3-ai-usage-trend">
+            <div class="v3-ai-usage-trend-head">
+              <strong class="v3-ai-usage-trend-title">채점 사용량 추이 <span class="v3-label-opt v3-label-opt-inline" id="ai-usage-trend-range-label">최근 14일</span></strong>
+              <div class="v3-ai-usage-trend-range" role="group" aria-label="차트 기간">
+                <button type="button" class="v3-btn v3-btn-ghost v3-btn-xs" data-ai-usage-range="7">7일</button>
+                <button type="button" class="v3-btn v3-btn-ghost v3-btn-xs active" data-ai-usage-range="14">14일</button>
+                <button type="button" class="v3-btn v3-btn-ghost v3-btn-xs" data-ai-usage-range="30">30일</button>
+                <button type="button" class="v3-btn v3-btn-ghost v3-btn-xs" data-ai-usage-range="90">90일</button>
+                <button type="button" class="v3-btn v3-btn-ghost v3-btn-xs" data-ai-usage-range="custom" id="ai-usage-custom-toggle-btn" aria-expanded="false">사용자 지정…</button>
+              </div>
+            </div>
+            <div class="v3-ai-usage-custom-row" id="ai-usage-custom-row" hidden>
+              <label class="v3-ai-usage-custom-label">
+                <span>시작일</span>
+                <input type="date" id="ai-usage-custom-start">
+              </label>
+              <span class="v3-ai-usage-custom-sep" aria-hidden="true">~</span>
+              <label class="v3-ai-usage-custom-label">
+                <span>종료일</span>
+                <input type="date" id="ai-usage-custom-end">
+              </label>
+              <button type="button" class="v3-btn v3-btn-primary v3-btn-xs" id="ai-usage-custom-apply-btn">적용</button>
+              <span class="v3-ai-usage-custom-hint">최대 365일 · KST 기준</span>
+            </div>
+            <svg id="ai-usage-chart" class="v3-ai-usage-chart" viewBox="0 0 800 220" preserveAspectRatio="none" aria-label="일별 채점 호출 추이"></svg>
+          </div>
+          <div class="v3-ai-usage-footline" id="ai-usage-footline">Cloudflare Workers AI는 neuron 단위로 청구됩니다. 정확한 비용은 Cloudflare 대시보드에서 확인하세요.</div>
+        </section>
+
+        <!-- 평가 기준(rubric) 편집 — settings.score_rubric -->
+        <section class="v3-card v3-rubric-card" id="rubric-card">
+          <div class="v3-rubric-summary">
+            <div class="v3-rubric-summary-text">
+              <h2 class="v3-card-title">AI 채점 평가 기준 <span class="v3-label-opt v3-label-opt-inline" id="rubric-state-badge">기본값</span></h2>
+              <p class="v3-ai-usage-desc">Workers AI 프롬프트에 그대로 주입되는 기준 텍스트입니다. 수정 저장 시 다음 채점부터 즉시 반영됩니다.</p>
+            </div>
+          </div>
+          <div class="v3-rubric-body">
+            <textarea class="v3-rubric-textarea" id="rubric-textarea" rows="16" placeholder="평가 기준을 입력하세요"></textarea>
+            <div class="v3-rubric-actions">
+              <span class="v3-rubric-meta" id="rubric-meta">—</span>
+              <div class="v3-rubric-btn-group">
+                <button class="v3-btn v3-btn-ghost v3-btn-sm" type="button" id="rubric-reset-btn" data-perm-slug="article-scorer" data-perm-action="write" hidden>기본값으로 되돌리기</button>
+                <button class="v3-btn v3-btn-outline v3-btn-sm" type="button" id="rubric-reload-btn">다시 불러오기</button>
+                <button class="v3-btn v3-btn-primary v3-btn-sm" type="button" id="rubric-save-btn" data-perm-slug="article-scorer" data-perm-action="write" hidden>저장</button>
+              </div>
+            </div>
+            <p class="v3-rubric-hint">변경 기록은 설정 히스토리(settings_history)에 남습니다 · 최대 20,000자.</p>
+          </div>
+        </section>
+
+          </div>
+        </div>
       </div>
 
       <!-- ════════════════════ AI SCORE HISTORY ════════════════════ -->
@@ -1085,7 +1091,7 @@
         </div>
 
         <div class="v3-card">
-          <div class="v3-form-grid" style="gap:12px;align-items:end;">
+          <div class="v3-form-grid v3-content-history-filters" style="gap:12px;align-items:end;">
             <div class="v3-form-group">
               <label class="v3-label" for="ai-score-history-q">제목 / 요약 검색</label>
               <input class="v3-input" type="search" id="ai-score-history-q" placeholder="키워드 입력…" />
@@ -1291,17 +1297,24 @@
           </div>
         </div>
         <div id="geo-audience-status" class="v3-analysis-status" role="status" aria-live="polite"></div>
-        <div class="v3-analytics-stats" id="geo-audience-stats">
-          <div class="v3-loading v3-grid-loading-full"><div class="v3-spinner"></div>로딩 중…</div>
-        </div>
-        <div id="geo-audience-region-summary" class="v3-geo-region-summary"></div>
-        <div class="v3-mt-16">
-          <div class="v3-card">
+        <div class="v3-geo-overview">
+          <section class="v3-card v3-geo-map-card" aria-labelledby="geo-audience-map-title">
             <div class="v3-card-head">
-              <div>
-                <h2 class="v3-card-title">국가·도시별 방문</h2>
-                <p class="v3-card-desc">국가의 고유 방문과 전체 조회를 먼저 확인하고, 국가 행을 선택해 도시를 봅니다. 전체 목록에서 검색합니다.</p>
-              </div>
+              <div><h2 class="v3-card-title" id="geo-audience-map-title">세계 지도 · 방문 분포</h2><p class="v3-card-desc">국가를 선택해 도시로 확대하고, 옆 목록에서 같은 위치의 집계를 확인합니다.</p></div>
+            </div>
+            <div id="geo-audience-map" aria-label="국가·도시별 방문 지도"></div>
+            <p class="v3-inline-meta" id="geo-audience-map-summary">집계를 불러오는 중…</p>
+            <p class="v3-inline-meta" id="geo-audience-map-selection" role="status">국가 행과 도시 이름으로도 지도 위치를 찾을 수 있습니다.</p>
+            <div id="geo-audience-map-legend"></div>
+            <div class="v3-geo-method-note"><h3 class="v3-card-title">집계·위치 해석</h3><div class="v3-inline-meta" id="geo-audience-note">불러오는 중…</div><p class="v3-inline-meta">추정 위치이며 실제 거주지나 국가 중심을 뜻하지 않습니다. 좌표가 없는 방문도 목록 집계에 포함합니다. 확대·축소 버튼 또는 Ctrl/⌘+휠로 지도를 조작합니다.</p></div>
+          </section>
+          <section class="v3-card v3-geo-list-card" aria-labelledby="geo-audience-list-title">
+            <div class="v3-card-head">
+              <div><h2 class="v3-card-title" id="geo-audience-list-title">국가·도시별 방문</h2><p class="v3-card-desc">국가 행은 도시 목록과 지도 위치를 함께 엽니다. 도시 이름을 선택하면 해당 위치로 확대합니다. 검색은 전체 목록에 적용합니다.</p></div>
+            </div>
+            <div class="v3-analytics-stats" id="geo-audience-stats"><div class="v3-loading v3-grid-loading-full"><div class="v3-spinner"></div>로딩 중…</div></div>
+            <div id="geo-audience-region-summary" class="v3-geo-region-summary"></div>
+            <div class="v3-card-head">
               <div class="v3-geo-city-toolbar">
                 <label for="geo-audience-city-search">국가·도시 검색</label>
                 <input type="search" id="geo-audience-city-search" class="v3-geo-city-search" placeholder="국가 또는 도시 검색…" autocomplete="off" spellcheck="false" />
@@ -1311,14 +1324,8 @@
             <div id="geo-audience-country-list"><div id="geo-audience-city-list">
               <div class="v3-loading"><div class="v3-spinner"></div>로딩 중…</div>
             </div></div>
-          </div>
+          </section>
         </div>
-        <details class="v3-content-advanced v3-mt-16" id="geo-audience-map-details">
-          <summary>세계 지도 · 추정 위치 분포</summary>
-          <div class="v3-inline-meta" id="geo-audience-note">불러오는 중…</div>
-          <p class="v3-inline-meta">목록이 전체 집계의 기준입니다. 지도는 좌표가 있는 위치만 표시하며 확대·축소 버튼 또는 Ctrl/⌘+휠로 조작합니다.</p>
-          <div id="geo-audience-map"></div>
-        </details>
       </div>
 
       <!-- ════════════════════ MARKETING ════════════════════ -->
@@ -1372,12 +1379,18 @@
                   <button class="v3-btn v3-btn-primary v3-btn-sm" id="hero-save-btn">저장</button>
                 </div>
                 <p class="v3-card-desc v3-mb-16">수동 기사 2개를 직접 고르고, 나머지 3개는 최신 공개 기사로 자동 채웁니다.</p>
+                <div class="v3-settings-workspace">
+                <section class="v3-work-group">
+                  <h3 class="v3-work-heading">고정할 기사 선택</h3>
                 <div class="v3-search-wrap v3-search-wrap-full v3-search-wrap-mb-12">
                   <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="7" cy="7" r="5"/><line x1="12" y1="12" x2="15" y2="15"/></svg>
                   <input class="v3-search-input" type="text" id="hero-search" placeholder="수동으로 고정할 기사 제목 검색…" />
                 </div>
                 <div class="v3-search-results-drop" id="hero-search-results" style="display:none;"></div>
                 <div class="v3-hero-list" id="hero-slots"></div>
+                </section>
+                <fieldset class="v3-work-group">
+                  <legend class="v3-work-heading">슬라이드 노출 설정</legend>
                 <div class="v3-form-group v3-mt-16">
                   <label class="v3-label" for="hero-manual-position">수동 기사 표시 순서</label>
                   <select class="v3-input v3-width-240" id="hero-manual-position">
@@ -1388,6 +1401,8 @@
                 <div class="v3-form-group v3-mt-16">
                   <label class="v3-label" for="hero-interval">슬라이드 전환 간격 (ms)</label>
                   <input class="v3-input v3-width-180" type="number" id="hero-interval" value="3000" min="1000" max="10000" step="500" />
+                </div>
+                </fieldset>
                 </div>
               </div>
             </div>
@@ -1407,6 +1422,7 @@
                     <button class="v3-btn v3-btn-primary v3-btn-sm" id="home-lead-save-btn">저장</button>
                   </div>
                 </div>
+                <h3 class="v3-work-heading">메인 스토리 기사</h3>
                 <div class="v3-search-wrap v3-search-wrap-full v3-mb-16">
                   <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="7" cy="7" r="5"/><line x1="12" y1="12" x2="15" y2="15"/></svg>
                   <input class="v3-search-input" type="text" id="home-lead-search" placeholder="공개 게시글 제목 검색…" />
@@ -1415,11 +1431,12 @@
                 <div id="home-lead-selected">
                   <div class="v3-empty"><div class="v3-empty-text">메인 스토리 지정 글이 없습니다.</div></div>
                 </div>
+                <h3 class="v3-work-heading v3-mt-24">화면별 이미지 미리보기 · 위치와 확대 조절</h3>
                 <div class="v3-media-grid" id="home-lead-media-grid">
                   <div class="v3-media-card">
                     <div class="v3-media-card-head">
                       <strong>데스크톱</strong>
-                      <span>home lead</span>
+                      <span>가로 화면 미리보기</span>
                     </div>
                     <div class="v3-media-preview-frame is-home-lead is-desktop" id="home-lead-preview-desktop"></div>
                     <div class="v3-media-controls">
@@ -1450,7 +1467,7 @@
                   <div class="v3-media-card">
                     <div class="v3-media-card-head">
                       <strong>모바일</strong>
-                      <span>home lead</span>
+                      <span>세로 화면 미리보기</span>
                     </div>
                     <div class="v3-media-preview-frame is-home-lead is-mobile" id="home-lead-preview-mobile"></div>
                     <div class="v3-media-controls">
@@ -1503,6 +1520,11 @@
                   </div>
                 </div>
                 <p class="v3-hint">추천 기사를 직접 선택하거나 순서를 바꾸는 작업은 필요하지 않습니다. 기사별 특집 표시는 게시글 편집에서 관리합니다.</p>
+                <ol class="v3-recommendation-flow" aria-label="자동 추천 선정 과정">
+                  <li><strong>최근 30일</strong><span>대상 기간</span></li>
+                  <li><strong>페이지뷰 순</strong><span>읽힌 횟수 비교</span></li>
+                  <li><strong>상위 4건</strong><span>자동 추천 기사</span></li>
+                </ol>
               </div>
             </div>
 
@@ -1553,15 +1575,21 @@
                   <h2 class="v3-card-title">저자 / AI 고지</h2>
                   <button class="v3-btn v3-btn-primary v3-btn-sm" id="author-save-btn">저장</button>
                 </div>
-                <div class="v3-form-grid">
+                <div class="v3-form-grid v3-form-grid-paired">
+                  <fieldset class="v3-work-group">
+                    <legend class="v3-work-heading">기사 서명</legend>
                   <div class="v3-form-group">
                     <label class="v3-label" for="s-author-name">기본 저자명</label>
                     <input class="v3-input" type="text" id="s-author-name" placeholder="BP미디어 취재팀" />
                   </div>
+                  </fieldset>
+                  <fieldset class="v3-work-group">
+                    <legend class="v3-work-heading">AI 사용 안내</legend>
                   <div class="v3-form-group">
                     <label class="v3-label" for="s-ai-disclaimer">AI 고지 문구</label>
                     <textarea class="v3-textarea" id="s-ai-disclaimer" rows="3" placeholder="이 기사는 AI의 도움을 받아 작성되었습니다…"></textarea>
                   </div>
+                  </fieldset>
                 </div>
               </div>
             </div>
@@ -1574,27 +1602,35 @@
                   <button class="v3-btn v3-btn-primary v3-btn-sm" id="banner-save-btn">저장</button>
                 </div>
                 <p class="v3-card-desc v3-mb-16">각 게시판 상단에 표시할 이벤트 배너 텍스트를 설정합니다. 비워두면 표시되지 않습니다.</p>
-                <div class="v3-form-grid">
-                  <div class="v3-form-group">
-                    <label class="v3-label">Korea</label>
+                <div class="v3-form-grid v3-form-grid-paired">
+                  <fieldset class="v3-work-group">
+                    <legend class="v3-work-heading">Korea</legend>
+                    <label class="v3-label" for="banner-korea-name">이벤트명</label>
                     <input class="v3-input" type="text" id="banner-korea-name" placeholder="이벤트명" />
+                    <label class="v3-label v3-mt-16" for="banner-korea-date">이벤트 날짜</label>
                     <input class="v3-input v3-mt-8" type="date" id="banner-korea-date" />
-                  </div>
-                  <div class="v3-form-group">
-                    <label class="v3-label">APR</label>
+                  </fieldset>
+                  <fieldset class="v3-work-group">
+                    <legend class="v3-work-heading">APR</legend>
+                    <label class="v3-label" for="banner-apr-name">이벤트명</label>
                     <input class="v3-input" type="text" id="banner-apr-name" placeholder="이벤트명" />
+                    <label class="v3-label v3-mt-16" for="banner-apr-date">이벤트 날짜</label>
                     <input class="v3-input v3-mt-8" type="date" id="banner-apr-date" />
-                  </div>
-                  <div class="v3-form-group">
-                    <label class="v3-label">WOSM</label>
+                  </fieldset>
+                  <fieldset class="v3-work-group">
+                    <legend class="v3-work-heading">WOSM</legend>
+                    <label class="v3-label" for="banner-wosm-name">이벤트명</label>
                     <input class="v3-input" type="text" id="banner-wosm-name" placeholder="이벤트명" />
+                    <label class="v3-label v3-mt-16" for="banner-wosm-date">이벤트 날짜</label>
                     <input class="v3-input v3-mt-8" type="date" id="banner-wosm-date" />
-                  </div>
-                  <div class="v3-form-group">
-                    <label class="v3-label">스카우트 인물</label>
+                  </fieldset>
+                  <fieldset class="v3-work-group">
+                    <legend class="v3-work-heading">스카우트 인물</legend>
+                    <label class="v3-label" for="banner-people-name">이벤트명</label>
                     <input class="v3-input" type="text" id="banner-people-name" placeholder="이벤트명" />
+                    <label class="v3-label v3-mt-16" for="banner-people-date">이벤트 날짜</label>
                     <input class="v3-input v3-mt-8" type="date" id="banner-people-date" />
-                  </div>
+                  </fieldset>
                 </div>
               </div>
             </div>
@@ -1607,11 +1643,16 @@
                   <button class="v3-btn v3-btn-primary v3-btn-sm" id="ticker-save-btn">저장</button>
                 </div>
                 <p class="v3-card-desc v3-mb-16">홈페이지 상단 스크롤 티커 문구입니다. 여러 줄 입력 시 순서대로 노출됩니다.</p>
+                <div class="v3-settings-workspace">
                 <div class="v3-form-group">
                   <label class="v3-label" for="s-ticker">티커 문구 (줄바꿈으로 구분)</label>
                   <textarea class="v3-textarea" id="s-ticker" rows="6" placeholder="스카우트 세계잼버리 2027 개최 예정&#10;APR 리더십 컨퍼런스 개막"></textarea>
                 </div>
+                <section class="v3-work-group" aria-label="티커 미리보기">
+                  <h3 class="v3-work-heading">저장한 티커 미리보기</h3>
                 <div class="v3-ticker-preview" id="ticker-preview"></div>
+                </section>
+                </div>
               </div>
             </div>
 
@@ -1695,18 +1736,27 @@
                     <button class="v3-btn v3-btn-primary v3-btn-sm" id="wosm-members-save-btn">전체 저장</button>
                   </div>
                 </div>
-                <div class="v3-import-panel">
+                <div class="v3-import-panel v3-content-import-guide">
                   <div class="v3-import-panel-copy">
                     <strong>XLSX 업로드</strong>
                     <p>XLSX를 올리면 먼저 시트와 열 매핑 모달이 열립니다. 아래에서 표 열을 추가/삭제하고 기본 XLSX 열 이름을 정해두면, 업로드 모달이 그 구성을 기준으로 매핑과 미리보기를 제공합니다.</p>
                   </div>
-                  <div class="v3-import-panel-actions">
-                    <button class="v3-btn v3-btn-outline v3-btn-sm" id="wosm-members-import-btn-inline">파일 선택</button>
-                    <button class="v3-btn v3-btn-outline v3-btn-sm" id="wosm-members-add-btn-inline">빈 회원국 항목 추가</button>
+                </div>
+                <div class="v3-wosm-workspace">
+                  <div class="v3-wosm-records">
+                <div class="v3-form-grid">
+                  <div class="v3-form-group">
+                    <label class="v3-label" for="wosm-members-search">항목 검색</label>
+                    <input class="v3-input" type="search" id="wosm-members-search" placeholder="한국어, 영어, 상태 설명 검색" />
                   </div>
                 </div>
-                <details class="v3-content-advanced">
-                  <summary>고급 설정 · 표 열, 가져오기 기본값, 공개 안내 문구</summary>
+                <div class="v3-inline-meta" id="wosm-members-meta">불러오는 중…</div>
+                <div id="wosm-members-editor" tabindex="0" role="region" aria-label="회원국 항목 목록 · 내부 스크롤">
+                  <div class="v3-loading"><div class="v3-spinner"></div>로딩 중…</div>
+                </div>
+                  </div>
+                <section class="v3-content-advanced">
+                  <div>표 열 · 가져오기 기본값 · 공개 안내 문구</div>
                 <div class="v3-card v3-card-soft v3-mb-16">
                   <div class="v3-card-head">
                     <div>
@@ -1774,16 +1824,7 @@
                     </div>
                   </div>
                 </div>
-                </details>
-                <div class="v3-form-grid">
-                  <div class="v3-form-group">
-                    <label class="v3-label" for="wosm-members-search">항목 검색</label>
-                    <input class="v3-input" type="search" id="wosm-members-search" placeholder="한국어, 영어, 상태 설명 검색" />
-                  </div>
-                </div>
-                <div class="v3-inline-meta" id="wosm-members-meta">불러오는 중…</div>
-                <div id="wosm-members-editor">
-                  <div class="v3-loading"><div class="v3-spinner"></div>로딩 중…</div>
+                </section>
                 </div>
               </div>
             </div>
@@ -1915,6 +1956,7 @@
           </div>
           <button type="button" class="v3-btn v3-btn-outline" id="releases-refresh-btn">새로고침</button>
         </div>
+        <div class="v3-overview-strip" id="releases-summary" aria-label="현재 조건의 버전기록 요약" aria-live="polite"></div>
         <div class="v3-releases-tabs">
           <button class="v3-btn v3-btn-sm v3-releases-tab active" data-scope="all">전체</button>
           <button class="v3-btn v3-btn-sm v3-releases-tab" data-scope="site">Site</button>
@@ -1975,6 +2017,7 @@
             <button class="v3-btn v3-btn-outline" id="homepage-issues-refresh-btn">새로고침</button>
           </div>
         </div>
+        <div class="v3-overview-strip" id="homepage-issues-summary" aria-label="현재 조건의 오류 이슈 요약" aria-live="polite"></div>
         <div class="v3-dash-cols v3-dash-cols-single">
           <div class="v3-card">
             <div class="v3-card-head">
@@ -2022,6 +2065,7 @@
             <button class="v3-btn v3-btn-outline" id="site-history-refresh-btn">새로고침</button>
           </div>
         </div>
+        <div class="v3-overview-strip" id="site-history-summary" aria-label="현재 조건의 운영 이벤트 요약" aria-live="polite"></div>
         <div class="v3-dash-cols v3-dash-cols-single">
           <div class="v3-card">
             <div class="v3-card-head">
@@ -2269,11 +2313,11 @@
           </div>
         </div>
 
-        <!-- 데이터 일괄 수정 (find/replace) — 접힘 가능한 도구 영역 -->
-        <details class="v3-card v3-content-advanced" id="memo-bulk-replace-card" style="margin-top: 16px;">
-          <summary style="cursor:pointer; padding:14px 16px; font-weight:600; font-size:14px;">
+        <!-- 데이터 일괄 수정 (find/replace) — 미리보기 후 적용하는 도구 영역 -->
+        <section class="v3-card v3-content-advanced" id="memo-bulk-replace-card" style="margin-top: 16px;">
+          <div style="padding:14px 16px; font-weight:600; font-size:14px;">
             🛠 데이터 일괄 수정 (find/replace) — 표기 통일·오탈자 일괄 교정
-          </summary>
+          </div>
           <div style="padding: 4px 16px 16px;">
             <p style="font-size:12.5px; color:var(--gray-700,#3f3f3f); margin: 0 0 12px; line-height:1.6;">
               도감 항목·행사 카탈로그의 텍스트 컬럼에서 부분 문자열을 일괄 치환합니다. 표기 변형이 있던 데이터는 동일 표기로 통일되어 자연스럽게 흡수됩니다.
@@ -2304,7 +2348,7 @@
               <button type="button" class="v3-btn v3-btn-primary v3-btn-sm"  id="memo-bulk-manual-apply">적용</button>
             </div>
           </div>
-        </details>
+        </section>
 
         <!-- 일괄 수정 결과 모달 -->
         <div class="v3-modal-backdrop" id="memo-bulk-result-modal" hidden>
@@ -2410,8 +2454,8 @@
                   </div>
                 </div>
 
-                <details class="v3-content-advanced">
-                  <summary>추가 정보 · 재질, 제작기관, 태그, 설명, 연결 자료</summary>
+                <section class="v3-content-advanced">
+                  <div>추가 정보 · 재질, 제작기관, 태그, 설명, 연결 자료</div>
                 <div class="v3-form-row v3-form-row-2col">
                   <div>
                     <label class="v3-label" for="memo-material-en">재질 (영문)</label>
@@ -2485,7 +2529,7 @@
                   <div id="memo-links-wrap"></div>
                   <button type="button" class="v3-btn v3-btn-outline v3-btn-sm" id="memo-link-add">링크 추가</button>
                 </div>
-                </details>
+                </section>
 
                 <div class="v3-form-row v3-form-row-2col">
                   <div>
@@ -2513,7 +2557,7 @@
         <div class="v3-page-head">
           <div class="v3-page-head-left">
             <h1 class="v3-page-title">도감 분류 관리</h1>
-            <p class="v3-page-desc">기념품 도감의 분류 enum 을 태그처럼 추가·수정·아카이브합니다. 사용 중인 분류는 삭제 대신 아카이브됩니다.</p>
+            <p class="v3-page-desc">기념품 분류를 추가·수정합니다. 사용 중인 분류는 삭제 대신 아카이브되어 기존 항목에 보존됩니다.</p>
           </div>
           <div class="v3-page-head-right">
             <button class="v3-btn v3-btn-primary" id="memo-cat-new-btn">+ 새 분류</button>
@@ -2902,6 +2946,7 @@
         </div>
 
         <!-- 긴급 발행 차단 (Kill switch) -->
+        <div class="v3-overview-strip" id="account-users-summary" aria-label="현재 표시된 사용자 현황" aria-live="polite"></div>
         <div class="v3-card" id="account-kill-switch-card">
           <div class="v3-card-head">
             <div>
@@ -2952,6 +2997,7 @@
           </div>
         </div>
 
+        <div class="v3-overview-strip" id="account-presets-summary" aria-label="불러온 프리셋 현황" aria-live="polite"></div>
         <div class="v3-card" id="account-presets-list-card">
           <div class="v3-card-head">
             <div>
@@ -3208,8 +3254,8 @@
             <input class="v3-input" type="time" id="cal-end-time" disabled />
           </div>
         </div>
-        <details class="v3-content-advanced v3-form-span-full">
-          <summary>추가 정보 · 국가, 대상, 태그, 관련 기사, 지도</summary>
+        <section class="v3-content-advanced v3-form-span-full">
+          <div>추가 정보 · 국가, 대상, 태그, 관련 기사, 지도</div>
         <div class="v3-form-grid v3-form-2col">
           <div class="v3-form-group">
             <label class="v3-label" for="cal-country">국가</label>
@@ -3263,7 +3309,7 @@
             <input class="v3-input" type="text" id="cal-loc-addr" />
           </div>
         </div>
-        </details>
+        </section>
       </div>
     </div>
     <div class="v3-modal-foot">
@@ -3298,13 +3344,13 @@
             <input class="v3-input" type="text" id="glos-fr" placeholder="Jamboree Mondial" />
           </div>
         </div>
-        <details class="v3-content-advanced">
-          <summary>추가 설명 · 선택</summary>
+        <section class="v3-content-advanced">
+          <div>추가 설명 · 선택</div>
         <div class="v3-form-group">
           <label class="v3-label" for="glos-desc">설명 <span class="v3-label-opt">선택</span></label>
           <textarea class="v3-textarea" id="glos-desc" rows="3" placeholder="용어에 대한 설명"></textarea>
         </div>
-        </details>
+        </section>
       </div>
     </div>
     <div class="v3-modal-foot">
@@ -3473,14 +3519,14 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" integrity="sha384-vtjasyidUo0kW94K5MXDXntzOJpQgBKXmE7e2Ga4LG0skTTLeBi97eFAXsqewJjw" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha384-cxOPjt7s7Iz04uaHJceBmS+qpjv2JkIHNVcuOrM+YHwZOmJGBXI00mdUXEq65HTH" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.4/dist/purify.min.js" integrity="sha384-eEu5CTj3qGvu9PdJuS+YlkNi7d2XxQROAFYOr59zgObtlcux1ae1Il3u7jvdCSWu" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-<script src="/js/main.js?v=20261015030005"></script>
-<script src="/js/shared-country-name-ko.js?v=20261015030005"></script>
-<script src="/js/memorabilia-shared.js?v=20261015030005"></script>
-<script src="/js/admin-v3.js?v=20261015030005"></script>
-<script src="/js/admin-account.js?v=20261015030005"></script>
-<script src="/js/admin-memorabilia.js?v=20261015030005"></script>
-<script src="/js/admin-cardnews.js?v=20261015030005"></script>
-<script src="/js/admin-memorabilia-comments.js?v=20261015030005"></script>
+<script src="/js/main.js?v=20261015041225"></script>
+<script src="/js/shared-country-name-ko.js?v=20261015041225"></script>
+<script src="/js/memorabilia-shared.js?v=20261015041225"></script>
+<script src="/js/admin-v3.js?v=20261015041225"></script>
+<script src="/js/admin-account.js?v=20261015041225"></script>
+<script src="/js/admin-memorabilia.js?v=20261015041225"></script>
+<script src="/js/admin-cardnews.js?v=20261015041225"></script>
+<script src="/js/admin-memorabilia-comments.js?v=20261015041225"></script>
 <script>
   (function () {
     function toggleReveal(visible) {

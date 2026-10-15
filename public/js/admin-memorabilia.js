@@ -1073,7 +1073,7 @@
     const allChecked = visibleIds.length > 0 && visibleIds.every((id) => state.selectedIds.has(id));
 
     const html = ['<table class="v3-table memo-list-table"><thead><tr>',
-      `<th style="width:32px"><input type="checkbox" id="memo-list-select-all" ${allChecked ? 'checked' : ''} title="현재 페이지 전체 선택"/></th>`,
+      `<th style="width:32px"><label><input type="checkbox" id="memo-list-select-all" ${allChecked ? 'checked' : ''} title="현재 페이지 전체 선택"/><span class="v3-content-mobile-label">현재 페이지 전체 선택</span></label></th>`,
       '<th style="width:64px">이미지</th><th>제목</th><th>행사명</th><th style="width:80px">연도</th>',
       '<th style="width:120px">분류</th><th>태그</th>',
       '<th style="width:90px">상태</th><th style="width:80px"></th>',
@@ -1097,25 +1097,22 @@
       const statusBadge = it.status === 'public'
         ? '<span class="v3-badge v3-badge-success">공개</span>'
         : '<span class="v3-badge v3-badge-muted">초안</span>';
-      // 태그 — 칩 형태로 (최대 5개 표시 + 잔여 카운트)
+      // All tags remain readable on touch devices as well as desktop.
       const tags = Array.isArray(it.tags) ? it.tags : [];
       let tagCell = '<span style="opacity:.4;font-size:11px;">—</span>';
       if (tags.length) {
-        const shown = tags.slice(0, 5);
-        const rest = tags.length - shown.length;
-        tagCell = shown.map((t) => `<span class="memo-tag-mini">${escapeHtml(t)}</span>`).join(' ')
-          + (rest > 0 ? ` <span class="memo-tag-rest" title="${escapeHtml(tags.slice(5).join(', '))}">+${rest}</span>` : '');
+        tagCell = tags.map((t) => `<span class="memo-tag-mini">${escapeHtml(t)}</span>`).join(' ');
       }
       const checked = state.selectedIds.has(it.id) ? 'checked' : '';
       // 행 전체가 클릭 타깃 (체크박스/편집 버튼은 stopPropagation 으로 분리)
       html.push(`<tr data-memo-row="${it.id}" style="cursor:pointer" class="${checked ? 'is-selected' : ''}">`,
-        `<td><input type="checkbox" class="memo-row-check" data-memo-check="${it.id}" ${checked}/></td>`,
-        `<td>${thumb}</td>`,
-        `<td><strong>${escapeHtml(title)}</strong>${sub}</td>`,
-        `<td>${eventCell}</td><td>${it.year || '—'}</td><td>${escapeHtml(cat)}</td>`,
-        `<td><div class="memo-tag-mini-wrap">${tagCell}</div></td>`,
-        `<td>${statusBadge}</td>`,
-        `<td><button class="v3-btn v3-btn-outline v3-btn-sm" data-memo-edit="${it.id}">편집</button></td></tr>`);
+        `<td data-label="선택"><input type="checkbox" class="memo-row-check" data-memo-check="${it.id}" ${checked} aria-label="${escapeHtml(title)} 선택"/></td>`,
+        `<td data-label="이미지">${thumb}</td>`,
+        `<td data-label="제목"><strong>${escapeHtml(title)}</strong>${sub}</td>`,
+        `<td data-label="행사명">${eventCell}</td><td data-label="연도">${it.year || '—'}</td><td data-label="분류">${escapeHtml(cat)}</td>`,
+        `<td data-label="태그"><div class="memo-tag-mini-wrap">${tagCell}</div></td>`,
+        `<td data-label="상태">${statusBadge}</td>`,
+        `<td data-label="작업"><button class="v3-btn v3-btn-outline v3-btn-sm" data-memo-edit="${it.id}">편집</button></td></tr>`);
     }
     html.push('</tbody></table>');
     wrap.innerHTML = html.join('');
@@ -2012,12 +2009,12 @@
       <thead><tr><th>슬러그</th><th>영문 라벨</th><th>국문 라벨</th><th style="width:80px">정렬</th><th style="width:80px">상태</th><th style="width:80px"></th></tr></thead>
       <tbody>${state.categories.map((c) => `
         <tr data-cat-id="${c.id}">
-          <td><code>${escapeHtml(c.slug)}</code></td>
-          <td>${escapeHtml(c.label_en)}</td>
-          <td>${escapeHtml(c.label_ko)}</td>
-          <td>${c.sort_order}</td>
-          <td>${c.archived ? '<span class="v3-badge v3-badge-muted">아카이브</span>' : '<span class="v3-badge v3-badge-success">활성</span>'}</td>
-          <td><button class="v3-btn v3-btn-outline v3-btn-sm" data-cat-edit="${c.id}">편집</button></td>
+          <td data-label="슬러그"><code>${escapeHtml(c.slug)}</code></td>
+          <td data-label="영문 이름">${escapeHtml(c.label_en)}</td>
+          <td data-label="국문 이름">${escapeHtml(c.label_ko)}</td>
+          <td data-label="정렬">${c.sort_order}</td>
+          <td data-label="상태">${c.archived ? '<span class="v3-badge v3-badge-muted">아카이브</span>' : '<span class="v3-badge v3-badge-success">활성</span>'}</td>
+          <td data-label="작업"><button class="v3-btn v3-btn-outline v3-btn-sm" data-cat-edit="${c.id}">편집</button></td>
         </tr>`).join('')}</tbody></table>`;
 
     $$('button[data-cat-edit]', wrap).forEach((b) => b.addEventListener('click', () => {
@@ -2485,13 +2482,13 @@
         const period = ev.period_text ? escapeHtml(ev.period_text) : '<span style="opacity:.5">—</span>';
         const catLabel = ev.category_label_ko || ev.category_label_en || (ev.category_id ? `#${ev.category_id}` : '<span style="opacity:.5">—</span>');
         return `<tr data-ev-row="${ev.id}" class="${checked ? 'is-selected' : ''}" style="cursor:pointer">
-          <td><input type="checkbox" class="memo-ev-row-check" data-ev-check="${ev.id}" ${checked ? 'checked' : ''}/></td>
-          <td>${nameEn}${nameKo}</td>
-          <td>${typeof catLabel === 'string' && !catLabel.startsWith('<') ? escapeHtml(catLabel) : catLabel}</td>
-          <td>${period}</td>
-          <td>${ev.usage_count || 0}건</td>
-          <td>${archivedBadge}</td>
-          <td><button class="v3-btn v3-btn-outline v3-btn-sm" data-ev-edit="${ev.id}">편집</button></td>
+          <td data-label="선택"><input type="checkbox" class="memo-ev-row-check" data-ev-check="${ev.id}" ${checked ? 'checked' : ''} aria-label="${escapeHtml(ev.name_ko || ev.name_en || '행사')} 선택"/></td>
+          <td data-label="행사명">${nameEn}${nameKo}</td>
+          <td data-label="분류">${typeof catLabel === 'string' && !catLabel.startsWith('<') ? escapeHtml(catLabel) : catLabel}</td>
+          <td data-label="기간">${period}</td>
+          <td data-label="참조">${ev.usage_count || 0}건</td>
+          <td data-label="상태">${archivedBadge}</td>
+          <td data-label="작업"><button class="v3-btn v3-btn-outline v3-btn-sm" data-ev-edit="${ev.id}">편집</button></td>
         </tr>`;
       }).join('');
 

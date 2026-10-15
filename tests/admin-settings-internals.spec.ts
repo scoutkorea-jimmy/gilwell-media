@@ -272,3 +272,115 @@ test('main story cannot save the previous article while a newly selected article
   await page.locator('#home-lead-save-btn').click(); await expect.poll(() => state.writes.filter(write => write.path === '/api/settings/home-lead').length).toBe(1);
   const saved = state.writes.find(write => write.path === '/api/settings/home-lead')!.body; expect(saved.post_id).toBe(102); expect(saved.if_revision).toBe(3);
 });
+
+// Presentation-only fixtures. All requests stay in the existing local API harness.
+async function presentationData(page: Page, payloads: Record<string, any>) {
+  payloads['home-lead'].post = { ...SYNTHETIC_POST, image_url: '/img/logo.png' };
+  payloads['home-banners'].banners = [
+    { ...banner, image_url: '/img/logo.png' },
+    { ...banner, id: 8, title: '두 번째 합성 배너 · 관련 정보와 이미지 묶음', image_url: '/img/logo.png', active: 0 },
+  ];
+  const issues = [
+    { id: 5, title: '합성 이슈 · 저장 실패의 원인과 운영 상태 확인', summary: '실제 오류가 아닌 화면 검증용 기록입니다. 긴 설명도 제목과 분리되어 읽혀야 합니다.', severity: 'high', status: 'open', area: 'admin', issue_type: 'issue', source_path: '/admin/settings/example', occurrence_count: 4, updated_at: '2026-10-15 00:00:00' },
+    { id: 6, title: '합성 모니터링 기록', summary: '재현 여부를 확인하는 중인 합성 기록입니다.', severity: 'medium', status: 'monitoring', area: 'api', updated_at: '2026-10-15 01:00:00' },
+    { id: 7, title: '합성 해결 기록', severity: 'low', status: 'resolved', area: 'site', updated_at: '2026-10-15 02:00:00' },
+  ];
+  const history = [
+    { id: 'fixture-1', title: '합성 설정 변경 · 메인 스토리 운영 기록', problem: '화면 검증용 설정 변경 기록입니다.', suspected_cause: '운영자 저장에 따른 정상 기록입니다.', occurred_at: '2026-10-15 00:00:00', group: 'settings', source: 'settings', level: 'info', search_text: '합성 설정 변경' },
+    { id: 'fixture-2', title: '합성 오류 · 입력 보존과 실패 메시지 확인', problem: '실제 장애가 아닌 화면 검증용 내용입니다.', suspected_cause: '원인을 확정한 기록이 아니며 실제 운영 상태와 무관합니다.', occurred_at: '2026-10-15 01:00:00', group: 'error', source: 'admin', level: 'error', search_text: '합성 오류' },
+  ];
+  await page.route('**/api/admin/homepage-issues?**', route => route.fulfill({ json: { items: issues } }));
+  await page.route('**/api/admin/site-history?**', route => route.fulfill({ json: { items: history, sources: { operational: true, issues: true, settings: true, posts: true } } }));
+}
+
+for (const width of [5120, 2560, 1920, 390, 280]) test(`presentation grouped content at ${width}px`, async ({ page }) => {
+  await page.setViewportSize({ width, height: 1100 });
+  const { payloads, base, state } = await setup(page); await presentationData(page, payloads);
+  if (process.env.ADMIN_PRESENTATION_COMMON_CSS) await page.addStyleTag({ path: process.env.ADMIN_PRESENTATION_COMMON_CSS });
+  mkdirSync('work/admin-presentation-settings', { recursive: true });
+  for (const section of managed) {
+    await navigate(page, 'settings', section); await assertRenderedBounds(page, `${width} ${section}`);
+    const size = await page.locator('#panel-settings').boundingBox(); expect(size!.width).toBeLessThanOrEqual(1601);
+    if (section === 'meta') {
+      expect(await page.locator('#meta-editor details').count()).toBe(0);
+      const fields = page.locator('#meta-editor input'); expect(await fields.count()).toBeGreaterThan(10);
+      for (const field of await fields.all()) await expect(field).toBeVisible();
+    }
+    if (section === 'home-lead') {
+      await expect(page.locator('#home-lead-preview-desktop img')).toBeVisible();
+      await expect(page.locator('#home-lead-preview-mobile img')).toBeVisible();
+    }
+    if (['hero', 'home-lead', 'home-banners', 'meta'].includes(section)) await page.screenshot({ path: `work/admin-presentation-settings/after-${section}-${width}.png` });
+  }
+  for (const panel of ['releases', 'homepage-issues', 'site-history', 'account-me', 'account-users', 'account-presets']) {
+    await navigate(page, panel); await assertRenderedBounds(page, `${width} ${panel}`);
+    const size = await page.locator('#panel-' + panel).boundingBox(); expect(size!.width).toBeLessThanOrEqual(panel === 'account-me' ? 1441 : 1801);
+    if (panel === 'homepage-issues' || panel === 'site-history') {
+      const search = page.locator('#' + panel + '-search');
+      expect(await search.evaluate(el => Math.abs(el.getBoundingClientRect().width - el.parentElement!.getBoundingClientRect().width))).toBeLessThanOrEqual(1);
+    }
+    if (['homepage-issues', 'site-history', 'account-users', 'account-presets'].includes(panel)) {
+      await expect(page.locator('#panel-' + panel + ' .v3-overview-metrics')).toBeVisible();
+      const wrap = page.locator('#panel-' + panel + ' .v3-table-wrap').first();
+      expect(await wrap.evaluate(el => el.scrollWidth - el.clientWidth)).toBeLessThanOrEqual(1);
+      if (width === 390) {
+        const tops = await page.locator('#panel-' + panel + ' .v3-overview-metrics dd').evaluateAll(elements => elements.map(element => element.getBoundingClientRect().top));
+        expect(Math.max(...tops) - Math.min(...tops)).toBeLessThanOrEqual(1);
+      }
+    }
+    if (panel === 'account-me' && width >= 1200) {
+      const profile = await page.locator('#account-me-profile-card').boundingBox(), username = await page.locator('#account-me-username-card').boundingBox();
+      expect(Math.abs(profile!.y - username!.y)).toBeLessThanOrEqual(1);
+    }
+    if (panel !== 'account-presets') await page.screenshot({ path: `work/admin-presentation-settings/after-${panel}-${width}.png` });
+  }
+  await navigate(page, 'homepage-issues'); await expect(page.locator('#homepage-issues-summary dd').first()).toHaveText('3건');
+  await page.locator('#homepage-issues-filter-status').selectOption('open'); await expect(page.locator('#homepage-issues-summary dd').first()).toHaveText('1건');
+  await page.locator('#homepage-issues-filter-status').selectOption('all');
+  expect(state.writes).toEqual([]); expect(base.externalApi).toEqual([]); expect(base.pageErrors).toEqual([]);
+  await page.goto('/kms.html'); await expect(page.locator('#kms-screen')).toBeVisible(); await page.locator('[data-kms-mode="edit"]').click();
+  const editor = page.locator('#kms-editor-panel'); await expect(editor).toBeVisible();
+  expect((await editor.boundingBox())!.width).toBeLessThanOrEqual(1281);
+  expect((await editor.boundingBox())!.y).toBeLessThan((await page.locator('#kms-document-body').boundingBox())!.y);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(1);
+  await page.screenshot({ path: `work/admin-presentation-settings/after-kms-edit-${width}.png` });
+  await page.locator('[data-kms-tab="api"]').click(); await expect(page.locator('#kms-tab-docs')).toBeHidden();
+  expect(state.writes).toEqual([]);
+});
+
+test('presentation summaries stay unknown through failed refresh and recover only after a successful read', async ({ page }) => {
+  const { state } = await setup(page);
+  const panels = [
+    ['homepage-issues', '/api/admin/homepage-issues', 'homepage-issues-list', 'homepage-issues-filter-status'],
+    ['site-history', '/api/admin/site-history', 'site-history-list', 'site-history-filter-group'],
+    ['account-users', '/api/admin/users', 'account-users-table', 'account-users-show-deleted'],
+    ['account-presets', '/api/admin/presets', 'account-presets-list', ''],
+  ];
+  for (const [panel, path, listId, filterId] of panels) {
+    await navigate(page, panel);
+    const summary = page.locator('#' + panel + '-summary'); await expect(summary.locator('dd').first()).toBeVisible();
+    state.deferReads.add(path); state.fail.set('GET ' + path, 400);
+    await page.locator('#' + panel + '-refresh-btn').click(); await expect.poll(() => state.pending.length).toBe(1);
+    await expect(summary.locator('dd')).toHaveCount(0); state.pending.shift()!.release();
+    await expect(page.locator('#' + listId)).toContainText('합성 요청 실패'); await expect(summary.locator('dd')).toHaveCount(0);
+    if (filterId) {
+      if (panel === 'account-users') await page.locator('#' + filterId).check();
+      else await page.locator('#' + filterId).selectOption(panel === 'homepage-issues' ? 'open' : 'settings');
+      await expect(summary.locator('dd')).toHaveCount(0);
+    }
+    state.deferReads.delete(path); state.fail.delete('GET ' + path);
+    await page.locator('#' + panel + '-refresh-btn').click(); await expect(summary.locator('dd').first()).toBeVisible();
+  }
+  await navigate(page, 'releases');
+  let releaseRefresh: (() => void) | undefined;
+  await page.route('**/data/changelog.json', async route => {
+    await new Promise<void>(resolve => { releaseRefresh = resolve; });
+    return route.fulfill({ status: 400, json: { error: '합성 버전 기록 조회 실패' } });
+  });
+  await page.locator('#releases-refresh-btn').click(); await expect.poll(() => !!releaseRefresh).toBe(true);
+  await expect(page.locator('#releases-summary dd')).toHaveCount(0); releaseRefresh!();
+  await expect(page.locator('#releases-list')).toContainText('불러오지 못했습니다');
+  await page.locator('#releases-search').fill('관리자'); await expect(page.locator('#releases-summary dd')).toHaveCount(0);
+  await page.unroute('**/data/changelog.json'); await page.locator('#releases-refresh-btn').click(); await expect(page.locator('#releases-summary dd').first()).toBeVisible();
+  expect(state.writes).toEqual([]);
+});

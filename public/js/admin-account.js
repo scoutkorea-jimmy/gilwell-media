@@ -315,6 +315,7 @@
   /* ── 사용자 관리 패널 ─────────────────────────────────────── */
   var _usersLoadSerial = 0;
   function _loadUsers() {
+    _setAccountOverviewReady('account-users-summary', false);
     var serial = ++_usersLoadSerial;
     var tbody = $('account-users-table');
     if (tbody) tbody.innerHTML = '<div class="v3-loading"><div class="v3-spinner"></div>로딩 중…</div>';
@@ -333,6 +334,7 @@
       if (arr[2]) { _renderKillSwitch(arr[2]); var toggle = $('account-kill-switch-toggle'); if (toggle) toggle.disabled = false; }
       else { var toggle = $('account-kill-switch-toggle'); if (toggle) toggle.disabled = true; var label = $('account-kill-switch-state'); if (label) label.textContent = '발행 차단 상태를 확인하지 못했습니다. 새로고침으로 다시 확인해주세요.'; }
       if (!arr[1]) _toast('사용자 목록은 불러왔지만 권한 프리셋을 확인하지 못했습니다. 기존 값은 보존했습니다.', 'warn');
+      _setAccountOverviewReady('account-users-summary', true);
       _renderUsersTable();
     }).catch(function (err) {
       if (serial !== _usersLoadSerial) return;
@@ -351,12 +353,31 @@
     }
   }
 
+  function _setAccountOverviewReady(id, ready) {
+    var host = $(id);
+    if (!host) return;
+    host.dataset.overviewReady = ready ? '1' : '0';
+    if (!ready) host.textContent = '';
+  }
+  function _renderAccountOverview(id, metrics, unit) {
+    var host = $(id);
+    if (!host || host.dataset.overviewReady === '0') return;
+    host.innerHTML = '<dl class="v3-overview-metrics">' + metrics.map(function (metric) {
+      return '<div><dt>' + _esc(metric[0]) + '</dt><dd>' + Number(metric[1] || 0).toLocaleString('ko-KR') + '<span>' + unit + '</span></dd></div>';
+    }).join('') + '</dl>';
+  }
+
   function _renderUsersTable() {
     var host = $('account-users-table');
     if (!host) return;
     var rows = _state.users.filter(function (u) {
       return _state.showDeleted || u.status !== 'deleted';
     });
+    _renderAccountOverview('account-users-summary', [
+      ['표시된 계정', rows.length],
+      ['활성 계정', rows.filter(function (u) { return u.status === 'active'; }).length],
+      ['비활성 · 삭제 계정', rows.filter(function (u) { return u.status !== 'active'; }).length]
+    ], '명');
     $('account-users-count') && ($('account-users-count').textContent =
       '총 ' + rows.length + '명' + (_state.showDeleted ? ' (삭제 포함)' : ''));
     if (!rows.length) {
@@ -389,14 +410,14 @@
       }
       html +=
         '<tr>' +
-        '<td><code>' + _esc(u.username) + '</code>' +
-          (u.must_change_password ? ' <span class="v3-account-flag">임시비번</span>' : '') + '</td>' +
-        '<td>' + _esc(u.display_name) + '</td>' +
-        '<td>' + roleBadge + '</td>' +
-        '<td>' + (u.editor_code ? '<code>' + _esc(u.editor_code) + '</code>' : '—') + '</td>' +
-        '<td>' + statusBadge + '</td>' +
-        '<td><span class="v3-inline-meta">' + _esc(_kstDate(u.last_login_at)) + '</span></td>' +
-        '<td style="white-space:nowrap;">' + actions + '</td>' +
+        '<td data-label="아이디"><div><code>' + _esc(u.username) + '</code>' +
+          (u.must_change_password ? ' <span class="v3-account-flag">임시비번</span>' : '') + '</div></td>' +
+        '<td data-label="표시 이름">' + _esc(u.display_name) + '</td>' +
+        '<td data-label="역할">' + roleBadge + '</td>' +
+        '<td data-label="저자 코드">' + (u.editor_code ? '<code>' + _esc(u.editor_code) + '</code>' : '—') + '</td>' +
+        '<td data-label="상태">' + statusBadge + '</td>' +
+        '<td data-label="최근 로그인"><span class="v3-inline-meta">' + _esc(_kstDate(u.last_login_at)) + '</span></td>' +
+        '<td data-label="관리"><div class="v3-account-row-actions">' + actions + '</div></td>' +
         '</tr>';
     });
     html += '</tbody></table>';
@@ -744,6 +765,7 @@
 
   /* ── 프리셋 관리 패널 ─────────────────────────────────── */
   function _loadPresetsPanel() {
+    _setAccountOverviewReady('account-presets-summary', false);
     var host = $('account-presets-list');
     if (host) host.innerHTML = '<div class="v3-loading"><div class="v3-spinner"></div>로딩 중…</div>';
     // Menus are needed for the preset permission grid — piggyback on /users
@@ -757,6 +779,7 @@
         _state.menus = arr[1].menus || _state.menus;
         _state.menuSlugs = arr[1].menu_slugs || _state.menuSlugs;
       }
+      _setAccountOverviewReady('account-presets-summary', true);
       _renderPresetsList();
     }).catch(function (err) {
       if (host) host.innerHTML = '<div class="v3-inline-meta" style="color:#b91c1c;">로드 실패: ' + _esc(err.message) + '</div>';
@@ -767,6 +790,11 @@
     var host = $('account-presets-list');
     if (!host) return;
     var rows = _state.presets || [];
+    _renderAccountOverview('account-presets-summary', [
+      ['불러온 프리셋', rows.length],
+      ['기본 프리셋', rows.filter(function (p) { return p.is_builtin; }).length],
+      ['직접 만든 프리셋', rows.filter(function (p) { return !p.is_builtin; }).length]
+    ], '개');
     var count = $('account-presets-count');
     if (count) count.textContent = '총 ' + rows.length + '개 (빌트인 ' + rows.filter(function (p) { return p.is_builtin; }).length + ')';
     if (!rows.length) {
@@ -790,12 +818,12 @@
       var permCount = (p.permissions && p.permissions.permissions) ? p.permissions.permissions.length : 0;
       html +=
         '<tr>' +
-        '<td>' + kind + '</td>' +
-        '<td><strong>' + _esc(p.name) + '</strong><br><code>' + _esc(p.slug) + '</code></td>' +
-        '<td class="v3-inline-meta" style="max-width:360px;">' + _esc(p.description || '—') + '</td>' +
-        '<td>' + permCount + '</td>' +
-        '<td><span class="v3-inline-meta">' + _esc(_kstDate(p.updated_at)) + '</span></td>' +
-        '<td style="white-space:nowrap;">' + actions + '</td>' +
+        '<td data-label="구분">' + kind + '</td>' +
+        '<td data-label="이름 · 코드"><div><strong>' + _esc(p.name) + '</strong><br><code>' + _esc(p.slug) + '</code></div></td>' +
+        '<td data-label="설명" class="v3-account-description">' + _esc(p.description || '—') + '</td>' +
+        '<td data-label="권한 수">' + permCount + '</td>' +
+        '<td data-label="최근 수정"><span class="v3-inline-meta">' + _esc(_kstDate(p.updated_at)) + '</span></td>' +
+        '<td data-label="관리"><div class="v3-account-row-actions">' + actions + '</div></td>' +
         '</tr>';
     });
     html += '</tbody></table>';

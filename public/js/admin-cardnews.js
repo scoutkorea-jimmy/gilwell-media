@@ -96,14 +96,16 @@
     wrap.innerHTML = state.items.map(function (it) {
       var id = Number(it.id);
       return '' +
-        '<div style="display:flex; align-items:center; gap:12px; padding:13px 4px; border-bottom:1px solid var(--gray-100,#ebebeb);">' +
-          '<div style="flex:1; min-width:0;">' +
-            '<div style="font-weight:700; font-size:14px; color:var(--ink,#1f1f1f); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">' + escapeHtml(it.title) + '</div>' +
+        '<div class="v3-cardnews-row">' +
+          '<div class="v3-cardnews-copy">' +
+            '<div class="v3-cardnews-title">' + escapeHtml(it.title) + '</div>' +
             '<div style="font-size:12px; color:var(--gray-500,#8f8f8f); margin-top:3px;">' + escapeHtml(fmtKst(it.updated_at || it.created_at)) + (it.has_data ? '' : ' · <span style="color:var(--color-fire,#ff5655);">데이터 없음</span>') + '</div>' +
           '</div>' +
+          '<div class="v3-cardnews-actions">' +
           (canWrite() ? '<button class="v3-btn v3-btn-primary v3-btn-sm" type="button" data-cn-edit="' + id + '">편집</button>' : '') +
           '<a class="v3-btn v3-btn-ghost v3-btn-sm" href="/card-news/' + id + '?embed=1" target="_blank" rel="noopener">미리보기 ↗</a>' +
           (canWrite() ? '<button class="v3-btn v3-btn-outline v3-btn-sm" type="button" data-cn-copy="' + id + '">복사</button><button class="v3-btn v3-btn-danger v3-btn-sm" type="button" data-cn-del="' + id + '">삭제</button>' : '') +
+          '</div>' +
         '</div>';
     }).join('');
   }

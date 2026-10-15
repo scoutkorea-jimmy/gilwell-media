@@ -1161,6 +1161,21 @@ mark.kms-highlight {
   outline: none;
 }
 
+/* Editing remains a readable work surface without changing the KMS reader. */
+.kms-page #kms-editor-panel { width: 100%; max-width: 1280px; margin-inline: auto; }
+.kms-page #kms-tab-docs:not([hidden]):has(> #kms-editor-panel:not([hidden])) { display: flex; flex-direction: column; }
+.kms-page #kms-tab-docs:not([hidden]):has(> #kms-editor-panel:not([hidden])) > #kms-editor-panel { order: 1; }
+.kms-page #kms-tab-docs:not([hidden]):has(> #kms-editor-panel:not([hidden])) > #kms-document-body { order: 2; margin-top: 24px; }
+.kms-page #kms-editor-panel .kms-editor-toolbar { gap: 12px 24px; padding: 16px 20px; }
+.kms-page #kms-editor-panel .kms-editor-hint,
+.kms-page #kms-editor-panel .kms-editor-hint code { font-size: 14px; line-height: 1.6; }
+.kms-page #kms-editor-input { font-size: 14px; line-height: 1.75; }
+.kms-page #kms-editor-input:focus-visible { outline: 2px solid var(--kms-accent); outline-offset: -2px; }
+@media (max-width: 600px) {
+  .kms-page #kms-editor-panel .kms-editor-toolbar { padding: 16px; }
+  .kms-page #kms-editor-input { padding: 16px; }
+}
+
 /* ── API 가이드 ─────────────────────────────────────────── */
 .kms-api-auth-box {
   margin-bottom: 28px;

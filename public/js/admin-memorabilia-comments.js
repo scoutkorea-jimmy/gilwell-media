@@ -128,22 +128,22 @@
       const actions = renderActions(c);
       return `
         <tr data-comment-id="${c.id}">
-          <td class="v3-nowrap">${esc(formatKst(c.created_at))}</td>
-          <td>
+          <td class="v3-nowrap" data-label="작성시각 (KST)">${esc(formatKst(c.created_at))}</td>
+          <td data-label="작성자 / 소속">
             <div style="font-weight:600;">${esc(c.author_name)}</div>
             <div style="font-size:12px; color:var(--gray-700,#3f3f3f);">${esc(c.affiliation)}</div>
           </td>
-          <td style="max-width:340px;">
+          <td data-label="댓글">
             <div style="white-space:pre-wrap; font-size:13px; line-height:1.5;">${esc(c.content)}</div>
             ${c.rejection_reason ? `<div style="margin-top:6px; font-size:11px; color:var(--color-fire-red,#ff5655);">거부 사유: ${esc(c.rejection_reason)}</div>` : ''}
           </td>
-          <td style="font-size:12px;">
+          <td style="font-size:12px;" data-label="도감 항목">
             <div><a href="${esc(link)}" target="_blank" rel="noopener">${esc(title)}</a></div>
             <div style="color:var(--gray-700,#3f3f3f);">#${c.memorabilia_id}</div>
           </td>
-          <td style="font-size:12px; font-family:monospace;">${esc(c.ip_address)}</td>
-          <td>${statusBadge}</td>
-          <td>${actions}</td>
+          <td style="font-size:12px; font-family:monospace;" data-label="IP">${esc(c.ip_address)}</td>
+          <td data-label="상태">${statusBadge}</td>
+          <td data-label="처리">${actions}</td>
         </tr>
       `;
     }).join('');
