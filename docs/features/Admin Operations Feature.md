@@ -109,7 +109,15 @@ scope: admin
 - 전 메뉴의 긴 형식 합성 자료를 **280/320/390/820/1280px**에서 확인했다. 취소 mutation 0회, 늦은 응답/409/조회 실패, 실제 EditorJS·React iframe·Tiptap, 미저장/저장/이미지 처리·키보드·모달 초점을 포함한다. 그래프는 초기 390px에서 표시 이름 교차 0, 약 14px이며 50개 노드의 키보드 접근을 유지한다.
 - 먼저 설치된 Chrome에서 개별 검사가 통과했으나 GoogleUpdater의 상속 파이프로 시험 종료가 지연된 실행은 정상 suite 성공으로 집계하지 않았다. 최종 통합 실행은 기존 설치 Chromium headless shell을 사용했다. 정상 사용자 브라우저·운영 인증·의존성을 변경하지 않았다. 빠른 요청의 로컬 정적 서버 연결 reset과 page-close CDN response disposal은 시험 fixture에서 별도로 수정했고 공개 API 차단을 유지했다.
 - 배포 입력 **399개**의 실제 바이트와 파일 크기·미변경 Git blob 일치, 빈 입력 0을 확인했다. 표준 `sync_versions.sh`가 변경한 29개 파일은 캐시/버전 메타데이터만 달라졌고 공개 Site `00.194.00`을 유지한다. KMS는 원본 CAS/readback·이력/감사 기록·외장 암호화 행 백업의 인증된 복원 뒤 표준 snapshot 동기화와 drift check를 통과했다.
-- 현재 관리자 `03.157.00`, 캐시 `20261015030005`의 운영 배포와 정상 로그인 검수는 다음 단계이며 아래에 실제 결과를 추가한다.
+- 관리자 `03.157.00`, 캐시 `20261015030005`의 표준 운영 배포와 읽기 검증은 완료했다. 정상 운영 로그인 뒤의 내부 화면 검수는 아래 상태로 구분한다.
+
+### 운영 배포·읽기 확인 · 03.157.00
+
+- 런타임 커밋 **`8d265232`**를 canonical main에 커밋하고 origin/main에 push했다. 기존 iCloud Git reflog append 시간 초과는 원래 로그를 보존하고 필요한 다운로드를 요청한 뒤 해결했으며 Git 정책/기록을 끄거나 삭제하지 않았다. 기존 미추적 `work/`를 보존했다.
+- 표준 `deploy_production.sh`가 preflight, Pages **`8b06fbd6`**, 기존 publish-due/cleanup-drafts/home-lead Worker, 배포 후 확인, 공개 기사 감사, release snapshot **`20261015T032556Z-8d265232`**까지 exit 0으로 완료했다. 새 서비스·스케줄을 추가하지 않았다. 공개 기사 **490건, 오류 0건**이다.
+- 운영 `/VERSION` = `00.194.00`, `/ADMIN_VERSION` = `03.157.00`, `/api/version`의 세 버전이 일치한다. 공개 UI는 재설계하지 않았다. 새 태그 상세의 익명 요청은 401, 내부 문서/AGENTS 경로는 404다.
+- 전파 대기 뒤 Admin CSS·V3/account/cardnews/memorabilia/comments/KMS JS·embedded JSX **8개 자산의 실제 바이트와 SHA-256이 소스와 일치**한다. `/admin` HTML은 기존 middleware의 CSP nonce와 Cloudflare beacon을 제외하면 정확히 일치한다. 확인 POP는 HKG/KIX/NRT다.
+- 정상 Aside의 `/admin`에서 로그인 화면 **Admin V03.157.00 · Site V00.194.00**을 실제 확인했다. 현재 세션은 로그인 화면이므로 사용자에게 재로그인을 요청했다. 로그인 뒤 새 40개 내부 화면의 운영 데이터 조회/OTP 취소는 **아직 미확인**이며, `03.156.00`의 과거 로그인 검수를 이번 배포의 증거로 사용하지 않는다. 비밀번호·쿠키·OTP를 추출하거나 인증을 우회하지 않았다.
 
 ## 관리자 재정리 계획 · 2026-10-15
 
