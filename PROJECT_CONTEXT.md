@@ -43,6 +43,8 @@
 - 최종 검수: live API335건·54국문 미확정, 실제 변경 필드 전체 일치. SQL/저장 매핑/메타데이터/공개 노출/diff 검증 통과.
 
 
-## 2026-10-20 — Owner phone replacement (local, release pending)
+## 2026-10-20 — Owner phone replacement (deployed)
 
-public/about.html updates Jimmy Park's management contact to +82.10.2646.1635, tel:+821026461635 and JSON-LD +82-10-2646-1635. Other contacts and layout are unchanged. main matches origin/main; P0 query returned zero open/monitoring high/critical issues (first transient7403, retry succeeded). Mac Writer sibling about.html is synchronized to prevent reintroducing the retired number. No release or version bump yet. Next: review public/about.html, then upon owner approval follow rules/02-versioning.md and rules/03-deploy.md.
+public/about.html updates Jimmy Park's management contact to +82.10.2646.1635, tel:+821026461635 and JSON-LD +82-10-2646-1635. Other contacts and layout are unchanged. main matches origin/main; P0 query returned zero open/monitoring high/critical issues (first transient7403, retry succeeded). Mac Writer sibling about.html is synchronized to prevent reintroducing the retired number. Released with owner approval through rules/02-versioning.md and rules/03-deploy.md.
+
+Owner approved commit/push/deploy. Public commit202191a5 pushed to main; standard production script deployed7d4d4881.gilwell-media.pages.dev, site00.194.01. Live About telephone and ContactPoint JSON-LD match the new number, retired number absent. Post-deploy version and sitemap checks passed. Writer sibling commitf9662d60 pushed to feat/bpmedia-mac-writer-v1. No phone-call test was performed; screenshot capture was unavailable, browser accessibility and independent HTTP were verified. Final public post audit:511 published posts,0 issues. Release snapshot20261019T165953Z-202191a5 saved successfully.
