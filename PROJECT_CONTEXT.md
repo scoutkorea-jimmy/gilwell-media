@@ -41,3 +41,8 @@
 - 백업: 외장 Project_Server_Backups/bpmedia/20261008-glossary-before.json.enc 및 KMS 암호화 전본; 키는 기기 로컬. 근거 work/gpt-glossary-20261008.
 - 잔여위험: 사이트 회원국 현황 기준이며230개 단체의 공식 한국어 번역을 확정한 작업은 아니다. 관리자 실제 계정 저장은 수행하지 않았으며 저장 매핑 회귀/인증경계/실데이터 조회로 확인. 사용자 승인으로 커밋·푸시·표준production 배포.
 - 최종 검수: live API335건·54국문 미확정, 실제 변경 필드 전체 일치. SQL/저장 매핑/메타데이터/공개 노출/diff 검증 통과.
+
+
+## 2026-10-20 — Owner phone replacement (local, release pending)
+
+public/about.html updates Jimmy Park's management contact to +82.10.2646.1635, tel:+821026461635 and JSON-LD +82-10-2646-1635. Other contacts and layout are unchanged. main matches origin/main; P0 query returned zero open/monitoring high/critical issues (first transient7403, retry succeeded). Mac Writer sibling about.html is synchronized to prevent reintroducing the retired number. No release or version bump yet. Next: review public/about.html, then upon owner approval follow rules/02-versioning.md and rules/03-deploy.md.
