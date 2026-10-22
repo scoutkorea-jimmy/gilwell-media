@@ -22,6 +22,10 @@
 .board-pw-input-wrap {
   position: relative;
 }
+#post-login-form label {
+  display: block;
+  margin-block: 12px 6px;
+}
 .board-pw-eye {
   position:   absolute;
   right:      10px;

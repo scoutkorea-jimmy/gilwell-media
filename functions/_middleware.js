@@ -286,7 +286,8 @@ function buildCsp(request, nonce) {
     // sharer.kakao.com: Kakao Share SDK(sendScrap/sendDefault)는 숨김 <form>을
     // sharer.kakao.com 으로 POST 제출해 공유 팝업을 띄운다. 'self' 만으로는 이
     // 제출이 차단되어 공유 팝업이 빈 화면으로 뜬다(성공 토스트만 표시).
-    "form-action 'self' https://sharer.kakao.com",
+    // 비로그인 공유는 accounts.kakao.com 로그인 화면으로 리디렉션된다.
+    "form-action 'self' https://sharer.kakao.com https://accounts.kakao.com",
     template ? "frame-ancestors 'self'" : "frame-ancestors 'none'",
   ].filter(Boolean).join('; ');
 }

@@ -10,6 +10,7 @@ var _sharePostTitle = String(boot.sharePostTitle || document.title || '');
 var _sharePostSubtitle = String(boot.sharePostSubtitle || '');
 var _postEditSeed = boot.editSeed || {};
 var _postTurnstileWidgetId = null;
+var _postLoginRetryAt = 0;
 var _editorCallbackQueue = [];
 var _postEditState = {
   editor: null,
@@ -522,6 +523,7 @@ window._closePostLogin = function () {
   if (!modal) return;
   modal.classList.remove('open');
   modal.setAttribute('aria-hidden', 'true');
+  modal.inert = true;
   _setBodyModalLock(false);
   var err = document.getElementById('post-login-err');
   if (err) err.style.display = 'none';
@@ -538,9 +540,10 @@ function _openPostLogin() {
   if (err) err.style.display = 'none';
   modal.classList.add('open');
   modal.setAttribute('aria-hidden', 'false');
+  modal.inert = false;
   _setBodyModalLock(true);
   setTimeout(function () {
-    var input = document.getElementById('post-login-pw');
+    var input = document.getElementById('post-login-username');
     if (input) input.focus();
   }, 80);
   GW.loadTurnstile(function () {
@@ -647,25 +650,38 @@ window._postEdit = function() {
         _openPostEdit();
         return;
       }
-      GW.showToast('수정 권한이 있는 관리자 비밀번호를 다시 입력해주세요', 'error');
+      GW.showToast('기사 수정 권한이 있는 관리자 계정으로 로그인해주세요', 'error');
       _openPostLogin();
     });
     return;
   }
   if (GW.getToken && GW.getToken()) {
     GW.clearToken();
-    GW.showToast('수정 권한이 있는 관리자 비밀번호를 다시 입력해주세요', 'error');
+    GW.showToast('기사 수정 권한이 있는 관리자 계정으로 로그인해주세요', 'error');
   } else {
-    GW.showToast('수정하려면 관리자 비밀번호를 입력해주세요', 'error');
+    GW.showToast('수정하려면 관리자 계정으로 로그인해주세요', 'error');
   }
   _openPostLogin();
 };
 
 window._postLoginSubmit = function() {
-  var pw = (document.getElementById('post-login-pw').value || '').trim();
+  var username = document.getElementById('post-login-username').value.trim().toLowerCase();
+  var pw = document.getElementById('post-login-pw').value;
   var err = document.getElementById('post-login-err');
   var submitBtn = document.getElementById('post-login-submit-btn');
+  if (submitBtn.disabled) return;
   err.style.display = 'none';
+  if (Date.now() < _postLoginRetryAt) {
+    err.textContent = '로그인이 일시 제한되었습니다. ' + Math.ceil((_postLoginRetryAt - Date.now()) / 1000) + '초 후 다시 시도해주세요.';
+    err.style.display = 'block';
+    return;
+  }
+  if (!username) {
+    err.textContent = '관리자 계정 아이디를 입력해주세요';
+    err.style.display = 'block';
+    document.getElementById('post-login-username').focus();
+    return;
+  }
   if (!pw) {
     err.textContent = '비밀번호를 입력하세요';
     err.style.display = 'block';
@@ -687,6 +703,7 @@ window._postLoginSubmit = function() {
   GW.apiFetch('/api/admin/login', {
     method: 'POST',
     body: JSON.stringify({
+      username: username,
       password: pw,
       cf_turnstile_response: cfToken || undefined
     })
@@ -696,7 +713,7 @@ window._postLoginSubmit = function() {
         GW.clearToken();
         err.textContent = '수정 권한이 있는 관리자 계정만 사용할 수 있습니다';
         err.style.display = 'block';
-        GW.showToast('수정 권한이 있는 관리자 비밀번호가 아닙니다', 'error');
+        GW.showToast('기사 수정 권한이 있는 관리자 계정이 필요합니다', 'error');
         if (window.turnstile && _postTurnstileWidgetId != null) window.turnstile.reset(_postTurnstileWidgetId);
         return;
       }
@@ -707,7 +724,13 @@ window._postLoginSubmit = function() {
       _openPostEdit();
     })
     .catch(function(errObj) {
-      var message = (errObj && errObj.message) || '비밀번호가 올바르지 않습니다';
+      var message = (errObj && errObj.message) || '로그인할 수 없습니다. 아이디와 비밀번호를 확인해주세요.';
+      document.getElementById('post-login-pw').value = '';
+      if (errObj && errObj.status === 429) {
+        var retryAfter = Math.max(1, Number(errObj.retry_after) || 60);
+        _postLoginRetryAt = Date.now() + retryAfter * 1000;
+        message = '로그인이 일시 제한되었습니다. ' + Math.ceil(retryAfter) + '초 후 다시 시도해주세요.';
+      }
       err.textContent = message;
       err.style.display = 'block';
       GW.showToast(message, 'error');
@@ -715,7 +738,7 @@ window._postLoginSubmit = function() {
     })
     .finally(function () {
       submitBtn.disabled = false;
-      submitBtn.textContent = '확인';
+      submitBtn.textContent = '로그인';
     });
 };
 
@@ -883,8 +906,9 @@ window._togglePostLoginPw = function () {
   input.focus();
 };
 
-document.getElementById('post-login-pw').addEventListener('keydown', function(e) {
-  if (e.key === 'Enter') window._postLoginSubmit();
+document.getElementById('post-login-form').addEventListener('submit', function(e) {
+  e.preventDefault();
+  window._postLoginSubmit();
 });
 document.getElementById('post-login-modal').addEventListener('click', function (event) {
   if (event.target === event.currentTarget) window._closePostLogin();
@@ -927,7 +951,6 @@ document.getElementById('post-cover-btn').addEventListener('click', function () 
   }
   // 언어 토글은 js/site-chrome.js의 [data-lang-toggle] delegation이 처리한다 — 여기서 따로 바인딩 불필요.
   _on('post-login-pw-eye', function () { window._togglePostLoginPw(); });
-  _on('post-login-submit-btn', function () { window._postLoginSubmit(); });
   _on('post-login-cancel-btn', function () { window._closePostLogin(); });
   _on('post-edit-close-x', function () { window._closePostEdit(); });
   _on('post-edit-cancel', function () { window._closePostEdit(); });

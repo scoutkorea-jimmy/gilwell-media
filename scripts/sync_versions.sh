@@ -30,6 +30,7 @@ SITE_FILES=(
   public/glossary.html
   public/contributors.html
   public/about.html
+  public/help.html
   public/search.html
   public/calendar.html
   public/memorabilia.html

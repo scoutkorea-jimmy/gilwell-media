@@ -1,6 +1,6 @@
 // AUTO-MANAGED — values are rewritten by scripts/sync_versions.sh on every
 // release. Do not edit by hand; bump VERSION / ADMIN_VERSION / ASSET_VERSION
 // files instead and run ./scripts/sync_versions.sh.
-export const SITE_VERSION = '00.194.01';
-export const ADMIN_VERSION = '03.158.02';
-export const ASSET_VERSION = '20261019165333';
+export const SITE_VERSION = '00.194.02';
+export const ADMIN_VERSION = '03.158.03';
+export const ASSET_VERSION = '20261022111734';

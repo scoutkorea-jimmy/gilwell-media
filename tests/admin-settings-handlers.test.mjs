@@ -8,7 +8,7 @@ import * as privacy from '../functions/api/settings/privacy-policy.js';
 import * as homeBanners from '../functions/api/settings/home-banners.js';
 import * as contributors from '../functions/api/settings/contributors.js';
 import { loadAllHomeBanners } from '../functions/_shared/home-banners.js';
-import { refreshAutoHomeLead, clearHomeLeadForPost, readHomeLeadState } from '../functions/_shared/home-lead-auto.js';
+import { selectAutoHomeLeadId, refreshAutoHomeLead, clearHomeLeadForPost, readHomeLeadState } from '../functions/_shared/home-lead-auto.js';
 
 const SECRET = 'local-only-settings-test-key-never-production';
 const gates = [['hero', 'hero'], ['home-lead', 'home-lead'], ['site-meta', 'meta'], ['board-copy', 'board-copy'], ['author', 'author'], ['ai-disclaimer', 'author'], ['board-banner', 'banner'], ['ticker', 'ticker'], ['translations', 'translations']];
@@ -199,6 +199,7 @@ for (const [path, key, previous, changed, payload] of [
 test('home lead manual/clear/media/auto are atomic; cron and deleted-post cleanup cannot erase a concurrent manual selection', async () => {
   const f = fixture({ role: 'owner' });
   f.sql.exec(`INSERT INTO posts(id,title,published,created_at,category) VALUES(1,'Fixture old',1,'2025-01-01','korea'),(2,'Fixture new',1,datetime('now'),'apr');`);
+  f.sql.exec("INSERT INTO post_views VALUES(2,datetime('now'));");
   set(f, 'home_lead_mode', 'auto'); set(f, 'home_lead_post', '1'); set(f, 'home_lead_media', '{"fit":"cover"}'); set(f, 'home_lead_rev', '2');
   let response = await request(f, handlers['home-lead'].onRequestPut, '/api/settings/home-lead', { post_id: 1, media: { fit: 'contain' }, if_revision: 2 });
   assert.equal(response.status, 200); assert.equal(get(f, 'home_lead_mode'), 'manual'); assert.equal(get(f, 'home_lead_rev'), '3'); assert.equal(JSON.parse(get(f, 'home_lead_media')).fit, 'contain');
@@ -222,7 +223,7 @@ test('home lead manual/clear/media/auto are atomic; cron and deleted-post cleanu
   assert.ok(f.state.batchResults.at(-1).every(result => result.meta.changes === 0));
   f.state.beforeBatch = () => { set(f, 'home_lead_post', '2'); set(f, 'home_lead_media', '{"fit":"cover"}'); set(f, 'home_lead_rev', '8'); };
   assert.equal(await clearHomeLeadForPost(f.env, 1), false); assert.equal(get(f, 'home_lead_post'), '2'); assert.equal(get(f, 'home_lead_media'), '{"fit":"cover"}');
-  assert.equal(await clearHomeLeadForPost(f.env, 2), true); const cleared = await readHomeLeadState(f.env); assert.equal(cleared.mode, 'manual'); assert.equal(cleared.postId, 0); assert.equal(cleared.mediaValue, null);
+  assert.equal(await clearHomeLeadForPost(f.env, 2), true); const cleared = await readHomeLeadState(f.env); assert.equal(cleared.mode, 'auto'); assert.equal(cleared.postId, 0); assert.equal(cleared.mediaValue, null);
 });
 
 test('privacy stale/racing/reset/failed transaction preserves exact content, timestamp and history', async () => {
@@ -262,4 +263,23 @@ test('site history source failures are represented separately from legitimate em
   const response = await request(f, mod.onRequestGet, '/api/admin/site-history?limit=350', undefined, { method: 'GET' });
   assert.equal(response.status, 200); const data = await response.json();
   assert.equal(data.partial, true); assert.equal(data.sources.operational, true); assert.equal(data.sources.issues, true); assert.equal(data.sources.settings, false); assert.equal(data.sources.posts, false); assert.deepEqual(data.items, []); assert.equal(data.limit, 350);
+});
+
+
+test('auto lead ranks all public articles by 7-day views, randomizes only ties and preserves manual mode', async () => {
+  const f = fixture({role:'owner'});
+  f.sql.exec(`INSERT INTO posts(id,title,published,created_at) VALUES(1,'Old public',1,'2025-01-01'),(2,'New public',1,datetime('now')),(3,'Private',0,datetime('now'));
+    INSERT INTO post_views VALUES(1,datetime('now','-1 day')),(1,datetime('now','-6 day')),(2,datetime('now','-8 day')),(2,datetime('now','-8 day')),(2,datetime('now')),(3,datetime('now')),(3,datetime('now')),(3,datetime('now'));`);
+  let picked = await selectAutoHomeLeadId(f.env);
+  assert.equal(picked.id,1); assert.equal(picked.score,2); assert.equal(picked.candidates,2);
+  f.sql.exec("INSERT INTO post_views VALUES(2,datetime('now'))");
+  const random = Math.random;
+  try {
+    Math.random = () => 0; assert.equal((await selectAutoHomeLeadId(f.env)).id,1);
+    Math.random = () => 0.999; assert.equal((await selectAutoHomeLeadId(f.env)).id,2);
+  } finally { Math.random = random; }
+  set(f,'home_lead_mode','manual');set(f,'home_lead_post','1');
+  assert.equal((await refreshAutoHomeLead(f.env)).skipped,true);assert.equal(get(f,'home_lead_post'),'1');
+  f.sql.exec('DELETE FROM post_views');assert.equal((await selectAutoHomeLeadId(f.env)).score,0);
+  f.sql.exec('DELETE FROM posts');assert.equal((await selectAutoHomeLeadId(f.env)).id,0);
 });

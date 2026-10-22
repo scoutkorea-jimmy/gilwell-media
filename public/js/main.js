@@ -6,9 +6,9 @@
   'use strict';
 
   const GW = window.GW = {};
-  GW.APP_VERSION = '00.194.01';
-  GW.ADMIN_VERSION = '03.158.02';
-  GW.ASSET_VERSION = '20261019165333';
+  GW.APP_VERSION = '00.194.02';
+  GW.ADMIN_VERSION = '03.158.03';
+  GW.ASSET_VERSION = '20261022111734';
   GW.PALETTE = {
     scoutingPurple: '#622599',
     canvasWhite: '#FFFFFF',
@@ -1871,18 +1871,22 @@
     var trackedUrl = GW.buildShareUrl(state.url, 'kakaotalk');
     return GW.loadKakaoSdk()
       .then(function (Kakao) {
-        // sendScrap 은 카카오 서버가 requestUrl 을 실시간 스크랩하는 방식이라
-        // 도메인 등록·OG 스크랩 상태에 매번 의존해 간헐적으로 실패한다.
-        // sendDefault(feed) 로 제목·설명·이미지·링크를 명시 전달해 스크랩 의존을 제거한다.
+        // 기본 feed 규격으로 전달하고, 이미지가 없으면 사이트 대표 이미지를 사용한다.
         if (!Kakao || !Kakao.Share || !Kakao.Share.sendDefault) {
           throw new Error('kakao-sdk-unavailable');
         }
         var content = {
-          title: state.title || document.title || '',
+          title: (state.title || document.title || 'BP미디어').slice(0, 200),
+          imageUrl: new URL('/img/og-default.png', window.location.origin).href,
           link: { mobileWebUrl: trackedUrl, webUrl: trackedUrl }
         };
-        if (state.description) content.description = state.description;
-        if (state.image) content.imageUrl = state.image;
+        if (state.description) content.description = state.description.slice(0, 200);
+        if (state.image) {
+          try {
+            var imageUrl = new URL(state.image, window.location.origin);
+            if (/^https?:$/.test(imageUrl.protocol)) content.imageUrl = imageUrl.href;
+          } catch (_) {}
+        }
         Kakao.Share.sendDefault({
           objectType: 'feed',
           content: content,
@@ -1891,7 +1895,6 @@
             link: { mobileWebUrl: trackedUrl, webUrl: trackedUrl }
           }]
         });
-        GW.showToast('카카오톡 공유 창을 열었습니다.', 'success');
       })
       .catch(function () {
         if (navigator.share && GW.isMobileShareContext()) {

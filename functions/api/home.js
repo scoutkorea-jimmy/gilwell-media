@@ -9,6 +9,7 @@ import { PUBLIC_DATE_EXPR } from '../_shared/post-public-date.js';
 import { recordHomepageIssue } from '../_shared/homepage-issues.js';
 import { DEFAULT_TICKER_ITEMS } from '../_shared/site-copy.mjs';
 import { toCardPost } from '../_shared/post-excerpt.js';
+import { readHomeLeadState, selectAutoHomeLeadId } from '../_shared/home-lead-auto.js';
 
 // 카드 목록(lead/picks/latest/popular/columns)용 직렬화.
 // 홈 렌더러가 본문에서 실제로 쓰는 건 메인 스토리의 420자 발췌 한 곳뿐인데
@@ -374,12 +375,9 @@ async function loadAutomaticHeroPosts(env, origin, excludedIds) {
 }
 
 async function loadHomeLead(env, origin) {
-  const [row, mediaRow] = await Promise.all([
-    env.DB.prepare(`SELECT value FROM settings WHERE key = 'home_lead_post'`).first(),
-    env.DB.prepare(`SELECT value FROM settings WHERE key = 'home_lead_media'`).first(),
-  ]);
-  const postId = row ? parseInt(row.value, 10) : 0;
-  const media = normalizeHomeLeadMedia(parseJsonValue(mediaRow && mediaRow.value));
+  const state = await readHomeLeadState(env);
+  const postId = state.postId || (state.mode === 'auto' ? (await selectAutoHomeLeadId(env)).id : 0);
+  const media = normalizeHomeLeadMedia(parseJsonValue(state.mediaValue));
   if (!postId) return { post: null, media };
   const post = await env.DB.prepare(
     `SELECT ${POST_CARD_COLUMNS}

@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.158.02
+ * Version: 03.158.03
  *
  * Versioning:
  *   V3.aaa.bb
@@ -11020,7 +11020,7 @@
       var preview = data && data.auto_preview;
       desc.textContent = preview
         ? '자동 선정 중 — 매일 자정에 다시 고릅니다. 지금 규칙상 1위: “' + (preview.title || '(제목 없음)') + '” (' + (preview.reason || '') + ')'
-        : '자동 선정 중 — 최근 한 달 안에 발행된 글 중 가장 많이 읽힌 글을 매일 자정에 올립니다.';
+        : '자동 선정 중 — 최근 7일 조회수가 가장 높은 기사를 매일 자정에 올립니다. 동률이면 무작위로 선정합니다.';
     } else {
       desc.textContent = '직접 지정 상태 — 자동 갱신이 멈춰 있습니다. 아래에서 고른 글이 계속 유지됩니다. 규칙에 맡기려면 ‘자동으로 전환’ 을 누르세요.';
     }
@@ -11028,7 +11028,7 @@
 
   // 자동 모드로 되돌린다. 다음 자정을 기다리지 않고 서버가 즉시 다시 고른다.
   function _switchHomeLeadToAuto() {
-    if (!confirm('메인 스토리를 자동 선정으로 되돌릴까요?\n\n최근 한 달 안에 발행된 글 중 가장 많이 읽힌 글이 지금 바로 적용되고, 이후 매일 자정에 다시 선정됩니다.')) return;
+    if (!confirm('메인 스토리를 자동 선정으로 되돌릴까요?\n\n최근 7일 조회수 1위 기사가 지금 바로 적용되고, 이후 매일 자정에 다시 선정됩니다. 조회수가 같으면 무작위로 고릅니다.')) return;
     var btn = document.getElementById('home-lead-auto-btn');
     _setButtonBusy(btn, '전환 중…');
     _settingsFetch('home-lead', '/api/settings/home-lead', {

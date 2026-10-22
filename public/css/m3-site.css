@@ -326,7 +326,7 @@ textarea {
 }
 
 /* 필터·편집 폼처럼 여러 필드가 한 화면에 모이는 곳은 M3 density −2(48px)를 쓴다. */
-:where(.search-filter-input, .calendar-filter-select, .calendar-date-input, .memo-filters > select, .memo-filters > input, .bw-input, .bw-select, #board-pw-username, #board-pw-input, #post-login-pw, #calendar-login-username, #calendar-login-pw, [id^='calendar-modal-'][id$='-input'], #calendar-modal-related-post-query, #calendar-modal-geo-query):not(textarea) {
+:where(.search-filter-input, .calendar-filter-select, .calendar-date-input, .memo-filters > select, .memo-filters > input, .bw-input, .bw-select, #board-pw-username, #board-pw-input, #post-login-username, #post-login-pw, #calendar-login-username, #calendar-login-pw, [id^='calendar-modal-'][id$='-input'], #calendar-modal-related-post-query, #calendar-modal-geo-query):not(textarea) {
   min-height: var(--md-comp-field-height-dense) !important;
   height: var(--md-comp-field-height-dense) !important;
   padding-block: 0 !important;
@@ -2227,7 +2227,66 @@ html body .mobile-nav-sublink.active {
 }
 
 /* M3 adaptive windows: compact / medium / expanded */
+.pull-refresh-indicator {
+  top: max(12px, env(safe-area-inset-top));
+}
+
+.pull-refresh-indicator.ready {
+  background: transparent;
+}
+
+.pull-refresh-indicator .pull-refresh-label {
+  gap: 10px;
+  min-height: 48px;
+  font-size: var(--fs-body);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: var(--md-sys-shape-full);
+  background: var(--md-sys-color-surface-container-high);
+  color: var(--md-sys-color-on-surface);
+  box-shadow: var(--md-sys-elevation-2);
+  font-weight: 700;
+  letter-spacing: 0;
+  white-space: nowrap;
+}
+
+.pull-refresh-indicator.ready .pull-refresh-label {
+  background: var(--md-sys-color-primary-container);
+  color: var(--md-sys-color-on-primary-container);
+}
+
+.pull-refresh-icon {
+  flex-shrink: 0;
+  transition: transform 0.18s ease;
+}
+
+.pull-refresh-indicator.ready .pull-refresh-icon {
+  transform: rotate(180deg);
+}
+
+.pull-refresh-indicator.loading .pull-refresh-icon {
+  border: 2px solid currentColor;
+  border-inline-end-color: transparent;
+  border-radius: 50%;
+  animation: pull-refresh-spin 0.8s linear infinite;
+}
+
+.pull-refresh-indicator.loading .pull-refresh-icon path {
+  display: none;
+}
+
+@keyframes pull-refresh-spin {
+  to { transform: rotate(540deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pull-refresh-indicator.loading .pull-refresh-icon { animation: none; }
+}
+
 @media (max-width: 839px) {
+  .home-priority-main {
+    display: none;
+  }
+
   .masthead {
     position: relative;
   }

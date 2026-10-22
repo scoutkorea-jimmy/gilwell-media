@@ -239,12 +239,12 @@ export async function onRequestGet({ params, env, request }) {
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png"/>
   <link rel="apple-touch-icon" href="/img/logo.png"/>
   <link rel="shortcut icon" href="/img/favicon-48.png"/>
-  <link rel="stylesheet" href="/css/style.css?v=20261019165333">
-  <link rel="stylesheet" href="/css/post.css?v=20261019165333">
-  <link rel="stylesheet" href="/css/chatbot.css?v=20261019165333">
-  <link rel="stylesheet" href="/css/dark-mode.css?v=20261019165333">
-  <link rel="stylesheet" href="/css/m3-site.css?v=20261019165333">
-  <link rel="stylesheet" href="/css/topics.css?v=20261019165333">
+  <link rel="stylesheet" href="/css/style.css?v=20261022111734">
+  <link rel="stylesheet" href="/css/post.css?v=20261022111734">
+  <link rel="stylesheet" href="/css/chatbot.css?v=20261022111734">
+  <link rel="stylesheet" href="/css/dark-mode.css?v=20261022111734">
+  <link rel="stylesheet" href="/css/m3-site.css?v=20261022111734">
+  <link rel="stylesheet" href="/css/topics.css?v=20261022111734">
 </head>
 <body class="post-page">
   <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
@@ -431,7 +431,7 @@ export async function onRequestGet({ params, env, request }) {
         <h4>관리자</h4>
         <a href="/admin.html">관리자 페이지 →</a>
         <a href="/glossary-raw">용어집 RAW로 보기 →</a>
-        <p class="footer-build">Site <span class="site-build-version">V00.194.01</span> · Admin <span class="admin-build-version">V03.158.02</span></p>
+        <p class="footer-build">Site <span class="site-build-version">V00.194.02</span> · Admin <span class="admin-build-version">V03.158.03</span></p>
       </div>
       <div class="footer-bottom">
         <p data-i18n="footer.copyright">© 2026 ${SITE_BRAND_NAME} · ${SITE_DOMAIN_LABEL}</p>
@@ -442,22 +442,27 @@ export async function onRequestGet({ params, env, request }) {
   </footer>
 
   <!-- ── 수정 로그인 모달 ── -->
-  <div id="post-login-modal" class="board-pw-overlay" aria-hidden="true">
+  <div id="post-login-modal" class="board-pw-overlay" aria-hidden="true" inert>
     <div class="board-pw-box" role="dialog" aria-modal="true" aria-labelledby="post-login-title">
-      <h3 id="post-login-title" class="board-pw-header">관리자 인증</h3>
-      <p class="board-pw-desc">수정하려면 관리자 비밀번호를 입력하세요.</p>
-      <div class="board-pw-input-wrap">
-        <input id="post-login-pw" type="password" placeholder="비밀번호" autocomplete="current-password">
-        <button type="button" class="board-pw-eye" id="post-login-pw-eye" aria-label="비밀번호 표시/숨기기" tabindex="-1">
-          <svg id="post-login-pw-eye-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-        </button>
-      </div>
-      <div id="post-login-turnstile" style="margin-top:12px;"></div>
-      <div class="board-pw-actions">
-        <button id="post-login-submit-btn" type="button">확인</button>
-        <button id="post-login-cancel-btn" type="button">취소</button>
-      </div>
-      <p id="post-login-err" class="board-pw-error"></p>
+      <h3 id="post-login-title" class="board-pw-header">관리자 로그인</h3>
+      <p id="post-login-desc" class="board-pw-desc">관리자 페이지에서 사용하는 아이디와 비밀번호로 로그인하세요. 기사 수정 권한이 있는 계정이 필요합니다.</p>
+      <form id="post-login-form" aria-describedby="post-login-desc">
+        <label for="post-login-username">아이디</label>
+        <input id="post-login-username" name="username" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" required>
+        <label for="post-login-pw">비밀번호</label>
+        <div class="board-pw-input-wrap">
+          <input id="post-login-pw" name="password" type="password" autocomplete="current-password" required>
+          <button type="button" class="board-pw-eye" id="post-login-pw-eye" aria-label="비밀번호 표시/숨기기" tabindex="-1">
+            <svg id="post-login-pw-eye-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+        </div>
+        <div id="post-login-turnstile" style="margin-top:12px;"></div>
+        <div class="board-pw-actions">
+          <button id="post-login-submit-btn" type="submit">로그인</button>
+          <button id="post-login-cancel-btn" type="button">취소</button>
+        </div>
+        <p id="post-login-err" class="board-pw-error" role="alert"></p>
+      </form>
     </div>
   </div>
 
@@ -656,10 +661,10 @@ export async function onRequestGet({ params, env, request }) {
 
   <script>window.GW_BOOT_RUNTIME=${serializeForScript(publicRuntime)};window.GW_KAKAO_JS_KEY=${serializeForScript(String(publicRuntime.kakao_js_key || ''))};window.GW_POST_BOOT=${serializeForScript({ editPostId: id, sharePostUrl: postUrl, sharePostTitle: titleText, sharePostSubtitle: subtitleText, editSeed: JSON.parse(editSeed), visibleTags })};</script>
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.4/dist/purify.min.js" integrity="sha384-eEu5CTj3qGvu9PdJuS+YlkNi7d2XxQROAFYOr59zgObtlcux1ae1Il3u7jvdCSWu" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-  <script src="/js/main.js?v=20261019165333"></script>
-  <script src="/js/site-chrome.js?v=20261019165333"></script>
-  <script src="/js/chatbot.js?v=20261019165333" defer></script>
-  <script src="/js/post-page.js?v=20261019165333"></script>
+  <script src="/js/main.js?v=20261022111734"></script>
+  <script src="/js/site-chrome.js?v=20261022111734"></script>
+  <script src="/js/chatbot.js?v=20261022111734" defer></script>
+  <script src="/js/post-page.js?v=20261022111734"></script>
   <script async type="text/javascript" charset="utf-8" src="https://t1.kakaocdn.net/kas/static/ba.min.js"></script>
 </body>
 </html>`;

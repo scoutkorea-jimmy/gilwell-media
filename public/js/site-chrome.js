@@ -229,7 +229,8 @@
     indicator.className = 'pull-refresh-indicator';
     indicator.id = 'pull-refresh-indicator';
     indicator.setAttribute('aria-hidden', 'true');
-    indicator.innerHTML = '<span class="pull-refresh-label">당겨서 새로고침</span>';
+    indicator.setAttribute('role', 'status');
+    indicator.innerHTML = '<span class="pull-refresh-label"><svg class="pull-refresh-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v16m-6-6 6 6 6-6"/></svg><span class="pull-refresh-text">당겨서 새로고침</span></span>';
     document.body.appendChild(indicator);
     return indicator;
   };
@@ -242,7 +243,7 @@
 
     var indicator = GW.ensurePullRefreshIndicator();
     if (!indicator) return;
-    var labelEl = indicator.querySelector('.pull-refresh-label');
+    var labelEl = indicator.querySelector('.pull-refresh-text');
     var startY = 0;
     var pulling = false;
     var current = 0;
@@ -254,7 +255,8 @@
     }
 
     function resetIndicator() {
-      indicator.classList.remove('visible', 'ready');
+      indicator.classList.remove('visible', 'ready', 'loading');
+      indicator.setAttribute('aria-hidden', 'true');
       indicator.style.setProperty('--pull-distance', '0px');
       if (labelEl) labelEl.textContent = '당겨서 새로고침';
       current = 0;
@@ -275,9 +277,10 @@
       }
       current = Math.min(delta * 0.55, 104);
       indicator.classList.add('visible');
+      indicator.setAttribute('aria-hidden', 'false');
       indicator.style.setProperty('--pull-distance', current + 'px');
       indicator.classList.toggle('ready', current >= threshold);
-      if (current >= threshold && labelEl) labelEl.textContent = '놓으면 새로고침';
+      if (labelEl) labelEl.textContent = current >= threshold ? '놓으면 새로고침' : '당겨서 새로고침';
       if (delta > 6) event.preventDefault();
     }, { passive: false });
 
@@ -285,7 +288,7 @@
       if (!pulling) return;
       pulling = false;
       if (current >= threshold) {
-        indicator.classList.add('ready');
+        indicator.classList.add('ready', 'loading');
         if (labelEl) labelEl.textContent = '새로고침 중...';
         window.location.reload();
         return;

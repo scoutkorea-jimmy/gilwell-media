@@ -69,11 +69,11 @@ export async function onRequestPut({ env, request }) {
     if (Number.isInteger(body.if_revision) && body.if_revision !== previous.revision) return json({ error: '다른 화면에서 메인 스토리가 변경되었습니다. 입력을 보존하고 최신 설정을 확인해주세요.' }, 409);
     const next = { mode: previous.mode, postId: previous.postId, mediaValue: previous.mediaValue };
     const previousSnapshot = JSON.stringify({ mode: previous.mode, post_id: previous.postId || null, media: normalizeHomeLeadMedia(parseJsonValue(previous.mediaValue)) });
-    const auto = body.mode === 'auto';
+    const auto = body.mode === 'auto' || (Object.prototype.hasOwnProperty.call(body, 'post_id') && (body.post_id === null || body.post_id === 0));
     let picked = null;
     let category = '';
     if (auto) {
-      // Reuse the exact existing ranking/window/fallback. Selection reads no settings.
+      // 수동 해제도 자동 선정으로 돌아간다. 선정과 모드 전환을 함께 저장한다.
       picked = await selectAutoHomeLeadId(env);
       next.mode = 'auto';
       if (picked.id) { next.postId = picked.id; if (picked.id !== previous.postId) next.mediaValue = null; }
