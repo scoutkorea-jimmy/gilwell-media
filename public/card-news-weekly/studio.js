@@ -43,19 +43,21 @@ function download(blob,name){const url=URL.createObjectURL(blob),a=document.crea
 $('#png').onclick=async()=>{if(locked())return;busy=true;controls();status('지금 보시는 카드를 준비하고 있습니다.');try{await waitForReady();download(await capture(frame),`BPmedia_${issue.date}_${String(active+1).padStart(2,'0')}.png`);status('PNG를 준비했습니다. 함께 나누실 때 활용해 주세요.');}catch(error){status(error.message)}finally{busy=false;controls()}};
 $('#zip').onclick=async()=>{
   if(locked())return;busy=true;controls();
-  let worker=null;
+  const worker=document.createElement('iframe');worker.title='전체 카드 이미지 준비';worker.style.cssText='position:fixed;left:-12000px;top:0;width:1080px;height:1350px';document.body.append(worker);
   try{
     const zip=new JSZip(),snapshot=structuredClone(issue);
+    function renderCard(card,initial=false){return new Promise((resolve,reject)=>{
+      const stop=()=>window.removeEventListener('message',listen);
+      const timer=setTimeout(()=>{stop();reject(new Error(`카드 ${card+1}를 준비하지 못했습니다. 다시 시도해 주세요.`));},30000);
+      function listen(e){if(e.origin!==location.origin||e.source!==worker.contentWindow)return;if(e.data?.type==='bp-card-error'){clearTimeout(timer);stop();reject(new Error(e.data.message));}if(e.data?.type!=='bp-card-ready'||Number(e.data.card)!==card)return;clearTimeout(timer);stop();resolve();}
+      window.addEventListener('message',listen);
+      if(initial)worker.src=`/card-news/${id}/frame?issue=${id}&card=0&edit=0`;
+      else worker.contentWindow.postMessage({type:'bp-set-issue',issue:snapshot,card},location.origin);
+    });}
+    status('전체 카드를 준비하고 있습니다.');await renderCard(0,true);
     for(let i=0;i<cardNames().length;i++){
-      worker?.remove();worker=document.createElement('iframe');worker.title='전체 카드 이미지 준비';worker.style.cssText='position:fixed;left:-12000px;top:0;width:1080px;height:1350px';document.body.append(worker);
       status(`카드를 차례로 준비하고 있습니다. ${i+1} / ${cardNames().length}`);
-      await new Promise((resolve,reject)=>{
-        let sent=false;
-        const stop=()=>window.removeEventListener('message',listen);
-        const timer=setTimeout(()=>{stop();reject(new Error('카드를 준비하지 못했습니다. 다시 시도해 주세요.'));},30000);
-        function listen(e){if(e.origin!==location.origin||e.source!==worker.contentWindow)return;if(e.data?.type==='bp-card-error'){clearTimeout(timer);stop();reject(new Error(e.data.message));}if(e.data?.type!=='bp-card-ready'||Number(e.data.card)!==i)return;if(!sent){sent=true;worker.contentWindow.postMessage({type:'bp-set-issue',issue:snapshot},location.origin);}else{clearTimeout(timer);stop();resolve();}}
-        window.addEventListener('message',listen);worker.src=`/card-news/${id}/frame?issue=${id}&card=${i}&edit=0`;
-      });
+      await renderCard(i);
       zip.file(`BPmedia_${String(i+1).padStart(2,'0')}.png`,await capture(worker));
     }
     download(await zip.generateAsync({type:'blob'}),`BPmedia_${issue.date}.zip`);status('전체 PNG를 준비했습니다. 필요한 곳에 보관해 주세요.');
