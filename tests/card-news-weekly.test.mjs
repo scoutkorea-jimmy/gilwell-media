@@ -4,6 +4,8 @@ import { readFileSync } from 'node:fs';
 import { weeklyPeriod, selectWeekly, withSelection, cleanPhotoViews, createWeeklyIssue } from '../functions/_shared/card-news-weekly.js';
 import { onRequestPut, onRequestGet } from '../functions/api/admin/card-news/[id].js';
 import { onRequestPost as manual } from '../functions/api/admin/card-news/weekly.js';
+import { weeklyStudioHtml } from '../functions/_shared/card-news-weekly-view.js';
+assert(weeklyStudioHtml(5,true).includes('studio.js?v='));
 import { onRequestGet as frame } from '../functions/card-news/[id]/frame.js';
 import { createToken } from '../functions/_shared/auth.js';
 
@@ -41,7 +43,7 @@ const chosen=withSelection(issue,[2]);assert.equal(chosen.articles.length,1);ass
 const token=await createToken(env.ADMIN_SECRET,{role:'owner',uid:1,username:'synthetic'});
 const url='https://bpmedia.net/api/admin/card-news/'+result.id;
 const request=(body,auth=true)=>new Request(url,{method:'PUT',headers:{'Content-Type':'application/json',...(auth?{Cookie:'admin_token='+token}:{})},body:JSON.stringify(body)});
-const frameResponse=await frame({request:new Request(url,{headers:{Cookie:'admin_token='+token}}),env});assert.equal(frameResponse.status,200);assert.equal(frameResponse.headers.get('X-Frame-Options'),'SAMEORIGIN');assert(frameResponse.headers.get('Content-Security-Policy').includes("frame-ancestors 'self'"));assert.equal((await frame({request:new Request(url),env})).status,401);
+const frameResponse=await frame({request:new Request(url,{headers:{Cookie:'admin_token='+token}}),env});assert.equal(frameResponse.status,200);assert((await frameResponse.text()).includes('frame.js?v='));assert.equal(frameResponse.headers.get('X-Frame-Options'),'SAMEORIGIN');assert(frameResponse.headers.get('Content-Security-Policy').includes("frame-ancestors 'self'"));assert.equal((await frame({request:new Request(url),env})).status,401);
 const body={expected_revision:1,weekly:{selected_ids:[2,3],photo_views:{'article:2:0':{x:60,y:40,z:1.2}}}};
 assert.equal((await onRequestPut({request:request(body,false),env,params:{id:String(result.id)}})).status,401);
 const saved=await onRequestPut({request:request(body),env,params:{id:String(result.id)}});assert.equal(saved.status,200);
