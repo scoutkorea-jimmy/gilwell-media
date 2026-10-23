@@ -48,3 +48,11 @@
 public/about.html updates Jimmy Park's management contact to +82.10.2646.1635, tel:+821026461635 and JSON-LD +82-10-2646-1635. Other contacts and layout are unchanged. main matches origin/main; P0 query returned zero open/monitoring high/critical issues (first transient7403, retry succeeded). Mac Writer sibling about.html is synchronized to prevent reintroducing the retired number. Released with owner approval through rules/02-versioning.md and rules/03-deploy.md.
 
 Owner approved commit/push/deploy. Public commit202191a5 pushed to main; standard production script deployed7d4d4881.gilwell-media.pages.dev, site00.194.01. Live About telephone and ContactPoint JSON-LD match the new number, retired number absent. Post-deploy version and sitemap checks passed. Writer sibling commitf9662d60 pushed to feat/bpmedia-mac-writer-v1. No phone-call test was performed; screenshot capture was unavailable, browser accessibility and independent HTTP were verified. Final public post audit:511 published posts,0 issues. Release snapshot20261019T165953Z-202191a5 saved successfully.
+
+## 2026-10-23 — 주간 카드뉴스 자동 제작 (Admin)
+
+- 승인된 세계스카우트 에셋/Wanted Sans/이사만루 1080×1350 디자인을 기존 카드뉴스 메뉴에 연결. 새 호만 주간 스튜디오, 기존 호는 기존 편집기 유지.
+- 매주 월요일 09:00 KST의 직전 한 주, 이미지·본문을 확인한 기사로 편집 가능한 호 생성. 자동 게시 없음. 기사 선택·사진 위치 서버 저장, PNG/ZIP은 필요할 때 생성.
+- D1 기존 테이블 사용, 인증·권한 재사용, revision 충돌 방지와 동일 기간 덮어쓰기 방지. 원문 posts 변경 없음.
+- 구현/로컬 검증 완료. 기존 미커밋 Site 변경 보존. 사용자가 이번 변경만 커밋·푸시·운영 배포·cron 활성화를 명시 승인. 별도 깨끗한 배포용 복사본에서 이번 변경만 반영한다. 운영 로그인 확인은 배포 후 수행.
+- 상세: docs/features/Weekly Card News.md. Admin 03.159.00 준비.

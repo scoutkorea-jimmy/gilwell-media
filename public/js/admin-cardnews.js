@@ -63,7 +63,34 @@
   }
 
   // ── List ────────────────────────────────────────────────────────────────
-  function bootList() { loadList(); }
+  function bootList() { loadList(); loadWeeklyStatus(); }
+
+  function loadWeeklyStatus() {
+    fetch('/api/admin/card-news/weekly', { credentials: 'same-origin' }).then(function (r) {
+      if (!r.ok) throw new Error('weekly_status'); return r.json();
+    }).then(function (data) {
+      var el = $('#cardnews-weekly-status');
+      if (el) el.textContent = '매주 월요일 오전 9시에 한 주의 소식을 준비합니다. 자동으로 게시하지는 않습니다.' + (data.last && data.last.status === 'failed' ? ' 최근 자동 제작을 마치지 못했습니다. 최근 기사로 다시 만들어 주세요.' : data.last && data.last.status === 'no_articles' ? ' 이번 기간에는 이미지와 본문을 확인한 기사가 아직 없습니다.' : '');
+    }).catch(function () {
+      var el = $('#cardnews-weekly-status'); if (el) el.textContent = '주간 제작 상태를 불러오지 못했습니다. 잠시 뒤 다시 살펴봐 주세요.';
+    });
+  }
+
+  function createWeekly() {
+    if (!canWrite() || state.creating || !canLeave()) return;
+    state.creating = true;
+    var button = $('#cardnews-weekly-btn'); if (button) button.disabled = true;
+    fetch('/api/admin/card-news/weekly', { method: 'POST', credentials: 'same-origin' }).then(function (r) {
+      return r.json().then(function (d) { if (!r.ok) throw new Error(d.reason || '카드뉴스를 준비하지 못했습니다.'); return d; });
+    }).then(function (d) {
+      state.creating = false;
+      if (!d.id) { toast(d.reason || '이번 기간에는 함께 읽을 기사가 아직 없습니다.'); return; }
+      toast(d.existing ? '준비해 둔 카드뉴스를 열어드립니다.' : '최근 한 주의 소식을 준비했습니다. 편하게 살펴봐 주세요.');
+      openEditor(d.id, d.title);
+    }).catch(function (error) { toast(error.message, 'error'); }).finally(function () {
+      state.creating = false; if (button) button.disabled = false;
+    });
+  }
 
   function loadList() {
     var sequence = ++state.loadSequence;
@@ -88,6 +115,7 @@
     var meta = $('#cardnews-list-meta');
     if (!wrap) return;
     var newBtn = $('#cardnews-new-btn'); if (newBtn) newBtn.hidden = !canWrite();
+    var weeklyBtn = $('#cardnews-weekly-btn'); if (weeklyBtn) weeklyBtn.hidden = !canWrite();
     if (meta) meta.textContent = '총 ' + state.items.length + '개';
     if (!state.items.length) {
       wrap.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">아직 카드뉴스가 없습니다.' + (canWrite() ? ' <strong>+ 새 카드뉴스</strong>로 시작하세요.' : '') + '</div></div>';
@@ -296,6 +324,7 @@
   function wireEvents() {
     var bind = function (sel, ev, fn) { var el = $(sel); if (el) el.addEventListener(ev, fn); };
     bind('#cardnews-new-btn', 'click', openNewModal);
+    bind('#cardnews-weekly-btn', 'click', createWeekly);
     bind('#cardnews-new-close', 'click', closeNewModal);
     bind('#cardnews-new-cancel', 'click', closeNewModal);
     bind('#cardnews-new-submit', 'click', submitNew);

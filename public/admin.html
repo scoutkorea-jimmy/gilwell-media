@@ -10,8 +10,8 @@
   <link rel="icon" type="image/svg+xml" href="/img/favicon.svg">
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png">
   <link rel="shortcut icon" href="/img/favicon-48.png">
-  <link rel="stylesheet" href="/css/admin-v3.css?v=20261022111734">
-  <link rel="stylesheet" href="/css/memorabilia.css?v=20261022111734">
+  <link rel="stylesheet" href="/css/admin-v3.css?v=20261023054837">
+  <link rel="stylesheet" href="/css/memorabilia.css?v=20261023054837">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H" crossorigin="anonymous" referrerpolicy="no-referrer">
   <style>
     #v3-login[style*="display: none"] { pointer-events: none !important; }
@@ -94,7 +94,7 @@
     <button class="v3-login-btn" id="v3-login-btn" type="button" onclick="window.__gwAdminFallbackLogin && window.__gwAdminFallbackLogin(event)">관리자 입장</button>
     <div class="v3-login-err" id="v3-login-err"></div>
     <div class="v3-login-ver">
-      Admin <span class="v3-ver-str v3-ver-admin admin-build-version">V03.158.03</span>
+      Admin <span class="v3-ver-str v3-ver-admin admin-build-version">V03.159.00</span>
       &nbsp;·&nbsp;
       Site <span class="v3-ver-str v3-ver-site site-build-version">V00.194.02</span>
     </div>
@@ -109,7 +109,7 @@
   <!-- ── Sidebar ─────────────────────────────────────────── -->
   <aside id="v3-sidebar">
     <div id="v3-sidebar-logo">
-      <div class="v3-logo-mark">BP미디어 <span class="v3-logo-version v3-ver-str v3-ver-admin admin-build-version">V03.158.03</span></div>
+      <div class="v3-logo-mark">BP미디어 <span class="v3-logo-version v3-ver-str v3-ver-admin admin-build-version">V03.159.00</span></div>
       <div class="v3-logo-sub">운영 콘솔 &nbsp;<span class="v3-logo-sub-site">Site <span class="v3-ver-site site-build-version">V00.194.02</span></span></div>
     </div>
 
@@ -2129,6 +2129,7 @@
               <p class="v3-page-desc">발행 기사를 바탕으로 주간 카드뉴스를 만들고 편집합니다. 카드 내용은 카드뉴스에서만 수정되며 <strong>원본 기사는 바뀌지 않습니다</strong>. 관리자 전용.</p>
             </div>
             <div class="v3-page-head-right">
+              <button class="v3-btn v3-btn-outline" id="cardnews-weekly-btn" type="button" hidden>최근 한 주 카드 만들기</button>
               <button class="v3-btn v3-btn-primary" id="cardnews-new-btn">+ 새 카드뉴스</button>
             </div>
           </div>
@@ -2139,6 +2140,7 @@
                 <p class="v3-card-desc">최신 항목이 위에 표시됩니다. <strong>편집</strong>을 누르면 이 화면에서 바로 편집기가 열립니다.</p>
               </div>
             </div>
+            <p class="v3-input-hint" id="cardnews-weekly-status">매주 월요일 오전 9시에 한 주의 소식을 준비합니다. 자동으로 게시하지는 않습니다.</p>
             <div class="v3-inline-meta" id="cardnews-list-meta">불러오는 중…</div>
             <div id="cardnews-list-wrap"><div class="v3-loading"><div class="v3-spinner"></div>로딩 중…</div></div>
           </div>
@@ -2161,7 +2163,7 @@
             <iframe id="cardnews-editor-frame" title="카드뉴스 편집기" referrerpolicy="same-origin"
               style="width:100%; height:82vh; border:0; display:block; background:#EBEBEB;"></iframe>
           </div>
-          <p class="v3-input-hint" style="margin-top:10px;">우측 하단 <strong>Tweaks</strong> 패널에서 카드 내용을 편집하고, 상단의 <strong>서버 저장</strong> 버튼으로 저장하세요. 카드 이미지·내용을 바꿔도 원본 기사에는 영향이 없습니다.</p>
+          <p class="v3-input-hint" style="margin-top:10px;">주간 카드에서는 <strong>기사 고르기</strong>로 내용을 바꾸고 사진을 더블클릭해 위치를 살펴보실 수 있습니다. 변경 후에는 저장해 주세요. 기존 카드뉴스는 Tweaks 패널에서 편집할 수 있습니다. 원본 기사는 그대로 보관됩니다.</p>
         </div>
 
         <!-- ── 새 카드뉴스 생성 모달 (제목·표지 자동계산) ───────────── -->
@@ -3519,14 +3521,14 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" integrity="sha384-vtjasyidUo0kW94K5MXDXntzOJpQgBKXmE7e2Ga4LG0skTTLeBi97eFAXsqewJjw" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha384-cxOPjt7s7Iz04uaHJceBmS+qpjv2JkIHNVcuOrM+YHwZOmJGBXI00mdUXEq65HTH" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.4/dist/purify.min.js" integrity="sha384-eEu5CTj3qGvu9PdJuS+YlkNi7d2XxQROAFYOr59zgObtlcux1ae1Il3u7jvdCSWu" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-<script src="/js/main.js?v=20261022111734"></script>
-<script src="/js/shared-country-name-ko.js?v=20261022111734"></script>
-<script src="/js/memorabilia-shared.js?v=20261022111734"></script>
-<script src="/js/admin-v3.js?v=20261022111734"></script>
-<script src="/js/admin-account.js?v=20261022111734"></script>
-<script src="/js/admin-memorabilia.js?v=20261022111734"></script>
-<script src="/js/admin-cardnews.js?v=20261022111734"></script>
-<script src="/js/admin-memorabilia-comments.js?v=20261022111734"></script>
+<script src="/js/main.js?v=20261023054837"></script>
+<script src="/js/shared-country-name-ko.js?v=20261023054837"></script>
+<script src="/js/memorabilia-shared.js?v=20261023054837"></script>
+<script src="/js/admin-v3.js?v=20261023054837"></script>
+<script src="/js/admin-account.js?v=20261023054837"></script>
+<script src="/js/admin-memorabilia.js?v=20261023054837"></script>
+<script src="/js/admin-cardnews.js?v=20261023054837"></script>
+<script src="/js/admin-memorabilia-comments.js?v=20261023054837"></script>
 <script>
   (function () {
     function toggleReveal(visible) {

@@ -12,6 +12,8 @@
  * 사이트 strict CSP 에서 실행 불가 → 완화 CSP 직접 설정. functions/_middleware.js
  * 가 /card-news/ 를 우회시켜 이 헤더가 보존된다.
  */
+import { WEEKLY_TEMPLATE } from '../_shared/card-news-weekly.js';
+import { weeklyStudioHtml } from '../_shared/card-news-weekly-view.js';
 import { gateMenuAccess } from '../_shared/admin-permissions.js';
 import { ASSET_VERSION } from '../_shared/build-version.js';
 
@@ -120,7 +122,9 @@ export async function onRequestGet({ request, env, params }) {
   // 에디터에선 전체 chrome + Tweaks, 미리보기(?embed=1)에선 클린 임베드.
   data.embed = embed;
 
-  const html = renderShell({ id, title: row.title, data, v: ASSET_VERSION, edit: edit && !embed });
+  const html = data.template === WEEKLY_TEMPLATE
+    ? weeklyStudioHtml(id, edit && !embed && !(await gateMenuAccess(request, env, 'card-news', 'write')))
+    : renderShell({ id, title: row.title, data, v: ASSET_VERSION, edit: edit && !embed });
   return new Response(html, {
     status: 200,
     headers: {
