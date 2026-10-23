@@ -25,7 +25,7 @@ function sendDesign(){
   clearTimeout(designTimer);ready=false;requestedRenderId=++renderCounter;
   designTimer=setTimeout(()=>{if(sentDraft)frame.contentWindow.postMessage({type:'bp-set-issue',issue:structuredClone(issue),card:active,renderId:requestedRenderId},location.origin);},180);
 }
-function editDesign(edit){if(!issue||!canWrite||locked())return;issue.design=structuredClone(design());issue.design.articles||={};edit(issue.design);changed();designPanel();controls();sendDesign();}
+function editDesign(edit){if(!issue||!canWrite||locked())return;issue.design=structuredClone(design());issue.design.articles||={};edit(issue.design);changed();designPanel();sendDesign();controls();}
 function coverText(value){const lines=value.replace(/\r/g,'').split('\n');return lines.length<=3?lines.join('\n'):[lines[0],lines[1],lines.slice(2).join(' ')].join('\n');}
 $('#cover-variant').onchange=e=>editDesign(d=>d.cover_variant=e.target.value);
 $('#cover-title').oninput=e=>editDesign(d=>d.cover_title=coverText(e.target.value));
@@ -42,23 +42,28 @@ function cardNames(){return ['표지',...issue.articles.map(a=>a.title),...(issu
 function locked(){return saving||busy;}
 function controls(){
   const disabled=!issue||locked();
+  frame.inert=disabled||!ready;
   for(const b of document.querySelectorAll('button'))b.disabled=disabled;
   for(const input of document.querySelectorAll('#design-tools input,#design-tools select,#design-tools textarea'))input.disabled=disabled||!canWrite;
   $('#prev').disabled=disabled||active===0;$('#next').disabled=disabled||active===(issue?cardNames().length:0)-1;
   $('#choose').hidden=!canWrite;$('#save').hidden=!canWrite;$('#save').disabled=disabled||!dirty;$('#design-tools').hidden=!issue||!canWrite;
 }
 function thumbnails(){const nav=$('#thumbs');nav.replaceChildren();cardNames().forEach((name,i)=>{const b=document.createElement('button');b.type='button';b.textContent=String(i+1).padStart(2,'0')+' · '+name;b.setAttribute('aria-current',i===active?'true':'false');b.onclick=()=>{if(!locked())show(i)};nav.append(b);});}
-function show(n){clearTimeout(designTimer);active=Math.max(0,Math.min(cardNames().length-1,n));ready=false;sentDraft=false;requestedRenderId=++renderCounter;bootRenderId=requestedRenderId;frame.src=`/card-news/${id}/frame?issue=${id}&card=${active}&edit=${canWrite?'1':'0'}&renderId=${bootRenderId}`;$('#counter').textContent=`${active+1} / ${cardNames().length}`;thumbnails();designPanel();controls();}
+function show(n){clearTimeout(designTimer);active=Math.max(0,Math.min(cardNames().length-1,n));ready=false;requestedRenderId=++renderCounter;
+  // Reuse the authenticated frame: repeated production navigations can stall on the previous card.
+  if(!bootRenderId){bootRenderId=requestedRenderId;frame.src=`/card-news/${id}/frame?issue=${id}&card=${active}&edit=${canWrite?'1':'0'}&renderId=${bootRenderId}`;}
+  else if(sentDraft)frame.contentWindow.postMessage({type:'bp-set-issue',issue:structuredClone(issue),card:active,renderId:requestedRenderId},location.origin);
+  $('#counter').textContent=`${active+1} / ${cardNames().length}`;thumbnails();designPanel();controls();}
 new ResizeObserver(()=>{frame.style.transform=`scale(${$('main>section').clientWidth/1080})`}).observe($('#viewport'));
 $('#prev').onclick=()=>show(active-1);$('#next').onclick=()=>show(active+1);
 window.addEventListener('message',e=>{
   if(e.origin!==location.origin)return;
   if(e.source===frame.contentWindow){
-    if(e.data?.type==='bp-card-ready'&&Number(e.data.card)===active){
-      if(!sentDraft&&e.data.renderId===bootRenderId){sentDraft=true;frame.contentWindow.postMessage({type:'bp-set-issue',issue:structuredClone(issue),renderId:requestedRenderId},location.origin);}
-      else if(sentDraft&&e.data.renderId===requestedRenderId)ready=true;
+    if(e.data?.type==='bp-card-ready'){
+      if(!sentDraft&&e.data.renderId===bootRenderId){sentDraft=true;frame.contentWindow.postMessage({type:'bp-set-issue',issue:structuredClone(issue),card:active,renderId:requestedRenderId},location.origin);}
+      else if(sentDraft&&e.data.renderId===requestedRenderId&&Number(e.data.card)===active){ready=true;controls();}
     }
-    if(e.data?.type==='bp-card-error'){ready=false;status(e.data.message+' 다른 카드를 골라 보시거나 다시 열어 주세요.');}
+    if(e.data?.type==='bp-card-error'){sentDraft=true;ready=false;controls();status(e.data.message+' 다른 카드를 골라 보시거나 다시 열어 주세요.');}
     if(e.data?.type==='bp-photo-changed'&&canWrite){issue.photo_views=e.data.views;changed();controls();}
   }
   if(e.data?.type==='bp-export-result'){

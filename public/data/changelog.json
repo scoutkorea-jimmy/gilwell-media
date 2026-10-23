@@ -1,6 +1,19 @@
 {
   "items": [
 {
+  "version": "03.160.01",
+  "date": "2026-10-23",
+  "released_at": "2026-10-23 23:10:15 KST",
+  "summary": "카드를 바꿀 때 선택한 내용이 미리보기에 함께 표시되도록 보완했습니다.",
+  "for_users": [
+    "카드를 빠르게 바꾸셔도 선택한 카드와 미리보기가 함께 바뀌도록 보완했습니다.",
+    "새 배치가 준비되는 동안 이전 사진을 편집하지 않도록 했습니다."
+  ],
+  "for_developers": [
+    "Authenticated preview reuse with card/render ID handshake; inert preview until matching render acknowledgment."
+  ]
+},
+{
   "version": "03.160.00",
   "date": "2026-10-23",
   "released_at": "2026-10-23 22:54:08 KST",
