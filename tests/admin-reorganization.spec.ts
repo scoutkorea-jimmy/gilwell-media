@@ -5,7 +5,7 @@ import { assertRenderedBounds, openSyntheticAdmin, SYNTHETIC_POST } from './admi
 
 const widths = [280, 320, 390, 820, 1280];
 const artifactDir = resolve('work/gpt-admin-reorganization-20261015');
-const supplementaryApis = ['/api/admin/card-news', '/api/memorabilia', '/api/memorabilia/categories', '/api/memorabilia/events', '/api/admin/memorabilia-comments'];
+const supplementaryApis = ['/api/admin/card-news', '/api/admin/card-news/weekly', '/api/memorabilia', '/api/memorabilia/categories', '/api/memorabilia/events', '/api/admin/memorabilia-comments'];
 
 async function selectNavigation(page: Page, panel: string, section?: string) {
   if ((page.viewportSize()?.width || 1280) <= 900 && !(await page.locator('#v3-nav').isVisible())) {

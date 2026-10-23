@@ -47,6 +47,7 @@ function controls(){
   for(const input of document.querySelectorAll('#design-tools input,#design-tools select,#design-tools textarea'))input.disabled=disabled||!canWrite;
   $('#prev').disabled=disabled||active===0;$('#next').disabled=disabled||active===(issue?cardNames().length:0)-1;
   $('#choose').hidden=!canWrite;$('#save').hidden=!canWrite;$('#save').disabled=disabled||!dirty;$('#design-tools').hidden=!issue||!canWrite;
+  $('#retry').disabled=locked();
 }
 function thumbnails(){const nav=$('#thumbs');nav.replaceChildren();cardNames().forEach((name,i)=>{const b=document.createElement('button');b.type='button';b.textContent=String(i+1).padStart(2,'0')+' · '+name;b.setAttribute('aria-current',i===active?'true':'false');b.onclick=()=>{if(!locked())show(i)};nav.append(b);});}
 function show(n){clearTimeout(designTimer);active=Math.max(0,Math.min(cardNames().length-1,n));ready=false;requestedRenderId=++renderCounter;
@@ -112,7 +113,20 @@ $('#save').onclick=async()=>{
   catch(error){dirty=true;notify('__card_news_save_failed');status(error.message)}finally{saving=false;controls()}
 };
 window.addEventListener('beforeunload',e=>{if(dirty||saving){e.preventDefault();e.returnValue='';}});
-async function load(){if(!Number.isSafeInteger(id)||id<1)throw new Error('관리자 목록에서 카드뉴스를 열어 주세요.');const r=await fetch('/api/admin/card-news/'+id,{credentials:'same-origin'});if(!r.ok)throw new Error('카드뉴스를 불러오지 못했습니다. 관리자에서 다시 열어 주세요.');const row=await r.json();issue=row.data;if(issue.template!=='bpmedia-weekly-v1'||!issue.articles?.length)throw new Error('아직 준비된 카드가 없습니다.');$('#period').textContent=`${issue.period.start.slice(0,10)}–${issue.period.end.slice(0,10)} · 자동 게시 없이 함께 읽을 소식만 준비합니다.`;status(canWrite?'기사와 사진 위치를 편하게 살펴봐 주세요. 변경하신 내용은 저장 후 이어서 보실 수 있습니다.':'함께 읽을 소식을 준비했습니다. PNG로 내려받아 살펴보실 수 있습니다.');show(0);}
-load().catch(error=>status(error.message));
+async function load(){
+  $('#retry').hidden=true;$('#period').textContent='이번 호를 불러오고 있습니다.';status('함께 읽을 소식을 불러오고 있습니다. 잠시만 기다려 주세요.');
+  try{
+    if(!Number.isSafeInteger(id)||id<1)throw new Error('관리자 목록에서 카드뉴스를 열어 주세요.');
+    const r=await fetch('/api/admin/card-news/'+id,{credentials:'same-origin'});
+    if(!r.ok)throw new Error(r.status===401||r.status===403?'관리자에서 다시 로그인한 뒤 카드뉴스를 열어 주세요.':'카드뉴스를 불러오지 못했습니다. 잠시 뒤 다시 불러와 주세요.');
+    const row=await r.json();issue=row.data;
+    if(issue?.template!=='bpmedia-weekly-v1'||!issue.articles?.length)throw new Error('아직 준비된 카드가 없습니다. 관리자 목록에서 이번 호를 확인해 주세요.');
+    $('#period').textContent=`${issue.period.start.slice(0,10)}–${issue.period.end.slice(0,10)} · 자동 게시 없이 함께 읽을 소식만 준비합니다.`;
+    status(canWrite?'기사와 사진 위치를 편하게 살펴봐 주세요. 변경하신 내용은 저장 후 이어서 보실 수 있습니다.':'함께 읽을 소식을 준비했습니다. PNG로 내려받아 살펴보실 수 있습니다.');
+    $('main').hidden=false;show(0);
+  }catch(error){issue=undefined;$('main').hidden=true;$('#period').textContent='이번 호를 아직 확인하지 못했습니다.';status(error instanceof TypeError?'연결이 잠시 끊겼습니다. 인터넷 연결을 살펴보신 뒤 다시 불러와 주세요.':error.message);$('#retry').hidden=false;controls();}
+}
+$('#retry').onclick=load;
+load();
 controls();
 })();

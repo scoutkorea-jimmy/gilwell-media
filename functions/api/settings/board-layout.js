@@ -15,7 +15,7 @@ export async function onRequestGet({ env }) {
 }
 
 export async function onRequestPut({ request, env }) {
-  const __gate = await gateMenuAccess(request, env, 'board-copy', 'view'); if (__gate) return __gate
+  const __gate = await gateMenuAccess(request, env, 'board-copy', 'write'); if (__gate) return __gate
 
   let body;
   try { body = await request.json(); } catch {

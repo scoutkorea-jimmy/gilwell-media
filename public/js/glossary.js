@@ -135,13 +135,18 @@
   }
 
   function renderGlossary() {
+    var meta = byId('glossary-results-meta');
+    var list = byId('glossary-results');
+    if (_query && !hasSearchScope()) {
+      if (meta) meta.textContent = '검색 범위를 선택해 주세요.';
+      if (list) list.innerHTML = '<div class="glossary-empty" role="status">용어 또는 설명 중 검색할 범위를 하나 이상 선택해 주세요.</div>';
+      return;
+    }
     var items = getSearchFilteredItems();
     var miscItems = items.filter(isMiscItem);
     var remainingItems = items.filter(function (item) { return !isMiscItem(item); });
     var regularItems = remainingItems.filter(function (item) { return !isUnmatchedItem(item); });
     var unmatchedItems = remainingItems.filter(isUnmatchedItem);
-    var meta = byId('glossary-results-meta');
-    var list = byId('glossary-results');
     var metaCount = (_bucket === MISC_BUCKET ? miscItems.length : (_bucket === 'all' ? items.length : regularItems.filter(function (item) { return item.bucket === _bucket; }).length));
     if (meta) meta.textContent = (_bucket === 'all' ? '전체' : _bucket) + ' · ' + GW.formatNumber(metaCount) + '개 용어';
     if (!list) return;
@@ -202,13 +207,6 @@
     function applySearch() {
       syncSearchScope();
       _query = String(input.value || '').trim().toLowerCase();
-      if (_query && !hasSearchScope()) {
-        _query = '';
-        GW.showToast('검색 색인을 설정해달라고 체크박스를 선택해주세요.', 'error');
-        renderBucketBar();
-        renderGlossary();
-        return;
-      }
       if (_query) _bucket = 'all';
       renderBucketBar();
       renderGlossary();

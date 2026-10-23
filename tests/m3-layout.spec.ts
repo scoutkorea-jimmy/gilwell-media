@@ -232,8 +232,8 @@ test('상단 검색은 입력과 버튼을 한 surface와 한 포커스 링으�
   expect(result.wrapRadius).not.toBe('0px');
 });
 
-test('홈 히어로의 배지·제목·설명·동작은 같은 수평 중심축을 사용한다', async ({ page }) => {
-  for (const viewport of [{ width: 390, height: 844 }, { width: 1440, height: 1000 }]) {
+test('넓은 화면의 홈 히어로 배지·제목·설명·동작은 같은 수평 중심축을 사용한다', async ({ page }) => {
+  for (const viewport of [{ width: 1440, height: 1000 }]) {
     await page.setViewportSize(viewport);
     await page.goto('/');
     await expect(page.locator('.site-hero-slide.active .site-hero-title')).toBeVisible({ timeout: 10_000 });

@@ -7,3 +7,8 @@ main{grid-template-columns:170px minmax(0,620px) 250px;gap:20px}body[data-can-wr
 @media(max-width:1150px) and (min-width:681px){main{grid-template-columns:135px minmax(0,620px)}#design-tools{grid-column:2;position:static}#cover-controls,#article-controls{display:grid;grid-template-columns:1fr 1fr;gap:0 18px}#design-tools label{min-width:0}#design-tools .hint{grid-column:1/-1}}
 @media(max-width:680px){#design-tools{width:100%;position:static}#cover-controls,#article-controls{display:block}#design-tools label{font-size:14px}#design-tools select,#design-tools textarea{font-size:16px}#design-tools button{font-size:14px}body[data-can-write="0"] main{display:flex}}
 #cover-controls[hidden],#article-controls[hidden],#fixed-design[hidden],#reset-design[hidden]{display:none}
+main[hidden],#retry[hidden]{display:none}
+button,#design-tools select,#design-tools input[type=range]{min-height:48px}
+button:disabled,#design-tools :disabled{opacity:1;background:#ede7f2;color:#66576e}
+#save:disabled,#apply-picker:disabled{background:#e7deed;color:#66576e;border-color:#cdbdd7}
+#retry{margin:0 0 20px}
