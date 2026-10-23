@@ -51,3 +51,117 @@ html,body{font-family:'Wanted Sans',sans-serif}:root{--paper:#fffdf8;--world-pur
 .story-bottom{position:absolute;left:64px;right:64px;bottom:116px}.story-bottom .readmore{display:block;margin:0 0 18px}.story-bottom .note{margin:0}.story-bottom .note:empty{display:none}
 .mixed-title{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.mixed-group li{padding:9px 0}.mixed-groups{gap:16px}.mixed-roundup .roundup-cta{margin-top:19px}
 .week-tag{display:inline-block;font-family:'Wanted Sans',sans-serif;font-size:23px;line-height:1.25;padding:7px 12px;margin-right:14px;border:1px solid #ffffff80;border-radius:5px;background:#ffffff18;color:white;letter-spacing:0;vertical-align:middle}
+
+/* Cover editions share fixed safe areas; composition changes within them. */
+.cover h1{font-size:var(--cover-title-size,111px);max-height:315px;overflow:hidden;white-space:pre-line;word-break:keep-all}
+.cover .date-range{white-space:nowrap;font-size:24px;letter-spacing:.1px}
+.cover:not(.cover-variant-classic) .date{position:absolute;left:64px;right:64px;top:181px;z-index:3;display:flex;align-items:center;gap:0;font-size:24px}
+.cover:not(.cover-variant-classic) h1{position:absolute;left:64px;right:64px;top:254px;margin:0;max-height:290px;z-index:3;line-height:1.16}
+.cover:not(.cover-variant-classic) .cover-sub{position:absolute;left:64px;right:64px;top:550px;margin:0;max-height:100px;overflow:hidden;z-index:3}
+.cover:not(.cover-variant-classic) .cover-collage{position:absolute;left:64px;right:64px;top:650px;width:auto;height:440px;margin:0;z-index:1}
+.cover:not(.cover-variant-classic) .cover-bottom{position:absolute;left:64px;right:64px;bottom:182px;margin:0;z-index:3}
+.cover:not(.cover-variant-classic) .cover-collage:after{display:none}
+.cover:not(.cover-variant-classic) .cover-diamond{top:1060px;right:69px;width:72px;height:72px;opacity:.6}
+.cover:not(.cover-variant-classic) .cover-arc{top:390px;right:-150px;width:300px;height:300px;opacity:.6}
+/* 02: restrained editorial masthead and three-photo contact strip. */
+.cover-variant-editorial{background:#fffdf8;color:#4d006e}
+.cover-variant-editorial .brand img,.cover-variant-mosaic .brand img,.cover-variant-focus .brand img{filter:none}
+.cover-variant-editorial .series,.cover-variant-editorial .date,.cover-variant-editorial .page-num,.cover-variant-editorial .foot{color:#4d006e}
+.cover-variant-editorial .stitch-rule{background:#622599;opacity:1}
+.cover-variant-editorial .week-tag{color:#4d006e;background:#eee7f6;border-color:#cdb7df}
+.cover-variant-editorial h1{top:285px!important;letter-spacing:-3px}
+.cover-variant-editorial .cover-sub{top:590px!important;border-left:7px solid #0094b4;padding-left:22px}
+.cover-variant-editorial .cover-collage{top:740px!important;height:345px!important;display:grid;grid-template-columns:1.15fr 1fr 1fr;gap:14px}
+.cover-variant-editorial .cover-collage .small{display:contents}
+.cover-variant-editorial .foot{border-color:#d7cce0}
+.cover-variant-editorial .cover-arc{top:233px!important;opacity:.12!important}
+.cover-variant-editorial .cover-diamond{display:none}
+/* 03: panorama story window with two smaller pictures inset on its edge. */
+.cover-variant-panorama{background:#4d006e}
+.cover-variant-panorama h1{top:255px!important;max-height:275px!important}
+.cover-variant-panorama .cover-sub{top:1090px!important;font-size:31px}
+.cover-variant-panorama .cover-collage{top:555px!important;left:0!important;right:0!important;height:495px!important;display:block}
+.cover-variant-panorama .cover-collage>img,.cover-variant-panorama .cover-collage>.photo-viewport{width:100%;height:100%}
+.cover-variant-panorama .cover-collage .small{position:absolute;right:30px;bottom:25px;width:290px;height:315px;gap:12px}
+.cover-variant-panorama .small img,.cover-variant-panorama .small .photo-viewport{border:6px solid #fffdf8}
+.cover-variant-panorama .cover-bottom{bottom:137px!important;font-size:23px}
+.cover-variant-panorama .cover-diamond{top:1070px!important;right:-20px!important;opacity:.18!important}
+/* 04: photographed field-notes on a warm mint sheet. */
+.cover-variant-mosaic{background:#e6f3ed;color:#244c3b}
+.cover-variant-mosaic .series,.cover-variant-mosaic .date,.cover-variant-mosaic .page-num,.cover-variant-mosaic .foot{color:#244c3b}
+.cover-variant-mosaic .stitch-rule{background:#236b35;opacity:1}
+.cover-variant-mosaic .week-tag{color:#236b35;border-color:#8db99c;background:#ffffff90}
+.cover-variant-mosaic h1{color:#4d006e;top:270px!important}
+.cover-variant-mosaic .cover-sub{top:570px!important}
+.cover-variant-mosaic .cover-collage{top:700px!important;height:395px!important;grid-template-columns:1fr 1fr;gap:30px}
+.cover-variant-mosaic .cover-collage>img,.cover-variant-mosaic .cover-collage>.photo-viewport{transform:rotate(-4deg);border:10px solid #fffdf8;box-shadow:0 12px 24px #244c3b20}
+.cover-variant-mosaic .cover-collage .small{gap:25px;transform:rotate(4deg)}
+.cover-variant-mosaic .small img,.cover-variant-mosaic .small .photo-viewport{border:8px solid #fffdf8;box-shadow:0 8px 18px #244c3b1c}
+.cover-variant-mosaic .cover-bottom{bottom:139px!important}
+.cover-variant-mosaic .foot{border-color:#acc4b5}
+.cover-variant-mosaic .cover-arc{top:420px!important;opacity:.15!important}
+.cover-variant-mosaic .cover-diamond{display:none}
+/* 05: a diagonal expedition panel with staggered picture windows. */
+.cover-variant-diagonal{background:linear-gradient(155deg,#4d006e 0 54%,#0094b4 54% 100%)}
+.cover-variant-diagonal h1{top:286px!important;left:90px!important;right:90px!important;transform:rotate(-3deg)}
+.cover-variant-diagonal .cover-sub{top:600px!important;left:90px!important;transform:rotate(-3deg)}
+.cover-variant-diagonal .cover-collage{top:710px!important;height:330px!important;left:42px!important;right:42px!important;grid-template-columns:1.5fr 1fr;gap:19px;transform:rotate(-6deg)}
+.cover-variant-diagonal .cover-collage>img,.cover-variant-diagonal .cover-collage>.photo-viewport{border:8px solid #fffdf8}
+.cover-variant-diagonal .small img,.cover-variant-diagonal .small .photo-viewport{border:6px solid #fffdf8}
+.cover-variant-diagonal .cover-bottom{bottom:135px!important}
+.cover-variant-diagonal .cover-arc{top:375px!important;opacity:.15!important}
+.cover-variant-diagonal .cover-diamond{top:570px!important;right:-20px!important;opacity:.5!important}
+/* 06: a photographic poster with a protected dark text field. */
+.cover-variant-poster{background:#241232}
+.cover-variant-poster .cover-collage{inset:0!important;width:100%!important;height:100%!important;display:block;z-index:-1!important}
+.cover-variant-poster .cover-collage>img,.cover-variant-poster .cover-collage>.photo-viewport{width:100%;height:100%}
+.cover-variant-poster .cover-collage:before{content:'';position:absolute;inset:0;background:linear-gradient(180deg,#21102ee8 0%,#21102e9c 48%,#21102e72 70%,#21102ee8 100%);z-index:2;pointer-events:none}
+.cover-variant-poster .cover-collage .small{position:absolute;left:64px;right:64px;top:904px;height:180px;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr;gap:18px;z-index:3}
+.cover-variant-poster .small img,.cover-variant-poster .small .photo-viewport{border:5px solid #ffffffba}
+.cover-variant-poster h1{top:330px!important;max-height:310px!important;text-shadow:0 3px 20px #1f102e35}
+.cover-variant-poster .cover-sub{top:690px!important;max-width:820px}
+.cover-variant-poster .cover-bottom{bottom:140px!important}
+.cover-variant-poster .cover-arc,.cover-variant-poster .cover-diamond{display:none}
+/* 07: three equal news strips, like a compact newspaper front page. */
+.cover-variant-stacked{background:#00677d}
+.cover-variant-stacked h1{top:265px!important}
+.cover-variant-stacked .cover-sub{top:565px!important;font-size:32px}
+.cover-variant-stacked .cover-collage{top:680px!important;height:465px!important;grid-template-columns:1fr;grid-template-rows:repeat(3,1fr);gap:14px}
+.cover-variant-stacked .cover-collage .small{display:contents}
+.cover-variant-stacked .cover-collage img,.cover-variant-stacked .cover-collage .photo-viewport{width:100%;height:100%}
+.cover-variant-stacked .cover-bottom{bottom:132px!important}
+.cover-variant-stacked .cover-arc{top:370px!important;opacity:.25!important}
+.cover-variant-stacked .cover-diamond{top:1090px!important;right:-35px!important}
+/* 08: a circular focus image and two companion portraits. */
+.cover-variant-focus{background:#f3eef9;color:#4d006e}
+.cover-variant-focus .series,.cover-variant-focus .date,.cover-variant-focus .page-num,.cover-variant-focus .foot{color:#4d006e}
+.cover-variant-focus .stitch-rule{background:#622599;opacity:1}
+.cover-variant-focus .week-tag{color:#4d006e;background:#fffdf8;border-color:#cdb7df}
+.cover-variant-focus h1{top:270px!important}
+.cover-variant-focus .cover-sub{top:575px!important}
+.cover-variant-focus .cover-collage{top:720px!important;height:410px!important;grid-template-columns:1.3fr 1fr;gap:35px}
+.cover-variant-focus .cover-collage>img,.cover-variant-focus .cover-collage>.photo-viewport{width:410px;height:410px;border-radius:50%;border:10px solid #622599}
+.cover-variant-focus .cover-collage .small{grid-template-rows:1fr 1fr;gap:20px;transform:translateY(-23px)}
+.cover-variant-focus .small img,.cover-variant-focus .small .photo-viewport{border-radius:100px;border:6px solid #fffdf8}
+.cover-variant-focus .cover-bottom{bottom:137px!important}
+.cover-variant-focus .foot{border-color:#d8cce2}
+.cover-variant-focus .cover-arc{top:565px!important;right:-50px!important;opacity:.18!important}
+.cover-variant-focus .cover-diamond{display:none}
+/* Article layouts retain the category, original hierarchy, and pinned footer. */
+.card.custom-story:not(.cover):not(.ending) .title{font-size:var(--title-size,58px)}
+.custom-story .summary{font-size:var(--body-size,31px);line-height:1.55}
+.custom-story .photo-wrap img{width:100%;height:var(--image-height,390px);object-fit:var(--image-fit,cover)}
+.custom-story .story-main{display:grid;grid-template-columns:1fr;gap:0;align-items:start;min-height:0}
+.custom-story .story-main>*{min-width:0}
+.custom-story.layout-wide .photo-wrap{margin-bottom:22px}
+.custom-story.layout-split-left .story-main,.custom-story.layout-split-right .story-main{grid-template-columns:440px minmax(0,1fr);gap:32px}
+.custom-story.layout-split-right .story-main{grid-template-columns:minmax(0,1fr) 440px}
+.custom-story.layout-split-right .photo-wrap{grid-column:2;grid-row:1}
+.custom-story.layout-split-right .summary{grid-column:1;grid-row:1}
+.custom-story.layout-portrait .story-main{grid-template-columns:355px minmax(0,1fr);gap:38px}
+.custom-story.layout-portrait .photo-wrap img{background:var(--tint)}
+.custom-story .photo-viewport{max-width:100%}
+.custom-story .subtitle:empty{display:none}
+.custom-story .story-bottom{z-index:4}
+
+.cover-variant-panorama .cover-collage>img,.cover-variant-stacked .cover-collage img{object-position:50% 25%}

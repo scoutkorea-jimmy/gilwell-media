@@ -1,8 +1,49 @@
 import { PUBLIC_DATE_EXPR } from './post-public-date.js';
 
 export const WEEKLY_TEMPLATE = 'bpmedia-weekly-v1';
+export const COVER_VARIANTS = ['classic', 'editorial', 'panorama', 'mosaic', 'diagonal', 'poster', 'stacked', 'focus'];
 const DAY = 86400000;
 const LABELS = { korea: '한국소식', apr: '아태소식', wosm: '세계소식', people: '인물소식' };
+
+export function cleanWeeklyDesign(value, candidates) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('디자인 설정을 다시 확인해 주세요.');
+  const choice = (item, fallback, choices) => {
+    if (item === undefined) return fallback;
+    if (!choices.includes(item)) throw new Error('제공된 디자인과 레이아웃에서 골라 주세요.');
+    return item;
+  };
+  const size = (item, fallback, min, max) => {
+    if (item === undefined) return fallback;
+    if (!Number.isFinite(item) || item < min || item > max) throw new Error('글자와 사진 크기를 허용 범위 안에서 골라 주세요.');
+    return item;
+  };
+  const text = (item, fallback, max, required = false) => {
+    if (item === undefined) return fallback;
+    if (typeof item !== 'string' || item.length > max || (required && !item.trim())) throw new Error('표지 문구의 길이를 다시 확인해 주세요.');
+    if (item.split(/\r\n?|\n/).length > 3) throw new Error('표지 제목과 소개는 각각 3줄 안에서 작성해 주세요.');
+    return item;
+  };
+  const controls = value.articles === undefined ? {} : value.articles;
+  if (!controls || typeof controls !== 'object' || Array.isArray(controls) || Object.keys(controls).length > 20) throw new Error('기사별 디자인 설정을 다시 확인해 주세요.');
+  const articles = {};
+  for (const [id, control] of Object.entries(controls)) {
+    if (!/^[1-9]\d*$/.test(id) || !Number.isSafeInteger(Number(id)) || !candidates.some(article => article.id === Number(id)) || !control || typeof control !== 'object' || Array.isArray(control)) throw new Error('이번 기간에 확인한 기사에만 레이아웃을 지정할 수 있습니다.');
+    articles[id] = {
+      layout: choice(control.layout, 'wide', ['wide', 'split-left', 'split-right', 'portrait']),
+      title_size: size(control.title_size, 58, 44, 72),
+      body_size: size(control.body_size, 31, 24, 36),
+      image_height: size(control.image_height, 390, 260, 560),
+      image_fit: choice(control.image_fit, 'cover', ['cover', 'contain']),
+    };
+  }
+  return {
+    cover_variant: choice(value.cover_variant, 'classic', COVER_VARIANTS),
+    cover_title: text(value.cover_title, '이번 주\n스카우트 소식', 36, true),
+    cover_subtitle: text(value.cover_subtitle, '세계의 스카우트는 지금?', 80),
+    cover_title_size: size(value.cover_title_size, 111, 88, 120),
+    articles,
+  };
+}
 
 export function weeklyPeriod(now = new Date(), rolling = false) {
   const kst = new Date(now.getTime() + 9 * 3600000);
@@ -145,6 +186,7 @@ export async function createWeeklyIssue(env, { now = new Date(), rolling = false
   const data = withSelection({ template: WEEKLY_TEMPLATE, revision: 1, title, period,
     issueDate: date.replaceAll('-', '.'), date: date.replaceAll('-', '.'),
     candidates, photo_views: {}, auto_publish: false,
+    design: cleanWeeklyDesign({ cover_variant: COVER_VARIANTS[crypto.getRandomValues(new Uint8Array(1))[0] % COVER_VARIANTS.length] }, candidates),
   });
   await env.DB.prepare('INSERT OR IGNORE INTO card_news(title,slug,r2_key,size_bytes,published,data) VALUES(?,?,\'\',?,0,?)')
     .bind(title, slug, JSON.stringify(data).length, JSON.stringify(data)).run();

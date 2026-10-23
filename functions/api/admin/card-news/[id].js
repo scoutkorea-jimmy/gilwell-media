@@ -10,7 +10,7 @@
  * (legacy: 업로드 방식으로 만든 행은 r2_key 를 가질 수 있고, 삭제 시 R2 객체도 정리)
  */
 import { gateMenuAccess } from '../../../_shared/admin-permissions.js';
-import { WEEKLY_TEMPLATE, withSelection, cleanPhotoViews } from '../../../_shared/card-news-weekly.js';
+import { WEEKLY_TEMPLATE, withSelection, cleanPhotoViews, cleanWeeklyDesign } from '../../../_shared/card-news-weekly.js';
 import { recordSettingChange } from '../../../_shared/settings-audit.js';
 
 const MAX_DATA_BYTES = 2 * 1024 * 1024; // tweaks JSON 상한(이미지는 URL 참조라 작음)
@@ -57,11 +57,13 @@ export async function onRequestPut({ request, env, params }) {
   let previous = {};
   try { previous = JSON.parse(row.data || '{}'); } catch {}
   if (previous.template === WEEKLY_TEMPLATE) {
-    if (!body?.weekly || body.expected_revision !== previous.revision) return json({ error: 'version_mismatch', reason: '다른 곳에서 저장한 내용이 있습니다. 새로고침한 뒤 다시 살펴봐 주세요.' }, 409);
+    if (body?.expected_revision !== previous.revision) return json({ error: 'version_mismatch', reason: '다른 곳에서 저장한 내용이 있습니다. 새로고침한 뒤 다시 살펴봐 주세요.' }, 409);
+    if (!body.weekly || typeof body.weekly !== 'object' || Array.isArray(body.weekly)) return json({ error: 'invalid_weekly', reason: '저장할 카드뉴스 정보를 다시 확인해 주세요.' }, 400);
     let next;
     try {
-      next = withSelection(previous, body.weekly.selected_ids);
-      next.photo_views = cleanPhotoViews(body.weekly.photo_views);
+      next = withSelection(previous, body.weekly.selected_ids === undefined ? previous.articles.map(article => article.id) : body.weekly.selected_ids);
+      if (body.weekly.photo_views !== undefined) next.photo_views = cleanPhotoViews(body.weekly.photo_views);
+      if (body.weekly.design !== undefined) next.design = cleanWeeklyDesign(body.weekly.design, previous.candidates);
       next.revision = previous.revision + 1;
       next.auto_publish = false;
     } catch (error) { return json({ error: 'invalid_weekly', reason: error.message }, 400); }
@@ -69,7 +71,7 @@ export async function onRequestPut({ request, env, params }) {
     const changed = await env.DB.prepare("UPDATE card_news SET data=?,size_bytes=?,updated_at=datetime('now') WHERE id=? AND data=?")
       .bind(serialized, serialized.length, id, row.data).run();
     if (!changed.meta?.changes) return json({ error: 'version_mismatch', reason: '저장 중 새 변경이 확인됐습니다. 내용을 다시 불러와 주세요.' }, 409);
-    await recordSettingChange(env, { key: 'card_news', path: '/api/admin/card-news/' + id, previousValue: row.data, message: '주간 카드뉴스의 기사와 사진 위치를 저장했습니다.', details: { id } }).catch(() => {});
+    await recordSettingChange(env, { key: 'card_news', path: '/api/admin/card-news/' + id, previousValue: row.data, message: '주간 카드뉴스의 기사와 디자인을 저장했습니다.', details: { id } }).catch(() => {});
     return json({ ok: true, id, revision: next.revision });
   }
   const data = body && body.data;

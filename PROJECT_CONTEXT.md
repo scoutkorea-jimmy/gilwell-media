@@ -56,3 +56,10 @@ Owner approved commit/push/deploy. Public commit202191a5 pushed to main; standar
 - D1 기존 테이블 사용, 인증·권한 재사용, revision 충돌 방지와 동일 기간 덮어쓰기 방지. 원문 posts 변경 없음.
 - 구현/로컬 검증 완료. 기존 미커밋 Site 변경 보존. 사용자가 이번 변경만 커밋·푸시·운영 배포·cron 활성화를 명시 승인. 별도 깨끗한 배포용 복사본에서 이번 변경만 반영한다. 운영 로그인 확인은 배포 후 수행.
 - 상세: docs/features/Weekly Card News.md. Admin 03.159.00 준비.
+
+## 2026-10-23 — 주간 카드뉴스 디자인 스튜디오
+
+- Admin03.160.00: 표지8종 무작위 선택(새 호에 한번 저장), 기사 배치4종, 문구·타이포·사진 높이/맞춤 조절. 기존 호의 디자인/사진과 posts를 보존한다.
+- 기존 인증 프레임·PNG/ZIP·CAS를 재사용. latest renderId를 확인하여 빠른 입력 후에도 마지막 디자인을 내보낸다. 데이터/권한/서버 입력 경계 검사 통과, 실제 Chrome 8표지·4기사 레이아웃·최대값·긴 문구·저장재접속·사진·PNG/ZIP·모바일 검사 통과.
+- 자동제작 cron은 기존 월요일00:00 KST를 유지. 10월26일 첫 실행을00:05에 읽기 전용으로 확인하는 일회성 Codex heartbeat(bp)를 별도로 등록했다. 첫 실행 자체는 아직 미래다.
+- 기존 dirty checkout은 보존하며 깨끗한 weekly-release 복사본에서 카드뉴스 범위만 커밋·배포한다. 공유 패키지 변경을 포함하므로 scheduled Worker도 같은 helper로 재배포한다.
