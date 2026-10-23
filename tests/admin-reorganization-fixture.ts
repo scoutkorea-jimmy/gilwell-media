@@ -101,7 +101,7 @@ export async function installSyntheticAdmin(page: Page, options: {
         sources: [], tracking_note: '로컬 합성 집계이며 실제 성과가 아닙니다.',
       });
       if (path === '/api/admin/ai-usage') return await respond({ today: {}, week: {}, month: {}, byDay: [], recent: [], byEndpoint: [], chart_days: 14 });
-      if (path === '/api/admin/card-news/weekly') return await respond({ schedule: '매주 월요일 00:00 KST', last: null, auto_publish: false });
+      if (path === '/api/admin/card-news/weekly') return await respond({ schedule: null, last: null, auto_generate: false, auto_publish: false });
       if (path === '/api/admin/drafts' && request.method() === 'GET') {
         return await respond({ drafts: state.savedDraft ? [state.savedDraft] : [], max_drafts: 10, ttl_days: 14 });
       }

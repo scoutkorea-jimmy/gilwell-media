@@ -123,8 +123,13 @@ renders.shift().resolve();await initialClear;await flush();assert.equal(saves,0,
 renders.shift().reject();await replacement;await flush();assert.equal(api.renderPending,0);assert.equal(api.renderFailed,true);assert.ok((await reading).error);assert.equal(f.node('w-title').value,'title typed during rendering');
 const recovery=api.clearEditor();await flush();renders.shift().resolve();await recovery;assert.equal(api.renderFailed,false);assert.equal(f.node('v3-editorjs').inert,false);assert.equal(JSON.parse(await api.getEditorData()).blocks.length,0);assert.equal(saves,1);
 
-const card = fixture('public/js/admin-cardnews.js', `window.__content = {state,loadList,openEditor,closeEditor,submitNew,wireEvents,canLeave};`);
+const card = fixture('public/js/admin-cardnews.js', `window.__content = {state,loadList,loadWeeklyStatus,openEditor,closeEditor,submitNew,wireEvents,canLeave};`);
 card.api.wireEvents();
+card.api.loadWeeklyStatus();
+card.pending.shift().resolve(new Response(JSON.stringify({schedule:null,auto_generate:false,last:{status:'failed'},auto_publish:false})));await flush();
+assert.match(card.node('cardnews-weekly-status').textContent,/필요하실 때.*최근 한 주 카드 만들기/);
+assert.match(card.node('cardnews-weekly-status').textContent,/자동 제작과 자동 게시는 꺼져/);
+assert.doesNotMatch(card.node('cardnews-weekly-status').textContent,/매주|월요일|마치지 못했습니다/);
 card.api.loadList(); card.pending.shift().resolve(new Response('{}', { status: 500 })); await flush(); assert.equal(card.api.state.loadedOnce, false); assert.match(card.node('cardnews-list-wrap').innerHTML, /다시 시도/);
 card.api.openEditor(3, 'Synthetic'); const frame = card.node('cardnews-editor-frame'); frame.contentWindow = {};
 const receive = card.events.get('message');

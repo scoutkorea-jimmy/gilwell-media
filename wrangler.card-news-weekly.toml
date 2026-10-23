@@ -3,8 +3,8 @@ main = "workers/card-news-weekly.js"
 compatibility_date = "2024-09-23"
 
 [triggers]
-# Sunday 15:00 UTC = Monday 00:00 Asia/Seoul.
-crons = ["0 15 * * SUN"]
+# Card news is created manually from Admin only.
+crons = []
 
 [vars]
 SITE_ORIGIN = "https://bpmedia.net"

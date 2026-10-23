@@ -7,10 +7,7 @@ const json = (data, status = 200) => Response.json(data, { status, headers: { 'C
 export async function onRequestGet({ request, env }) {
   const gate = await gateMenuAccess(request, env, 'card-news', 'view');
   if (gate) return gate;
-  const status = await env.DB.prepare('SELECT value FROM settings WHERE key=?').bind('card_news_weekly_status').first();
-  let last = null;
-  try { last = JSON.parse(status?.value || 'null'); } catch {}
-  return json({ schedule: '매주 월요일 00:00 KST', last, auto_publish: false });
+  return json({ schedule: null, last: null, auto_generate: false, auto_publish: false });
 }
 
 export async function onRequestPost({ request, env }) {
