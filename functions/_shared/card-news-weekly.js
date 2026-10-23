@@ -11,9 +11,9 @@ export function weeklyPeriod(now = new Date(), rolling = false) {
   else {
     const monday = new Date(Date.UTC(kst.getUTCFullYear(), kst.getUTCMonth(), kst.getUTCDate()));
     monday.setUTCDate(monday.getUTCDate() - (monday.getUTCDay() + 6) % 7);
-    end = monday.toISOString().slice(0, 10) + ' 00:00:00';
+    end = new Date(monday.getTime()-3600000).toISOString().slice(0,19).replace('T',' ');
   }
-  const start = new Date(Date.parse(end.replace(' ', 'T') + 'Z') - 7 * DAY).toISOString().slice(0, 19).replace('T', ' ');
+  const start = new Date(Date.parse(end.replace(' ', 'T') + 'Z') - 7 * DAY + (rolling ? 0 : 3600000)).toISOString().slice(0, 19).replace('T', ' ');
   return { start, end, timezone: 'Asia/Seoul', key: `${start.slice(0, 10)}_${end.slice(0, 10)}` };
 }
 
@@ -114,9 +114,9 @@ export async function loadWeeklyCandidates(env, period, origin, fetcher = fetch)
   const utcEnd = new Date(period.end.replace(' ', 'T') + '+09:00').toISOString().slice(0, 19).replace('T', ' ');
   const rs = await env.DB.prepare(`SELECT id, category, title, subtitle, content, image_url, image_caption, tag, updated_at,
     ${PUBLIC_DATE_EXPR} AS public_date,
-    ((SELECT COUNT(*) FROM site_visits WHERE path LIKE '/post/%' AND CAST(SUBSTR(path,7) AS INTEGER)=posts.id AND datetime(visited_at)>=datetime(?) AND datetime(visited_at)<datetime(?))
-    +3*(SELECT COUNT(*) FROM post_likes WHERE post_id=posts.id AND datetime(liked_at)>=datetime(?) AND datetime(liked_at)<datetime(?))) AS attention_score
-    FROM posts WHERE published=1 AND ${PUBLIC_DATE_EXPR}>=? AND ${PUBLIC_DATE_EXPR}<? AND image_url IS NOT NULL AND trim(image_url)<>''
+    ((SELECT COUNT(*) FROM site_visits WHERE path LIKE '/post/%' AND CAST(SUBSTR(path,7) AS INTEGER)=posts.id AND datetime(visited_at)>=datetime(?) AND datetime(visited_at)<=datetime(?))
+    +3*(SELECT COUNT(*) FROM post_likes WHERE post_id=posts.id AND datetime(liked_at)>=datetime(?) AND datetime(liked_at)<=datetime(?))) AS attention_score
+    FROM posts WHERE published=1 AND ${PUBLIC_DATE_EXPR}>=? AND ${PUBLIC_DATE_EXPR}<=? AND image_url IS NOT NULL AND trim(image_url)<>''
     AND category IN ('korea','apr','wosm','people') ORDER BY attention_score DESC, public_date DESC, id DESC LIMIT 60`)
     .bind(utcStart, utcEnd, utcStart, utcEnd, period.start, period.end).all();
   const rows = (rs.results || []).filter(row => !/\/img\/logo\.(png|svg)(?:\?|$)/i.test(row.image_url)).slice(0, 20);

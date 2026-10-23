@@ -10,7 +10,7 @@ export async function onRequestGet({ request, env }) {
   const status = await env.DB.prepare('SELECT value FROM settings WHERE key=?').bind('card_news_weekly_status').first();
   let last = null;
   try { last = JSON.parse(status?.value || 'null'); } catch {}
-  return json({ schedule: '매주 월요일 09:00 KST', last, auto_publish: false });
+  return json({ schedule: '매주 월요일 00:00 KST', last, auto_publish: false });
 }
 
 export async function onRequestPost({ request, env }) {

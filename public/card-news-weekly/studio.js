@@ -18,7 +18,7 @@ function controls(){
   $('#choose').hidden=!canWrite;$('#save').hidden=!canWrite;$('#save').disabled=locked()||!dirty;
 }
 function thumbnails(){const nav=$('#thumbs');nav.replaceChildren();cardNames().forEach((name,i)=>{const b=document.createElement('button');b.type='button';b.textContent=String(i+1).padStart(2,'0')+' · '+name;b.setAttribute('aria-current',i===active?'true':'false');b.onclick=()=>{if(!locked())show(i)};nav.append(b);});}
-function show(n){active=Math.max(0,Math.min(cardNames().length-1,n));ready=false;sentDraft=false;frame.src=`/card-news-weekly/frame.html?issue=${id}&card=${active}&edit=${canWrite?'1':'0'}`;$('#counter').textContent=`${active+1} / ${cardNames().length}`;thumbnails();controls();}
+function show(n){active=Math.max(0,Math.min(cardNames().length-1,n));ready=false;sentDraft=false;frame.src=`/card-news/${id}/frame?issue=${id}&card=${active}&edit=${canWrite?'1':'0'}`;$('#counter').textContent=`${active+1} / ${cardNames().length}`;thumbnails();controls();}
 new ResizeObserver(()=>{frame.style.transform=`scale(${$('main>section').clientWidth/1080})`}).observe($('#viewport'));
 $('#prev').onclick=()=>show(active-1);$('#next').onclick=()=>show(active+1);
 window.addEventListener('message',e=>{
@@ -53,7 +53,7 @@ $('#zip').onclick=async()=>{
         const stop=()=>window.removeEventListener('message',listen);
         const timer=setTimeout(()=>{stop();reject(new Error('카드를 준비하지 못했습니다. 다시 시도해 주세요.'));},30000);
         function listen(e){if(e.origin!==location.origin||e.source!==worker.contentWindow)return;if(e.data?.type==='bp-card-error'){clearTimeout(timer);stop();reject(new Error(e.data.message));}if(e.data?.type!=='bp-card-ready')return;if(!sent){sent=true;worker.contentWindow.postMessage({type:'bp-set-issue',issue:snapshot},location.origin);}else{clearTimeout(timer);stop();resolve();}}
-        window.addEventListener('message',listen);worker.src=`/card-news-weekly/frame.html?issue=${id}&card=${i}&edit=0`;
+        window.addEventListener('message',listen);worker.src=`/card-news/${id}/frame?issue=${id}&card=${i}&edit=0`;
       });
       zip.file(`BPmedia_${String(i+1).padStart(2,'0')}.png`,await capture(worker));
     }

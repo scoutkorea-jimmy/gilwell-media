@@ -70,7 +70,7 @@
       if (!r.ok) throw new Error('weekly_status'); return r.json();
     }).then(function (data) {
       var el = $('#cardnews-weekly-status');
-      if (el) el.textContent = '매주 월요일 오전 9시에 한 주의 소식을 준비합니다. 자동으로 게시하지는 않습니다.' + (data.last && data.last.status === 'failed' ? ' 최근 자동 제작을 마치지 못했습니다. 최근 기사로 다시 만들어 주세요.' : data.last && data.last.status === 'no_articles' ? ' 이번 기간에는 이미지와 본문을 확인한 기사가 아직 없습니다.' : '');
+      if (el) el.textContent = '매주 월요일 00시에 지난 월요일 00시부터 일요일 23시까지의 소식을 준비합니다. 자동으로 게시하지는 않습니다.' + (data.last && data.last.status === 'failed' ? ' 최근 자동 제작을 마치지 못했습니다. 최근 기사로 다시 만들어 주세요.' : data.last && data.last.status === 'no_articles' ? ' 이번 기간에는 이미지와 본문을 확인한 기사가 아직 없습니다.' : '');
     }).catch(function () {
       var el = $('#cardnews-weekly-status'); if (el) el.textContent = '주간 제작 상태를 불러오지 못했습니다. 잠시 뒤 다시 살펴봐 주세요.';
     });
