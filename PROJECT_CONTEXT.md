@@ -71,6 +71,8 @@ Owner approved commit/push/deploy. Public commit202191a5 pushed to main; standar
 - 2026-10-24 카드뉴스 수동 전용 결정, 표지/기사 편집·권한·저장 충돌·PNG 검수, 용어집 검색 범위 복구, 설정 쓰기 권한을 KMS에 반영했다. 기존 자동 추천 승인 기준과 구형 수동 안내의 충돌 및 규칙/배포 경로도 정리했다.
 - D1 revision4→6. 변경 전 본문은 settings_history에 보관하고 조건부 갱신·운영 로그·전체 readback을 확인했다. 원본에서 Markdown/fallback을 공식 스크립트로 동기화했다.
 - KMS API 가이드의 로그인·세션·revision 예시를 정정하고 카드뉴스 API8개를 추가했다. 기능 동작·인증 코어·기사/카드 데이터·예약은 변경하지 않았다.
-- 검증: SQL fixture 정상·stale·재실행, 설정 쓰기 권한4건, 카드뉴스 예약 비활성 검사, JS 문법·스냅샷 일치. 1440/390px 로컬 KMS 렌더·API8개·표시일·가로 넘침 없음·pageerror0 확인. Admin03.160.04 릴리스 준비. 배포 결과는 종료 시 추가한다.
+- 검증: SQL fixture 정상·stale·재실행, 설정 쓰기 권한4건, 카드뉴스 예약 비활성 검사, JS 문법·스냅샷 일치. 1440/390px 로컬 KMS 렌더·API8개·표시일·가로 넘침 없음·pageerror0 확인. Admin03.160.04 배포 완료.
 - 후속 확인: KMS5.2의 과거 티커 버튼 제거 기록과5.9의 직접 정지 접근성 기준은 현재 조작 방식 검토가 필요하다. 이번 작업에서 Site 기능이나 기준을 임의 변경하지 않았다.
 - 다음 시작: AGENTS.md→rules/README.md→rules/30-kms.md, PROJECT_CONTEXT.md를 읽고 git status --short, node scripts/sync_kms_snapshot.mjs --check, ./scripts/verify_release_metadata.sh 실행.
+
+- 최종 릴리스: af750de를 origin/main에 push, Pages7f91f21a-f129-4b58-b0e2-73663a242512 배포 성공. live ADMIN_VERSION03.160.04·KMS revision6·전체 원문·JS byte 일치·changelog1건 확인. 표준 배포 exit0, 공개 기사536건/오류0건, snapshot20261027T083931Z-af750de 저장. 카드뉴스 Worker 예약0건 재확인. 후속 기록 커밋은 문서만 변경하며 배포 코드/자산은 바꾸지 않는다.
