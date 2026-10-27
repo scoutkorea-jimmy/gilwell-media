@@ -352,3 +352,8 @@ Git 연동 자동 배포가 동작하는 구성이어도, 실제 운영에서는
 4. 라이브 `https://bpmedia.net/js/main.js?v=<ASSET_VERSION>` 의 `GW.APP_VERSION`, `GW.ADMIN_VERSION`, `GW.ASSET_VERSION` 확인
 5. 관리자 전용 변경이면 `/admin` HTML에 연결된 `admin-v3.css/js` 쿼리 버전과 `GW.ADMIN_VERSION`을 함께 확인
 6. `./scripts/post_deploy_check.sh https://bpmedia.net`
+
+
+### 2026-10-27 KMS 최신화
+
+수동 카드뉴스 운영 기준과 최신 API 계약은 관리자 `/kms/function`·`/kms/api`에서 확인한다. 저장소 `docs/feature-definition.md`와 fallback은 D1 운영 원본의 동기화 사본이다. 변경 범위·검증·후속 확인은 `PROJECT_CONTEXT.md`의2026-10-27 기록을 따른다.

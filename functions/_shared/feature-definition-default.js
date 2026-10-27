@@ -10,7 +10,7 @@ aliases: [Feature Definition, KMS Snapshot, 기능정의서]
 
 > [!warning] 이 문서는 KMS의 보조 스냅샷입니다
 > 정식 원본은 관리자 \`/admin.html\` → KMS 메뉴에서 확인하십시오.
-> AI 작업 기준은 [[CLAUDE]] (= \`AGENTS.md\`)를 우선합니다. 타겟은 2 Site / 3 Admin / 4 KMS 섹션 참조.
+> AI 작업은 \`AGENTS.md\` 진입점 → \`rules/README.md\` → 타겟별 규칙 순서로 확인합니다. 운영 기준의 정식 원본은 관리자 KMS이며, 저장소 스냅샷은 원본에서 동기화합니다.
 
 이 문서는 BP미디어의 공개 홈페이지, 관리자, 운영 데이터 규칙, 배포 규칙을 통합해서 관리하는 기준 문서다.
 앞으로 새 기능을 개발하거나 기존 기능을 수정할 때는 이 문서를 먼저 확인하고, 구현이 끝나면 반드시 이 문서도 함께 갱신한다.
@@ -23,7 +23,7 @@ aliases: [Feature Definition, KMS Snapshot, 기능정의서]
 - 이 문서는 "현재 사이트가 무엇을 하는가"를 정리하는 설명서가 아니라, "앞으로도 어떻게 만들어야 하는가"를 결정하는 기준서다.
 - 운영자, 디자이너, 인간 개발자, AI 개발자 모두 같은 기준을 보기 위해 KMS를 단일 진실 원본(single source of truth)으로 사용한다.
 - 관리자 페이지의 \`KMS\` 메뉴가 원본이며, 저장소의 \`docs/feature-definition.md\`는 스냅샷이다.
-- 저장소 루트의 \`CLAUDE.md\` (= \`AGENTS.md\` 심볼릭 링크)는 모든 AI의 공통 작업 기준 문서이며, Site / Admin / KMS / Dreampath 타겟별로 구성된다. 기존 \`ai-guide.html\` 기준은 모두 이 문서와 KMS로 이관되었다.
+- 저장소 루트의 \`CLAUDE.md\` (= \`AGENTS.md\` 심볼릭 링크)는 규칙 진입점이다. 공통 절차와 Site / Admin / KMS / Dreampath 규칙 본문은 \`rules/\`에서 읽는다. 진입점에 규칙을 중복 작성하지 않는다.
 
 #### 각주
 - 구현이 문서와 다르면 코드를 맞추거나 문서를 업데이트해야 한다. "문서와 실제가 다른 상태"를 방치하지 않는다.
@@ -38,12 +38,19 @@ aliases: [Feature Definition, KMS Snapshot, 기능정의서]
   - \`KMS\` : 운영 기준 원본 (이 문서)
   - \`Dreampath\` : CUFS 내부 앱 (별도 도메인)
 - 타겟이 모호하면 AI는 코드를 수정하기 전에 반드시 사용자에게 질문한다.
-- 타겟 확정 후에는 \`CLAUDE.md\` (= \`AGENTS.md\` 심볼릭 링크)의 해당 \`\` 섹션만 참조하고, 다른 타겟 규칙을 섞지 않는다.
+- 타겟 확정 후 \`rules/00-target-protocol.md\`, \`rules/01-common-infra.md\`와 해당 타겟 규칙을 실제로 읽는다. KMS는 \`rules/30-kms.md\`, 배포는 \`rules/02-versioning.md\`와 \`rules/03-deploy.md\`를 함께 참조하며 다른 타겟의 구현 규칙을 섞지 않는다.
 - KMS 변경은 Site/Admin의 코드 변경에 우선한다. 코드 변경으로 KMS 기준을 역산하지 않는다.
 
 #### 각주
 - AI별로 규칙을 분리하면 규칙 드리프트와 중복 관리 비용이 생긴다. AI는 교체될 수 있지만 타겟은 바뀌지 않는다.
 - 타겟 경계를 지키지 않으면 Dreampath의 IIFE/Tiptap 패턴이 Site에 섞이거나, Site의 \`GW\` 네임스페이스가 Dreampath에 섞이는 식으로 아키텍처가 무너진다.
+
+### 0.1.2 최신화 기준과 확인 범위 (2026-10-27)
+
+- 이번 최신화는 2026-10-24까지 승인·배포된 변경을 운영 기준에 반영한다. 대조한 운영 기준점은 Site \`00.194.03\`, Admin \`03.160.03\`, 배포 커밋 \`4699dab1\`이다. KMS 문서 갱신 릴리스는 Admin \`03.160.04\`로 구분한다.
+- 카드뉴스 자동 제작 중지 결정이 과거 월요일 예약·첫 정기 실행 확인 계획에 우선한다. 2026-10-27 Cloudflare 운영 조회에서 카드뉴스 Worker 예약 0건을 확인했다. 수동 제작·편집·다운로드 기준은 11.6에 모은다.
+- 운영 배포·현재 API 조회, 당시 인증 화면 검수, 로컬 fixture 검증은 서로 다른 근거다. 이번 문서 최신화에서 카드뉴스를 새로 생성하거나 저장·다운로드한 것으로 기록하지 않는다.
+- 기존 작업 폴더의 미커밋 변경이나 준비된 버전 번호만으로 운영 반영을 판단하지 않는다. 미배포 Site 안정성·SEO 개선 제안은 이번 운영 완료 범위에 포함하지 않는다.
 
 ### 0.2 개발자가 반드시 지켜야 할 순서
 
@@ -72,7 +79,7 @@ aliases: [Feature Definition, KMS Snapshot, 기능정의서]
 
 #### 기능 세부 설명
 
-**관리자 \`사이트 오류/이슈 기록\` 패널 또는 \`homepage_issues\` 테이블에 \`status = 'open'\`인 항목이 있으면, 어떤 신규 작업보다 먼저 해결한다.**
+**관리자 \`사이트 오류/이슈 기록\` 또는 \`homepage_issues\`에서 \`status IN ('open', 'monitoring')\`이고 \`severity IN ('high', 'critical')\`인 P0 항목이 있으면, 어떤 신규 작업보다 먼저 해결한다.**
 
 - 새 기능, 리팩터, 디자인 개선, 문서 갱신 등 어떤 작업 요청이 들어와도 **작업 시작 전 \`/admin\` → \`사이트 오류/이슈 기록\` 또는 \`/api/homepage-issues?status=open\` 확인이 필수.**
 - 해결 대상 조건: \`status IN ('open', 'monitoring')\` 이면서 \`severity IN ('high', 'critical')\`인 항목은 P0. \`medium\` 이하는 P1 (신규 작업 전 고려). \`low\`·\`resolved\`는 정보 참고.
@@ -81,8 +88,8 @@ aliases: [Feature Definition, KMS Snapshot, 기능정의서]
 - 이슈 상태 업데이트 API: \`PATCH /api/homepage-issues/:id\` (status/severity/resolution_notes). admin UI에서도 수동 업데이트 가능.
 
 **신규 작업 시작 전 체크리스트**
-1. \`/api/homepage-issues?status=open\` GET → open 이슈 목록 확인
-2. \`severity='high'\` 또는 \`'critical'\` 있으면 P0 처리 우선
+1. 관리자 이슈 패널 또는 D1에서 open·monitoring 이슈를 모두 확인
+2. 그중 \`severity='high'\` 또는 \`'critical'\`이면 P0 처리 우선
 3. 없으면 신규 작업 착수
 4. 작업 중 새 오류를 발견하면 즉시 \`homepage_issues\`에 기록(코드에서 \`_reportSiteIssue\` 또는 직접 INSERT)
 
@@ -125,10 +132,10 @@ aliases: [Feature Definition, KMS Snapshot, 기능정의서]
 - 예시
   - Site: \`00.101.01\`
   - Admin: \`03.011.00\`
-- \`VERSION\` 파일에는 항상 현재 Site 버전을 저장한다.
-- \`ADMIN_VERSION\` 파일에는 항상 현재 Admin 버전을 저장한다.
-- \`ASSET_VERSION\` 파일에는 현재 배포 자산 캐시 버스팅 토큰을 저장한다.
-- \`./scripts/sync_versions.sh\`가 \`js/main.js\`의 \`GW.APP_VERSION\`, \`GW.ADMIN_VERSION\`, \`GW.ASSET_VERSION\`, 관리자 자산 쿼리 버전, 공개 HTML 자산 쿼리 버전을 함께 맞추고 새로운 자산 토큰을 생성한다.
+- \`public/VERSION\` 파일에는 항상 현재 Site 버전을 저장한다.
+- \`public/ADMIN_VERSION\` 파일에는 항상 현재 Admin 버전을 저장한다.
+- \`public/ASSET_VERSION\` 파일에는 현재 배포 자산 캐시 버스팅 토큰을 저장한다.
+- \`./scripts/sync_versions.sh\`가 \`public/js/main.js\`의 \`GW.APP_VERSION\`, \`GW.ADMIN_VERSION\`, \`GW.ASSET_VERSION\`, 관리자 자산 쿼리 버전, 공개 HTML 자산 쿼리 버전을 함께 맞추고 새로운 자산 토큰을 생성한다. 저장소의 \`public/\` 경로는 배포 URL에서 제외되므로 파일 \`public/VERSION\`은 \`/VERSION\`으로 제공된다.
 
 #### 각주
 - 공개 홈페이지만 바뀌면 Site 버전만 올린다.
@@ -877,7 +884,7 @@ h1, h2, h3, h4, h5, h6, strong, b {
   - 홈 마스트헤드에서는 보조 제어 수준의 밀도로만 노출하며, 검색과 통계 영역을 침범하지 않는다.
 - 검색
 - 카테고리 네비게이션
-- 티커 — **일시정지 버튼 없음**(2026-04-19 제거). 슬라이드 일시정지는 히어로의 \`hero-pause-btn\`만 유일.
+- 티커 — 2026-04-19 별도 일시정지 버튼을 제거한 과거 이력이 있다. 현행 접근성 요구는 5.9의 직접 정지·동작 줄이기 기준을 따른다. 현재 티커 조작 방식이 이를 충족하는지는 후속 화면 검토가 필요하며, 이 이력을 접근성 검수 완료로 해석하지 않는다.
 
 ### 5.2.1 다크 모드 토글 (2026-05-25 폐기, 00.146.02)
 
@@ -909,7 +916,7 @@ h1, h2, h3, h4, h5, h6, strong, b {
 
 ### 5.4.1 주간 조회수 자동 메인스토리 (2026-10-22 사용자 요청)
 
-- 직접 지정한 공개 기사가 있으면 수동 지정을 유지한다. 지정 해제는 자동 모드 복귀이며 현재 수동 지정도 이번 요청으로 해제한다.
+- 직접 지정한 공개 기사가 있으면 수동 지정을 유지한다. 운영자가 지정을 해제하면 자동 모드로 복귀한다.
 - 자동 후보는 발행일 제한 없는 전체 공개 기사다. 최근 7일 post_views 건수만 집계하며 8일 이전 조회, 비공개 기사, 과거 가중치는 순위에서 제외한다. 공동 1위는 매 선정 시 무작위로 고른다. 조회가 모두 0이면 0건 공동 후보 중 무작위로 고르고 공개 기사가 없으면 빈 상태를 반환한다.
 - 기존 매일 00:00 KST 스케줄러가 최근 7일 창으로 다시 선정한다. 새 상주 서비스나 예약을 추가하지 않는다. 수동 지정과 cron은 기존 revision 기반 원자적 저장으로 충돌을 방지한다.
 - 선정된 글이 지워져 자동 모드에 저장된 ID가 없어도 공개 홈은 같은 규칙으로 후보를 읽는다. 관리자 안내·자동 전환·해제 저장도 같은 기준을 사용한다.
@@ -920,12 +927,10 @@ h1, h2, h3, h4, h5, h6, strong, b {
 #### 기능 세부 설명
 - 최신 소식은 진입/복귀 시 다시 조회한다.
 - 인기 소식은 운영 정의에 따른 인기 기사 목록이다.
-- 에디터 추천은 운영자 수동 추천 영역이다.
-- 에디터 추천은 최대 4개까지만 유지하며, 이 제한은 관리자 UI와 서버 저장 API 모두에서 강제한다.
-- **에디터 추천 순서는 관리자가 지정한 순서를 따른다** (2026-05-23, 00.143.03 / 03.115.00). \`settings.picks_order\`(post id 배열, key=\`picks_order\`)가 있으면 그 순서로 노출하고, 없으면 기존처럼 \`publish_at\` 내림차순으로 폴백. 관리자 \`에디터 추천\` 패널에서 드래그앤드롭으로 순서 변경 — \`PUT /api/settings/picks-order\`. \`도움 주신 분들\` 패널도 동일 패턴으로 드래그 정렬 가능.
-- 메인 스토리와 에디터 추천은 같은 게시글을 **동시에 지정할 수 있다**. 운영자 판단으로 동일 게시글을 상단 스토리와 에디터 추천에 함께 노출할 수 있어야 한다. 이전에는 배타 제약을 걸었으나 운영 유연성을 막는 부작용이 커서 2026-04-19에 해제했다. 동시 지정 시 공개 홈은 메인 스토리 슬롯과 에디터 추천 카드 양쪽에 같은 기사가 표시된다.
-- 관리자 추천 목록은 비공개 추천 글도 함께 보여주되, 비공개 배지로 상태를 구분한다.
-- 홈의 카테고리 보드 노출 정렬은 게시판 수동 정렬(\`sort_order\`)과 분리하고 \`publish_at\` 기준 최신순을 우선한다. 에디터 추천은 \`picks_order\` 우선.
+- 에디터 추천은 1.2의 2026-10-15 관리자 개편 기준에 따라 최근 30일 페이지뷰 상위 4건을 사용하는 자동 추천 영역이다. 관리자 화면은 선정 기준을 안내하며 수동 선택·제외·드래그 정렬을 제공하지 않는다.
+- 구형 \`featured\`·\`picks_order\` 데이터와 서버 API는 보존하지만 현재 홈 추천을 조작하는 방법으로 안내하지 않는다. 게시글의 별도 특집 표시는 홈 자동 추천과 구분한다.
+- 메인 스토리와 자동 추천은 독립된 영역이므로 같은 기사가 함께 노출될 수 있다.
+- 홈의 카테고리 보드 노출 정렬은 게시판 수동 정렬(\`sort_order\`)과 분리하고 \`publish_at\` 기준 최신순을 우선한다.
 - 카드의 버튼/태그/날짜 위치는 공통 규칙을 따른다.
 - 홈 API 일부 섹션이 fallback 데이터로 내려간 경우, 공개 화면은 해당 사실을 상태 배너로 드러내고 영향 섹션을 요약해서 보여준다.
 - 홈 초기 HTML에는 메인 스토리, 최신 소식, 인기 소식, 에디터 추천, 카테고리 컬럼의 실제 기사 링크를 서버 렌더링 fallback으로 포함해야 한다.
@@ -1188,6 +1193,11 @@ h1, h2, h3, h4, h5, h6, strong, b {
 - 용어집 패널 \`glossary\`는 멤버 권한 체계와 정렬됨. \`view:glossary\` / \`write:glossary\` 권한 슬러그로 사이드바 가시성 + API 게이팅.
 - 권한 토큰이 없는 멤버는 사이드바 메뉴 자체가 숨김. API 직접 호출 시 403 + "이 메뉴의 보기 권한이 없습니다" 토스트.
 
+### 9.1.2 검색 대상 미선택·복구 사례 (2026-10-24, 00.194.03)
+
+- 용어·설명 검색 대상을 모두 해제해도 입력한 검색어를 지우지 않는다. 검색 범위를 선택하라는 안내를 표시하고, 다시 선택하면 보존한 검색어로 결과를 복구한다.
+- 빈 검색어·일치 결과 없음·검색 대상 미선택을 구분한다. 범위 전환을 일반 초기화로 처리해 사용자의 입력을 잃지 않도록 회귀 검수한다.
+
 ### 9.2 관리자 관점 규칙
 
 #### 기능 세부 설명
@@ -1414,8 +1424,7 @@ h1, h2, h3, h4, h5, h6, strong, b {
 ### 11.4.4 방문 분석 / 도움 주신 분들 드래그앤드롭 정렬 (2026-05-23, 03.115.00)
 
 #### 기능 세부 설명
-- 관리자 **에디터 추천** 패널과 **도움 주신 분들** 패널 모두 항목을 드래그앤드롭으로 순서 변경 가능.
-- 에디터 추천 변경은 즉시 \`picks_order\` 설정에 반영되어 공개 홈에도 그대로 표시 (5.5 참조).
+- **과거 기능 기록**: 2026-05-23에는 에디터 추천과 도움 주신 분들에 드래그 정렬을 제공했다. 2026-10-15 개편 이후 에디터 추천의 수동 UI는 제거됐으며 현행 기준은 1.2와 5.5를 따른다. 도움 주신 분들 정렬 기능은 유지한다.
 - 도움 주신 분들 순서는 \`settings.contributors\`의 배열 인덱스로 보존.
 
 ### 11.4.5 편집자 슬롯 A~Z 확장 (2026-05-20, 03.110.00 / 03.111.00 / 00.146.03)
@@ -1432,11 +1441,37 @@ KMS 5개 탭(기능정의서·API·버전기록·디자인·기사작성표준) 
 
 - **좌측 목차 스크롤 스파이**: 현재 뷰포트 섹션 링크에 \`.is-current\` 자동 적용(보라색 악센트 바). 구현: \`_bindScrollSpy()\` + \`IntersectionObserver\`, \`rootMargin: '-80px 0px -60% 0px'\`로 헤더 아래 섹션을 현재로 간주.
 - **플로팅 TOP 버튼**: 메인 스크롤 300px↑에서 우하단 노출, 클릭 시 \`scrollTo({top:0, behavior:'smooth'})\`. 모든 탭 공통.
-- **기능정의서 탭 — 최종 업데이트 시각**: 헤더에 \`YYYY년 M월 D일 오전/오후 H시 M분 S초 KST\` 표기. 소스: \`settings_history.saved_at\` (key='feature_definition'). 서버 \`GET /api/settings/feature-definition\` 응답이 \`{content, updated_at}\`. CLI 직접 INSERT로 업데이트하면 history가 안 남으므로 13.1.1 참조.
-- **버전기록 탭 — 30개 페이지네이션**: \`_state.changelogPage\`로 30건씩, 하단 번호 버튼. 범위 필터 변경 시 1페이지 리셋. 30 이하면 UI 숨김. 이력 200건+일 때 첫 페인트/스크롤 부하 제거 목적.
-- **버전기록 3섹션 포맷 (2026-05-24, 03.118.00)**: changelog 엔트리는 \`summary\` · \`for_users\` · \`for_developers\` 3섹션 분리 렌더. 개발자용 섹션은 기본 접힘(\`<details>\` 위젯) — 비개발자 운영자에게는 한 줄 요약 + 사용자 관점 변경만 보이고, 상세 기술 컨텍스트는 펼쳐야 노출. 작성 포맷 상세는 [CLAUDE.md §1 Changelog](../CLAUDE.md) 참조.
+- **기능정의서 탭 — 최종 업데이트 시각**: 헤더에 \`YYYY년 M월 D일 오전/오후 H시 M분 S초 KST\` 표기. 소스: \`settings_history.saved_at\` (key='feature_definition'). 서버 \`GET /api/settings/feature-definition\` 응답은 \`{content, updated_at, revision}\`이다. 저장은 KMS 쓰기 권한과 \`if_revision\`을 요구하며 충돌 시 409를 반환하고 입력을 보존한다. CLI 직접 INSERT로 업데이트하면 history가 안 남으므로 13.1.1 참조.
+- **버전기록 탭 — 페이지 크기 선택**: 기본 50건이며 10/30/50/100개 중 선택할 수 있다. 키워드·기간·범위 필터와 페이지 이동을 제공하며 필터를 바꾸면 첫 페이지부터 확인한다.
+- **버전기록 3섹션 포맷 (2026-05-24, 03.118.00)**: changelog 엔트리는 \`summary\` · \`for_users\` · \`for_developers\` 3섹션 분리 렌더. 개발자용 섹션은 기본 접힘(\`<details>\` 위젯) — 비개발자 운영자에게는 한 줄 요약 + 사용자 관점 변경만 보이고, 상세 기술 컨텍스트는 펼쳐야 노출. 작성 포맷 상세는 [버전·변경 이력 규칙](../rules/02-versioning.md) 참조.
 - **버전기록 .md 다운로드 (2026-05-24, 03.120.00)**: 관리자 버전기록 패널에서 항목을 체크박스로 선택 → \`선택 항목 다운로드\` 버튼으로 한 번에 markdown 파일 일괄 다운로드. 네이버 블로그 게시용 — markdown 본문에 \`> 출처: 관리자 KMS → 버전기록\` 자동 푸터.
 - **섹션 참조 표기 (2026-04-24 변경)**: § 기호 전면 폐기, 숫자만(\`11.2.1 참조\`). 운영자가 § 의미를 직관적으로 모른다는 피드백.
+
+### 11.6 카드뉴스 수동 제작과 디자인 편집 (2026-10-24 기준, 03.160.03)
+
+#### 제작 원칙
+- 카드뉴스는 관리자가 **최근 한 주 카드 만들기**를 눌렀을 때만 준비한다. 2026-10-24 사용자 결정에 따라 자동 제작을 중지했다. 과거 월요일 예약 및 첫 정기 실행 확인 계획은 취소됐으며 별도 지시 없이 다시 활성화하지 않는다. 자동 게시와 외부 업로드도 하지 않는다.
+- 수동 제작 대상은 실행 시각 직전 7일의 공개 기사다. 발행 시각은 기존 \`PUBLIC_DATE_EXPR\`의 KST 기준을 따른다. 후보는 해당 기간 조회 수 + 공감 수×3, 최신순, ID순으로 정렬하며 외부 SNS 관심도를 수집하지 않는다.
+- 이미지와 완결된 본문 발췌가 있는 기사를 사용한다. 기본 로고, 이미지 응답 실패, 외부 origin으로 리디렉션되는 이미지는 제외한다. 상위 20건의 이미지 응답을 확인한다. 한국·아태·세계 각 1건을 우선 고르고 최대 5건을 담는다. 해당 분류가 없으면 나머지 후보로 구성한다.
+- 운영자는 이번 호 후보 중 1~5건을 선택한다. 후보가 없으면 빈 호를 만들지 않고, 같은 기간 식별자가 이미 있으면 기존 호를 반환해 수동 편집을 덮어쓰지 않는다. 원문 기사와 원문 이미지 자체는 수정하지 않는다.
+
+#### 편집과 다운로드
+- 새 호 표지는 classic/editorial/panorama/mosaic/diagonal/poster/stacked/focus 8종 중 하나를 선택해 저장한다. 재접속·동일 호 재조회로 표지를 다시 무작위 선택하지 않는다. 운영자는 디자인 조정에서 표지와 문구를 바꿀 수 있다.
+- 표지 제목 36자·3줄, 소개 80자·3줄, 제목 크기 88~120px. 기사 배치는 wide/split-left/split-right/portrait 4종이며 제목 44~72px, 본문 24~36px, 사진 높이 260~560px, cover/contain 맞춤을 조정한다. 사진 위치·확대율과 사진 영역 너비·높이 50~100%를 편집한다.
+- 사진 편집창은 현재 카드의 관리자 스튜디오에서 열며 조작 이름·초점·취소 동작을 유지한다. 저장 실패 시 변경을 보존하고 재시도할 수 있어야 한다. 하단 기사 링크·안내가 긴 제목·본문·사진에 가려지지 않도록 한다.
+- 출력은 1080×1350 PNG이며 현재 카드 1장 또는 전체 PNG ZIP으로 받는다. 카드 전환·빠른 입력 뒤에는 최신 카드/render ID와 준비된 PNG가 일치해야 한다. 이미지 로드가 끝나지 않은 과거 카드로 편집하거나 다운로드하지 않는다.
+
+#### 저장·권한·이전 호 호환
+- 기존 D1 \`card_news.data\`에 \`bpmedia-weekly-v1\` 후보·선택·사진·디자인·revision을 보관한다. 기존 React 카드뉴스는 기존 편집기로 연다. 이전 호에 design이 없으면 원래 표지·기사 모드를 유지하며, design을 생략한 이전 저장 요청은 기존 디자인을 지우지 않는다.
+- 조회는 \`card-news\` 보기 권한, 생성·저장은 쓰기 권한을 요구한다. 서버는 후보 기사 ID와 디자인 enum·문구·범위를 검증한다. revision 및 기존 JSON 비교로 동시 수정 시 409를 반환하며 브라우저의 입력을 보존한다.
+- 자동 제작 상태 응답은 \`schedule:null\`, \`last:null\`, \`auto_generate:false\`, \`auto_publish:false\`다. 과거 \`settings.card_news_weekly_status\` 기록은 보존하되 활성 예약이나 최근 자동 실행으로 표시하지 않는다. Worker cron은 빈 배열이며 지연된 scheduled 이벤트도 생성 작업을 수행하지 않는다.
+- PNG와 ZIP은 필요할 때 브라우저에서 생성한다. 원문 이미지 URL 변경·삭제 및 폰트 로딩에 영향을 받으며 원본 이미지의 영구 복제 보관을 보장하지 않는다.
+
+### 11.6.1 카드 미리보기·사진 편집·PNG 전환 회귀 사례 (2026-10-23~24)
+
+- 카드 미리보기가 기본 정적 페이지의 \`X-Frame-Options: DENY\`에 막혔다. 관리자 인증을 확인하는 \`/card-news/:id/frame\` 응답만 SAMEORIGIN 및 \`frame-ancestors 'self'\`로 제한하고 일반 정적 페이지의 차단은 유지한다. 비인증 응답 401과 인증된 실제 iframe을 각각 검수한다.
+- 카드 전환마다 프레임을 새로 탐색하면 이전 화면에 멈추거나 이전 이미지의 완료가 최신 PNG 준비로 오인될 수 있다. 인증된 미리보기를 재사용하고 카드/render ID로 최신 응답을 판별한다. 이전 이미지가 준비 중이면 사진 편집을 막는다.
+- 관리자에 포함된 카드 스튜디오의 사진 편집창은 일치하는 부모 스튜디오에서 표시한다. 실제 포함 화면에서 조작 이름, 크기 슬라이더, 키보드·취소, 재시도 안내, PNG 및 ZIP 결과를 함께 확인한다.
 
 ## 12. API 호출 방법
 
@@ -1556,7 +1591,7 @@ GW.apiFetch('/api/posts/42', { method: 'DELETE' });
 - \`GET/PUT /api/settings/ai-disclaimer\` — AI 고지 문구
 - \`GET/PUT /api/settings/home-lead\` — 홈 메인 스토리 프레이밍 설정
 - \`GET/PUT /api/settings/board-banner\` — 게시판 배너
-- \`GET/PUT /api/settings/board-layout\` — 게시판 레이아웃/페이지 사이즈
+- \`GET/PUT /api/settings/board-layout\` — 게시판 레이아웃/페이지 사이즈. PUT은 \`board-copy\` 쓰기 권한을 요구한다.
 - \`GET/PUT /api/settings/ticker\` — 뉴스 티커
 - \`GET/PUT /api/settings/contributors\` — 기고자 목록
 - \`GET/PUT /api/settings/board-copy\` — 공개 게시판 상단 설명 문구 설정
@@ -1565,7 +1600,11 @@ GW.apiFetch('/api/posts/42', { method: 'DELETE' });
 - \`GET/PUT /api/settings/translations\` — UI 번역
 - \`GET/PUT /api/settings/calendar-copy\` — 캘린더 카피 설정
 - \`GET/PUT /api/settings/calendar-tags\` — 캘린더 분류 태그
-- \`GET/PUT /api/settings/feature-definition\` — KMS 문서
+- \`GET/PUT /api/settings/feature-definition\` — KMS 문서. GET은 content/updated_at/revision, PUT은 content/if_revision 및 KMS 쓰기 권한, 충돌 409.
+- \`GET /api/admin/card-news/weekly\` — 수동 제작 상태 확인. schedule/last는 null, auto_generate/auto_publish는 false.
+- \`POST /api/admin/card-news/weekly\` — 직전 7일 기사로 수동 제작. card-news 쓰기 권한 필요.
+- \`GET/PUT /api/admin/card-news/:id\` — 기존 호 조회·저장. 주간 형식은 revision 충돌 보호와 선택·사진·디자인 검증.
+- \`GET /card-news/:id/frame\` — 관리자 권한을 확인하는 동일 출처 카드 미리보기.
 - \`GET/PUT /api/settings/picks-order\` — 에디터 추천 순서(\`post id\` 배열). 없으면 \`publish_at desc\` 폴백 (5.5 참조)
 - \`GET/PUT /api/settings/reference-sites\` — 기사 참고 사이트 (2026-04-30, 03.108.00 / 03.109.00). 사이트 추가·편집은 모달로 분리해 한 번에 하나씩 다룬다. 관련 지역연맹에 WOSM 상위 연맹 1종 포함
 
@@ -1620,19 +1659,19 @@ GW.apiFetch('/api/posts/42', { method: 'DELETE' });
 - 배포 기본 경로: \`./scripts/deploy_production.sh\`
 - 공개 UI 변경은 production 배포 전후 실환경 기준으로 직접 검수한다.
 - 관리자/API만 변경되면 예외적으로 바로 production 가능
-- 배포 전 \`VERSION\`, \`ADMIN_VERSION\`, \`ASSET_VERSION\`을 확인하고 \`./scripts/sync_versions.sh\`로 버전 문자열과 새 자산 토큰을 동기화한다.
+- 배포 전 \`public/VERSION\`, \`public/ADMIN_VERSION\`, \`public/ASSET_VERSION\`을 확인하고 \`./scripts/sync_versions.sh\`로 버전 문자열과 새 자산 토큰을 동기화한다.
 - production 배포 전에는 \`./scripts/release_preflight.sh\`로 \`main\` 브랜치, 깨끗한 워크트리, 버전 정합성을 반드시 확인한다.
 - \`접속 국가/도시\` 기능이 포함된 배포에서는 \`./scripts/ensure_site_visits_geo_columns.sh gilwell-posts --remote\`로 원격 D1의 \`site_visits\` 지리 컬럼과 인덱스를 먼저 선반영한다.
 - production 배포는 \`main\`의 깨끗한 워크트리에서만 진행한다.
-- \`wrangler pages deploy . --project-name gilwell-media --branch main\`를 직접 사용하는 예외 상황에서도 preflight 없이 production 배포하지 않는다.
+- Pages 정적 배포 루트는 \`public/\`이며 \`functions/\`는 저장소 루트에 유지한다. 저장소 전체를 업로드하는 \`wrangler pages deploy .\`를 사용하지 않으며, preflight를 포함한 표준 배포 스크립트를 따른다.
 - 선택 사항: \`CF_ZONE_ID\`, \`CF_PURGE_API_TOKEN\` 이 설정돼 있으면 게시글 생성/수정/삭제 시 관련 공개 경로 캐시를 자동 퍼지한다.
 - **케이스 스터디 보관 규약**: 회귀 포스트모템의 _상세 서사_는 \`docs/working-notes.md\` 에 둔다(KMS D1 100KB 한계 보호). KMS 13.1.x 에는 **요약 1문단 + working-notes 포인터**만 남기고, 재발 방지 규칙은 **14장 체크리스트**로 승격한다.
 
 ### 13.1.1 D1 운영 메모 (2026-04-24 추가)
 
 #### 기능 세부 설명
-- **D1 단일 SQL 100KB 한계**: \`wrangler d1 execute --file\`은 SQL 문자열(이스케이프 포함) 100KB 초과 시 \`SQLITE_TOOBIG\`. 회피: 내용 축약 / 관리자 \`PUT /api/settings/feature-definition\`(파라미터 바인딩, 한계 없음) / CF D1 REST API \`{sql, params}\` / 값을 둘로 쪼개 \`INSERT + UPDATE value||'...'\` 패턴.
-- **CLI 동기화 시 settings_history 함께**: \`INSERT OR REPLACE INTO settings\`만으로는 11.5 최종 업데이트 시각이 괴리. \`INSERT INTO settings_history (key, value, saved_at) SELECT key, value, datetime('now') FROM settings WHERE key='feature_definition';\` 서브쿼리 패턴 사용.
+- **D1 단일 SQL 100KB 한계**: KMS 전체를 SQL 리터럴에 넣는 방식은 이스케이프를 포함한 SQL 길이 때문에 \`SQLITE_TOOBIG\`가 날 수 있다. 관리자 \`PUT /api/settings/feature-definition\` 또는 파라미터 바인딩을 사용하는 D1 요청으로 긴 본문을 SQL 문자열과 분리한다. 값을 나누어 저장하는 CLI 대안도 동시 수정 보호·이력·최종 readback을 유지해야 한다. 파라미터 바인딩을 모든 서비스 한도가 없다는 뜻으로 표현하지 않는다.
+- **CLI 직접 갱신 시 이력·revision 함께**: \`INSERT OR REPLACE INTO settings\`만으로 본문을 덮어쓰지 않는다. 기존 본문과 \`feature_definition_rev\`를 확인해 동시 변경을 보호하고, 변경 전 본문을 \`settings_history\`에 보관하며 revision 증가와 최종 내용 readback을 확인한다. D1 원본 갱신 뒤 \`node scripts/sync_kms_snapshot.mjs\`로 Markdown·fallback을 재생성하고 \`--check\`로 일치를 확인한다.
 - 운영 기준: KMS 저장 버튼이 1순위, CLI는 AI 일괄 작업용 대안.
 
 ### 13.1.2 CDN SRI 장애 대응 (2026-04-24 추가)
@@ -1785,6 +1824,9 @@ GW.apiFetch('/api/posts/42', { method: 'DELETE' });
 
 - **용어집 분류를 변경·저장한다면 실제 D1 CHECK 제약과 공개 분류가 일치하는가** (9.2.1) — POST·PUT 공용 저장 매핑, 국문 미확정·숫자 급위의 재조회 분류를 함께 확인한다.
 
+- **용어집 검색 범위를 모두 해제·재선택했을 때 검색어와 결과가 복구되는가** (9.1.2) — 미선택 안내와 검색 결과 0건을 구분한다.
+- **설정 변경은 보기 권한만으로 허용되지 않는가** — \`PUT /api/settings/board-layout\`와 \`PUT /api/settings/score-rubric\`의 쓰기 권한 게이트 및 허용·거부 응답을 확인한다. 2026-10-24 권한 경계 보완이며 운영 데이터 악용을 발견했다는 뜻은 아니다.
+
 ### 14.3 각주
 
 #### 각주
@@ -1827,6 +1869,16 @@ GW.apiFetch('/api/posts/42', { method: 'DELETE' });
 - [ ] 실제 열 수와 긴 국문/영문 자료로1465px에서도 입력 문자 공간·행사명 단어·행 높이를 직접 읽고, 표 내부 이동과 모바일 라벨 레코드를 확인함.
 
 
+### 14.7 카드뉴스 수동 제작 회귀 검수 (03.160.03)
+
+- [ ] 자동 생성 예약이 없고 지연된 scheduled 이벤트도 새 호·상태 기록·외부 업로드를 만들지 않는다. 과거 월요일 일정이나 취소된 확인 예약을 현행 운영 지침으로 되살리지 않는다.
+- [ ] 수동 생성은 직전 7일, 후보 제외·순위·최대 5건·빈 후보·같은 기간 중복 방지 기준을 따른다.
+- [ ] 생성·저장은 쓰기 권한을 요구하며 읽기 전용·비인증 요청과 동시 저장409에서 데이터·입력이 보존된다.
+- [ ] 기존 호·design 생략 요청·기존 React 편집기는 호환되며 원문 posts를 수정하지 않는다.
+- [ ] 실제 관리자 포함 화면에서 표지 8종·기사 4종·사진 편집창·취소·빠른 전환을 확인하고 최신 카드 ID와 미리보기·PNG가 일치한다.
+- [ ] 개별 PNG와 ZIP의 모든 이미지가1080×1350이며 동일 카드 출력이 일치한다. 이미지 실패·글자 최대치·긴3줄 문구·320/390px도 확인한다.
+- [ ] 로컬 fixture, 당시 로그인 운영 검수, 현재 라이브 readback, 실제 저장·다운로드 여부를 구분해 기록한다.
+
 ## 15. AI 채점 메커니즘
 
 ### 15.1 개요
@@ -1849,8 +1901,8 @@ GW.apiFetch('/api/posts/42', { method: 'DELETE' });
 
 #### API
 - \`GET /api/settings/score-rubric\` — 인증 없이 현재 기준 조회(\`{ content, isDefault, maxChars }\`).
-- \`PUT /api/settings/score-rubric\` — Full 관리자 토큰 필요. 본문 \`{ content }\`.
-- \`DELETE /api/settings/score-rubric\` — Full 관리자 토큰 필요. 기본값으로 복원.
+- \`PUT /api/settings/score-rubric\` — 관리자 세션과 \`article-scorer\` 쓰기 권한 필요. 본문 \`{ content }\`.
+- \`DELETE /api/settings/score-rubric\` — 관리자 세션과 \`article-scorer\` 쓰기 권한 필요. 기본값으로 복원.
 
 ### 15.3 호출 경로와 로깅
 
@@ -1919,7 +1971,7 @@ GW.apiFetch('/api/posts/42', { method: 'DELETE' });
 - **opaque 코드**: 모든 로그인 실패 응답을 외부에서 구별 불가능한 단일 코드(\`rejected\`/\`throttled\`/\`bad_request\`)로 통일 — 계정 존재 여부·비밀번호 정확도 분리 측정 불가.
 - **입력 보호**: 로그인 입력은 계정명만 허용 (이메일 입력 시 거절, 03.108.02). 예시 placeholder는 \`abcd1234\` (실 운영자 계정명 노출 방지, 03.113.00).
 - **safeCompare**: 비밀번호 비교는 \`crypto.timingSafeEqual\` 기반 상수시간 비교. 사이트 곳곳의 토큰 비교도 동일 함수로 통일 (03.113.00).
-- 자세한 운영 기준은 [[CLAUDE.md 1 Common Infrastructure]] 의 인증·rate limiting 섹션 참조.
+- 공통 인증 기준은 \`rules/01-common-infra.md\`와 KMS12.1, rate limiting은 KMS12.4를 참조한다.
 
 ### 16.4 검증 (배포 전후)
 

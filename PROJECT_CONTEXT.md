@@ -63,3 +63,14 @@ Owner approved commit/push/deploy. Public commit202191a5 pushed to main; standar
 - 기존 인증 프레임·PNG/ZIP·CAS를 재사용. latest renderId를 확인하여 빠른 입력 후에도 마지막 디자인을 내보낸다. 데이터/권한/서버 입력 경계 검사 통과, 실제 Chrome 8표지·4기사 레이아웃·최대값·긴 문구·저장재접속·사진·PNG/ZIP·모바일 검사 통과.
 - 자동제작 cron은 기존 월요일00:00 KST를 유지. 10월26일 첫 실행을00:05에 읽기 전용으로 확인하는 일회성 Codex heartbeat(bp)를 별도로 등록했다. 첫 실행 자체는 아직 미래다.
 - 기존 dirty checkout은 보존하며 깨끗한 weekly-release 복사본에서 카드뉴스 범위만 커밋·배포한다. 공유 패키지 변경을 포함하므로 scheduled Worker도 같은 helper로 재배포한다.
+
+
+## 2026-10-27 — KMS 운영 기준 최신화
+
+- 타겟 KMS. 운영 커밋4699dab1에서 분리한 작업 사본으로 진행하고 원래 공유 checkout의 미완료 Site 변경을 보존했다.
+- 2026-10-24 카드뉴스 수동 전용 결정, 표지/기사 편집·권한·저장 충돌·PNG 검수, 용어집 검색 범위 복구, 설정 쓰기 권한을 KMS에 반영했다. 기존 자동 추천 승인 기준과 구형 수동 안내의 충돌 및 규칙/배포 경로도 정리했다.
+- D1 revision4→6. 변경 전 본문은 settings_history에 보관하고 조건부 갱신·운영 로그·전체 readback을 확인했다. 원본에서 Markdown/fallback을 공식 스크립트로 동기화했다.
+- KMS API 가이드의 로그인·세션·revision 예시를 정정하고 카드뉴스 API8개를 추가했다. 기능 동작·인증 코어·기사/카드 데이터·예약은 변경하지 않았다.
+- 검증: SQL fixture 정상·stale·재실행, 설정 쓰기 권한4건, 카드뉴스 예약 비활성 검사, JS 문법·스냅샷 일치. 1440/390px 로컬 KMS 렌더·API8개·표시일·가로 넘침 없음·pageerror0 확인. Admin03.160.04 릴리스 준비. 배포 결과는 종료 시 추가한다.
+- 후속 확인: KMS5.2의 과거 티커 버튼 제거 기록과5.9의 직접 정지 접근성 기준은 현재 조작 방식 검토가 필요하다. 이번 작업에서 Site 기능이나 기준을 임의 변경하지 않았다.
+- 다음 시작: AGENTS.md→rules/README.md→rules/30-kms.md, PROJECT_CONTEXT.md를 읽고 git status --short, node scripts/sync_kms_snapshot.mjs --check, ./scripts/verify_release_metadata.sh 실행.
