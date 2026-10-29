@@ -121,7 +121,7 @@ manifest_deployments = [{
 )
 PY
 
-git add data/release-snapshots.json "snapshots/$ARCHIVE_NAME"
+git add -f data/release-snapshots.json snapshots/
 if [ -n "$(git status --short)" ]; then
   git config user.name "${GIT_AUTHOR_NAME:-github-actions[bot]}"
   git config user.email "${GIT_AUTHOR_EMAIL:-41898282+github-actions[bot]@users.noreply.github.com}"
