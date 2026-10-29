@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>도움을 주신 분들 — BP미디어</title>
+  <!-- SHARE_META -->
+  <link rel="icon" type="image/svg+xml" href="/img/favicon.svg">
+  <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png">
+  <link rel="apple-touch-icon" href="/img/logo.png">
+  <link rel="shortcut icon" href="/img/favicon-48.png">
+  <style>.nav[data-managed-nav]{visibility:hidden;opacity:0}</style>
+  <link rel="stylesheet" href="/css/style.css?v=20261029073654">
+  <link rel="stylesheet" href="/css/chatbot.css?v=20261029073654">
+  <link rel="stylesheet" href="/css/dark-mode.css?v=20261029073654">
+  <link rel="stylesheet" href="/css/m3-site.css?v=20261029073654">
+  <noscript><style>.nav[data-managed-nav]{visibility:visible!important;opacity:1!important}.nav[data-managed-nav] a{font-size:0!important}.nav[data-managed-nav] a::before{content:attr(data-fallback-label);font-size:12px}</style></noscript>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
+
+  <!-- ── MASTHEAD ── -->
+  <header class="masthead">
+    <div class="masthead-top">
+      <div class="masthead-date" id="today-date"></div>
+      <div class="masthead-logo">
+        <a href="/">
+          <div class="masthead-logo-row">
+            <img src="/img/logo.svg" alt="" class="masthead-logo-img" aria-hidden="true">
+            <p class="masthead-wordmark">BP미디어</p>
+          </div>
+          <div class="sub">bpmedia.net</div>
+        </a>
+      </div>
+      <div class="masthead-right">
+        <div class="masthead-stats" id="masthead-stats"></div>
+        <div class="lang-toggle" role="group" aria-label="언어 선택">
+          <button class="lang-btn active" id="lang-btn-ko" data-lang-toggle="ko" aria-pressed="true" aria-label="한국어">KOR</button>
+          <button class="lang-btn" id="lang-btn-en" data-lang-toggle="en" aria-pressed="false" aria-label="English">ENG</button>
+        </div>
+        <div class="masthead-search">
+          <input type="text" id="mh-search-input" class="mh-search-input" placeholder="검색…" autocomplete="off" aria-label="사이트 검색어 입력" />
+          <button class="mh-search-btn" id="mh-search-btn" aria-label="검색"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg></button>
+        </div>
+      </div>
+    </div>
+    <nav class="nav" data-managed-nav>
+      <a href="/contributors" class="active" data-i18n="nav.contributors" data-fallback-label="도움을 주신 분들"></a>
+      <a href="/" data-i18n="nav.home" data-fallback-label="홈"></a>
+      <a href="/latest" data-i18n="nav.latest" data-fallback-label="최신 소식"></a>
+      <a href="/jamboree16" data-i18n="nav.jamboree16" data-fallback-label="제16회 한국잼버리"></a>
+      <a href="/korea" data-i18n="nav.korea" data-fallback-label="한국스카우트 소식"></a>
+      <a href="/apr" data-i18n="nav.apr" data-fallback-label="아시아-태평양 스카우트 소식"></a>
+      <a href="/wosm" data-i18n="nav.wosm" data-fallback-label="세계의 스카우트 소식"></a>
+      <a href="/wosm-members" data-i18n="nav.wosm_members" data-fallback-label="세계연맹 회원국 현황"></a>
+      <a href="/people" data-i18n="nav.people" data-fallback-label="스카우트 인물"></a>
+      <a href="/calendar" data-i18n="nav.calendar" data-fallback-label="캘린더"></a>
+      <a href="/glossary" data-i18n="nav.glossary" data-fallback-label="용어집"></a>
+      <a href="/memorabilia" data-i18n="nav.memorabilia" data-fallback-label="스카우트 기념품 도감"></a>
+    </nav>
+  </header>
+
+  <!-- ── TICKER ── -->
+  <main id="main-content">
+  <div class="ticker">
+    <div class="ticker-inner" id="ticker-inner">
+      BP미디어 · bpmedia.net
+      &nbsp;&nbsp;&nbsp;<span class="ticker-diamond">◆</span>&nbsp;&nbsp;&nbsp;
+      BP미디어 · bpmedia.net
+      &nbsp;&nbsp;&nbsp;<span class="ticker-diamond">◆</span>&nbsp;&nbsp;&nbsp;
+    </div>
+  </div>
+
+  <!-- ── BANNER ── -->
+  <div class="board-banner">
+    <div class="board-banner-text">
+      <span class="category-tag" style="background:#622599;margin-bottom:16px;">감사</span>
+      <h1>도움을 주신 분들</h1>
+      <p data-board-copy-key="contributors">도움을 주신 모든 분들께 진심으로 감사드립니다.</p>
+    </div>
+  </div>
+
+  <!-- ── CONTRIBUTORS LIST ── -->
+  <div class="contributors-wrap">
+    <div class="contributors-thank">
+      <p>BP미디어는 스카우트 정신을 담아 자발적인 봉사로 운영됩니다.<br>
+      아래 분들의 소중한 도움 덕분에 이 공간이 지속될 수 있습니다.</p>
+    </div>
+
+    <div class="contributors-list" id="contributors-list">
+      <div class="loading-state">
+        <div class="loading-dots"><span></span><span></span><span></span></div>
+      </div>
+    </div>
+  </div>
+
+    <!-- contributors: 도움을 주신 분들 페이지는 감사 전용 — 광고 없음(2026-04-21 운영자 요청) -->
+
+
+  </main>
+  <!-- ── FOOTER ── -->
+  <footer>
+    <div class="footer-inner">
+      <div class="footer-brand">
+        <h4 data-footer-role="title">BP미디어</h4>
+        <p data-footer-role="description">BP미디어는 스카우트 네트워크의 자발적인 봉사로 운영됩니다.</p>
+        <p data-footer-role="domain" style="margin-top:6px;">bpmedia.net</p>
+        <p>기사제보: <!--email_off--><a data-footer-role="tip-email" href="mailto:story@bpmedia.net">story@bpmedia.net</a><!--/email_off--></p>
+        <p>문의: <!--email_off--><a data-footer-role="contact-email" href="mailto:info@bpmedia.net">info@bpmedia.net</a><!--/email_off--></p>
+        <p class="footer-about-link"><a href="/about">About us</a></p>
+        <p class="footer-privacy-link"><a href="/privacy" data-footer-role="privacy-link">개인정보 처리방침</a></p>
+      </div>
+      <div class="footer-admin">
+        <h4>관리자</h4>
+        <a href="/admin.html">관리자 페이지 →</a>
+        <a href="/glossary-raw">용어집 RAW로 보기 →</a>
+        <p class="footer-build">Site <span class="site-build-version">V00.195.00</span> · Admin <span class="admin-build-version">V03.161.00</span></p>
+      </div>
+      <div class="footer-bottom">
+        <p data-i18n="footer.copyright">© 2026 BP미디어 · bpmedia.net</p>
+        <p class="footer-credit">기록·편집 <a href="/about">박지민 (Jimmy Park)</a></p>
+        <p data-i18n="footer.disclaimer">BP미디어는 전 세계 스카우트 소식과 활동을 기록하고 공유하는 독립 미디어 아카이브입니다. 한국스카우트연맹과 세계스카우트연맹 공식 채널이 아닌 자발적 스카우트 네트워크로 운영됩니다.</p>
+      </div>
+    </div>
+  </footer>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.4/dist/purify.min.js" integrity="sha384-eEu5CTj3qGvu9PdJuS+YlkNi7d2XxQROAFYOr59zgObtlcux1ae1Il3u7jvdCSWu" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <script src="/js/main.js?v=20261029073654"></script>
+  <script src="/js/site-chrome.js?v=20261029073654"></script>
+  <script src="/js/chatbot.js?v=20261029073654" defer></script>
+  <script>
+    GW.bootstrapStandardPage();
+
+    // Load contributors
+    fetch('/api/settings/contributors')
+      .then(function(r){ return r.json(); })
+      .then(function(data) {
+        var list = document.getElementById('contributors-list');
+        var items = data.items || [];
+        if (!items.length) {
+          list.innerHTML = '<p class="contributors-empty">아직 등록된 분들이 없습니다.</p>';
+          return;
+        }
+        list.innerHTML = items.map(function(c) {
+          return (
+            '<div class="contributor-card">' +
+              '<span class="contributor-name">' + GW.escapeHtml(c.name) + '</span>' +
+              (c.note ? '<span class="contributor-note">' + GW.escapeHtml(c.note) + '</span>' : '') +
+              (c.date ? '<span class="contributor-date">' + GW.escapeHtml(c.date) + '</span>' : '') +
+            '</div>'
+          );
+        }).join('');
+      })
+      .catch(function() {
+        document.getElementById('contributors-list').innerHTML =
+          '<p class="contributors-empty">불러오지 못했습니다.</p>';
+      });
+  </script>
+  <!-- Kakao AdFit ba.min.js 로더도 함께 제외 — 광고 없는 페이지이므로 불필요 -->
+
+
+</body>
+</html>

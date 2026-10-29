@@ -1,0 +1,620 @@
+import { SITE_BRAND_ALIASES, SITE_BRAND_NAME, SITE_DOMAIN_LABEL, DEFAULT_CONTACT_EMAILS, SITE_ORIGIN } from './site-copy.mjs';
+import { SITE_PAGE_KEY_BY_PATH } from './site-structure.mjs';
+import { singleSetting, queryRust } from './rust-server.js';
+
+export const ADSENSE_ACCOUNT = 'ca-pub-9517793409283448';
+export const NAVER_SITE_VERIFICATION = '67d80b07cdf98761a3adbe635c48cd8691a4b598';
+const DEFAULT_SHARE_IMAGE_PATH = '/img/og-default.png';
+const DEFAULT_SHARE_IMAGE_WIDTH = 1200;
+const DEFAULT_SHARE_IMAGE_HEIGHT = 630;
+const DEFAULT_SHARE_IMAGE_ALT = 'BP미디어 스카우트 뉴스 아카이브 대표 이미지';
+const HOME_SEARCH_DESCRIPTION = 'BP미디어는 스카우트 뉴스와 활동 기록을 전하는 독립 미디어 아카이브입니다. 한국스카우트연맹, APR, WOSM, 스카우트 인물, 용어집까지 bpmedia.net에서 한 번에 확인할 수 있습니다.';
+export const LEGACY_HOME_DESCRIPTIONS = [
+  '스카우트 운동의 소식을 기록하는 독립 미디어입니다.',
+  'BP미디어는 한국스카우트연맹 및 세계스카우트연맹의 공식 채널이 아닙니다. 본 미디어는 스카우트 네트워크의 자발적인 봉사로 운영됩니다.',
+];
+export const LEGACY_HOME_TITLES = [
+  'BP미디어 · bpmedia.net',
+];
+// 운영·편집 책임자 인물 노드. `@id` 는 /about 의 전체 정의와 **반드시 같아야** 한다 —
+// 구글은 같은 @id 를 가진 노드를 한 인물로 합치고, 다르면 이름만 같은 별개 인물 셋이 된다.
+// 여기(전 페이지)에는 이름·별칭·sameAs 만 싣고, 스카우트 이력 같은 상세는 /about 한 곳에
+// 둔다. PUBLISHER 는 페이지마다 publisher 로 두 번 더 펼쳐지므로 여기서 덩치를 키우면
+// 모든 페이지에서 3배로 실린다.
+const OPERATOR_PERSON = {
+  '@type': 'Person',
+  '@id': `${SITE_ORIGIN}/about#person-jimmy-park`,
+  name: '박지민',
+  alternateName: ['Jimmy Park', '박지민 대장'],
+  jobTitle: 'BP미디어 기록·편집',
+  url: `${SITE_ORIGIN}/about`,
+  sameAs: ['https://www.linkedin.com/in/jimmy1420/'],
+};
+
+const PUBLISHER = {
+  '@type': 'Organization',
+  '@id': `${SITE_ORIGIN}/#organization`,
+  name: SITE_BRAND_NAME,
+  alternateName: SITE_BRAND_ALIASES,
+  url: SITE_ORIGIN,
+  description: HOME_SEARCH_DESCRIPTION,
+  logo: {
+    '@type': 'ImageObject',
+    url: `${SITE_ORIGIN}/img/logo.png`,
+    width: 250,
+    height: 250,
+  },
+};
+
+const DEFAULT_SITE_META = {
+  pages: {
+    home: {
+      title: 'BP미디어 | 스카우트 뉴스 아카이브 · bpmedia.net',
+      description: HOME_SEARCH_DESCRIPTION,
+    },
+    latest: {
+      title: '최근 1개월 스카우트 소식 · BP미디어',
+      description: '최근 30일 동안 올라온 한국스카우트연맹, 아시아태평양지역, 세계스카우트연맹(WOSM), 스카우트 인물 소식을 최신순으로 한 번에 모아 봅니다.',
+    },
+    korea: {
+      title: '한국스카우트연맹 소식 · BP미디어',
+      description: '한국스카우트연맹과 전국 지방연맹의 행사, 잼버리, 지도자 훈련, 국제 교류 소식을 1차 출처를 바탕으로 정리해 전합니다.',
+    },
+    apr: {
+      title: '아시아태평양지역 스카우트 소식 · BP미디어',
+      description: '세계스카우트연맹 아시아태평양지역(APR)과 회원국 연맹의 행사, 재난 대응, 청소년 프로그램 소식을 원문 출처를 바탕으로 한국어로 전합니다.',
+    },
+    wosm: {
+      title: '세계스카우트연맹(WOSM) 소식 · BP미디어',
+      description: '세계스카우트연맹(WOSM)과 각 지역·회원국 연맹의 결정, 세계 행사, 청소년 프로그램 소식을 공식 발표와 원문을 바탕으로 한국어로 정리합니다.',
+    },
+    wosm_members: {
+      title: '세계스카우트연맹 회원국 현황 · BP미디어',
+      description: '세계스카우트연맹(WOSM) 회원국과 회원연맹을 국가·지역연맹·공식 언어별로 한국어와 영어로 정리했습니다. 국가 이름으로 찾고 소속 연맹을 펼쳐 볼 수 있습니다.',
+    },
+    people: {
+      title: '스카우트 인물 이야기 · BP미디어',
+      description: '국내외 스카우트 대원과 지도자, 이글스카우트와 동문 등 스카우트 운동 속 사람들의 활동과 이야기를 원문 출처와 함께 소개합니다.',
+    },
+    glossary: {
+      title: '스카우트 용어집 (국문·영문·불어) · BP미디어',
+      description: '스카우트 운동에서 쓰는 용어를 국문·영문·불어 3개 국어로 정리한 용어집입니다. 가나다 분류와 검색으로 공식 표기와 뜻을 빠르게 찾을 수 있습니다.',
+    },
+    memorabilia: {
+      title: '스카우트 기념품 도감 · BP미디어',
+      description: '패치·뱃지·메달·항건·우표·책자 등 한국과 세계의 스카우트 기념품을 한 곳에 모은 도감입니다. 국문·영문 어느 쪽으로도 검색할 수 있습니다.',
+    },
+    privacy: {
+      title: '개인정보 처리방침 · BP미디어',
+      description: 'BP미디어가 수집하는 정보의 범위와 이용 목적, 보관 기간, 이용자의 권리와 문의 방법을 안내합니다.',
+    },
+    contributors: {
+      title: '도움을 주신 분들 · BP미디어',
+      description: '기록과 편집 등 BP미디어 운영에 도움을 주신 분들을 소개하고 감사의 뜻을 전합니다. 스카우트 네트워크의 자발적인 봉사로 운영되는 매체의 기여자 명단입니다.',
+    },
+    calendar: {
+      title: '스카우트 행사 캘린더 · BP미디어',
+      description: '한국스카우트연맹과 세계 스카우트의 행사·일정을 월간·연간 보기로 확인하는 캘린더입니다. 진행 중·개최 예정·종료 상태별로 행사를 찾아볼 수 있습니다.',
+    },
+    search: {
+      title: '검색 · BP미디어',
+      description: 'BP미디어 기사와 페이지를 검색합니다.',
+    },
+    editorial_policy: {
+      title: '편집 정책 · BP미디어',
+      description: 'BP미디어의 편집 원칙, 출처 검증 절차, 정정 정책, AI 사용 범위, 그리고 AI 크롤러·LLM 인용 정책을 공개합니다.',
+    },
+    jamboree16: {
+      title: '제16회 한국잼버리 특별관 · BP미디어',
+      description: '2026년 8월 5일부터 9일까지 강원특별자치도 세계잼버리수련장에서 열리는 제16회 한국잼버리(16th Korea National Jamboree)의 개요, 주제, 주요 프로그램과 관련 소식을 한 곳에 모았습니다.',
+    },
+    about: {
+      title: '운영 주체 · BP미디어',
+      description: 'BP미디어(길웰미디어)의 운영 주체, 공식 스카우트 연맹과의 관계, 뉴스 편집·재가공 방식, 저작권·출처 정책, 운영·재정 투명성을 안내합니다.',
+    },
+  },
+  footer: {
+    raw_text: '',
+    title: SITE_BRAND_NAME,
+    description: 'BP미디어는 스카우트 네트워크의 자발적인 봉사로 운영됩니다.',
+    domain_label: SITE_DOMAIN_LABEL,
+    tip_email: DEFAULT_CONTACT_EMAILS.tip,
+    contact_email: DEFAULT_CONTACT_EMAILS.contact,
+  },
+  image_url: null,
+  google_verification: '',
+  naver_verification: NAVER_SITE_VERIFICATION,
+};
+
+export async function loadSiteMeta(env) {
+  try {
+    const row = await singleSetting(env, 'site_meta');
+    return await normalizeSiteMetaRust(env, row ? JSON.parse(row.value) : null);
+  } catch {
+    return normalizeSiteMeta(null);
+  }
+}
+
+export async function normalizeSiteMetaRust(env, raw) {
+  const defaults = normalizeSiteMeta(null);
+  const response = await queryRust({env,request:{url:'https://internal.invalid/'}}, 'site-meta-normalize', {
+    raw, defaults, pageKeys:Object.keys(defaults.pages), legacyTitles:LEGACY_HOME_TITLES, legacyDescriptions:LEGACY_HOME_DESCRIPTIONS,
+  });
+  if (!response.ok) throw new Error('Rust site metadata normalization failed');
+  const result = await response.json();
+  const pages = {}, footer = {};
+  for (const page of result.pages) pages[page.key] = {title:page.title,description:page.description};
+  for (const field of result.footer) footer[field.key] = field.value;
+  return {pages,footer,image_url:result.image_url,google_verification:result.google_verification,naver_verification:result.naver_verification};
+}
+
+export function normalizeSiteMeta(raw) {
+  const meta = {
+    pages: {},
+    footer: {},
+    image_url: sanitizeImageUrl(raw && raw.image_url),
+    google_verification: sanitizeText(raw && raw.google_verification, '', 120),
+    naver_verification: sanitizeText(raw && raw.naver_verification, '', 120),
+  };
+
+  Object.keys(DEFAULT_SITE_META.pages).forEach((key) => {
+    const source = raw && raw.pages
+      ? (raw.pages[key] || (key === 'wosm' ? raw.pages.worm : null) || {})
+      : {};
+    const sourceDescription = key === 'home'
+      ? upgradeLegacyHomeDescription(source.description)
+      : source.description;
+    const sourceTitle = key === 'home'
+      ? upgradeLegacyHomeTitle(source.title)
+      : source.title;
+    meta.pages[key] = {
+      title: sanitizeText(sourceTitle, DEFAULT_SITE_META.pages[key].title, 120),
+      description: sanitizeText(sourceDescription, DEFAULT_SITE_META.pages[key].description, 260),
+    };
+  });
+
+  const footer = raw && raw.footer ? raw.footer : {};
+  meta.footer = {
+    raw_text: sanitizeText(footer.raw_text, DEFAULT_SITE_META.footer.raw_text, 4000),
+    title: sanitizeText(footer.title, DEFAULT_SITE_META.footer.title, 80),
+    description: sanitizeText(footer.description, DEFAULT_SITE_META.footer.description, 260),
+    domain_label: sanitizeText(footer.domain_label, DEFAULT_SITE_META.footer.domain_label, 120),
+    tip_email: sanitizeEmail(footer.tip_email, DEFAULT_SITE_META.footer.tip_email),
+    contact_email: sanitizeEmail(footer.contact_email, DEFAULT_SITE_META.footer.contact_email),
+  };
+
+  return meta;
+}
+
+export function getSitePageKey(pathname) {
+  const normalized = normalizePagePath(pathname);
+  const exact = SITE_PAGE_KEY_BY_PATH[normalized];
+  if (exact) return exact;
+  // `_redirects` 의 `/memorabilia/* → /memorabilia 200` 은 도감 상세 딥링크
+  // (js/memorabilia.js 가 pathname 에서 id 를 읽는다) 를 위한 rewrite 다.
+  // 그런데 exact 매칭만 하면 이 하위 경로들이 pageKey 없이 통과해
+  // canonical 도 description 도 없는 200 페이지가 **무한히** 생긴다
+  // (2026-08-26 실측: /memorabilia/abc123nonexistent → 200, canonical 없음).
+  // 크롤러가 보는 HTML 은 어떤 id 든 동일한 셸이므로 전부 /memorabilia 의
+  // 중복이다 → pageKey 를 부여해 canonical 로 대표 URL 에 통합시킨다.
+  if (normalized === '/memorabilia' || normalized.startsWith('/memorabilia/')) return 'memorabilia';
+  return null;
+}
+
+export function normalizePagePath(pathname) {
+  const raw = String(pathname || '/').trim() || '/';
+  let normalized = raw;
+  if (!normalized.startsWith('/')) normalized = '/' + normalized;
+  normalized = normalized.replace(/\/+$/, '') || '/';
+  if (normalized === '/index' || normalized === '/index.html') return '/index.html';
+  if (normalized.endsWith('.html')) normalized = normalized.slice(0, -5) || '/';
+  return normalized === '/' ? '/index.html' : normalized;
+}
+
+export function buildShareMetaBlock({ pageKey, title, description, url, imageUrl, googleVerification, naverVerification, itemListElements, descriptor }) {
+  const safeTitle = escapeHtml(title || DEFAULT_SITE_META.pages.home.title);
+  const safeDesc = escapeHtml(description || DEFAULT_SITE_META.pages.home.description);
+  const safeUrl = escapeHtml(url || 'https://bpmedia.net');
+  const safeImage = imageUrl ? escapeHtml(imageUrl) : '';
+  const safeImageAlt = safeImage ? escapeHtml(DEFAULT_SHARE_IMAGE_ALT) : '';
+  const imageType = imageUrl ? getShareImageMimeType(imageUrl) : '';
+  const imageDimensions = imageUrl ? getShareImageDimensions(imageUrl) : null;
+  const twitterCard = safeImage ? 'summary_large_image' : 'summary';
+  const robots = pageKey === 'search'
+    ? '<meta name="robots" content="noindex,follow"/>'
+    : '<meta name="robots" content="index,follow,max-image-preview:large"/>';
+  const structuredData = buildStructuredDataEntries({ pageKey, title, description, url, imageUrl, itemListElements, descriptor });
+
+  return [
+    `<meta name="google-adsense-account" content="${ADSENSE_ACCOUNT}"/>`,
+    // Google AdSense 로더 — 자동 광고 + 사이트 인증. ADSENSE_ACCOUNT 와 동일 client.
+    // CSP(script-src/frame-src/connect-src)에 googlesyndication / doubleclick 허용 필요 (_headers).
+    `<link rel="preconnect" href="https://pagead2.googlesyndication.com" crossorigin/>`,
+    `<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_ACCOUNT}" crossorigin="anonymous"></script>`,
+    robots,
+    `<meta name="description" content="${safeDesc}"/>`,
+    `<meta name="keywords" content="${escapeHtml(descriptor?.keywords ?? getPageKeywords(pageKey))}"/>`,
+    // 외부 CDN preconnect — DNS+TCP+TLS handshake 200~500ms 단축 (특히 모바일 첫 방문).
+    // DOMPurify(JSDelivr), Kakao SDK + AdFit, Daum AdFit 자산. 광고는 광고대로, 보안 라이브러리는 보안 라이브러리대로.
+    `<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin/>`,
+    `<link rel="preconnect" href="https://t1.kakaocdn.net" crossorigin/>`,
+    `<link rel="dns-prefetch" href="https://t1.daumcdn.net"/>`,
+    `<link rel="dns-prefetch" href="https://display.ad.daum.net"/>`,
+    `<meta property="og:locale" content="ko_KR"/>`,
+    `<meta property="og:type" content="website"/>`,
+    `<meta property="og:title" content="${safeTitle}"/>`,
+    `<meta property="og:description" content="${safeDesc}"/>`,
+    `<meta property="og:url" content="${safeUrl}"/>`,
+    safeImage ? `<meta property="og:image" content="${safeImage}"/>` : '',
+    safeImage ? `<meta property="og:image:secure_url" content="${safeImage}"/>` : '',
+    imageType ? `<meta property="og:image:type" content="${escapeHtml(imageType)}"/>` : '',
+    imageDimensions ? `<meta property="og:image:width" content="${imageDimensions.width}"/>` : '',
+    imageDimensions ? `<meta property="og:image:height" content="${imageDimensions.height}"/>` : '',
+    safeImageAlt ? `<meta property="og:image:alt" content="${safeImageAlt}"/>` : '',
+    `<meta property="og:site_name" content="BP미디어 · bpmedia.net"/>`,
+    `<meta name="twitter:card" content="${twitterCard}"/>`,
+    `<meta name="twitter:title" content="${safeTitle}"/>`,
+    `<meta name="twitter:description" content="${safeDesc}"/>`,
+    safeImage ? `<meta name="twitter:image" content="${safeImage}"/>` : '',
+    safeImageAlt ? `<meta name="twitter:image:alt" content="${safeImageAlt}"/>` : '',
+    googleVerification ? `<meta name="google-site-verification" content="${escapeHtml(googleVerification)}"/>` : '',
+    naverVerification ? `<meta name="naver-site-verification" content="${escapeHtml(naverVerification)}"/>` : '',
+    `<link rel="canonical" href="${safeUrl}"/>`,
+    ...structuredData.map((item) => `<script type="application/ld+json">${safeJsonLd(item)}</script>`),
+  ].filter(Boolean).join('\n  ');
+}
+
+export async function buildShareMetaBlockRust(options, context, run = queryRust) {
+  const {pageKey, title, description, url, imageUrl, googleVerification, naverVerification, itemListElements, descriptor} = options;
+  // shortcut: unusual structured-data values use the existing renderer for JS compatibility.
+  if ([pageKey, title, description, url, imageUrl].some(v => v != null && typeof v !== 'string') ||
+      (Array.isArray(itemListElements) && itemListElements.some(item => !item || [item.url, item.title].some(v => v != null && typeof v !== 'string')))) return buildShareMetaBlock(options);
+  const seo = descriptor ?? getPageSeoDescriptor(pageKey);
+  if (['schema', 'topic', 'keywords', 'breadcrumb'].some(key => seo[key] != null && typeof seo[key] !== 'string')) return buildShareMetaBlock(options);
+  const data = {
+    pageKey:String(pageKey || ''), title:String(title || DEFAULT_SITE_META.pages.home.title),
+    description:String(description || DEFAULT_SITE_META.pages.home.description), url:String(url || 'https://bpmedia.net'),
+    imageUrl:String(imageUrl || ''), googleVerification:String(googleVerification || ''), naverVerification:String(naverVerification || ''),
+    keywords:String(descriptor?.keywords ?? getPageKeywords(pageKey)), adsense:ADSENSE_ACCOUNT, imageAlt:DEFAULT_SHARE_IMAGE_ALT,
+    defaultImagePath:DEFAULT_SHARE_IMAGE_PATH, imageWidth:DEFAULT_SHARE_IMAGE_WIDTH, imageHeight:DEFAULT_SHARE_IMAGE_HEIGHT,
+    structuredUrl:url || `${SITE_ORIGIN}/`, siteOrigin:SITE_ORIGIN, homeDescription:HOME_SEARCH_DESCRIPTION,
+    publisher:JSON.stringify(PUBLISHER), person:JSON.stringify(OPERATOR_PERSON),
+    schema:seo.schema ?? getPageSchemaType(pageKey), topic:seo.topic ?? getPageTopic(pageKey), breadcrumb:seo.breadcrumb ?? getBreadcrumbLabel(pageKey),
+    itemListElements:Array.isArray(itemListElements) ? itemListElements.map(item => ({url:item.url, title:item.title})) : [],
+  };
+  // shortcut: isolated UTF-16 surrogates use the existing metadata renderer.
+  if (/\\u[dD][89a-fA-F][0-9a-fA-F]{2}/.test(JSON.stringify(data))) return buildShareMetaBlock(options);
+  try {
+    const response = await run(context, 'share-meta-render', data);
+    if (!response.ok) throw new Error('Rust share metadata rendering failed');
+    const result = await response.json();
+    if (typeof result.html !== 'string') throw new Error('Invalid Rust share metadata');
+    return result.html;
+  } catch (_) { return buildShareMetaBlock(options); }
+}
+
+export function getResolvedShareImage(siteMeta, origin) {
+  if (!siteMeta || !siteMeta.image_url) return `${origin}${DEFAULT_SHARE_IMAGE_PATH}`;
+  if (siteMeta.image_url.startsWith('http')) return siteMeta.image_url;
+  return `${origin}/api/settings/site-meta/image`;
+}
+
+export function serveStoredImage(imageUrl) {
+  if (!imageUrl) return new Response(null, { status: 404 });
+
+  if (imageUrl.startsWith('http')) {
+    return Response.redirect(imageUrl, 302);
+  }
+
+  if (imageUrl.startsWith('data:')) {
+    const commaIdx = imageUrl.indexOf(',');
+    if (commaIdx < 0) return new Response(null, { status: 404 });
+    const header = imageUrl.slice(0, commaIdx);
+    const b64 = imageUrl.slice(commaIdx + 1);
+    const mimeMatch = header.match(/data:([^;]+)/);
+    const mimeType = mimeMatch ? mimeMatch[1] : 'image/jpeg';
+
+    try {
+      const binary = atob(b64);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+      return new Response(bytes.buffer, {
+        status: 200,
+        headers: {
+          'Content-Type': mimeType,
+          'Cache-Control': 'public, max-age=86400',
+        },
+      });
+    } catch {
+      return new Response(null, { status: 500 });
+    }
+  }
+
+  return new Response(null, { status: 404 });
+}
+
+function sanitizeText(value, fallback, maxLen) {
+  const str = typeof value === 'string' ? value.trim() : '';
+  return (str || fallback).slice(0, maxLen);
+}
+
+function sanitizeImageUrl(url) {
+  if (!url || typeof url !== 'string') return null;
+  const trimmed = url.trim();
+  if (!trimmed) return null;
+  if (trimmed.startsWith('data:image/')) return trimmed;
+  try {
+    const parsed = new URL(trimmed);
+    if (parsed.protocol === 'http:' || parsed.protocol === 'https:') return trimmed;
+  } catch {}
+  return null;
+}
+
+function upgradeLegacyHomeDescription(value) {
+  const text = typeof value === 'string' ? value.trim() : '';
+  if (!text) return text;
+  return LEGACY_HOME_DESCRIPTIONS.includes(text) ? HOME_SEARCH_DESCRIPTION : text;
+}
+
+function upgradeLegacyHomeTitle(value) {
+  const text = typeof value === 'string' ? value.trim() : '';
+  if (!text) return text;
+  return LEGACY_HOME_TITLES.includes(text) ? DEFAULT_SITE_META.pages.home.title : text;
+}
+
+function sanitizeEmail(value, fallback) {
+  const text = typeof value === 'string' ? value.trim() : '';
+  if (!text) return fallback;
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(text) ? text : fallback;
+}
+
+function escapeHtml(str) {
+  return String(str || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function buildStructuredDataEntries({ pageKey, title, description, url, imageUrl, itemListElements, descriptor }) {
+  const resolvedUrl = url || `${SITE_ORIGIN}/`;
+  const pageName = title || DEFAULT_SITE_META.pages.home.title;
+  const pageDescription = description || DEFAULT_SITE_META.pages.home.description;
+  const entries = [
+    buildOrganizationStructuredData(imageUrl),
+    buildWebsiteStructuredData(imageUrl),
+    buildPageStructuredData({ pageKey, title: pageName, description: pageDescription, url: resolvedUrl, imageUrl, descriptor }),
+  ];
+  const itemList = buildItemListStructuredData({ pageKey, url: resolvedUrl, itemListElements, descriptor });
+  if (itemList) entries.push(itemList);
+  const breadcrumb = buildBreadcrumbStructuredData(pageKey, resolvedUrl, descriptor);
+  if (breadcrumb) entries.push(breadcrumb);
+  return entries;
+}
+
+function buildOrganizationStructuredData(imageUrl) {
+  // 인물은 여기(독립 Organization 노드)에만 붙인다. PUBLISHER 자체에 넣으면
+  // WebSite.publisher / WebPage.publisher 로 두 번 더 복제돼 페이지마다 3벌이 된다.
+  const payload = {
+    '@context': 'https://schema.org',
+    ...PUBLISHER,
+    member: OPERATOR_PERSON,
+  };
+  if (imageUrl) payload.image = imageUrl;
+  return payload;
+}
+
+function buildWebsiteStructuredData(imageUrl) {
+  const payload = {
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    '@id': `${SITE_ORIGIN}/#website`,
+    name: 'BP미디어',
+    alternateName: ['비피미디어', 'The BP Media', 'bpmedia.net'],
+    url: `${SITE_ORIGIN}/`,
+    inLanguage: 'ko-KR',
+    description: HOME_SEARCH_DESCRIPTION,
+    publisher: PUBLISHER,
+    potentialAction: {
+      '@type': 'SearchAction',
+      target: `${SITE_ORIGIN}/search?q={search_term_string}`,
+      'query-input': 'required name=search_term_string',
+    },
+  };
+  if (imageUrl) payload.image = imageUrl;
+  return payload;
+}
+
+function buildPageStructuredData({ pageKey, title, description, url, imageUrl, descriptor }) {
+  const type = descriptor?.schema ?? getPageSchemaType(pageKey);
+  const payload = {
+    '@context': 'https://schema.org',
+    '@type': type,
+    '@id': `${url}#webpage`,
+    name: title,
+    headline: title,
+    description,
+    url,
+    isPartOf: {
+      '@type': 'WebSite',
+      '@id': `${SITE_ORIGIN}/#website`,
+      url: `${SITE_ORIGIN}/`,
+      name: 'BP미디어 · bpmedia.net',
+    },
+    about: {
+      '@type': 'Thing',
+      name: descriptor?.topic ?? getPageTopic(pageKey),
+    },
+    keywords: descriptor?.keywords ?? getPageKeywords(pageKey),
+    inLanguage: 'ko-KR',
+    publisher: PUBLISHER,
+  };
+  if (pageKey === 'home') {
+    payload.mainEntity = {
+      '@type': 'ItemList',
+      '@id': `${url}#itemlist`,
+      name: 'BP미디어 최신 기사',
+    };
+  }
+  if (imageUrl) payload.primaryImageOfPage = imageUrl;
+  return payload;
+}
+
+// CollectionPage 는 "항목 목록을 모아 보여주는 페이지" 다. 예전에는 홈·검색을
+// 뺀 전부를 CollectionPage 로 찍었는데, 개인정보 처리방침·편집 정책·운영 주체
+// 처럼 목록이 아닌 문서 페이지까지 컬렉션이라고 주장하게 된다. 목록형만 남긴다.
+const COLLECTION_PAGE_KEYS = [
+  'latest', 'korea', 'apr', 'wosm', 'people',
+  'glossary', 'memorabilia', 'wosm_members', 'calendar',
+];
+
+function getPageSchemaType(pageKey) {
+  if (pageKey === 'search') return 'SearchResultsPage';
+  return COLLECTION_PAGE_KEYS.includes(pageKey) ? 'CollectionPage' : 'WebPage';
+}
+
+function buildBreadcrumbStructuredData(pageKey, url, descriptor) {
+  const crumb = descriptor?.breadcrumb ?? getBreadcrumbLabel(pageKey);
+  if (!crumb || pageKey === 'home') return null;
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      {
+        '@type': 'ListItem',
+        position: 1,
+        name: '홈',
+        item: `${SITE_ORIGIN}/`,
+      },
+      {
+        '@type': 'ListItem',
+        position: 2,
+        name: crumb,
+        item: url,
+      },
+    ],
+  };
+}
+
+function getBreadcrumbLabel(pageKey) {
+  const labels = {
+    latest: '최신 소식',
+    jamboree16: '제16회 한국잼버리 특별관',
+    korea: 'Korea',
+    apr: 'APR',
+    wosm: 'WOSM',
+    wosm_members: '세계연맹 회원국 현황',
+    people: '스카우트 인물',
+    glossary: '스카우트 용어집',
+    memorabilia: '스카우트 기념품 도감',
+    contributors: '도움을 주신 분들',
+    calendar: '스카우트 캘린더',
+    search: '검색',
+    editorial_policy: '편집 정책',
+    about: '운영 주체',
+    privacy: '개인정보 처리방침',
+  };
+  return labels[pageKey] || '';
+}
+
+function getPageTopic(pageKey) {
+  const topics = {
+    home: '스카우트 뉴스',
+    latest: '최신 소식',
+    jamboree16: '제16회 한국잼버리',
+    korea: '한국 스카우트 소식',
+    apr: '아시아태평양 스카우트 소식',
+    wosm: '세계스카우트연맹 소식',
+    wosm_members: '세계연맹 회원국 현황',
+    people: '스카우트 인물',
+    glossary: '스카우트 용어집',
+    memorabilia: '스카우트 기념품 도감',
+    contributors: '후원 및 기여자 소개',
+    calendar: '스카우트 행사 및 일정',
+    search: '사이트 검색 결과',
+    editorial_policy: '편집 정책',
+    about: '운영 주체',
+    privacy: '개인정보 처리방침',
+  };
+  return topics[pageKey] || '스카우트 뉴스';
+}
+
+function getPageKeywords(pageKey) {
+  const keywords = {
+    home: 'BP미디어, 비피미디어, BPmedia, The BP Media, bpmedia.net, 스카우트 뉴스, 스카우트 미디어, WOSM, APR, 한국스카우트연맹',
+    latest: '최신 소식, 최신 스카우트 뉴스, BP미디어',
+    jamboree16: '제16회 한국잼버리, 한국잼버리, 16th Korea National Jamboree, 2026 한국잼버리, 세계잼버리수련장, 한국스카우트연맹, BP미디어',
+    korea: 'Korea, 한국스카우트연맹, BP미디어',
+    apr: 'APR, 아시아태평양 스카우트, BP미디어',
+    wosm: 'WOSM, 세계스카우트연맹, BP미디어',
+    wosm_members: 'WOSM 회원국, 세계연맹 회원국 현황, 스카우트 회원국, BP미디어',
+    people: '스카우트 인물, BP미디어',
+    glossary: '스카우트 용어집, BP미디어',
+    memorabilia: '스카우트 기념품, 스카우트 도감, 스카우트 패치, 스카우트 뱃지, 스카우트 항건, 스카우트 우표, Scout Memorabilia, BP미디어',
+    contributors: 'BP미디어, 도움을 주신 분들',
+    calendar: '스카우트 캘린더, 스카우트 행사 일정, BP미디어',
+    search: 'BP미디어 검색',
+    editorial_policy: '편집 정책, 정정 보도, 출처 검증, BP미디어',
+    about: '운영 주체, BP미디어, 길웰미디어',
+    privacy: '개인정보 처리방침, BP미디어',
+  };
+  return keywords[pageKey] || 'BP미디어';
+}
+
+export function getPageSeoDescriptor(pageKey) {
+  return {schema:getPageSchemaType(pageKey), breadcrumb:getBreadcrumbLabel(pageKey), topic:getPageTopic(pageKey), keywords:getPageKeywords(pageKey)};
+}
+
+function buildItemListStructuredData({ pageKey, url, itemListElements, descriptor }) {
+  if (!Array.isArray(itemListElements) || !itemListElements.length) return null;
+  if (!['home', 'latest', 'korea', 'apr', 'wosm', 'people', 'glossary'].includes(pageKey)) return null;
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'ItemList',
+    '@id': `${url}#itemlist`,
+    name: descriptor?.topic ?? getPageTopic(pageKey),
+    itemListElement: itemListElements.map((item, index) => ({
+      '@type': 'ListItem',
+      position: index + 1,
+      url: item.url,
+      name: item.title,
+    })),
+  };
+}
+
+function safeJsonLd(value) {
+  return JSON.stringify(value).replace(/</g, '\\u003c');
+}
+
+function getShareImageMimeType(url) {
+  const value = String(url || '').trim();
+  if (!value) return '';
+  if (value.startsWith('data:image/')) {
+    const match = value.match(/^data:(image\/[^;]+)/i);
+    return match ? match[1].toLowerCase() : '';
+  }
+  const normalized = value.toLowerCase();
+  if (normalized.includes(`${DEFAULT_SHARE_IMAGE_PATH.toLowerCase()}?`) || normalized.endsWith(DEFAULT_SHARE_IMAGE_PATH.toLowerCase())) {
+    return 'image/png';
+  }
+  if (normalized.includes('.png')) return 'image/png';
+  if (normalized.includes('.webp')) return 'image/webp';
+  if (normalized.includes('.gif')) return 'image/gif';
+  if (normalized.includes('.jpg') || normalized.includes('.jpeg')) return 'image/jpeg';
+  return '';
+}
+
+function getShareImageDimensions(url) {
+  const value = String(url || '').trim().toLowerCase();
+  if (!value) return null;
+  if (value.includes(`${DEFAULT_SHARE_IMAGE_PATH.toLowerCase()}?`) || value.endsWith(DEFAULT_SHARE_IMAGE_PATH.toLowerCase())) {
+    return {
+      width: DEFAULT_SHARE_IMAGE_WIDTH,
+      height: DEFAULT_SHARE_IMAGE_HEIGHT,
+    };
+  }
+  return null;
+}
+
+export { DEFAULT_SITE_META };

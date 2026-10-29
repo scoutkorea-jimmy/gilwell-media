@@ -1,0 +1,51 @@
+# Gilwell Media · Wrangler configuration
+# Used for local development with: wrangler pages dev .
+# Production settings (D1 binding, secrets) are configured
+# in the Cloudflare Pages dashboard, not here.
+
+name = "gilwell-media"
+compatibility_date = "2024-09-23"
+
+# Output directory for Cloudflare Pages (static files)
+# [2026-07-22] "." → "public". 저장소 루트를 통째로 올리던 것을 바꿔, 배포되는
+# 것과 개발용 파일을 구조로 분리한다. functions/ 는 Pages 규약상 루트에 남는다.
+pages_build_output_dir = "public"
+
+# ── D1 Database binding (local dev) ──────────────────────────
+# Replace database_id with your actual D1 database ID after
+# running: wrangler d1 create gilwell-posts
+[[d1_databases]]
+binding     = "DB"
+database_name = "gilwell-posts"
+database_id = "619e542b-e3b1-4500-b474-7e9fd87e1169"
+
+[[r2_buckets]]
+binding = "POST_IMAGES"
+bucket_name = "gilwell-media-images"
+
+[ai]
+binding = "AI"
+
+# ── Local secrets for development ────────────────────────────
+# Copy .dev.vars.example to .dev.vars and fill in values.
+# Never commit .dev.vars to git.
+
+# ── Smart Placement (2026-07-22) ──────────────────────────────────────────────
+# 문제: 한국에서 접속해도 Cloudflare 가 HKG(홍콩)/NRT·KIX(일본) 엣지로 라우팅하는데
+#       (free plan 의 한국 POP 라우팅 제약), D1 원본은 ICN(서울)에 있다.
+#       그래서 Worker 가 쿼리할 때마다 홍콩↔서울을 왕복한다.
+#
+# 실측(2026-07-22, 서버 처리 시간):
+#   /css/style.css  56ms   (엣지 정적 서빙 = 기준선)
+#   /api/posts     229ms   (D1 1회)      → 왕복 비용 +170ms
+#   /api/home      332ms   (D1 다수)
+#   /             464ms   (SSR)
+#
+# smart 모드는 Worker 실행 위치를 백엔드(D1) 가까이로 옮긴다. 사용자→엣지 홉은
+# 그대로지만, 여러 번이던 D1 왕복이 사라진다.
+#
+# 주의: 백엔드 호출이 적은 Worker 에는 오히려 홉이 늘어 손해다. 이 프로젝트는
+# 홈 SSR 한 번에 D1 쿼리를 10여 개 날리므로 이득이 크다.
+# 효과는 Cloudflare 가 트래픽 패턴을 학습한 뒤 나타나므로 즉시 반영되지 않는다.
+[placement]
+mode = "smart"

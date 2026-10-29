@@ -1,0 +1,1248 @@
+(function () {
+  'use strict';
+
+  if (typeof window === 'undefined' || !window.GW) return;
+  var GW = window.GW;
+
+  GW.STRINGS = {
+    'nav.contributors': { ko: '도움을 주신 분들', en: 'Contributors' },
+    'nav.home': { ko: '홈', en: 'Home' },
+    'nav.latest': { ko: '최신 소식', en: 'Latest' },
+    'nav.jamboree16': { ko: '제16회 한국잼버리', en: '16th Korea Jamboree' },
+    'nav.news_group': { ko: '스카우트 소식', en: 'Scout News' },
+    'nav.korea': { ko: '한국스카우트 소식', en: 'Korea Scout News' },
+    'nav.apr': { ko: '아시아-태평양 스카우트 소식', en: 'Asia-Pacific Scout News' },
+    'nav.wosm': { ko: '세계의 스카우트 소식', en: 'World Scout News' },
+    'nav.wosm_members': { ko: '세계연맹 회원국 현황', en: 'WOSM Members Status' },
+    'nav.people': { ko: '스카우트 인물', en: 'Scout People' },
+    'nav.resources_group': { ko: '스카우트 자료실', en: 'Scout Resources' },
+    'nav.calendar': { ko: '캘린더', en: 'Calendar' },
+    'nav.glossary': { ko: '용어집', en: 'Glossary' },
+    'nav.memorabilia': { ko: '스카우트 기념품 도감', en: 'Scout Memorabilia' },
+    'hero.eyebrow': { ko: 'BP미디어 · bpmedia.net', en: 'BPmedia · bpmedia.net' },
+    'hero.title': { ko: '스카우트 운동의 소식을\n기록합니다', en: 'Recording the\nScout Movement' },
+    'hero.sub': { ko: '한국스카우트연맹과 세계스카우트연맹의 소식을 자발적인 봉사로 전합니다', en: 'Delivering Scout news through volunteer effort.' },
+    'hero.cta': { ko: '소식 읽기 →', en: 'Read More →' },
+    'section.latest': { ko: '최신 소식', en: 'Latest News' },
+    'section.popular': { ko: '인기 소식', en: 'Popular News' },
+    'section.picks': { ko: '에디터 추천', en: "Editor's Picks" },
+    'home.more': { ko: '더보기 →', en: 'More →' },
+    'footer.title': { ko: 'BP미디어', en: 'BPmedia' },
+    'footer.sections': { ko: '섹션', en: 'Sections' },
+    'footer.join': { ko: '봉사자 모집', en: 'Join Us' },
+    'footer.join.text': {
+      ko: 'BP미디어는 스카우트 네트워크의 자발적인 봉사로 운영됩니다. 함께 글을 작성해 주실 봉사자를 모집하고 있습니다. 관심 있으신 분들은 이메일로 연락해 주세요.',
+      en: 'BPmedia is operated by Scout network volunteers. We are looking for contributors. Please contact us by email.',
+    },
+    'footer.copyright': {
+      ko: '© 2026 BP미디어 · bpmedia.net',
+      en: '© 2026 BPmedia · bpmedia.net',
+    },
+    'footer.disclaimer': {
+      ko: 'BP미디어는 전 세계 스카우트 소식과 활동을 기록하고 공유하는 독립 미디어 아카이브입니다. 한국스카우트연맹과 세계스카우트연맹 공식 채널이 아닌 자발적 스카우트 네트워크로 운영됩니다.',
+      en: 'BPmedia is not an official channel of the Korea Scout Association or WOSM. Operated by volunteer contributors.',
+    },
+    'link.latest': { ko: '최신 소식 — 한국을 포함한 세계 스카우트 소식', en: 'Latest — Scout news from Korea and around the world' },
+    'link.korea': { ko: 'Korea — 한국스카우트연맹', en: 'Korea — Korea Scout Association' },
+    'link.apr': { ko: 'APR — 아시아태평양', en: 'APR — Asia-Pacific' },
+    'link.wosm': { ko: 'WOSM — 세계스카우트연맹', en: 'WOSM — World Scout Organization' },
+    'link.people': { ko: '스카우트 인물 — 국내외 스카우트 인물', en: 'Scout People — Scouts Around the World' },
+    'link.glossary': { ko: '용어집 — 국문·영문·불어 스카우트 용어', en: 'Glossary — Korean, English, French Scout Terms' },
+    'board.latest.banner': { ko: 'Latest', en: 'Latest' },
+    'board.latest.title': { ko: '최신 소식', en: 'Latest' },
+    'board.latest.desc': { ko: '한국을 포함한 세계의 스카우트 소식을 한눈에 모아봅니다.', en: 'Scout news from Korea and around the world, gathered in one place.' },
+    'board.korea.banner': { ko: 'Korea', en: 'Korea' },
+    'board.korea.title': { ko: '한국스카우트연맹', en: 'Korea Scout Association' },
+    'board.korea.desc': { ko: '국내 스카우트 운동의 소식과 기록을 전합니다.', en: 'News and records from domestic Scout activities.' },
+    'board.apr.banner': { ko: 'APR', en: 'APR' },
+    'board.apr.title': { ko: '아시아태평양 지역', en: 'Asia-Pacific Region' },
+    'board.apr.desc': { ko: '아시아태평양 스카우트 지역의 동향과 소식을 전합니다.', en: 'Trends and news from the Asia-Pacific Scout Region.' },
+    'board.wosm.banner': { ko: 'WOSM', en: 'WOSM' },
+    'board.wosm.title': { ko: '세계스카우트연맹', en: 'World Scout Organization (WOSM)' },
+    'board.wosm.desc': { ko: '세계스카우트연맹(WOSM)의 글로벌 소식과 동향을 전합니다.', en: 'Global news and trends from WOSM.' },
+    'board.translation.note': { ko: '일부 게시글은 번역 자료를 바탕으로 작성되어 표현이 완전히 정확하지 않을 수 있습니다. 더 나은 번역 제안은 언제든 환영합니다.', en: 'Some posts are based on translated source materials, so wording may not be perfectly exact. Suggestions for better translations are always welcome.' },
+    'board.people.banner': { ko: 'Scout People', en: 'Scout People' },
+    'board.people.title': { ko: '스카우트 인물', en: 'Scout People' },
+    'board.people.desc': { ko: '국내외 스카우트 출신 인물과 활동 중인 스카우트, 먼저 떠난 스카우트 선배들을 조명합니다.', en: 'Spotlighting Scouts around the world, including active Scouts, Scout alumni, and departed Scout seniors.' },
+    'board.glossary.banner': { ko: '용어집', en: 'Glossary' },
+    'board.glossary.title': { ko: '스카우트 용어집', en: 'Scout Glossary' },
+    'board.glossary.desc': { ko: '스카우트 용어를 국문·영문·불어 3개 국어 기준으로 정리합니다.', en: 'A trilingual glossary of Scout terms in Korean, English, and French.' },
+    'write.btn': { ko: '글쓰기', en: 'Write' },
+    'loadmore.btn': { ko: '더 보기', en: 'Load More' },
+    'stat.korea': { ko: '한국소식', en: 'Korea' },
+    'stat.apr': { ko: 'APR소식', en: 'APR' },
+    'stat.wosm': { ko: 'WOSM소식', en: 'WOSM' },
+    'stat.people': { ko: '인물소식', en: 'People' },
+    'stat.today': { ko: '오늘 공유된 소식', en: 'Today' },
+    'stat.unit': { ko: '건', en: '' },
+  };
+
+  GW._customStrings = window.GW_BOOT_CUSTOM_STRINGS || {};
+  GW._navLabels = window.GW_BOOT_NAV_LABELS || {};
+  // Safari '모든 쿠키 차단'·일부 WebView·파티션된 iframe 에서는 localStorage 접근
+  // 자체가 throw 한다. 여기는 IIFE 최상단이라 가드가 없으면 이 줄에서 모듈 전체가
+  // 죽고 GW.t / applyLang / renderManagedNav / bootstrapStandardPage 가 아예
+  // 정의되지 않아 홈이 통째로 멈춘다. (js/main.js 의 GW.t 사고와 같은 형태)
+  GW.readStoredLang = function () {
+    try {
+      return (window.localStorage && window.localStorage.getItem('gw_lang')) || '';
+    } catch (_) {
+      return '';
+    }
+  };
+  GW.lang = GW.readStoredLang() || 'ko';
+  GW.LOCKED_TRANSLATION_KEYS = {
+    'nav.contributors': true,
+    'nav.home': true,
+    'nav.latest': true,
+    'nav.jamboree16': true,
+    'nav.news_group': true,
+    'nav.korea': true,
+    'nav.apr': true,
+    'nav.wosm': true,
+    'nav.wosm_members': true,
+    'nav.people': true,
+    'nav.resources_group': true,
+    'nav.calendar': true,
+    'nav.glossary': true,
+    'nav.memorabilia': true,
+  };
+
+  GW.t = function (key) {
+    if (GW.LOCKED_TRANSLATION_KEYS[key]) {
+      var navEntry = (GW._navLabels && GW._navLabels[key]) || (GW.STRINGS[key] || {});
+      var navLang = GW.lang;
+      return navEntry[navLang] !== undefined ? navEntry[navLang] : (navEntry.ko || key);
+    }
+    var custom = GW._customStrings || {};
+    var lang = GW.lang;
+    var useCustom = !GW.LOCKED_TRANSLATION_KEYS[key] && custom[key];
+    var entry = useCustom ? custom[key] : (GW.STRINGS[key] || {});
+    return entry[lang] !== undefined ? entry[lang] : (entry.ko || key);
+  };
+
+  GW.NAV_ITEMS = [
+    { href: '/contributors', key: 'nav.contributors' },
+    { href: '/', key: 'nav.home' },
+    { href: '/latest', key: 'nav.latest' },
+    { href: '/jamboree16', key: 'nav.jamboree16' },
+    { href: '/korea', key: 'nav.korea' },
+    { href: '/apr', key: 'nav.apr' },
+    { href: '/wosm', key: 'nav.wosm' },
+    { href: '/wosm-members', key: 'nav.wosm_members' },
+    { href: '/people', key: 'nav.people' },
+    { href: '/calendar', key: 'nav.calendar' },
+    { href: '/glossary', key: 'nav.glossary' },
+    { href: '/memorabilia', key: 'nav.memorabilia' },
+  ];
+
+  // 1차/2차 메뉴 구조 — desktop nav + mobile drawer 모두 이 정의를 따른다.
+  // type: 'link' = 단독 anchor / 'group' = 클릭/hover 시 children 펼침 (자체 navigation X).
+  GW.NAV_STRUCTURE = [
+    { type: 'link',  href: '/',             key: 'nav.home' },
+    { type: 'link',  href: '/latest',       key: 'nav.latest' },
+    { type: 'link',  href: '/jamboree16',   key: 'nav.jamboree16' },
+    { type: 'group', key: 'nav.news_group', children: [
+      { href: '/korea', key: 'nav.korea' },
+      { href: '/apr',   key: 'nav.apr' },
+      { href: '/wosm',  key: 'nav.wosm' },
+      { href: '/people', key: 'nav.people' },
+    ] },
+    { type: 'group', key: 'nav.resources_group', children: [
+      { href: '/wosm-members', key: 'nav.wosm_members' },
+      { href: '/glossary',     key: 'nav.glossary' },
+      { href: '/calendar',     key: 'nav.calendar' },
+    ] },
+    { type: 'link',  href: '/memorabilia',  key: 'nav.memorabilia' },
+    { type: 'link',  href: '/contributors', key: 'nav.contributors' },
+  ];
+
+  GW.setLang = function (lang) {
+    GW.lang = lang;
+    var stored = false;
+    try {
+      if (window.localStorage) {
+        window.localStorage.setItem('gw_lang', lang);
+        stored = true;
+      }
+    } catch (_) {}
+    // 저장에 성공했을 때만 리로드한다. 저장이 막힌 환경(쿠키 차단 등)에서 리로드하면
+    // 다시 기본 언어로 돌아와 버튼이 먹통처럼 보이므로, 그 경우엔 그 자리에서 적용한다.
+    if (stored) {
+      location.reload();
+      return;
+    }
+    GW.applyLang();
+  };
+
+  GW.isMobileViewport = function () {
+    return window.innerWidth <= 640;
+  };
+
+  function getFocusableElements(root) {
+    if (!root) return [];
+    return Array.from(root.querySelectorAll('a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'))
+      .filter(function (node) {
+        return !node.hidden && node.getAttribute('aria-hidden') !== 'true';
+      });
+  }
+
+  function trapFocus(event, container) {
+    if (event.key !== 'Tab') return;
+    var focusables = getFocusableElements(container);
+    if (!focusables.length) return;
+    var first = focusables[0];
+    var last = focusables[focusables.length - 1];
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+      return;
+    }
+    if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    }
+  }
+
+  GW.applySiteChrome = function () {
+    GW.syncBuildVersion();
+    GW.ensureFavicon();
+    GW.initMobileTypeControls();
+    GW.applyMobileTypeScale();
+    GW.setupPullToRefresh();
+    if (!GW._responsiveChromeBound) {
+      GW._responsiveChromeBound = true;
+      window.addEventListener('resize', function () {
+        GW.initMobileTypeControls();
+        GW.applyMobileTypeScale();
+      });
+    }
+    if (document.body && document.body.hasAttribute('data-home-bootstrap')) return;
+    GW.applyManagedFooter();
+  };
+
+  GW.ensurePullRefreshIndicator = function () {
+    if (typeof document === 'undefined' || !document.body) return null;
+    var existing = document.getElementById('pull-refresh-indicator');
+    if (existing) return existing;
+    var indicator = document.createElement('div');
+    indicator.className = 'pull-refresh-indicator';
+    indicator.id = 'pull-refresh-indicator';
+    indicator.setAttribute('aria-hidden', 'true');
+    indicator.setAttribute('role', 'status');
+    indicator.innerHTML = '<span class="pull-refresh-label"><svg class="pull-refresh-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v16m-6-6 6 6 6-6"/></svg><span class="pull-refresh-text">당겨서 새로고침</span></span>';
+    document.body.appendChild(indicator);
+    return indicator;
+  };
+
+  GW.setupPullToRefresh = function () {
+    if (typeof window === 'undefined' || typeof document === 'undefined') return;
+    if (GW._pullToRefreshBound) return;
+    if (!window.matchMedia || !window.matchMedia('(pointer: coarse)').matches) return;
+    if (!document.body || document.body.classList.contains('admin-page') || document.body.classList.contains('admin-v3')) return;
+
+    var indicator = GW.ensurePullRefreshIndicator();
+    if (!indicator) return;
+    var labelEl = indicator.querySelector('.pull-refresh-text');
+    var startY = 0;
+    var pulling = false;
+    var current = 0;
+    var threshold = 86;
+
+    function scrollTop() {
+      var root = document.scrollingElement || document.documentElement || document.body;
+      return root ? (root.scrollTop || 0) : (window.scrollY || 0);
+    }
+
+    function resetIndicator() {
+      indicator.classList.remove('visible', 'ready', 'loading');
+      indicator.setAttribute('aria-hidden', 'true');
+      indicator.style.setProperty('--pull-distance', '0px');
+      if (labelEl) labelEl.textContent = '당겨서 새로고침';
+      current = 0;
+    }
+
+    window.addEventListener('touchstart', function (event) {
+      if (scrollTop() > 0 || !event.touches || event.touches.length !== 1) return;
+      startY = event.touches[0].clientY;
+      pulling = true;
+    }, { passive: true });
+
+    window.addEventListener('touchmove', function (event) {
+      if (!pulling || scrollTop() > 0 || !event.touches || event.touches.length !== 1) return;
+      var delta = event.touches[0].clientY - startY;
+      if (delta <= 0) {
+        resetIndicator();
+        return;
+      }
+      current = Math.min(delta * 0.55, 104);
+      indicator.classList.add('visible');
+      indicator.setAttribute('aria-hidden', 'false');
+      indicator.style.setProperty('--pull-distance', current + 'px');
+      indicator.classList.toggle('ready', current >= threshold);
+      if (labelEl) labelEl.textContent = current >= threshold ? '놓으면 새로고침' : '당겨서 새로고침';
+      if (delta > 6) event.preventDefault();
+    }, { passive: false });
+
+    window.addEventListener('touchend', function () {
+      if (!pulling) return;
+      pulling = false;
+      if (current >= threshold) {
+        indicator.classList.add('ready', 'loading');
+        if (labelEl) labelEl.textContent = '새로고침 중...';
+        window.location.reload();
+        return;
+      }
+      resetIndicator();
+    });
+
+    window.addEventListener('touchcancel', function () {
+      pulling = false;
+      resetIndicator();
+    });
+
+    GW._pullToRefreshBound = true;
+  };
+
+  GW.applyManagedFooterData = function (data) {
+    var footer = document.querySelector('footer');
+    if (!footer) return;
+    var info = data && data.footer ? data.footer : {};
+    var footerBrand = footer.querySelector('.footer-brand');
+    var title = document.querySelector('[data-footer-role="title"]');
+    var description = document.querySelector('[data-footer-role="description"]');
+    var domain = document.querySelector('[data-footer-role="domain"]');
+    var tipEmail = document.querySelector('[data-footer-role="tip-email"]');
+    var contactEmail = document.querySelector('[data-footer-role="contact-email"]');
+    if (footerBrand && info.raw_text) {
+      footerBrand.innerHTML = GW.renderManagedFooterHtml(info.raw_text);
+      return;
+    }
+    if (title && info.title) title.textContent = info.title;
+    if (description && info.description) description.textContent = info.description;
+    if (domain && info.domain_label) domain.textContent = info.domain_label;
+    if (tipEmail && info.tip_email) {
+      tipEmail.textContent = info.tip_email;
+      tipEmail.href = 'mailto:' + info.tip_email;
+    }
+    if (contactEmail && info.contact_email) {
+      contactEmail.textContent = info.contact_email;
+      contactEmail.href = 'mailto:' + info.contact_email;
+    }
+  };
+
+  GW.applyManagedFooter = function () {
+    var cacheKey = GW.getVersionedCacheKey('gw_cache_site_meta', 'v1_' + GW.ASSET_VERSION);
+    var cached = GW.readCachedPayload(cacheKey, 1000 * 60 * 30);
+    if (cached) {
+      GW.applyManagedFooterData(cached);
+    }
+    GW.apiFetch('/api/settings/site-meta', { cache: 'no-store' })
+      .then(function (data) {
+        GW.writeCachedPayload(cacheKey, data);
+        GW.applyManagedFooterData(data);
+      })
+      .catch(function (err) {
+        GW.handlePublicLoadFailure('푸터 설정', err, !!cached);
+      });
+  };
+
+  GW.setupScrollTopButton = function () {
+    var button = document.getElementById('global-scroll-top-btn');
+    if (!button) {
+      button = document.createElement('button');
+      button.type = 'button';
+      button.id = 'global-scroll-top-btn';
+      button.className = 'global-scroll-top-btn';
+      button.setAttribute('aria-label', '맨 위로 이동');
+      button.innerHTML = '<span aria-hidden="true">↑</span><em>TOP</em>';
+      document.body.appendChild(button);
+    }
+
+    var scrollContainer = document.querySelector('#v3-content');
+    var isWindowMode = !scrollContainer;
+
+    function getTop() {
+      if (isWindowMode) {
+        return window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop || 0;
+      }
+      return scrollContainer.scrollTop || 0;
+    }
+
+    function toggleVisibility() {
+      button.classList.toggle('is-visible', getTop() > 240);
+    }
+
+    function scrollToTop() {
+      if (isWindowMode) {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        return;
+      }
+      scrollContainer.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    button.onclick = scrollToTop;
+    if (button.dataset.bound === '1') {
+      toggleVisibility();
+      return;
+    }
+    button.dataset.bound = '1';
+    if (isWindowMode) {
+      window.addEventListener('scroll', toggleVisibility, { passive: true });
+    } else {
+      scrollContainer.addEventListener('scroll', toggleVisibility, { passive: true });
+    }
+    toggleVisibility();
+  };
+
+  GW.renderManagedFooterHtml = function (rawText) {
+    return String(rawText || '').trim();
+  };
+
+  // 활성 페이지 판별 — 단독 링크는 href 일치, group 은 자식 중 하나라도 일치하면 group 도 active.
+  function isItemActive(item, currentPath) {
+    if (item.type === 'group' && item.children) {
+      return item.children.some(function (child) { return childHrefMatches(child.href, currentPath); });
+    }
+    return childHrefMatches(item.href, currentPath);
+  }
+  function childHrefMatches(href, currentPath) {
+    if (!href) return false;
+    if (href === '/') return currentPath === '/';
+    return currentPath === href;
+  }
+
+  GW.markActiveNav = function () {
+    // legacy 호환 — 현재 페이지의 단순 anchor 매칭 (NAV_STRUCTURE 가 렌더되면 renderManagedNav 가 정확히 처리)
+    var page = location.pathname.split('/').pop() || 'index.html';
+    document.querySelectorAll('.nav a').forEach(function (a) {
+      var href = (a.getAttribute('href') || '').split('/').pop();
+      if (href === page || (page === '' && href === 'index.html')) {
+        a.classList.add('active');
+      }
+    });
+  };
+
+  // ── 1차/2차 nav 렌더 (drop-down 지원) ──────────────────────────────────────
+  // 홈은 60초 주기 + 포커스 복귀마다 applyLang() 을 호출하고, applyLang 은 다시
+  // renderManagedNav 를 부른다. 아무 변화가 없어도 innerHTML 을 갈아엎으면
+  //  (1) 열려 있던 드롭다운이 사라지고
+  //  (2) 키보드 포커스가 <body> 로 튕기며
+  //  (3) setupNavDropdowns 의 그룹별 mouseleave 핸들러가 죽은 노드에 남아
+  //      이후로는 마우스를 빼도 패널이 닫히지 않는다 (핸들러는 _navDropdownsBound
+  //      가드 때문에 재부착되지 않음).
+  // 그래서 라벨·언어·경로 시그니처가 실제로 바뀐 경우에만 다시 그린다.
+  function getNavRenderSignature(currentPath) {
+    var labelParts = [];
+    GW.NAV_STRUCTURE.forEach(function (item) {
+      labelParts.push(item.key + '=' + GW.t(item.key));
+      (item.children || []).forEach(function (child) {
+        labelParts.push(child.key + '=' + GW.t(child.key));
+      });
+    });
+    return GW.lang + '|' + currentPath + '|' + labelParts.join('');
+  }
+
+  GW.renderManagedNav = function (options) {
+    var currentPath = (window.location.pathname || '/').replace(/\/+$/, '') || '/';
+    var signature = getNavRenderSignature(currentPath);
+    var force = !!(options && options.force);
+    var alreadyRendered = !!document.querySelector('.nav[data-managed-nav].is-ready');
+    if (!force && alreadyRendered && GW._navRenderSignature === signature) return;
+    GW._navRenderSignature = signature;
+    document.querySelectorAll('.nav[data-managed-nav]').forEach(function (nav) {
+      // NAV_STRUCTURE 기반 마크업 전체 재구성 — 기존 anchors 는 모두 교체.
+      var html = GW.NAV_STRUCTURE.map(function (item) {
+        if (item.type === 'group' && item.children && item.children.length) {
+          var groupActive = isItemActive(item, currentPath);
+          var label = GW.t(item.key);
+          var triggerCls = 'nav-group-trigger' + (groupActive ? ' active' : '');
+          var groupSlug = item.key.replace(/^nav\./, '');
+          var childrenHtml = item.children.map(function (child) {
+            var childActive = childHrefMatches(child.href, currentPath);
+            return '<a class="nav-sublink' + (childActive ? ' active' : '') + '" ' +
+              'href="' + GW.escapeHtml(child.href) + '" ' +
+              'role="menuitem" ' +
+              'data-i18n="' + GW.escapeHtml(child.key) + '">' +
+              GW.escapeHtml(GW.t(child.key)) +
+              '</a>';
+          }).join('');
+          return '<div class="nav-group" data-nav-group="' + GW.escapeHtml(groupSlug) + '">' +
+              '<button type="button" class="' + triggerCls + '" ' +
+                'data-nav-group-trigger="' + GW.escapeHtml(groupSlug) + '" ' +
+                'aria-haspopup="true" aria-expanded="false">' +
+                '<span data-i18n="' + GW.escapeHtml(item.key) + '">' + GW.escapeHtml(label) + '</span>' +
+                '<span class="nav-group-caret" aria-hidden="true"></span>' +
+              '</button>' +
+              '<div class="nav-group-panel" role="menu" aria-label="' + GW.escapeHtml(label) + '">' +
+                childrenHtml +
+              '</div>' +
+            '</div>';
+        }
+        // 단독 link
+        var active = childHrefMatches(item.href, currentPath);
+        return '<a class="nav-link' + (active ? ' active' : '') + '" ' +
+          'href="' + GW.escapeHtml(item.href) + '" ' +
+          'data-i18n="' + GW.escapeHtml(item.key) + '">' +
+          GW.escapeHtml(GW.t(item.key)) +
+          '</a>';
+      }).join('');
+      nav.innerHTML = html;
+      nav.classList.add('is-ready');
+      nav.classList.add('nav-grouped');
+    });
+    setupNavDropdowns();
+    if (GW.syncMobileCompactNav) GW.syncMobileCompactNav();
+  };
+
+  // ── 드롭다운 인터랙션 (hover + click) ─────────────────────────────────────
+  function setupNavDropdowns() {
+    if (GW._navDropdownsBound) {
+      // 다국어 toggling 등으로 nav 가 다시 렌더된 경우에도 핸들러는 document 레벨이라 유지.
+      return;
+    }
+    GW._navDropdownsBound = true;
+
+    // ≤900px 에서 드롭다운이 열리면 부모 .nav 의 overflow 클리핑 때문에 패널이
+    // 박스 안에 갇혀 스크롤해야 보인다. 열린 그룹 유무에 따라 is-panel-open 을
+    // 토글해 CSS 에서 overflow:visible 로 풀어준다.
+    function syncNavPanelState() {
+      var anyOpen = !!document.querySelector('.nav-group.is-open');
+      document.querySelectorAll('.nav.nav-grouped').forEach(function (nav) {
+        nav.classList.toggle('is-panel-open', anyOpen);
+      });
+    }
+
+    function closeAllExcept(skipGroup) {
+      document.querySelectorAll('.nav-group.is-open').forEach(function (g) {
+        if (g === skipGroup) return;
+        g.classList.remove('is-open');
+        var trig = g.querySelector('.nav-group-trigger');
+        if (trig) trig.setAttribute('aria-expanded', 'false');
+      });
+      syncNavPanelState();
+    }
+
+    // 클릭 토글
+    document.addEventListener('click', function (e) {
+      var trig = e.target && e.target.closest && e.target.closest('[data-nav-group-trigger]');
+      if (trig) {
+        e.preventDefault();
+        e.stopPropagation();
+        var group = trig.closest('.nav-group');
+        if (!group) return;
+        var willOpen = !group.classList.contains('is-open');
+        closeAllExcept(willOpen ? group : null);
+        group.classList.toggle('is-open', willOpen);
+        trig.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+        syncNavPanelState();
+        return;
+      }
+      // outside click → 모두 닫기
+      if (!e.target.closest || !e.target.closest('.nav-group')) {
+        closeAllExcept(null);
+      }
+    });
+
+    // ESC → 닫기
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') closeAllExcept(null);
+    });
+
+    // hover open (데스크톱) — pointer:fine 일 때만
+    if (window.matchMedia && window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
+      document.addEventListener('mouseover', function (e) {
+        if (!e.target.closest) return;
+        var group = e.target.closest('.nav-group');
+        if (group) {
+          closeAllExcept(group);
+          if (!group.classList.contains('is-open')) {
+            group.classList.add('is-open');
+            var trig = group.querySelector('.nav-group-trigger');
+            if (trig) trig.setAttribute('aria-expanded', 'true');
+            syncNavPanelState();
+          }
+        }
+      });
+      document.addEventListener('mouseleave', function () { closeAllExcept(null); });
+      document.querySelectorAll('.nav-group').forEach(function (g) {
+        g.addEventListener('mouseleave', function () {
+          // 약간의 지연 후 닫기 (멀어졌다가 돌아오는 경우 대비)
+          setTimeout(function () {
+            if (!g.matches(':hover')) {
+              g.classList.remove('is-open');
+              var trig = g.querySelector('.nav-group-trigger');
+              if (trig) trig.setAttribute('aria-expanded', 'false');
+              syncNavPanelState();
+            }
+          }, 150);
+        });
+      });
+    }
+  }
+
+  GW.ensureMobileCompactHeader = function () {
+    if (typeof document === 'undefined') return null;
+    if (document.getElementById('mobile-compact-header')) {
+      return {
+        header: document.getElementById('mobile-compact-header'),
+        overlay: document.getElementById('mobile-compact-overlay'),
+        drawer: document.getElementById('mobile-compact-drawer'),
+        nav: document.getElementById('mobile-compact-nav')
+      };
+    }
+    if (!document.body || document.body.classList.contains('admin-page') || document.body.classList.contains('admin-v3')) return null;
+    if (!document.querySelector('.masthead')) return null;
+
+    var shell = document.createElement('div');
+    shell.innerHTML =
+      '<div class="mobile-compact-header" id="mobile-compact-header" aria-hidden="true">' +
+        '<button type="button" class="mobile-compact-toggle" id="mobile-compact-toggle" aria-label="메뉴 열기" aria-expanded="false" aria-controls="mobile-compact-drawer">' +
+          '<span></span><span></span><span></span>' +
+        '</button>' +
+        '<a href="/" class="mobile-compact-brand" aria-label="BP미디어 홈으로 이동">' +
+          '<img src="/img/logo.svg" alt="" class="mobile-compact-brand-mark" aria-hidden="true">' +
+          '<span class="mobile-compact-brand-text">BP미디어</span>' +
+        '</a>' +
+        '<a href="/search" class="mobile-compact-search" aria-label="검색"></a>' +
+      '</div>' +
+      '<div class="mobile-compact-overlay" id="mobile-compact-overlay" hidden></div>' +
+      '<aside class="mobile-compact-drawer" id="mobile-compact-drawer" aria-hidden="true">' +
+        '<div class="mobile-compact-drawer-head">' +
+          '<strong class="mobile-compact-drawer-title">메뉴</strong>' +
+          '<button type="button" class="mobile-compact-drawer-close" id="mobile-compact-drawer-close" aria-label="메뉴 닫기"></button>' +
+        '</div>' +
+        '<nav class="mobile-compact-nav" id="mobile-compact-nav" aria-label="모바일 메뉴"></nav>' +
+      '</aside>';
+    document.body.appendChild(shell);
+
+    var refs = {
+      header: document.getElementById('mobile-compact-header'),
+      overlay: document.getElementById('mobile-compact-overlay'),
+      drawer: document.getElementById('mobile-compact-drawer'),
+      nav: document.getElementById('mobile-compact-nav'),
+      toggle: document.getElementById('mobile-compact-toggle'),
+      close: document.getElementById('mobile-compact-drawer-close')
+    };
+    var drawerRestoreFocus = null;
+
+    function closeDrawer(restoreFocus) {
+      document.body.classList.remove('mobile-compact-drawer-open');
+      refs.drawer.setAttribute('aria-hidden', 'true');
+      refs.overlay.hidden = true;
+      refs.toggle.setAttribute('aria-expanded', 'false');
+      if (restoreFocus !== false && drawerRestoreFocus && typeof drawerRestoreFocus.focus === 'function') {
+        drawerRestoreFocus.focus();
+      }
+    }
+
+    function openDrawer() {
+      drawerRestoreFocus = document.activeElement;
+      document.body.classList.add('mobile-compact-drawer-open');
+      refs.drawer.setAttribute('aria-hidden', 'false');
+      refs.overlay.hidden = false;
+      refs.toggle.setAttribute('aria-expanded', 'true');
+      window.requestAnimationFrame(function () {
+        var focusables = getFocusableElements(refs.drawer);
+        if (focusables.length) focusables[0].focus();
+      });
+    }
+
+    refs.toggle.addEventListener('click', function () {
+      if (document.body.classList.contains('mobile-compact-drawer-open')) closeDrawer();
+      else openDrawer();
+    });
+    refs.close.addEventListener('click', closeDrawer);
+    refs.overlay.addEventListener('click', closeDrawer);
+    document.addEventListener('keydown', function (event) {
+      if (!document.body.classList.contains('mobile-compact-drawer-open')) return;
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        closeDrawer();
+        return;
+      }
+      trapFocus(event, refs.drawer);
+    });
+    refs.nav.addEventListener('click', function (event) {
+      var link = event.target.closest('a');
+      if (link) closeDrawer();
+    });
+
+    return refs;
+  };
+
+  GW.syncMobileCompactNav = function () {
+    var refs = GW.ensureMobileCompactHeader();
+    if (!refs || !refs.nav) return;
+    var currentPath = (window.location.pathname || '/').replace(/\/+$/, '') || '/';
+    var structure = GW.NAV_STRUCTURE || [];
+    refs.nav.innerHTML = structure.map(function (item) {
+      if (item.type === 'group' && item.children && item.children.length) {
+        var groupActive = item.children.some(function (c) { return childHrefMatches(c.href, currentPath); });
+        var groupLabel = GW.t(item.key);
+        // <details> accordion — 활성 자식이 있으면 기본 펼침
+        var openAttr = groupActive ? ' open' : '';
+        var children = item.children.map(function (child) {
+          var active = childHrefMatches(child.href, currentPath);
+          return '<a href="' + GW.escapeHtml(child.href) + '"' +
+            (active ? ' class="mobile-nav-sublink active"' : ' class="mobile-nav-sublink"') + '>' +
+            GW.escapeHtml(GW.t(child.key)) + '</a>';
+        }).join('');
+        return '<details class="mobile-nav-group' + (groupActive ? ' is-active' : '') + '"' + openAttr + '>' +
+          '<summary class="mobile-nav-group-summary">' + GW.escapeHtml(groupLabel) + '</summary>' +
+          '<div class="mobile-nav-group-children">' + children + '</div>' +
+          '</details>';
+      }
+      var active = childHrefMatches(item.href, currentPath);
+      return '<a href="' + GW.escapeHtml(item.href) + '"' +
+        (active ? ' class="mobile-nav-link active"' : ' class="mobile-nav-link"') + '>' +
+        GW.escapeHtml(GW.t(item.key)) + '</a>';
+    }).join('');
+  };
+
+  GW.setupMobileCompactHeader = function () {
+    if (typeof window === 'undefined' || typeof document === 'undefined') return;
+    if (document.body && document.body.classList.contains('post-page')) return;
+    var refs = GW.ensureMobileCompactHeader();
+    if (!refs || refs.header.dataset.bound === '1') {
+      if (refs && refs.header) GW.syncMobileCompactNav();
+      return;
+    }
+
+    function updateVisibility() {
+      // compact(599px 이하)는 큰 masthead를 CSS로 숨기므로 전용 헤더를 항상 노출한다.
+      // 600–900px 구간에서는 기존처럼 desktop nav가 viewport 위로 사라진 뒤에만 노출한다.
+      var isMobile = window.matchMedia && window.matchMedia('(max-width: 900px)').matches;
+      var isCompact = window.matchMedia && window.matchMedia('(max-width: 599px)').matches;
+      var navEl = document.querySelector('.masthead .nav, .nav');
+      var navHidden = false;
+      if (navEl) {
+        var rect = navEl.getBoundingClientRect();
+        // nav 의 하단이 viewport 위로 올라간 상태 = 스크롤로 nav 가 사라짐
+        navHidden = rect.bottom <= 0;
+      }
+      var shouldShow = isCompact || (isMobile && navHidden);
+      refs.header.classList.toggle('is-visible', shouldShow);
+      refs.header.setAttribute('aria-hidden', shouldShow ? 'false' : 'true');
+      if (!isMobile && document.body.classList.contains('mobile-compact-drawer-open')) {
+        document.body.classList.remove('mobile-compact-drawer-open');
+        refs.drawer.setAttribute('aria-hidden', 'true');
+        refs.overlay.hidden = true;
+        refs.toggle.setAttribute('aria-expanded', 'false');
+      }
+    }
+
+    refs.header.dataset.bound = '1';
+    window.addEventListener('scroll', updateVisibility, { passive: true });
+    window.addEventListener('resize', updateVisibility);
+    GW.syncMobileCompactNav();
+    updateVisibility();
+  };
+
+  GW.applyLang = function () {
+    document.querySelectorAll('[data-i18n]').forEach(function (el) {
+      var key = el.getAttribute('data-i18n');
+      var text = GW.t(key);
+      if (el.hasAttribute('data-i18n-html')) {
+        el.innerHTML = GW.escapeHtml(text).replace(/\n/g, '<br>');
+      } else {
+        el.textContent = text;
+      }
+    });
+    GW.renderManagedNav();
+    GW.CATEGORIES.korea.label = GW.t('nav.korea');
+    GW.CATEGORIES.apr.label = GW.t('nav.apr');
+    GW.CATEGORIES.wosm.label = GW.t('nav.wosm');
+    GW.CATEGORIES.people.label = GW.t('nav.people');
+    ['ko', 'en'].forEach(function (lang) {
+      var btn = document.getElementById('lang-btn-' + lang);
+      if (btn) {
+        btn.classList.toggle('active', lang === GW.lang);
+        btn.setAttribute('aria-pressed', lang === GW.lang ? 'true' : 'false');
+      }
+    });
+    document.documentElement.lang = GW.lang === 'en' ? 'en' : 'ko';
+    if (GW._boardCopyData) GW.applyBoardCopySettings(GW._boardCopyData);
+  };
+
+  GW.loadTranslations = function () {
+    var cacheKey = GW.getVersionedCacheKey('gw_cache_translations', 'v1_' + GW.ASSET_VERSION);
+    var cached = GW.readCachedPayload(cacheKey, 1000 * 60 * 60 * 12);
+    if (GW._customStrings && Object.keys(GW._customStrings).length) {
+      GW.applyLang();
+      if (GW._statsData) GW._renderStats();
+    }
+    if (cached && cached.strings) {
+      GW._customStrings = cached.strings || {};
+      GW._navLabels = cached.nav_labels || GW._navLabels || {};
+      GW.applyLang();
+      if (GW._statsData) GW._renderStats();
+    }
+    GW.apiFetch('/api/settings/translations')
+      .then(function (data) {
+        GW.writeCachedPayload(cacheKey, data);
+        GW._customStrings = data.strings || {};
+        GW._navLabels = data.nav_labels || GW._navLabels || {};
+        GW.applyLang();
+        if (GW._statsData) GW._renderStats();
+      })
+      .catch(function (err) {
+        GW.handlePublicLoadFailure('번역 설정', err, !!cached || !!(GW._customStrings && Object.keys(GW._customStrings).length));
+        GW.applyLang();
+      });
+  };
+
+  GW.loadStats = function () {
+    var cacheKey = GW.getVersionedCacheKey('gw_cache_stats', 'v1_' + GW.ASSET_VERSION);
+    var cached = GW.readCachedPayload(cacheKey, 1000 * 60 * 5);
+    if (cached) {
+      GW._statsData = cached;
+      GW._renderStats();
+    }
+    GW.apiFetch('/api/stats')
+      .then(function (data) {
+        GW.writeCachedPayload(cacheKey, data);
+        GW._statsData = data;
+        GW._renderStats();
+      })
+      .catch(function (err) {
+        GW.handlePublicLoadFailure('홈 통계', err, !!cached);
+      });
+  };
+
+  GW.applyBoardLayoutSettings = function (data) {
+    var parsed = parseInt(data && data.gap_px, 10);
+    var gap = Number.isFinite(parsed) ? Math.min(40, Math.max(5, parsed)) : 6;
+    var root = document.documentElement;
+    if (!root || !root.style) return;
+    root.style.setProperty('--board-card-gap', gap + 'px');
+    root.style.setProperty('--home-section-gap', gap + 'px');
+    root.style.setProperty('--home-grid-gap', gap + 'px');
+    root.style.setProperty('--home-block-bottom', gap + 'px');
+    root.style.setProperty('--home-title-gap', gap + 'px');
+  };
+
+  GW.loadBoardLayoutSettings = function () {
+    var cacheKey = GW.getVersionedCacheKey('gw_cache_board_layout', 'v1_' + GW.ASSET_VERSION);
+    var cached = GW.readCachedPayload(cacheKey, 1000 * 60 * 30);
+    if (cached) {
+      GW.applyBoardLayoutSettings(cached);
+    }
+    GW.apiFetch('/api/settings/board-layout', { cache: 'no-store' })
+      .then(function (data) {
+        GW.writeCachedPayload(cacheKey, data);
+        GW.applyBoardLayoutSettings(data);
+      })
+      .catch(function (err) {
+        GW.handlePublicLoadFailure('게시판 레이아웃', err, !!cached);
+      });
+  };
+
+  GW.applyBoardCopySettings = function (data) {
+    var copy = data && typeof data === 'object' ? data : {};
+    document.querySelectorAll('[data-board-copy-key]').forEach(function (el) {
+      var key = el.getAttribute('data-board-copy-key');
+      if (!key) return;
+      var entry = copy[key];
+      if (!entry || !entry.description) return;
+      el.textContent = entry.description;
+    });
+  };
+
+  GW.loadBoardCopySettings = function () {
+    var cacheKey = GW.getVersionedCacheKey('gw_cache_board_copy', 'v1_' + GW.ASSET_VERSION);
+    var cached = GW.readCachedPayload(cacheKey, 1000 * 60 * 30);
+    if (cached) {
+      GW._boardCopyData = cached;
+      GW.applyBoardCopySettings(cached);
+    }
+    GW.apiFetch('/api/settings/board-copy', { cache: 'no-store' })
+      .then(function (data) {
+        GW.writeCachedPayload(cacheKey, data);
+        GW._boardCopyData = data;
+        GW.applyBoardCopySettings(data);
+      })
+      .catch(function (err) {
+        GW.handlePublicLoadFailure('게시판 설명', err, !!cached);
+      });
+  };
+
+  GW._renderStats = function () {
+    var data = GW._statsData;
+    if (!data) return;
+    var el = document.getElementById('masthead-stats');
+    if (!el) return;
+    var unit = GW.t('stat.unit');
+    function statItem(label, value) {
+      return '<span class="masthead-stat-item">' + label + ' <strong>' + value + unit + '</strong></span>';
+    }
+    el.innerHTML =
+      statItem(GW.t('stat.korea'), data.korea) +
+      '<span class="stat-sep">·</span>' +
+      statItem(GW.t('stat.apr'), data.apr) +
+      '<span class="stat-sep">·</span>' +
+      statItem(GW.t('stat.wosm'), data.wosm) +
+      '<span class="stat-sep">·</span>' +
+      statItem(GW.t('stat.people'), data.people) +
+      '<span class="stat-sep">·</span>' +
+      statItem(GW.t('stat.today'), data.today);
+  };
+
+  GW.loadTicker = function (innerId) {
+    var inner = document.getElementById(innerId || 'ticker-inner');
+    if (!inner) return;
+    var cacheKey = GW.getVersionedCacheKey('gw_cache_ticker', 'v1_' + GW.ASSET_VERSION);
+    var cached = GW.readCachedPayload(cacheKey, 1000 * 60 * 30);
+    if (cached && Array.isArray(cached.items)) {
+      GW.renderTickerItems(innerId, cached.items || []);
+    }
+
+    GW.apiFetch('/api/settings/ticker')
+      .then(function (data) {
+        GW.writeCachedPayload(cacheKey, data);
+        GW.renderTickerItems(innerId, data.items || []);
+      })
+      .catch(function (err) {
+        GW.handlePublicLoadFailure('상단 티커', err, !!(cached && Array.isArray(cached.items) && cached.items.length));
+      });
+  };
+
+  GW.renderTickerItems = function (innerId, items, opts) {
+    var inner = document.getElementById(innerId || 'ticker-inner');
+    if (!inner) return;
+    var fallbackItems = String(inner.getAttribute('data-fallback-items') || '')
+      .split('||')
+      .map(function (item) { return String(item || '').trim(); })
+      .filter(Boolean);
+    var list = (items && items.length) ? items : (fallbackItems.length ? fallbackItems : [
+      '길웰 미디어는 스카우트 운동의 소식을 기록하는 미디어입니다',
+      '한국스카우트연맹 및 세계스카우트연맹 소식을 전합니다',
+      'The BP Media · bpmedia.net',
+    ]);
+    var sep = '&nbsp;&nbsp;&nbsp;<span class="ticker-diamond">◆</span>&nbsp;&nbsp;&nbsp;';
+    var pieces = list.map(function (text) { return GW.escapeHtml(text); });
+    // Optional auto-appended items (e.g. latest article headlines on the
+    // home page). Wrapped so we can style them later if needed.
+    var autoItems = (opts && Array.isArray(opts.autoItems)) ? opts.autoItems
+      .map(function (text) { return String(text || '').trim(); })
+      .filter(Boolean)
+      .slice(0, 6) : [];
+    autoItems.forEach(function (text) {
+      pieces.push('<span class="ticker-headline">' + GW.escapeHtml(text) + '</span>');
+    });
+    var run = pieces.join(sep);
+    inner.innerHTML = run + sep + run + sep;
+    var totalCount = pieces.length;
+    inner.style.animationDuration = Math.max(40, totalCount * 16) + 's';
+  };
+
+  GW.setupTickerControls = function () {
+    var ticker = document.querySelector('.ticker');
+    var btn = document.getElementById('ticker-toggle-btn');
+    if (!ticker || !btn || btn.dataset.bound === '1') return;
+    var prefersReducedMotion = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+    var paused = prefersReducedMotion;
+    function sync() {
+      ticker.classList.toggle('is-paused', paused);
+      btn.setAttribute('aria-pressed', paused ? 'true' : 'false');
+      btn.textContent = paused ? '재생' : '일시정지';
+      btn.setAttribute('aria-label', paused ? '상단 소식 흐름 다시 재생' : '상단 소식 흐름 일시정지');
+    }
+    if (prefersReducedMotion) btn.hidden = true;
+    btn.addEventListener('click', function () {
+      paused = !paused;
+      sync();
+    });
+    btn.dataset.bound = '1';
+    sync();
+  };
+
+  GW.hasNavLabels = function () {
+    var labels = GW._navLabels;
+    return !!(labels && typeof labels === 'object' && Object.keys(labels).length);
+  };
+
+  GW.bootstrapStandardPage = function (opts) {
+    opts = opts || {};
+    var shouldLoadTranslations = opts.loadTranslations !== false;
+    var hasManagedNav = !!document.querySelector('.nav[data-managed-nav]');
+    var canRenderManagedNavNow = !hasManagedNav || GW.hasNavLabels() || !shouldLoadTranslations;
+    if (opts.setDate !== false) GW.setMastheadDate();
+    if (opts.renderManagedNav !== false && canRenderManagedNavNow) GW.renderManagedNav();
+    if (opts.markActiveNav !== false && canRenderManagedNavNow) GW.markActiveNav();
+    if (opts.enableScrollTop !== false) GW.setupScrollTopButton();
+    GW.loadBoardLayoutSettings();
+    if (opts.loadBoardCopy !== false) GW.loadBoardCopySettings();
+    if (opts.loadTicker !== false) GW.loadTicker(opts.tickerId || 'ticker-inner');
+    if (opts.loadStats !== false) GW.loadStats();
+    if (shouldLoadTranslations) GW.loadTranslations();
+    GW.setupMobileCompactHeader();
+    GW.setupPullToRefresh();
+    GW.setupManagedInlineHandlers();
+  };
+
+  // Event delegation for former inline handlers (onclick/onchange/…). Declarative
+  // data-* attributes replace inline JS so CSP can enforce a nonce-based policy
+  // without 'unsafe-inline' for scripts.
+  GW.setupManagedInlineHandlers = function () {
+    if (GW._managedInlineHandlersInstalled) return;
+    GW._managedInlineHandlersInstalled = true;
+
+    document.addEventListener('click', function (event) {
+      var target = event.target;
+      if (!target || !target.closest) return;
+      var langBtn = target.closest('[data-lang-toggle]');
+      if (langBtn && typeof GW.setLang === 'function') {
+        event.preventDefault();
+        var lang = String(langBtn.getAttribute('data-lang-toggle') || '').trim();
+        if (lang === 'ko' || lang === 'en') GW.setLang(lang);
+        return;
+      }
+      // 뒤로가기 — 기존 href="javascript:history.back()" 는 CSP strict-dynamic
+      // (unsafe-inline 없음) 에서 차단되어 동작하지 않는다. 같은 사이트에서 들어온
+      // 경우에만 history.back(), 외부/직접 진입이면 href(카테고리 보드)로 폴백.
+      var backBtn = target.closest('[data-action="history-back"]');
+      if (backBtn) {
+        var sameOriginRef = !!document.referrer &&
+          document.referrer.indexOf(window.location.origin + '/') === 0;
+        if (window.history.length > 1 && sameOriginRef) {
+          event.preventDefault();
+          window.history.back();
+        }
+        // else: 기본 동작(href 카테고리 보드 이동) 허용
+        return;
+      }
+    });
+  };
+
+  GW.setupMastheadSearch = function () {
+    var input = document.getElementById('mh-search-input');
+    var btn = document.getElementById('mh-search-btn');
+    if (!input || !btn) return;
+
+    ensureSearchModal();
+
+    function go(query) {
+      var q = String(query || '').trim();
+      if (!q) return;
+      window.location.href = '/search?q=' + encodeURIComponent(q);
+    }
+
+    function submitFromInput() {
+      go(input.value || '');
+    }
+
+    btn.addEventListener('click', function (event) {
+      if (GW.isMobileViewport()) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        openSearchModal(input.value || '');
+        return;
+      }
+      submitFromInput();
+    }, true);
+
+    input.addEventListener('keydown', function (event) {
+      if (event.key !== 'Enter') return;
+      if (GW.isMobileViewport()) {
+        event.preventDefault();
+        openSearchModal(input.value || '');
+        return;
+      }
+      submitFromInput();
+    }, true);
+
+    input.addEventListener('focus', function () {
+      if (!GW.isMobileViewport()) return;
+      openSearchModal(input.value || '');
+      input.blur();
+    });
+
+    input.addEventListener('click', function (event) {
+      if (!GW.isMobileViewport()) return;
+      event.preventDefault();
+      openSearchModal(input.value || '');
+    });
+
+    function ensureSearchModal() {
+      if (document.getElementById('mobile-search-modal')) return;
+      var modal = document.createElement('div');
+      modal.id = 'mobile-search-modal';
+      modal.className = 'mobile-search-modal';
+      modal.innerHTML =
+        '<div class="mobile-search-modal-backdrop" data-search-close></div>' +
+        '<div class="mobile-search-modal-card" role="dialog" aria-modal="true" aria-labelledby="mobile-search-title">' +
+          '<div class="mobile-search-modal-head">' +
+            '<strong id="mobile-search-title">검색</strong>' +
+            '<button type="button" class="mobile-search-close-btn" data-search-close aria-label="검색 닫기">닫기</button>' +
+          '</div>' +
+          '<div class="mobile-search-modal-body">' +
+            '<input type="search" id="mobile-search-input" class="mobile-search-input" placeholder="검색어를 입력하세요" autocomplete="off" aria-label="검색어 입력" />' +
+            '<button type="button" id="mobile-search-submit" class="mobile-search-submit">검색</button>' +
+          '</div>' +
+        '</div>';
+      document.body.appendChild(modal);
+
+      modal.querySelectorAll('[data-search-close]').forEach(function (node) {
+        node.addEventListener('click', closeSearchModal);
+      });
+
+      document.getElementById('mobile-search-submit').addEventListener('click', function () {
+        var modalInput = document.getElementById('mobile-search-input');
+        go(modalInput && modalInput.value || '');
+      });
+
+      document.getElementById('mobile-search-input').addEventListener('keydown', function (event) {
+        if (event.key === 'Enter') {
+          event.preventDefault();
+          go(event.target.value || '');
+        }
+        if (event.key === 'Escape') closeSearchModal();
+      });
+
+      document.addEventListener('keydown', function (event) {
+        if (!modal.classList.contains('open')) return;
+        if (event.key === 'Escape') {
+          event.preventDefault();
+          closeSearchModal();
+          return;
+        }
+        trapFocus(event, modal.querySelector('.mobile-search-modal-card'));
+      });
+    }
+
+    var searchRestoreFocus = null;
+
+    function openSearchModal(value) {
+      var modal = document.getElementById('mobile-search-modal');
+      var modalInput = document.getElementById('mobile-search-input');
+      if (!modal || !modalInput) return;
+      searchRestoreFocus = document.activeElement;
+      modal.classList.add('open');
+      document.body.classList.add('search-modal-open');
+      modalInput.value = String(value || '').trim();
+      setTimeout(function () { modalInput.focus(); }, 10);
+    }
+
+    function closeSearchModal() {
+      var modal = document.getElementById('mobile-search-modal');
+      if (!modal) return;
+      modal.classList.remove('open');
+      document.body.classList.remove('search-modal-open');
+      if (searchRestoreFocus && typeof searchRestoreFocus.focus === 'function') {
+        searchRestoreFocus.focus();
+      }
+    }
+  };
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', GW.applySiteChrome, { once: true });
+  } else {
+    GW.applySiteChrome();
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
+    GW.setupMastheadSearch();
+    GW.setupMobileCompactHeader();
+    GW.setupTickerControls();
+    GW.initContentGalleries(document);
+  });
+})();
+
+/*
+ * Material 3 모션 (2026-09-26) — 공개 화면 전용(m3-site.css 가 있을 때만).
+ *  1) 누름 물결(ripple): 누른 지점에서 state layer 가 퍼진다.
+ *  2) 콘텐츠 등장: 카드·목록 행이 화면에 처음 들어올 때 아래에서 살짝 올라오며 나타난다.
+ * 기기에서 '동작 줄이기'를 켠 사용자에게는 둘 다 쓰지 않는다.
+ * 레이아웃에 영향이 없도록 transform·opacity 만 쓰고, 스크립트가 실패하면 콘텐츠는 그대로 보인다.
+ */
+(function () {
+  'use strict';
+  if (!document.querySelector('link[href*="/css/m3-site.css"]')) return;
+  var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)');
+  if (reduce && reduce.matches) return;
+
+  var RIPPLE_SEL = [
+    'button:not(:disabled)', '.nav a', '.mobile-nav-link', '.mobile-nav-sublink',
+    '.home-section-more', '.write-btn', '.home-subscribe-btn', '.jam16-link-btn',
+    '.mini-item', '.post-card', '.memo-card', '.search-result-card', '.home-memo-card',
+    '.member-country-card', '.contributor-card', '.memo-related-card'
+  ].join(',');
+  var RIPPLE_SKIP = '.hero-dot, .gw-chatbot-panel *, .calendar-day, .calendar-week-bar, .mh-search-btn';
+
+  function ripple(event) {
+    if (event.button !== undefined && event.button !== 0) return;
+    var host = event.target.closest && event.target.closest(RIPPLE_SEL);
+    if (!host || host.matches(RIPPLE_SKIP)) return;
+    var rect = host.getBoundingClientRect();
+    if (!rect.width || !rect.height) return;
+    if (getComputedStyle(host).position === 'static') host.classList.add('m3-ripple-host');
+    var layer = document.createElement('span');
+    layer.className = 'm3-ripple-layer';
+    layer.setAttribute('aria-hidden', 'true');
+    var wave = document.createElement('span');
+    wave.className = 'm3-ripple';
+    var size = Math.hypot(rect.width, rect.height) * 2;
+    wave.style.width = wave.style.height = size + 'px';
+    wave.style.left = (event.clientX - rect.left - size / 2) + 'px';
+    wave.style.top = (event.clientY - rect.top - size / 2) + 'px';
+    layer.appendChild(wave);
+    host.appendChild(layer);
+    function release() {
+      layer.classList.add('is-released');
+      setTimeout(function () { layer.remove(); }, 450);
+      window.removeEventListener('pointerup', release, true);
+      window.removeEventListener('pointercancel', release, true);
+    }
+    window.addEventListener('pointerup', release, true);
+    window.addEventListener('pointercancel', release, true);
+  }
+  document.addEventListener('pointerdown', ripple, { passive: true, capture: true });
+
+  var ENTER_SEL = '.home-lead-card, .mini-item, .post-card, .article-card, .memo-card, .home-memo-card, .search-result-card, .member-country-card, .calendar-event-card, .contributor-card, .memo-related-card, .jam16-photo';
+  if (!('IntersectionObserver' in window)) return;
+  var bootAt = Date.now();
+  var seen = typeof WeakSet === 'function' ? new WeakSet() : null;
+  var batch = 0;
+  var batchTimer = null;
+  var io = new IntersectionObserver(function (entries) {
+    entries.forEach(function (entry) {
+      if (!entry.isIntersecting) return;
+      var el = entry.target;
+      io.unobserve(el);
+      // 같은 순간 들어온 항목끼리 40ms 씩 순서대로(최대 240ms) 나타난다.
+      el.style.transitionDelay = Math.min(batch * 40, 240) + 'ms';
+      batch += 1;
+      clearTimeout(batchTimer);
+      batchTimer = setTimeout(function () { batch = 0; }, 120);
+      requestAnimationFrame(function () { el.classList.add('is-in'); });
+      setTimeout(function () { el.style.transitionDelay = ''; el.classList.remove('m3-enter', 'is-in'); }, 900);
+    });
+  }, { rootMargin: '0px 0px -40px 0px', threshold: 0.05 });
+
+  function watch(root) {
+    var list = root.matches && root.matches(ENTER_SEL) ? [root] : [];
+    if (root.querySelectorAll) list = list.concat(Array.prototype.slice.call(root.querySelectorAll(ENTER_SEL)));
+    list.forEach(function (el) {
+      if (seen && seen.has(el)) return;
+      if (seen) seen.add(el);
+      // 첫 로드 뒤 화면 안에서 다시 그려지는 목록(최신 소식 새로고침 등)은 깜빡이지 않게 그대로 둔다.
+      if (Date.now() - bootAt > 2500) {
+        var r = el.getBoundingClientRect();
+        if (r.top < innerHeight && r.bottom > 0) return;
+      }
+      el.classList.add('m3-enter');
+      io.observe(el);
+    });
+  }
+  function start() {
+    watch(document.body);
+    new MutationObserver(function (records) {
+      records.forEach(function (rec) {
+        Array.prototype.forEach.call(rec.addedNodes, function (n) { if (n.nodeType === 1) watch(n); });
+      });
+    }).observe(document.body, { childList: true, subtree: true });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
+  else start();
+})();

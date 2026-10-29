@@ -1,0 +1,27 @@
+name = "gilwell-media-alert-high-severity"
+main = "workers/alert-high-severity.js"
+compatibility_date = "2024-09-23"
+
+[triggers]
+crons = ["*/5 * * * *"]
+
+[vars]
+SITE_ORIGIN = "https://bpmedia.net"
+ALERT_FROM_NAME = "BP미디어 운영"
+
+# 활성화 전 다음 secret/var 등록 필요:
+#   wrangler secret put ALERT_TO_EMAIL    --config wrangler.alert-high-severity.toml
+#   wrangler secret put ALERT_FROM_EMAIL  --config wrangler.alert-high-severity.toml
+#
+# 이메일 송신 옵션 (둘 중 하나):
+#   (A) Cloudflare Email Workers (권장, 무료)
+#       대시보드: Workers → Email Workers → Email Routing 활성화 + Send 권한 부여
+#       wrangler.toml에 [[send_email]] binding 추가 (별도 가이드 docs/email-alert-setup.md)
+#   (B) Resend (외부, 월 무료 100건)
+#       wrangler secret put RESEND_API_KEY --config wrangler.alert-high-severity.toml
+#       ALERT_FROM_EMAIL은 Resend에서 검증한 도메인이어야 함.
+
+[[d1_databases]]
+binding = "DB"
+database_name = "gilwell-posts"
+database_id = "619e542b-e3b1-4500-b474-7e9fd87e1169"

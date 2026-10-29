@@ -1,0 +1,9 @@
+name = "gilwell-media-cleanup-drafts"
+main = "workers/cleanup-drafts-scheduler.js"
+compatibility_date = "2024-09-23"
+
+[triggers]
+crons = ["*/15 * * * *"]
+
+[vars]
+SITE_ORIGIN = "https://bpmedia.net"

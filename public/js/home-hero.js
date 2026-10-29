@@ -1,0 +1,332 @@
+(function () {
+  'use strict';
+
+  if (typeof window === 'undefined' || typeof document === 'undefined' || !window.GW || !window.GW.HomeHelpers) return;
+
+  var GW = window.GW;
+  var helpers = GW.HomeHelpers;
+
+  function renderHero(data) {
+    var slides = [];
+    var current = 0;
+    var timer = null;
+    // 전환 마무리 콜백(560ms)의 핸들. 보관하지 않으면 destroy() 가 이걸 못 끊어서,
+    // 전환 도중 백그라운드 갱신으로 히어로가 재생성될 때 죽은 슬라이더의 콜백이
+    // 뒤늦게 실행돼 renderDots 로 살아 있는 점을 덮어쓰고 setAutoTimer 로
+    // 방금 정리한 인터벌을 되살린다(핸들이 없어 두 번 다시 못 끊는다).
+    var transitionTimer = null;
+    var animating = false;
+    var intervalMs = (data && data.interval_ms) || 3000;
+    var touchState = null;
+    var paused = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+    var suppressClickUntil = 0;
+    var slider = document.getElementById('site-hero-slider');
+    var controls = document.getElementById('hero-controls');
+
+    function restoreStaticHero(reason) {
+      clearInterval(timer);
+      ensureStaticSlide();
+      if (controls) controls.style.display = 'none';
+      var staticSlide = document.getElementById('site-hero-static');
+      if (staticSlide) {
+        staticSlide.classList.add('active');
+        staticSlide.style.visibility = 'visible';
+        staticSlide.style.pointerEvents = 'auto';
+        staticSlide.style.transform = 'translateX(0)';
+      }
+      if (reason) {
+        try {
+          helpers.reportHomepageIssue('home_hero_render_failed', {
+            message: String(reason),
+            path: '/api/home',
+            section: 'hero'
+          });
+        } catch (_) {}
+      }
+    }
+
+    function ensureStaticSlide() {
+      if (!slider || slider.querySelector('#site-hero-static')) return;
+      if (!slider.dataset.staticMarkup) return;
+      if (controls) controls.insertAdjacentHTML('beforebegin', slider.dataset.staticMarkup);
+      else slider.insertAdjacentHTML('afterbegin', slider.dataset.staticMarkup);
+    }
+
+    if (!slider) return;
+    if (!slider.dataset.staticMarkup) {
+      var initialStatic = document.getElementById('site-hero-static');
+      if (initialStatic) slider.dataset.staticMarkup = initialStatic.outerHTML;
+    }
+    if (GW._homeHeroState && typeof GW._homeHeroState.destroy === 'function') {
+      GW._homeHeroState.destroy();
+    }
+
+    function buildSlide(post, index) {
+      var cat = GW.CATEGORIES[post.category] || GW.CATEGORIES.korea;
+      var heroTags = helpers.getSortedPostTags(post);
+      var div = document.createElement('div');
+      div.className = 'site-hero site-hero-slide';
+      if (helpers.isTransparentPng(post.image_url)) div.classList.add('site-hero-png');
+      // 플레이스홀더(밝은 크림색 로고)는 흰 히어로 텍스트가 묻히므로 더 강한
+      // 스크림을 걸 수 있도록 슬라이드 자체에 신호 클래스를 단다. (CSS .site-hero.is-ph)
+      if (post.image_is_placeholder) div.classList.add('is-ph');
+      div.setAttribute('data-post-id', post.id);
+
+      var mediaMarkup = '';
+      if (post.image_url) {
+        div.classList.add('has-bg');
+        mediaMarkup =
+          '<div class="site-hero-media' + (helpers.isTransparentPng(post.image_url) ? ' is-png' : '') + (post.image_is_placeholder ? ' is-placeholder' : '') + '" aria-hidden="true" style="' + helpers.getResponsiveMediaStyle(post.media) + '">' +
+            '<div class="site-hero-media-backdrop" style="background-image:url(' + GW.escapeHtml(post.image_url) + ')"></div>' +
+            '<img class="site-hero-media-img' + (post.image_is_placeholder ? ' is-placeholder' : '') + '" src="' + GW.escapeHtml(post.image_url) + '" alt="" loading="' + (index === 0 ? 'eager' : 'lazy') + '" fetchpriority="' + (index === 0 ? 'high' : 'auto') + '" decoding="async">' +
+          '</div>';
+      }
+
+      div.innerHTML =
+        mediaMarkup +
+        '<div class="site-hero-bg-text">' + (post.subtitle ? GW.escapeHtml(post.subtitle) : '') + '</div>' +
+        '<div class="site-hero-content">' +
+          '<div class="site-hero-labels">' +
+            '<span class="category-tag ' + cat.tagClass + '">' + GW.escapeHtml(cat.label) + '</span>' +
+            heroTags.map(function (tag) {
+              return '<span class="post-kicker tag-' + GW.escapeHtml(post.category) + '-kicker">' + GW.escapeHtml(tag) + '</span>';
+            }).join('') +
+            (GW.isPostNew(post) ? '<span class="post-kicker post-kicker-new">NEW</span>' : '') +
+          '</div>' +
+          '<h2 class="site-hero-title">' + GW.escapeHtml(post.title) + '</h2>' +
+          (post.subtitle ? '<p class="site-hero-subtitle">' + GW.escapeHtml(post.subtitle) + '</p>' : '') +
+          '<div class="site-hero-actions">' +
+            '<a class="site-hero-cta" href="/post/' + post.id + '">소식 읽기 →</a>' +
+            '<button class="site-hero-share-btn" type="button" data-share-url="/post/' + post.id + '" data-share-title="' + GW.escapeHtml(post.title) + '">공유하기</button>' +
+          '</div>' +
+        '</div>';
+
+      helpers.bindShareButtons(div, '.site-hero-share-btn');
+      div.style.cursor = 'pointer';
+      div.addEventListener('click', function (event) {
+        if (Date.now() < suppressClickUntil) {
+          event.preventDefault();
+          return;
+        }
+        if (!event.target.classList.contains('site-hero-cta') && !event.target.classList.contains('site-hero-share-btn')) {
+          window.location.href = '/post/' + post.id;
+        }
+      });
+      return div;
+    }
+
+    function renderDots(count, active) {
+      var dotsEl = document.getElementById('hero-dots');
+      if (!dotsEl) return;
+      if (count <= 1) {
+        dotsEl.innerHTML = '';
+        return;
+      }
+      dotsEl.innerHTML = Array.from({ length: count }, function (_, index) {
+        return '<button type="button" class="hero-dot' + (index === active ? ' active' : '') + '" aria-label="슬라이드 ' + (index + 1) + '"' + (index === active ? ' aria-current="true"' : ' aria-current="false"') + '></button>';
+      }).join('');
+      dotsEl.querySelectorAll('.hero-dot').forEach(function (btn, index) {
+        btn.addEventListener('click', function () {
+          goTo(index, index > current ? 1 : -1);
+        });
+      });
+    }
+
+    function setAutoTimer() {
+      clearInterval(timer);
+      if (!paused && slides.length > 1) {
+        timer = setInterval(function () {
+          // 숨겨진 탭에서는 넘기지 않는다. 보이지 않는 전환에 렌더·배터리를 쓰고,
+          // 복귀 시 엉뚱한 슬라이드에서 시작하게 된다. (홈의 다른 주기 작업도
+          // 같은 규칙 — home-runtime.js 의 갱신·상대시각 타이머 참조)
+          if (document.visibilityState !== 'visible') return;
+          goTo(current + 1, 1);
+        }, intervalMs);
+      }
+    }
+
+    function syncPauseButton() {
+      var btn = document.getElementById('hero-pause-btn');
+      if (!btn) return;
+      btn.hidden = slides.length <= 1;
+      btn.textContent = paused ? '재생' : '일시정지';
+      btn.setAttribute('aria-pressed', paused ? 'true' : 'false');
+      btn.setAttribute('aria-label', paused ? '메인 슬라이드 자동 전환 다시 재생' : '메인 슬라이드 자동 전환 일시정지');
+      btn.classList.toggle('is-paused', paused);
+    }
+
+    function bindPauseButton() {
+      var btn = document.getElementById('hero-pause-btn');
+      if (!btn) return;
+      btn.onclick = function () {
+        paused = !paused;
+        syncPauseButton();
+        setAutoTimer();
+      };
+      syncPauseButton();
+    }
+
+    function bindTouchNavigation() {
+      if (!slider || slides.length <= 1) return;
+      var onTouchStart = function (event) {
+        if (!event.touches || event.touches.length !== 1) return;
+        var touch = event.touches[0];
+        touchState = {
+          startX: touch.clientX,
+          startY: touch.clientY,
+          deltaX: 0,
+          deltaY: 0,
+        };
+      };
+
+      var onTouchMove = function (event) {
+        if (!touchState || !event.touches || event.touches.length !== 1) return;
+        var touch = event.touches[0];
+        touchState.deltaX = touch.clientX - touchState.startX;
+        touchState.deltaY = touch.clientY - touchState.startY;
+      };
+
+      var onTouchEnd = function () {
+        if (!touchState) return;
+        var deltaX = touchState.deltaX;
+        var deltaY = touchState.deltaY;
+        touchState = null;
+        if (Math.abs(deltaX) < 36 || Math.abs(deltaX) < Math.abs(deltaY) || animating) return;
+        suppressClickUntil = Date.now() + 450;
+        goTo(current + (deltaX < 0 ? 1 : -1), deltaX < 0 ? 1 : -1);
+      };
+
+      slider.addEventListener('touchstart', onTouchStart, { passive: true });
+      slider.addEventListener('touchmove', onTouchMove, { passive: true });
+      slider.addEventListener('touchend', onTouchEnd);
+      GW._homeHeroState = GW._homeHeroState || {};
+      GW._homeHeroState.touch = {
+        start: onTouchStart,
+        move: onTouchMove,
+        end: onTouchEnd
+      };
+    }
+
+    function normalizeOffscreen(slide, direction) {
+      slide.classList.remove('active', 'before', 'transitioning');
+      slide.style.visibility = 'hidden';
+      slide.style.pointerEvents = 'none';
+      slide.style.transform = direction < 0 ? 'translateX(-100%)' : 'translateX(100%)';
+    }
+
+    function goTo(index, direction) {
+      if (!slider || !slides.length || animating) return;
+      var nextIndex = (index + slides.length) % slides.length;
+      if (nextIndex === current) return;
+      animating = true;
+
+      var currentSlide = slides[current];
+      var nextSlide = slides[nextIndex];
+
+      currentSlide.classList.remove('before');
+      currentSlide.classList.add('active', 'transitioning');
+      currentSlide.style.visibility = 'visible';
+      currentSlide.style.pointerEvents = 'none';
+      currentSlide.style.transform = 'translateX(0)';
+
+      nextSlide.classList.remove('active', 'before');
+      nextSlide.classList.add('transitioning');
+      nextSlide.style.visibility = 'visible';
+      nextSlide.style.pointerEvents = 'none';
+      nextSlide.style.transform = direction > 0 ? 'translateX(100%)' : 'translateX(-100%)';
+
+      nextSlide.offsetWidth;
+      requestAnimationFrame(function () {
+        currentSlide.style.transform = direction > 0 ? 'translateX(-100%)' : 'translateX(100%)';
+        nextSlide.style.transform = 'translateX(0)';
+      });
+
+      clearTimeout(transitionTimer);
+      transitionTimer = setTimeout(function () {
+        transitionTimer = null;
+        slides.forEach(function (slide, slideIndex) {
+          if (slideIndex === nextIndex) {
+            slide.classList.remove('before', 'transitioning');
+            slide.classList.add('active');
+            slide.style.visibility = 'visible';
+            slide.style.pointerEvents = 'auto';
+            slide.style.transform = 'translateX(0)';
+          } else if (slideIndex === current) {
+            slide.classList.remove('active', 'before', 'transitioning');
+            if (direction > 0) slide.classList.add('before');
+            slide.style.visibility = 'hidden';
+            slide.style.pointerEvents = 'none';
+            slide.style.transform = direction > 0 ? 'translateX(-100%)' : 'translateX(100%)';
+          } else {
+            normalizeOffscreen(slide, 1);
+          }
+        });
+        current = nextIndex;
+        animating = false;
+        renderDots(slides.length, current);
+        setAutoTimer();
+      }, 560);
+    }
+
+    try {
+      var posts = (data && Array.isArray(data.posts) ? data.posts : []).filter(function (post) {
+        return post && post.id && post.title;
+      });
+      if (!posts.length) {
+        restoreStaticHero('');
+        return;
+      }
+
+      var staticSlide = document.getElementById('site-hero-static');
+      if (staticSlide) staticSlide.remove();
+
+      posts.forEach(function (post, index) {
+        var slide = buildSlide(post, index);
+        if (index === 0) {
+          slide.classList.add('active');
+          slide.style.visibility = 'visible';
+          slide.style.pointerEvents = 'auto';
+          slide.style.transform = 'translateX(0)';
+        } else {
+          slide.style.visibility = 'hidden';
+          slide.style.pointerEvents = 'none';
+          slide.style.transform = 'translateX(100%)';
+        }
+        slider.appendChild(slide);
+        slides.push(slide);
+      });
+
+      renderDots(posts.length, 0);
+      if (controls) controls.style.display = posts.length > 1 ? '' : 'none';
+      bindTouchNavigation();
+      bindPauseButton();
+      setAutoTimer();
+      GW._homeHeroState = Object.assign(GW._homeHeroState || {}, {
+        destroy: function () {
+          clearInterval(timer);
+          timer = null;
+          clearTimeout(transitionTimer);
+          transitionTimer = null;
+          animating = false;
+          if (GW._homeHeroState && GW._homeHeroState.touch && slider) {
+            slider.removeEventListener('touchstart', GW._homeHeroState.touch.start);
+            slider.removeEventListener('touchmove', GW._homeHeroState.touch.move);
+            slider.removeEventListener('touchend', GW._homeHeroState.touch.end);
+          }
+          var pauseBtn = document.getElementById('hero-pause-btn');
+          if (pauseBtn) pauseBtn.onclick = null;
+          slider.querySelectorAll('.site-hero-slide[data-post-id]').forEach(function (node) {
+            node.remove();
+          });
+        }
+      });
+    } catch (err) {
+      try { console.warn('[GW home-hero-render-failed]', err); } catch (_) {}
+      restoreStaticHero(err && err.message ? err.message : 'hero render failed');
+    }
+  }
+
+  GW.HomeHero = {
+    renderHero: renderHero
+  };
+})();

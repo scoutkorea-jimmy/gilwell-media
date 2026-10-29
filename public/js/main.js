@@ -1,0 +1,2337 @@
+/**
+ * Gilwell Media · Shared Utilities
+ * Exposes a global GW namespace used by board.js and admin-v3.js.
+ */
+(function () {
+  'use strict';
+
+  const GW = window.GW = {};
+  GW.APP_VERSION = '00.195.00';
+  GW.ADMIN_VERSION = '03.161.00';
+  GW.ASSET_VERSION = '20261029073654';
+  GW.PALETTE = {
+    scoutingPurple: '#622599',
+    canvasWhite: '#FFFFFF',
+    midnightPurple: '#4D006E',
+    blossomPink: '#FF8DFF',
+    fireRed: '#FF5655',
+    emberOrange: '#FFAE80',
+    oceanBlue: '#0094B4',
+    riverBlue: '#82E6DE',
+    forestGreen: '#248737',
+    leafGreen: '#9FED8F'
+  };
+  // A~Z 전체 슬롯 후보. 실제 dropdown에 노출되는 글자는 buildEditorOptions가 결정 — A/B/C는
+  // 항상 노출(잠금), D~Z는 settings.editors에 이름이 등록된 경우에만 노출.
+  // 기존엔 ['A','B','C'] 만 하드코딩돼서 admin 콘솔에서 Editor.D 를 추가해도 공개 모달에 안 떴음.
+  GW.EDITOR_LETTERS = ['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z'];
+  GW.EDITOR_REQUIRED_LETTERS = ['A', 'B', 'C'];
+  GW.TAG_CATEGORIES = ['korea', 'apr', 'wosm', 'people'];
+
+  // ── Category metadata ─────────────────────────────────────
+  // ⚠ 색상 단일 원본: 아래 color 값은 서버 SSR `functions/_shared/category-meta.mjs`
+  // 의 CATEGORY_META 및 CSS `:root --tag-*` 토큰과 반드시 일치해야 한다 (빌드 단계가
+  // 없어 import 공유 불가). 배지 글자는 흰색이므로 어두운 브랜드색만 사용 — glossary 는
+  // riverBlue(흰글자 대비 실패)에서 midnightPurple 로 교정 (00.166.04).
+  GW.CATEGORIES = {
+    latest:{ label: 'Latest', tagClass: 'tag-latest', color: GW.PALETTE.midnightPurple },
+    korea: { label: 'Korea', tagClass: 'tag-korea', color: GW.PALETTE.oceanBlue },
+    apr:   { label: 'APR',   tagClass: 'tag-apr',   color: GW.PALETTE.fireRed },
+    wosm:  { label: 'WOSM',  tagClass: 'tag-wosm',  color: GW.PALETTE.forestGreen },
+    people:{ label: 'Scout People', tagClass: 'tag-people', color: GW.PALETTE.scoutingPurple },
+    glossary:{ label: 'Glossary', tagClass: 'tag-glossary', color: GW.PALETTE.midnightPurple },
+  };
+  GW.SITE_META_PAGE_KEYS = ['home', 'latest', 'jamboree16', 'korea', 'apr', 'wosm', 'wosm_members', 'people', 'glossary', 'contributors', 'search', 'ai_guide'];
+  GW.SITE_META_PAGE_LABELS = {
+    home: '홈',
+    latest: '최신 뉴스',
+    jamboree16: '제16회 한국잼버리 특별관',
+    korea: 'Korea',
+    apr: 'APR',
+    wosm: 'WOSM',
+    wosm_members: '세계연맹 회원국',
+    people: '스카우트 인물',
+    glossary: '용어집',
+    contributors: '기고자',
+    search: '검색',
+    ai_guide: 'AI 가이드',
+  };
+  GW.NAV_LABEL_ROWS = [
+    { key: 'nav.contributors', label: '도움을 주신 분들' },
+    { key: 'nav.home', label: '홈' },
+    { key: 'nav.latest', label: '최신 소식' },
+    { key: 'nav.jamboree16', label: '제16회 한국잼버리' },
+    { key: 'nav.korea', label: 'Korea' },
+    { key: 'nav.apr', label: 'APR' },
+    { key: 'nav.wosm', label: 'WOSM' },
+    { key: 'nav.wosm_members', label: '세계연맹 회원국 현황' },
+    { key: 'nav.people', label: '스카우트 인물' },
+    { key: 'nav.calendar', label: '캘린더' },
+    { key: 'nav.glossary', label: '용어집' }
+  ];
+  GW.BOARD_COPY_PAGES = [
+    { key: 'latest', label: '최신 소식', note: '/latest' },
+    { key: 'korea', label: 'Korea', note: '/korea' },
+    { key: 'apr', label: 'APR', note: '/apr' },
+    { key: 'wosm', label: 'WOSM', note: '/wosm' },
+    { key: 'people', label: '스카우트 인물', note: '/people' },
+    { key: 'glossary', label: '용어집', note: '/glossary' },
+    { key: 'calendar', label: '캘린더', note: '/calendar' },
+    { key: 'contributors', label: '도움을 주신 분들', note: '/contributors' },
+    { key: 'wosm_members', label: '세계연맹 회원국 현황', note: '/wosm-members' },
+  ];
+  GW.TAG_EDITOR_SECTIONS = [
+    { key: 'common', label: '공통 태그', desc: '모든 카테고리에서 공통으로 선택 가능한 태그입니다.' },
+    { key: 'korea', label: 'KOREA 태그', desc: 'Korea 기사에서 사용하는 글머리 태그입니다.' },
+    { key: 'apr', label: 'APR 태그', desc: 'APR 기사에서 사용하는 글머리 태그입니다.' },
+    { key: 'wosm', label: 'WOSM 태그', desc: 'WOSM 기사에서 사용하는 글머리 태그입니다.' },
+    { key: 'people', label: 'PEOPLE 태그', desc: '스카우트 인물 기사에서 사용하는 글머리 태그입니다.' }
+  ];
+  GW.PUBLIC_SEARCH_CATEGORY_KEYS = ['korea', 'apr', 'wosm', 'people'];
+
+  GW.getCategoryLabel = function (category) {
+    var safe = String(category || 'korea').trim();
+    var navKeyMap = {
+      korea: 'nav.korea',
+      apr: 'nav.apr',
+      wosm: 'nav.wosm',
+      people: 'nav.people'
+    };
+    // GW.t는 js/site-chrome.js에서만 정의되고, admin.html은 site-chrome.js를 로드하지 않아
+    // admin 컨텍스트에서는 GW.t가 undefined다. 이전에는 가드 없이 GW.t()를 호출해 TypeError가
+    // init 단계에서 throw되어 admin의 모든 _bindEl이 실행되지 않고 검색·필터 전면 불가 상태가
+    // 됐다 (homepage_issues '관리자 검색·필터 전면 불가'). 2026-04-19 수정.
+    var label = '';
+    if (navKeyMap[safe] && typeof GW.t === 'function') {
+      label = String(GW.t(navKeyMap[safe]) || '').trim();
+    }
+    if (!label) {
+      var info = GW.CATEGORIES[safe] || GW.CATEGORIES.korea;
+      label = info && info.label ? String(info.label) : String(category || '');
+    }
+    if (safe === 'apr') return label.toUpperCase();
+    if (safe === 'wosm') return label.toUpperCase();
+    if (safe === 'korea' && label) return label.charAt(0).toUpperCase() + label.slice(1);
+    return label;
+  };
+
+  GW.getMetaPageLabel = function (key) {
+    return GW.SITE_META_PAGE_LABELS[key] || String(key || '');
+  };
+
+  GW.getNavLabelRows = function () {
+    return GW.NAV_LABEL_ROWS.slice();
+  };
+
+  GW.getBoardCopyPageDefs = function () {
+    return GW.BOARD_COPY_PAGES.slice();
+  };
+
+  GW.getTagEditorSections = function () {
+    return GW.TAG_EDITOR_SECTIONS.slice();
+  };
+
+  GW.populateCategorySelect = function (selectEl, options) {
+    if (!selectEl) return;
+    var opts = options || {};
+    var keys = (opts.keys && opts.keys.slice()) || GW.PUBLIC_SEARCH_CATEGORY_KEYS.slice();
+    var selected = selectEl.value || '';
+    var html = '';
+    if (opts.includeAll) {
+      html += '<option value="">' + GW.escapeHtml(opts.allLabel || '전체 카테고리') + '</option>';
+    }
+    html += keys.map(function (key) {
+      return '<option value="' + GW.escapeHtml(key) + '">' + GW.escapeHtml(GW.getCategoryLabel(key)) + '</option>';
+    }).join('');
+    selectEl.innerHTML = html;
+    selectEl.value = selected;
+  };
+
+  // ── Date formatting ───────────────────────────────────────
+  function _getKstDateParts(dateStr) {
+    if (!dateStr) return null;
+    const normalized = String(dateStr).trim().replace(' ', 'T');
+    const withZone = /Z$|[+-]\d{2}:\d{2}$/.test(normalized) ? normalized : normalized + '+00:00';
+    const d = new Date(withZone);
+    if (isNaN(d.getTime())) return null;
+    const parts = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Asia/Seoul',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false,
+    }).formatToParts(d);
+    const out = {};
+    parts.forEach(function (part) {
+      if (part.type !== 'literal') out[part.type] = part.value;
+    });
+    return out;
+  }
+
+  /** Format an ISO date string as Korean: 2026년 3월 12일 */
+  GW.formatDate = function (dateStr) {
+    var parts = _getKstDateParts(dateStr);
+    if (!parts) return dateStr || '';
+    return Number(parts.year) + '년 ' + Number(parts.month) + '월 ' + Number(parts.day) + '일';
+  };
+
+  GW.formatDateTime = function (dateStr) {
+    var parts = _getKstDateParts(dateStr);
+    if (!parts) return dateStr || '';
+    return [
+      parts.year + '년',
+      parts.month + '월',
+      parts.day + '일',
+      parts.hour + '시',
+      parts.minute + '분',
+      parts.second + '초',
+      'KST'
+    ].join(' ');
+  };
+
+  GW.formatDateTimeCompactKst = function (dateStr) {
+    var parts = _getKstDateParts(dateStr);
+    if (!parts) return dateStr || '';
+    return parts.year + '-' + parts.month + '-' + parts.day + ' ' + parts.hour + ':' + parts.minute + ' KST';
+  };
+
+  GW.formatNumber = function (value) {
+    return new Intl.NumberFormat('ko-KR').format(Number(value || 0));
+  };
+
+  /** Return YYYY-MM-DD using Korea Standard Time for date inputs. */
+  GW.getKstDateInputValue = function () {
+    return new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Asia/Seoul',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).format(new Date());
+  };
+
+  GW.getKstDateTimeInputValue = function () {
+    var now = new Date(Date.now() + 9 * 60 * 60 * 1000);
+    function pad(value) {
+      return String(value).padStart(2, '0');
+    }
+    return [
+      now.getUTCFullYear(),
+      '-',
+      pad(now.getUTCMonth() + 1),
+      '-',
+      pad(now.getUTCDate()),
+      'T',
+      pad(now.getUTCHours()),
+      ':',
+      pad(now.getUTCMinutes())
+    ].join('');
+  };
+
+  GW.toDatetimeLocalValue = function (dateStr) {
+    if (!dateStr) return '';
+    var normalized = String(dateStr).trim().replace(' ', 'T');
+    if (!normalized) return '';
+    var withZone = /Z$|[+-]\d{2}:\d{2}$/.test(normalized) ? normalized : normalized + '+09:00';
+    var date = new Date(withZone);
+    if (isNaN(date.getTime())) {
+      return normalized.slice(0, 16);
+    }
+    function pad(value) {
+      return String(value).padStart(2, '0');
+    }
+    return [
+      date.getFullYear(),
+      '-',
+      pad(date.getMonth() + 1),
+      '-',
+      pad(date.getDate()),
+      'T',
+      pad(date.getHours()),
+      ':',
+      pad(date.getMinutes())
+    ].join('');
+  };
+
+  GW.normalizePublishAtValue = function (value) {
+    var trimmed = String(value || '').trim();
+    if (!trimmed) return '';
+    if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+      return trimmed + ' 12:00:00';
+    }
+    if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(trimmed)) {
+      return trimmed.replace('T', ' ') + ':00';
+    }
+    if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(trimmed)) {
+      return trimmed + ':00';
+    }
+    if (/^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}$/.test(trimmed)) {
+      return trimmed.replace('T', ' ');
+    }
+    return '';
+  };
+
+  GW.isTodayKst = function (dateStr) {
+    if (!dateStr) return false;
+    var parts = _getKstDateParts(dateStr);
+    if (!parts) return false;
+    var source = parts.year + '-' + parts.month + '-' + parts.day;
+    return source === GW.getKstDateInputValue();
+  };
+
+  GW.getPostPublicDate = function (post) {
+    if (!post || typeof post !== 'object') return '';
+    var pub = post.publish_at ? String(post.publish_at).trim() : '';
+    if (pub) {
+      // 서버 규칙(functions/_shared/post-public-date.js): 타임존 표기가 없는
+      // publish_at 은 이미 KST 벽시계 값으로 저장된다. 클라이언트 날짜 헬퍼는
+      // 타임존 없는 문자열을 UTC(+00:00)로 가정하므로, 그대로 두면 +9h 밀려
+      // "오늘" 글이 NEW 로 잡히지 않고 표시 날짜도 하루 어긋난다.
+      // → 타임존이 없으면 +09:00 을 명시해 KST 임을 알린다. created_at(UTC)은 변형 없음.
+      var iso = pub.replace(' ', 'T');
+      if (!/Z$|[+-]\d{2}:\d{2}$/.test(iso)) return iso + '+09:00';
+      return pub;
+    }
+    return post.created_at || '';
+  };
+
+  GW.formatPostDate = function (post) {
+    return GW.formatDate(GW.getPostPublicDate(post));
+  };
+
+  GW.getPostDateMillis = function (post) {
+    var raw = GW.getPostPublicDate(post);
+    if (!raw) return 0;
+    var normalized = String(raw).trim().replace(' ', 'T');
+    var withZone = /Z$|[+-]\d{2}:\d{2}$/.test(normalized) ? normalized : normalized + '+00:00';
+    var d = new Date(withZone);
+    var t = d.getTime();
+    return isNaN(t) ? 0 : t;
+  };
+
+  /**
+   * Convert a millisecond timestamp into a Korean relative-time string.
+   * Returns '' when the gap is older than the relative window so callers
+   * can fall back to an absolute date.
+   */
+  GW.formatRelativeTime = function (timestampMs, opts) {
+    if (!timestampMs) return '';
+    var now = (opts && opts.now) ? opts.now : Date.now();
+    var diff = now - timestampMs;
+    if (diff < 0) diff = 0;
+    var sec = Math.floor(diff / 1000);
+    if (sec < 60) return '방금 전';
+    var min = Math.floor(sec / 60);
+    if (min < 60) return min + '분 전';
+    var hr = Math.floor(min / 60);
+    if (hr < 24) return hr + '시간 전';
+    var day = Math.floor(hr / 24);
+    if (day === 1) return '어제';
+    if (day < 7) return day + '일 전';
+    return '';
+  };
+
+  GW.formatPostDateRelative = function (post) {
+    var ms = GW.getPostDateMillis(post);
+    var rel = GW.formatRelativeTime(ms);
+    if (rel) return rel;
+    return GW.formatDate(GW.getPostPublicDate(post));
+  };
+
+  /**
+   * Render a post date as a <time> element. Visible label flips to a relative
+   * string ("3분 전", "어제") when within 7 days; falls back to the absolute
+   * Korean date otherwise. The full timestamp stays available via title for
+   * hover/screen readers, and `datetime` carries the ISO value for assistive
+   * tech and SEO.
+   */
+  GW.renderPostDateLabel = function (post) {
+    var raw = GW.getPostPublicDate(post);
+    if (!raw) return '';
+    var ms = GW.getPostDateMillis(post);
+    var rel = ms ? GW.formatRelativeTime(ms) : '';
+    var absolute = GW.formatDate(raw);
+    var compact = GW.formatDateTimeCompactKst(raw);
+    var label = rel || absolute;
+    var iso = '';
+    if (ms) {
+      try { iso = new Date(ms).toISOString(); } catch (_) {}
+    }
+    var attrs = ' class="post-date' + (rel ? ' is-relative' : '') + '"';
+    if (iso) attrs += ' datetime="' + GW.escapeHtml(iso) + '"';
+    var titleText = rel ? (absolute + ' · ' + compact) : compact;
+    attrs += ' title="' + GW.escapeHtml(titleText) + '"';
+    return '<time' + attrs + '>' + GW.escapeHtml(label) + '</time>';
+  };
+
+  GW.isPostNew = function (post) {
+    return GW.isTodayKst(GW.getPostPublicDate(post));
+  };
+
+  GW.hasRealPostImage = function (post) {
+    return !!(post && (post.image_has_real_asset || (!post.image_is_placeholder && post.image_url)));
+  };
+
+  // ── Changelog/release 분류 (공개 KMS 뷰어 js/kms.js · 관리자 버전기록 js/admin-v3.js 공용) ──
+  // scope 추론 / scope 라벨 / 날짜 ISO 추출은 양쪽 surface 가 동일 로직을 썼다(과거 복제).
+  // 단일 원본으로 합쳐 분류 규칙 변경 시 한 곳만 고치면 되게 한다. type 추론·필터 술어는
+  // surface 별 의미(관리자 Hotfix 휴리스틱, scope='all' vs 'both' 등)가 달라 각자 유지한다.
+  GW.inferReleaseScope = function (item) {
+    var raw = String(item && item.scope || '').trim().toLowerCase();
+    if (raw === 'site' || raw === 'admin' || raw === 'both') return raw;
+    var version = String(item && item.version || '').trim();
+    if (/^03\./.test(version) || /^3\./.test(version)) return 'admin';
+    if (/^00\./.test(version) || /^0\./.test(version)) return 'site';
+    return 'both';
+  };
+  GW.releaseScopeLabel = function (scope) {
+    return scope === 'site' ? 'Site' : scope === 'admin' ? 'Admin' : 'Site + Admin';
+  };
+  GW.releaseDateIso = function (item) {
+    var raw = String(item && (item.released_at || item.date) || '');
+    var m = raw.match(/(\d{4}-\d{2}-\d{2})/);
+    return m ? m[1] : '';
+  };
+
+  GW.buildEditorOptions = function (editors) {
+    var src = editors || {};
+    return GW.EDITOR_LETTERS.filter(function (l) {
+      // A/B/C 는 잠금 — 이름 없어도 항상 노출. 그 외(D~Z)는 이름이 등록된 슬롯만.
+      if (GW.EDITOR_REQUIRED_LETTERS.indexOf(l) >= 0) return true;
+      return !!(src[l] && String(src[l]).trim());
+    }).map(function (l) {
+      var name = (src[l] || '').trim();
+      var label = 'Editor ' + l + (name ? ' — ' + name : '');
+      return '<option value="Editor.' + l + '">' + GW.escapeHtml(label) + '</option>';
+    }).join('');
+  };
+
+  GW.validatePostEditorOutput = function (outputData, opts) {
+    var blocks = (outputData && outputData.blocks) || [];
+    var allowEmpty = !!(opts && opts.allowEmpty);
+    if (!blocks.length && !allowEmpty) {
+      return { ok: false, error: '내용을 입력해주세요' };
+    }
+    var imageCount = blocks.filter(function (b) { return b.type === 'image'; }).length;
+    if (imageCount > 10) {
+      return { ok: false, error: '본문 이미지는 최대 10개까지 가능합니다' };
+    }
+    return { ok: true };
+  };
+
+  GW.getYouTubeEmbedUrl = function (value) {
+    if (!value || typeof value !== 'string') return '';
+    var trimmed = value.trim();
+    if (!trimmed) return '';
+    var parsed;
+    try {
+      parsed = new URL(trimmed);
+    } catch (_) {
+      return '';
+    }
+    var host = parsed.hostname.replace(/^www\./, '').toLowerCase();
+    var videoId = '';
+    if (host === 'youtube.com' || host === 'm.youtube.com' || host === 'youtube-nocookie.com') {
+      if (parsed.pathname === '/watch') videoId = parsed.searchParams.get('v') || '';
+      else if (parsed.pathname.indexOf('/shorts/') === 0 || parsed.pathname.indexOf('/embed/') === 0) videoId = parsed.pathname.split('/')[2] || '';
+    } else if (host === 'youtu.be') {
+      videoId = parsed.pathname.split('/')[1] || '';
+    }
+    if (!/^[A-Za-z0-9_-]{11}$/.test(videoId)) return '';
+    return 'https://www.youtube-nocookie.com/embed/' + videoId + '?rel=0';
+  };
+
+  GW.buildYouTubeEmbed = function (value, title) {
+    var embedUrl = GW.getYouTubeEmbedUrl(value);
+    if (!embedUrl) return '';
+    return '<div class="youtube-embed-wrap">' +
+      '<iframe class="youtube-embed" src="' + GW.escapeHtml(embedUrl) + '" title="' + GW.escapeHtml((title || '유튜브 영상') + ' 영상') + '"' +
+      ' loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>' +
+    '</div>';
+  };
+
+  GW.normalizeTagSettings = function (raw) {
+    var normalized = {
+      common: [],
+      categories: {
+        korea: [],
+        apr: [],
+        wosm: [],
+        people: [],
+      },
+    };
+
+    function sanitize(items) {
+      var seen = new Set();
+      return (Array.isArray(items) ? items : [])
+        .map(function (item) { return String(item || '').trim(); })
+        .filter(function (item) {
+          if (!item || seen.has(item)) return false;
+          seen.add(item);
+          return true;
+        })
+        .slice(0, 100);
+    }
+
+    if (Array.isArray(raw)) {
+      normalized.common = sanitize(raw);
+      return normalized;
+    }
+
+    if (raw && typeof raw === 'object') {
+      normalized.common = sanitize(raw.common);
+      GW.TAG_CATEGORIES.forEach(function (category) {
+        normalized.categories[category] = sanitize(raw.categories && raw.categories[category]);
+      });
+    }
+
+    return normalized;
+  };
+
+  GW.getTagsForCategory = function (raw, category) {
+    var normalized = GW.normalizeTagSettings(raw);
+    var chosen = GW.TAG_CATEGORIES.indexOf(category) >= 0 ? category : 'korea';
+    var seen = new Set();
+    return normalized.common
+      .concat(normalized.categories[chosen] || [])
+      .filter(function (item) {
+        if (seen.has(item)) return false;
+        seen.add(item);
+        return true;
+      });
+  };
+
+  GW.uniqueTagStrings = function (items) {
+    var seen = new Set();
+    return (Array.isArray(items) ? items : [])
+      .map(function (item) { return String(item || '').trim(); })
+      .filter(function (item) {
+        if (!item || seen.has(item)) return false;
+        seen.add(item);
+        return true;
+      });
+  };
+
+  GW.addManagedTagToCategory = function (tagValue, category) {
+    var value = String(tagValue || '').trim();
+    var target = GW.TAG_CATEGORIES.indexOf(category) >= 0 ? category : 'korea';
+    if (!value) {
+      return Promise.reject(new Error('태그명을 입력해주세요'));
+    }
+    if (!(GW.getToken && GW.getToken())) {
+      return Promise.reject(new Error('관리자 로그인이 필요합니다'));
+    }
+
+    // 세션을 서버에서 재확인하여 admin_role 캐시가 비어있거나 오래됐을 때에도
+    // Full Access 관리자는 차단되지 않도록 보정. (post-page.js _postEdit와 동일 패턴)
+    var sessionCheck = (GW.verifyAdminSession && GW.getAdminRole && GW.getAdminRole() !== 'full')
+      ? GW.verifyAdminSession({ force: true })
+      : Promise.resolve(true);
+
+    return sessionCheck.then(function (ok) {
+      if (ok === false) {
+        throw new Error('관리자 세션이 만료되었습니다. 다시 로그인해주세요.');
+      }
+      if (GW.getAdminRole && GW.getAdminRole() !== 'full') {
+        throw new Error('이 계정은 태그 추가 권한이 없습니다');
+      }
+      return fetch('/api/settings/tags', { cache: 'no-store' });
+    })
+      .then(function (response) {
+        if (!response.ok) throw new Error('태그 설정을 불러오지 못했습니다');
+        return response.json();
+      })
+      .then(function (data) {
+        var settings = GW.normalizeTagSettings({
+          common: data && data.common,
+          categories: data && data.categories,
+        });
+        var available = GW.getTagsForCategory(settings, target);
+        if (available.indexOf(value) >= 0) {
+          return {
+            created: false,
+            selectedTag: value,
+            common: settings.common,
+            categories: settings.categories,
+          };
+        }
+        settings.categories[target] = GW.uniqueTagStrings((settings.categories[target] || []).concat(value));
+        return GW.apiFetch('/api/settings/tags', {
+          method: 'PUT',
+          body: JSON.stringify({
+            common: settings.common,
+            categories: settings.categories,
+          }),
+        }).then(function (saved) {
+          return {
+            created: true,
+            selectedTag: value,
+            common: saved && saved.common,
+            categories: saved && saved.categories,
+          };
+        });
+      });
+  };
+
+  /** Set today's date + live clock in the masthead element. */
+  GW.setMastheadDate = function (id) {
+    const el = document.getElementById(id || 'today-date');
+    if (!el) return;
+    const days = ['일', '월', '화', '수', '목', '금', '토'];
+    const resolvedTimeZone = (function () {
+      try {
+        return Intl.DateTimeFormat().resolvedOptions().timeZone || undefined;
+      } catch (_) {
+        return undefined;
+      }
+    })();
+
+    function getLocalParts(date) {
+      try {
+        const formatter = new Intl.DateTimeFormat('en-CA', {
+          timeZone: resolvedTimeZone,
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+          hour12: false,
+        });
+        const parts = formatter.formatToParts(date);
+        const map = {};
+        parts.forEach(function (part) {
+          if (part.type !== 'literal') map[part.type] = part.value;
+        });
+        return {
+          year: map.year,
+          month: map.month,
+          day: map.day,
+          hour: map.hour,
+          minute: map.minute,
+          second: map.second,
+        };
+      } catch (_) {
+        return {
+          year: String(date.getFullYear()),
+          month: String(date.getMonth() + 1).padStart(2, '0'),
+          day: String(date.getDate()).padStart(2, '0'),
+          hour: String(date.getHours()).padStart(2, '0'),
+          minute: String(date.getMinutes()).padStart(2, '0'),
+          second: String(date.getSeconds()).padStart(2, '0'),
+        };
+      }
+    }
+
+    function update() {
+      const d = new Date();
+      const parts = getLocalParts(d);
+      el.innerHTML =
+        `${parts.year}년 ${Number(parts.month)}월 ${Number(parts.day)}일 (${days[d.getDay()]})<span class="masthead-time">${parts.hour}:${parts.minute}:${parts.second}</span>`;
+    }
+    update();
+    setInterval(update, 1000);
+  };
+
+  // ── XSS protection ────────────────────────────────────────
+  /** Escape HTML special characters to prevent XSS. */
+  GW.escapeHtml = function (str) {
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  };
+
+  GW.buildImageCaption = function (value) {
+    var text = typeof value === 'string' ? value.trim() : '';
+    if (!text) return '';
+    return '<p class="post-image-caption">' + GW.escapeHtml(text) + '</p>';
+  };
+
+  // ── 대표 이미지 프레이밍 (목차/리스트 썸네일 초점) ─────────────────
+  // post.image_frame = { x:0-100, y:0-100 } (서버가 정규화). 중앙(50/50)이거나
+  // 없으면 빈 문자열 → 기본 object-position(50% 50%) 유지. 비중앙일 때만 inline
+  // object-position 을 내보내 고정 16:9 썸네일에서 보이는 부분을 옮긴다.
+  // OG 공유 이미지(/api/og-image/:id)와 동일 초점을 사용한다.
+  GW.normalizeImageFrame = function (raw) {
+    var obj = raw;
+    if (typeof raw === 'string') {
+      var t = raw.trim();
+      if (!t) return null;
+      try { obj = JSON.parse(t); } catch (e) { return null; }
+    }
+    if (!obj || typeof obj !== 'object') return null;
+    if (obj.x == null && obj.y == null) return null;
+    function pct(v) {
+      var n = Number(v);
+      if (!isFinite(n)) return 50;
+      return Math.max(0, Math.min(100, Math.round(n)));
+    }
+    return { x: pct(obj.x), y: pct(obj.y) };
+  };
+
+  GW.thumbFrameStyle = function (post) {
+    var frame = post ? GW.normalizeImageFrame(post.image_frame) : null;
+    if (!frame) return '';
+    if (frame.x === 50 && frame.y === 50) return '';
+    return 'object-position:' + frame.x + '% ' + frame.y + '%;';
+  };
+
+  // ── IME-safe 입력 헬퍼 ───────────────────────────────────────
+  // 한글 IME 조합 중 Enter/쉼표 키는 "조합 중인 마지막 음절을 확정"하는 키스트로크다.
+  // 핸들러가 그 Enter 에서 preventDefault+동작하거나, autocomplete 가 조합 중 .value 를
+  // 다시 쓰면 확정된 마지막 음절이 한 번 더 반영되어 "마지막 글자 반복" 버그가 난다.
+  // chatbot.js 의 검증된 패턴(compositionstart/end + isComposing + keyCode 229)을 단일화.
+
+  // 입력 요소가 현재 IME 조합 중인지 (이벤트 또는 요소 기준). autocomplete 의 input 핸들러가
+  // 조합 중 value 재기록/네트워크 요청을 건너뛰도록 early-return 용도.
+  GW.isImeComposing = function (eOrInput) {
+    if (!eOrInput) return false;
+    if (typeof eOrInput.isComposing === 'boolean' && eOrInput.isComposing) return true;
+    if (eOrInput.keyCode === 229) return true;
+    var el = eOrInput.target || eOrInput;
+    return !!(el && el.dataset && el.dataset.imeComposing === '1');
+  };
+
+  // ── Editor.js 설정 빌더 (단일 원본) ─────────────────────────
+  // board-write/post-page/admin 이 동일하게 쓰던 EditorJS tools 설정을 통합.
+  // holder/placeholder 만 화면별로 다르고, admin 은 이미지 블록 미포함(includeImage:false) +
+  // onChange(draft/stats) 사용 — 기존 동작을 그대로 보존(구조만 통합, 권한/기능 변경 없음).
+  GW.buildEditorConfig = function (opts) {
+    opts = opts || {};
+    var tools = {
+      paragraph: { inlineToolbar: true, config: { preserveBlank: true } },
+      header: { class: window.Header, config: { levels: [2, 3, 4], defaultLevel: 2 } },
+      list:   { class: window.List,   inlineToolbar: true },
+      quote:  { class: window.Quote,  inlineToolbar: true },
+    };
+    if (opts.includeImage !== false && GW.makeEditorImageTool) {
+      tools.image = { class: GW.makeEditorImageTool() };
+    }
+    var cfg = {
+      holder: opts.holder,
+      placeholder: opts.placeholder || '내용을 작성하세요...',
+      tools: tools,
+    };
+    if (typeof opts.onChange === 'function') cfg.onChange = opts.onChange;
+    return cfg;
+  };
+
+  // ── 태그 pill 다중선택 (단일 원본, 무상태) ──────────────────
+  // '없음' + 카테고리 태그 pill 을 렌더하고 클릭을 바인딩한다. 선택 상태는 호출자가 소유하며
+  // (board-write/post-page/admin 각자 변수), 헬퍼는 isActive()/onToggle() 로만 통신 → desync 없음.
+  // opts: { tags:[string|{label,value}], pillClass, isActive(value)->bool, onToggle(value) } (value '' = 없음)
+  GW.renderTagPills = function (container, opts) {
+    if (!container) return;
+    opts = opts || {};
+    var cls = opts.pillClass || 'tag-pill';
+    var tags = opts.tags || [];
+    var isActive = typeof opts.isActive === 'function' ? opts.isActive : function () { return false; };
+    function btn(value, label, active) {
+      return '<button type="button" class="' + cls + (active ? ' active' : '') +
+        '" data-tag="' + GW.escapeHtml(value) + '">' + GW.escapeHtml(label) + '</button>';
+    }
+    var anyActive = false;
+    var body = '';
+    tags.forEach(function (t) {
+      var label = typeof t === 'string' ? t : (t.label || t.value || '');
+      var value = typeof t === 'string' ? t : (t.value || t.label || '');
+      var on = isActive(value);
+      if (on) anyActive = true;
+      body += btn(value, label, on);
+    });
+    container.innerHTML = btn('', '없음', !anyActive) + body;
+    container.querySelectorAll('.' + cls).forEach(function (b) {
+      b.addEventListener('click', function () {
+        if (typeof opts.onToggle === 'function') opts.onToggle(b.dataset.tag || '');
+      });
+    });
+  };
+
+  // 렌더된 pill 의 active 클래스만 현재 선택에 맞춰 갱신(재렌더 없이). isActive(value)->bool.
+  GW.syncTagPillsActive = function (container, pillClass, isActive) {
+    if (!container) return;
+    var cls = pillClass || 'tag-pill';
+    isActive = typeof isActive === 'function' ? isActive : function () { return false; };
+    var anyActive = false;
+    var pills = container.querySelectorAll('.' + cls);
+    pills.forEach(function (b) {
+      var t = b.dataset.tag || '';
+      if (t !== '' && isActive(t)) anyActive = true;
+    });
+    pills.forEach(function (b) {
+      var t = b.dataset.tag || '';
+      b.classList.toggle('active', t === '' ? !anyActive : isActive(t));
+    });
+  };
+
+  // ── 이미지 선택+최적화 (단일 원본) ──────────────────────────
+  // 파일 인풋 생성 → 최적화(GW.optimizeImageFile, 없으면 FileReader 폴백) → dataUrl 배열.
+  // board-write/post-page/admin 의 커버·갤러리 업로드 보일러플레이트를 통합. 선택 취소 시 [] 반환.
+  GW.pickAndOptimizeImages = function (opts) {
+    opts = opts || {};
+    var optOpts = { maxW: opts.maxW || 1600, maxH: opts.maxH || 1600, quality: opts.quality || 0.82 };
+    function toDataUrl(file) {
+      if (GW.optimizeImageFile) {
+        return GW.optimizeImageFile(file, optOpts).then(function (r) { return r.dataUrl; });
+      }
+      return new Promise(function (res, rej) {
+        var rd = new FileReader();
+        rd.onload = function () { res(rd.result); };
+        rd.onerror = function () { rej(new Error('이미지 읽기 실패')); };
+        rd.readAsDataURL(file);
+      });
+    }
+    return new Promise(function (resolve, reject) {
+      var input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'image/*';
+      if (opts.multiple) input.multiple = true;
+      input.onchange = function () {
+        var files = Array.prototype.slice.call(input.files || []);
+        if (!files.length) { resolve([]); return; }
+        files.reduce(function (chain, file) {
+          return chain.then(function (acc) {
+            return toDataUrl(file).then(function (u) { acc.push(u); return acc; });
+          });
+        }, Promise.resolve([])).then(resolve, reject);
+      };
+      input.click();
+    });
+  };
+
+  // ── OSM 지오코딩 (단일 원본) ─────────────────────────────────
+  // Nominatim 검색 → {lat, lon, bbox, embedSrc, displayName} | null.
+  // board-write/post-page/admin 의 3중 복제(지오코딩+bbox+embed URL)를 통합.
+  // 브라우저는 User-Agent 를 forbidden header 로 무시·차단하므로 보내지 않는다(기존엔 무의미하게 설정).
+  GW.geocodeOsm = function (addr) {
+    var q = String(addr == null ? '' : addr).trim();
+    if (!q) return Promise.resolve(null);
+    return fetch('https://nominatim.openstreetmap.org/search?q=' + encodeURIComponent(q) + '&format=json&limit=1', {
+      headers: { 'Accept-Language': 'ko,en' }
+    })
+      .then(function (r) { return r.json(); })
+      .then(function (results) {
+        if (!results || !results.length) return null;
+        var loc = results[0];
+        var lat = parseFloat(loc.lat), lon = parseFloat(loc.lon);
+        if (!isFinite(lat) || !isFinite(lon)) return null;
+        var d = 0.01;
+        var bbox = (lon - d) + ',' + (lat - d) + ',' + (lon + d) + ',' + (lat + d);
+        return {
+          lat: lat, lon: lon, bbox: bbox,
+          embedSrc: 'https://www.openstreetmap.org/export/embed.html?bbox=' + bbox + '&layer=mapnik&marker=' + lat + ',' + lon,
+          displayName: loc.display_name || q
+        };
+      });
+  };
+
+  // ── 모달 포커스 트랩 ─────────────────────────────────────────
+  // 열린 모달 안에서 Tab/Shift+Tab 이 배경으로 새지 않도록 가두고, 닫을 때 직전 포커스로 복귀.
+  // 사용: var trap = GW.createFocusTrap(modalEl); trap.activate(); ... trap.release();
+  GW.createFocusTrap = function (modalEl) {
+    if (!modalEl) return { activate: function () {}, release: function () {} };
+    var prevFocus = null;
+    var SEL = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+    function focusables() {
+      return Array.prototype.filter.call(modalEl.querySelectorAll(SEL), function (el) {
+        return el.offsetParent !== null || el === document.activeElement;
+      });
+    }
+    function onKey(e) {
+      if (e.key !== 'Tab') return;
+      var list = focusables();
+      if (!list.length) return;
+      var first = list[0], last = list[list.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    }
+    return {
+      activate: function () {
+        prevFocus = document.activeElement;
+        modalEl.setAttribute('aria-modal', 'true');
+        if (!modalEl.getAttribute('role')) modalEl.setAttribute('role', 'dialog');
+        modalEl.addEventListener('keydown', onKey);
+        var list = focusables();
+        if (list.length) list[0].focus();
+      },
+      release: function () {
+        modalEl.removeEventListener('keydown', onKey);
+        modalEl.removeAttribute('aria-modal');
+        if (prevFocus && typeof prevFocus.focus === 'function') {
+          try { prevFocus.focus(); } catch (_) {}
+        }
+        prevFocus = null;
+      },
+    };
+  };
+
+  // input 요소의 Enter(확정)에 IME-안전 가드를 건다. onCommit 은 조합이 끝난 진짜 Enter 에서만 실행.
+  // opts.allowShiftNewline=true 면 Shift+Enter 는 통과(줄바꿈). opts.commitKeys 로 추가 확정키(예: ',') 지정.
+  GW.bindImeSafeEnter = function (input, onCommit, opts) {
+    if (!input || typeof onCommit !== 'function') return;
+    opts = opts || {};
+    var commitKeys = opts.commitKeys || ['Enter'];
+    input.addEventListener('compositionstart', function () { input.dataset.imeComposing = '1'; });
+    input.addEventListener('compositionend', function () { input.dataset.imeComposing = ''; });
+    input.addEventListener('keydown', function (e) {
+      if (commitKeys.indexOf(e.key) === -1) return;
+      if (e.key === 'Enter' && opts.allowShiftNewline && e.shiftKey) return;
+      // 조합 중이면(=마지막 음절 확정 키) 핸들러를 실행하지 않는다.
+      if (e.isComposing || e.keyCode === 229 || input.dataset.imeComposing === '1') return;
+      e.preventDefault();
+      onCommit(e);
+    });
+  };
+
+  GW.syncBuildVersion = function () {
+    var siteVer  = 'V' + GW.APP_VERSION;
+    var adminVer = 'V' + GW.ADMIN_VERSION;
+    document.querySelectorAll('.site-build-version').forEach(function (el) {
+      el.textContent = siteVer;
+    });
+    document.querySelectorAll('.admin-build-version').forEach(function (el) {
+      el.textContent = adminVer;
+    });
+  };
+
+  // ── New-build update banner ──────────────────────────────────────────────
+  // Polls /api/version on visibility change + every 5 minutes. If the server
+  // reports a different SITE_VERSION (admin pages compare ADMIN_VERSION
+  // instead), a fixed top-right banner offers a one-click refresh.
+  //
+  // Dismissal is per-target-version: hitting × hides only THIS specific new
+  // version. When yet another release ships, the banner reappears.
+  GW._versionBannerOpts = null;
+  GW._versionBannerLoaded = '';
+  GW._versionBannerDismissed = '';
+  GW._versionBannerNewVersion = '';
+  GW._versionBannerNavBound = false;
+
+  function _readDismissedVersion(target) {
+    try {
+      var raw = window.localStorage && window.localStorage.getItem('gw_build_dismissed_' + target);
+      return String(raw || '');
+    } catch (_) { return ''; }
+  }
+  function _writeDismissedVersion(target, version) {
+    try {
+      if (window.localStorage) window.localStorage.setItem('gw_build_dismissed_' + target, version);
+    } catch (_) {}
+  }
+
+  function _getVersionRefreshUrl(rawUrl, version) {
+    try {
+      var url = new URL(rawUrl || window.location.href, window.location.href);
+      url.searchParams.set('_gwv', String(version || Date.now()));
+      return url.toString();
+    } catch (_) {
+      return rawUrl || window.location.href;
+    }
+  }
+
+  function _stripVersionRefreshParam() {
+    try {
+      var url = new URL(window.location.href);
+      if (!url.searchParams.has('_gwv') || !window.history || !window.history.replaceState) return;
+      url.searchParams.delete('_gwv');
+      window.history.replaceState(window.history.state, document.title, url.pathname + url.search + url.hash);
+    } catch (_) {}
+  }
+
+  function _isVersionRefreshNavigation(event, link) {
+    if (!link || !GW._versionBannerNewVersion) return false;
+    if (GW._versionBannerOpts && GW._versionBannerOpts.target !== 'site') return false;
+    if (event && (event.defaultPrevented || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0)) return false;
+    if (link.target && link.target !== '_self') return false;
+    if (link.hasAttribute('download')) return false;
+    var href = link.getAttribute('href') || '';
+    if (!href || href.charAt(0) === '#' || /^(mailto:|tel:|javascript:)/i.test(href)) return false;
+    try {
+      var url = new URL(href, window.location.href);
+      if (url.origin !== window.location.origin) return false;
+      if (url.pathname === window.location.pathname && url.search === window.location.search && url.hash) return false;
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function _bindVersionRefreshNavigation() {
+    if (GW._versionBannerNavBound || typeof document === 'undefined') return;
+    GW._versionBannerNavBound = true;
+    document.addEventListener('click', function (event) {
+      var link = event.target && event.target.closest ? event.target.closest('a[href]') : null;
+      if (!_isVersionRefreshNavigation(event, link)) return;
+      event.preventDefault();
+      window.location.assign(_getVersionRefreshUrl(link.href, GW._versionBannerNewVersion));
+    }, true);
+  }
+
+  function _ensureBannerEl() {
+    var el = document.getElementById('gw-update-banner');
+    if (el) return el;
+    el = document.createElement('div');
+    el.id = 'gw-update-banner';
+    el.className = 'gw-update-banner';
+    el.setAttribute('role', 'status');
+    el.setAttribute('aria-live', 'polite');
+    el.hidden = true;
+    el.innerHTML =
+      '<span class="gw-update-banner-badge" aria-hidden="true">NEW</span>' +
+      '<div class="gw-update-banner-body">' +
+        '<strong class="gw-update-banner-title">새 버전이 배포되었습니다</strong>' +
+        '<span class="gw-update-banner-version" id="gw-update-banner-version"></span>' +
+      '</div>' +
+      '<button type="button" class="gw-update-banner-refresh" id="gw-update-banner-refresh">새로고침</button>' +
+      '<button type="button" class="gw-update-banner-close" id="gw-update-banner-close" aria-label="알림 닫기">×</button>';
+    document.body.appendChild(el);
+    el.querySelector('#gw-update-banner-refresh').addEventListener('click', function () {
+      var nextUrl = _getVersionRefreshUrl(window.location.href, GW._versionBannerNewVersion || GW._versionBannerDismissed);
+      try { window.location.assign(nextUrl); } catch (_) { window.location.href = nextUrl; }
+    });
+    el.querySelector('#gw-update-banner-close').addEventListener('click', function () {
+      if (GW._versionBannerOpts && GW._versionBannerDismissed) {
+        _writeDismissedVersion(GW._versionBannerOpts.target, GW._versionBannerDismissed);
+      }
+      el.hidden = true;
+      el.classList.remove('is-visible');
+    });
+    return el;
+  }
+
+  function _showVersionBanner(newVersion) {
+    var el = _ensureBannerEl();
+    var verEl = el.querySelector('#gw-update-banner-version');
+    if (verEl) verEl.textContent = 'V' + newVersion;
+    GW._versionBannerDismissed = newVersion;
+    el.hidden = false;
+    // next frame to allow CSS transition
+    requestAnimationFrame(function () { el.classList.add('is-visible'); });
+  }
+
+  function _readPageAssetToken() {
+    try {
+      var script = document.querySelector('script[src*="/js/main.js?v="]');
+      var match = script && script.getAttribute('src').match(/[?&]v=([^&#]+)/);
+      return match ? match[1] : '';
+    } catch (_) {
+      return '';
+    }
+  }
+
+  function _checkVersionOnce() {
+    var opts = GW._versionBannerOpts;
+    if (!opts || !opts.target) return;
+    if (typeof fetch !== 'function') return;
+    fetch('/api/version', { cache: 'no-store', credentials: 'same-origin' })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (data) {
+        if (!data) return;
+        var serverVer = opts.target === 'admin'
+          ? String(data.admin_version || '')
+          : String(data.site_version || '');
+        if (!serverVer) return;
+        var loadedVer = String(GW._versionBannerLoaded || '');
+        if (serverVer === loadedVer) {
+          // Same as we loaded — banner shouldn't show.
+          GW._versionBannerNewVersion = '';
+          var el = document.getElementById('gw-update-banner');
+          if (el && !el.hidden) { el.hidden = true; el.classList.remove('is-visible'); }
+          return;
+        }
+        GW._versionBannerNewVersion = serverVer;
+        if (serverVer === _readDismissedVersion(opts.target)) return; // user dismissed this exact one
+        // 페이지(HTML)는 이미 최신 자산 토큰을 가리키는데 main.js 만 낡았다면, 엣지가 옛 파일을
+        // 새 토큰 주소로 캐시한 상태다. 새로고침해도 같은 파일을 받으므로 배너를 띄우면
+        // 끝없이 반복된다. 이 경우는 배너 대신 콘솔에만 남긴다.
+        var pageAssetToken = _readPageAssetToken();
+        if (opts.target === 'site' && data.asset_version && pageAssetToken && pageAssetToken === String(data.asset_version)) {
+          console.warn('[version] stale cached main.js under current asset token; banner suppressed', loadedVer, '→', serverVer);
+          return;
+        }
+        _showVersionBanner(serverVer);
+      })
+      .catch(function (err) { console.warn('[version] poll failed:', err && err.message || err); });
+  }
+
+  GW.initVersionUpdateBanner = function (target) {
+    var loadedVersion = target === 'admin' ? GW.ADMIN_VERSION : GW.APP_VERSION;
+    if (!loadedVersion) return;
+    GW._versionBannerOpts = { target: target === 'admin' ? 'admin' : 'site' };
+    GW._versionBannerLoaded = String(loadedVersion);
+    _stripVersionRefreshParam();
+    _bindVersionRefreshNavigation();
+    // 탭을 다시 선택하면 브라우저가 visibilitychange 와 focus 를 모두 발생시켜
+    // /api/version 이 매번 2회 호출됐다. 최소 간격을 둬 한 번으로 합친다.
+    var VERSION_CHECK_MIN_INTERVAL_MS = 30 * 1000;
+    var lastVersionCheckAt = 0;
+    function _checkVersionThrottled() {
+      var now = Date.now();
+      if (now - lastVersionCheckAt < VERSION_CHECK_MIN_INTERVAL_MS) return;
+      lastVersionCheckAt = now;
+      _checkVersionOnce();
+    }
+
+    // Initial probe shortly after load (don't block first paint).
+    setTimeout(_checkVersionThrottled, 2500);
+    // Re-check whenever the tab becomes visible again.
+    document.addEventListener('visibilitychange', function () {
+      if (document.visibilityState === 'visible') _checkVersionThrottled();
+    });
+    window.addEventListener('focus', _checkVersionThrottled);
+    // Slow background poll as a safety net (5 min).
+    // 숨겨진 탭에서는 건너뛴다 — 어차피 복귀 시 visibilitychange 로 확인한다.
+    setInterval(function () {
+      if (document.visibilityState !== 'visible') return;
+      _checkVersionThrottled();
+    }, 5 * 60 * 1000);
+  };
+
+  // Public site auto-init. Admin opts in separately after auth.
+  if (typeof window !== 'undefined' && !window.__GW_NO_AUTO_VERSION_BANNER) {
+    var _autoBanner = function () {
+      // Skip on admin.html — admin-v3.js will init with 'admin' target after login.
+      try {
+        if (document.body && (document.body.classList.contains('admin-page') || document.body.classList.contains('admin-v3'))) return;
+        var path = (window.location && window.location.pathname || '').toLowerCase();
+        if (path === '/admin' || path === '/admin.html' || path.indexOf('/admin/') === 0) return;
+      } catch (_) {}
+      GW.initVersionUpdateBanner('site');
+    };
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', _autoBanner);
+    } else {
+      _autoBanner();
+    }
+  }
+
+  GW.getVersionedCacheKey = function (baseKey, version) {
+    var suffix = version || GW.ASSET_VERSION || GW.APP_VERSION || 'v1';
+    return String(baseKey || 'gw_cache') + '_' + String(suffix);
+  };
+
+  GW.readCachedPayload = function (key, maxAgeMs) {
+    try {
+      var raw = localStorage.getItem(key);
+      if (!raw) return null;
+      var parsed = JSON.parse(raw);
+      if (!parsed || typeof parsed !== 'object') return null;
+      if (!parsed.savedAt || (Date.now() - parsed.savedAt) > maxAgeMs) return null;
+      return parsed.data;
+    } catch (_) {
+      return null;
+    }
+  };
+
+  GW.writeCachedPayload = function (key, data) {
+    try {
+      localStorage.setItem(key, JSON.stringify({
+        savedAt: Date.now(),
+        data: data,
+      }));
+    } catch (_) {}
+  };
+
+  GW.isSvgFile = function (file) {
+    return !!(file && (file.type === 'image/svg+xml' || /\.svg$/i.test(file.name || '')));
+  };
+
+  GW.optimizeImageFile = function (file, options) {
+    options = options || {};
+    return new Promise(function (resolve, reject) {
+      if (!file) {
+        reject(new Error('이미지 파일이 없습니다'));
+        return;
+      }
+      var reader = new FileReader();
+      reader.onerror = function () { reject(new Error('이미지를 읽지 못했습니다')); };
+      reader.onload = function (e) {
+        var img = new Image();
+        img.onerror = function () { reject(new Error('이미지를 불러오지 못했습니다')); };
+        img.onload = function () {
+          var maxW = options.maxW || 1600;
+          var maxH = options.maxH || 1600;
+          var ratio = Math.min(maxW / img.width, maxH / img.height, 1);
+          var width = Math.max(1, Math.round(img.width * ratio));
+          var height = Math.max(1, Math.round(img.height * ratio));
+          var canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          var ctx = canvas.getContext('2d');
+          if (!ctx) {
+            reject(new Error('이미지 캔버스를 준비하지 못했습니다'));
+            return;
+          }
+          ctx.drawImage(img, 0, 0, width, height);
+          var preserveTransparency = /^image\/png$/i.test(file.type || '') || /^image\/webp$/i.test(file.type || '');
+          var forcePng = !!options.forcePng || GW.isSvgFile(file) || preserveTransparency;
+          var mime = forcePng ? 'image/png' : 'image/jpeg';
+          var quality = forcePng ? 0.92 : (options.quality || 0.82);
+          resolve({
+            dataUrl: canvas.toDataURL(mime, quality),
+            width: width,
+            height: height,
+            mime: mime,
+            sourceWidth: img.width,
+            sourceHeight: img.height,
+          });
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  GW.applyMobileTypeScale = function () {
+    var raw = '1';
+    try {
+      raw = localStorage.getItem('gw_mobile_type_scale') || '1';
+    } catch (_) {}
+    var scaleNum = parseFloat(raw);
+    if (!Number.isFinite(scaleNum)) scaleNum = 1;
+    scaleNum = Math.max(0.84, Math.min(1.32, Math.round(scaleNum * 100) / 100));
+    var scale = String(scaleNum);
+    document.documentElement.style.setProperty('--mobile-user-scale', scale);
+    document.querySelectorAll('.masthead-type-btn').forEach(function (btn) {
+      btn.classList.toggle('active', btn.getAttribute('data-action') === 'reset' && scaleNum === 1);
+    });
+    document.querySelectorAll('.masthead-type-value').forEach(function (el) {
+      el.textContent = Math.round(scaleNum * 100) + '%';
+    });
+  };
+
+  GW.initMobileTypeControls = function () {
+    if (typeof window === 'undefined' || typeof document === 'undefined') return;
+    if (window.innerWidth > 640) return;
+    var logo = document.querySelector('.masthead-logo');
+    if (!logo || logo.querySelector('.masthead-type-controls') || document.body.classList.contains('admin-page')) return;
+    var controls = document.createElement('div');
+    controls.className = 'masthead-type-controls';
+    controls.setAttribute('role', 'group');
+    controls.setAttribute('aria-label', '글자 크기 조절');
+    controls.innerHTML =
+      '<button type="button" class="masthead-type-btn" data-action="decrease" aria-label="글자 크기 줄이기">A-</button>' +
+      '<button type="button" class="masthead-type-btn" data-action="reset" aria-label="기본 글자 크기로 되돌리기">A <span class="masthead-type-value">100%</span></button>' +
+      '<button type="button" class="masthead-type-btn" data-action="increase" aria-label="글자 크기 키우기">A+</button>';
+    logo.appendChild(controls);
+    controls.querySelectorAll('.masthead-type-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var action = btn.getAttribute('data-action') || 'reset';
+        var current = 1;
+        try {
+          current = parseFloat(localStorage.getItem('gw_mobile_type_scale') || '1');
+        } catch (_) {}
+        if (!Number.isFinite(current)) current = 1;
+        var scale = current;
+        if (action === 'decrease') scale = current - 0.08;
+        else if (action === 'increase') scale = current + 0.08;
+        else scale = 1;
+        scale = Math.max(0.84, Math.min(1.32, Math.round(scale * 100) / 100));
+        try {
+          localStorage.setItem('gw_mobile_type_scale', String(scale));
+        } catch (_) {}
+        GW.applyMobileTypeScale();
+      });
+    });
+    GW.applyMobileTypeScale();
+  };
+
+  GW.ensureFavicon = function () {
+    var href = '/img/favicon.svg';
+    [
+      { rel: 'icon', type: 'image/svg+xml' },
+      { rel: 'shortcut icon', type: 'image/svg+xml' }
+    ].forEach(function (spec) {
+      var selector = 'link[rel="' + spec.rel + '"]';
+      var link = document.head ? document.head.querySelector(selector) : null;
+      if (!link && document.head) {
+        link = document.createElement('link');
+        link.rel = spec.rel;
+        document.head.appendChild(link);
+      }
+      if (link) {
+        link.type = spec.type;
+        link.href = href;
+      }
+    });
+  };
+
+  GW.renderText = function (str) {
+    return GW.renderTextWithMedia(str).html;
+  };
+
+  // ⚠ SSR 미러 (XSS 패리티 필수): GW.normalizeInlineHref / sanitizeEditorInlineHtml /
+  // decodeHtmlEntitiesOnce 는 서버 functions/post/[id].js 의 동명 함수와 반드시 byte-identical
+  // 해야 한다. 한쪽만 고치면 SSR 본문과 클라 본문의 살균 결과가 갈려 XSS·렌더 불일치가 생긴다.
+  // (빌드 단계가 없어 import 공유 불가 — 둘을 동시에 수정할 것.)
+  GW.normalizeInlineHref = function (value) {
+    var raw = String(value || '').trim();
+    if (!raw) return '';
+    if (/^(https?:|mailto:|tel:)/i.test(raw)) return raw;
+    if (/^(\/|#|\?|\.\.?\/)/.test(raw)) return raw;
+    if (/^[a-z][a-z0-9+.-]*:/i.test(raw) || raw.indexOf('//') === 0) return '';
+    return '/' + raw.replace(/^\/+/, '');
+  };
+
+  GW.sanitizeEditorInlineHtml = function (value) {
+    var source = String(value || '')
+      .replace(/&nbsp;|&#160;|&#xA0;/gi, ' ')
+      .replace(/\u00A0/g, ' ')
+      .replace(/\r\n?/g, '\n');
+    if (!source) return '';
+    var tokens = [];
+    var anchorDepth = 0;
+    var tokenized = source.replace(/<(\/?)(a|strong|b|em|i|u|s|mark|code|br)\b([^>]*)>/gi, function (_, closing, tagName, attrs) {
+      var tag = String(tagName || '').toLowerCase();
+      var replacement = '';
+      if (tag === 'br') {
+        replacement = '<br>';
+      } else if (closing) {
+        if (tag === 'a') {
+          if (!anchorDepth) return '';
+          anchorDepth -= 1;
+        }
+        replacement = '</' + tag + '>';
+      } else if (tag === 'a') {
+        var hrefMatch = String(attrs || '').match(/href\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))/i);
+        var normalizedHref = GW.normalizeInlineHref(hrefMatch ? (hrefMatch[1] || hrefMatch[2] || hrefMatch[3] || '') : '');
+        if (!normalizedHref) {
+          return '';
+        }
+        anchorDepth += 1;
+        var external = /^https?:/i.test(normalizedHref);
+        replacement = '<a href="' + GW.escapeHtml(normalizedHref) + '"' +
+          (external ? ' target="_blank" rel="noopener noreferrer"' : '') + '>';
+      } else {
+        replacement = '<' + tag + '>';
+      }
+      var token = '%%GW_INLINE_' + tokens.length + '%%';
+      tokens.push({ token: token, html: replacement });
+      return token;
+    });
+    // Round-trip guard: Editor.js stores text with ampersands/brackets
+    // already encoded (e.g. "D&amp;I"). Escaping again produces
+    // "D&amp;amp;I" which renders as literal "D&amp;I". Decode once first
+    // so the output is always single-encoded regardless of history.
+    var normalized = GW.decodeHtmlEntitiesOnce(tokenized);
+    var escaped = GW.escapeHtml(normalized).replace(/\n/g, '<br>');
+    tokens.forEach(function (entry) {
+      escaped = escaped.replace(entry.token, entry.html);
+    });
+    return escaped;
+  };
+
+  // Single-pass HTML entity decoder — see server-side counterpart in
+  // functions/post/[id].js for the round-trip rationale.
+  GW.decodeHtmlEntitiesOnce = function (str) {
+    return String(str).replace(/&(amp|lt|gt|quot|apos|#39|#x[0-9a-fA-F]+|#\d+);/g, function (match, entity) {
+      if (entity === 'amp')  return '&';
+      if (entity === 'lt')   return '<';
+      if (entity === 'gt')   return '>';
+      if (entity === 'quot') return '"';
+      if (entity === 'apos' || entity === '#39') return "'";
+      if (entity.charAt(0) === '#') {
+        var code = entity.charAt(1) === 'x' || entity.charAt(1) === 'X'
+          ? parseInt(entity.slice(2), 16)
+          : parseInt(entity.slice(1), 10);
+        return Number.isFinite(code) && code > 0 ? String.fromCodePoint(code) : match;
+      }
+      return match;
+    });
+  };
+
+  GW.renderEditorInlineText = function (value) {
+    return GW.sanitizeEditorInlineHtml(value);
+  };
+
+  // Full-document sanitizer for post body HTML. Used when rendering legacy
+  // (pre-Editor.js) posts that were stored as raw HTML, and as a defense-in-depth
+  // pass over the HTML assembled from Editor.js JSON blocks.
+  //
+  // DOMPurify is preloaded via a <script> tag in the <head> of pages that render
+  // post bodies (see CLAUDE.md §2 "AI Deployment Protocol"). If for some reason
+  // it failed to load, we fall back to a conservative regex stripper that removes
+  // the classic XSS carriers: <script>, <style>, inline event handlers, and
+  // javascript:/data: URL schemes.
+  GW.sanitizeHtml = function (html) {
+    if (!html) return '';
+    var source = String(html);
+    if (typeof window !== 'undefined'
+      && window.DOMPurify
+      && typeof window.DOMPurify.sanitize === 'function') {
+      return window.DOMPurify.sanitize(source, {
+        ALLOWED_TAGS: [
+          'p', 'br', 'hr',
+          'strong', 'b', 'em', 'i', 'u', 's', 'mark', 'code', 'sub', 'sup',
+          'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+          'ul', 'ol', 'li',
+          'blockquote', 'figure', 'figcaption',
+          'div', 'span', 'a', 'img',
+          'table', 'thead', 'tbody', 'tfoot', 'tr', 'th', 'td'
+        ],
+        ALLOWED_ATTR: [
+          'href', 'title', 'target', 'rel',
+          'src', 'alt', 'loading',
+          'class', 'style',
+          'colspan', 'rowspan'
+        ],
+        // Allow http(s)/mailto/tel + same-origin + hash-links + bitmap data URLs
+        // (SVG data URLs are blocked in image-storage.js on upload; this regex
+        // just belt-and-braces the client render path).
+        ALLOWED_URI_REGEXP: /^(?:(?:https?|mailto|tel):|\/|#|data:image\/(?:png|jpe?g|webp|gif))/i,
+        ADD_ATTR: ['target', 'rel']
+      });
+    }
+    // Fallback path — DOMPurify missing. Do not return HTML markup here:
+    // user-authored HTML may be injected with innerHTML by callers.
+    return GW.escapeHtml(source.replace(/<[^>]*>/g, ''));
+  };
+
+  GW.renderEditorListItems = function (items, listTag) {
+    var childTag = listTag === 'ol' ? 'ol' : 'ul';
+    return (Array.isArray(items) ? items : []).map(function (item) {
+      if (typeof item === 'string') {
+        return '<li>' + GW.renderEditorInlineText(String(item).trim()) + '</li>';
+      }
+      if (!item || typeof item !== 'object') return '';
+      var nested = Array.isArray(item.items) && item.items.length
+        ? '<' + childTag + '>' + GW.renderEditorListItems(item.items, childTag) + '</' + childTag + '>'
+        : '';
+      // item.content 앞뒤 공백·개행 trim — bullet 옆 빈 줄 생성 방지
+      var content = String(item.content || '').replace(/^[\s\u00A0]+|[\s\u00A0]+$/g, '');
+      return '<li>' + GW.renderEditorInlineText(content) + nested + '</li>';
+    }).join('');
+  };
+
+  GW.renderTextWithMedia = function (str) {
+    if (!str) return '';
+    const trimmed = str.trim();
+
+    // Editor.js JSON: {"time":...,"blocks":[...],"version":...}
+    if (trimmed.charAt(0) === '{') {
+      try {
+        const doc = JSON.parse(trimmed);
+        if (Array.isArray(doc.blocks)) {
+          var html = doc.blocks.map(function (b) {
+            switch (b.type) {
+              case 'paragraph':
+                return '<p>' + GW.renderEditorInlineText(b.data.text || '') + '</p>';
+              case 'header': {
+                var lvl = b.data.level || 2;
+                return '<h' + lvl + '>' + GW.renderEditorInlineText(b.data.text || '') + '</h' + lvl + '>';
+              }
+              case 'list': {
+                var tag = b.data.style === 'ordered' ? 'ol' : 'ul';
+                var items = GW.renderEditorListItems(b.data.items || [], tag);
+                return '<' + tag + '>' + items + '</' + tag + '>';
+              }
+              case 'quote':
+                return '<blockquote>' + GW.renderEditorInlineText(b.data.text || '') + '</blockquote>';
+              case 'image': {
+                var url = (b.data.file && b.data.file.url) ? b.data.file.url : (b.data.url || '');
+                var cap = GW.escapeHtml(b.data.caption || '');
+                var html = '<div class="post-inline-media"><img src="' + GW.escapeHtml(url) + '" alt="' + cap + '" style="max-width:100%;height:auto;display:block;margin:0 auto;"></div>';
+                if (cap) html += '<p class="post-image-caption">' + cap + '</p>';
+                return html;
+              }
+              default: return '';
+            }
+          }).join('');
+          return { html: html, gallery: [] };
+        }
+      } catch (e) { /* fall through */ }
+    }
+
+    // Legacy Quill/WYSIWYG HTML stored by older revisions. Run it through
+    // DOMPurify so script/event-handler/javascript-URI payloads can't reach
+    // the DOM, while keeping the visible content intact (user asked that legacy
+    // posts must not render empty).
+    if (/^<(p|h[1-6]|ul|ol|blockquote|div)/i.test(trimmed)) {
+      return { html: GW.sanitizeHtml(str), gallery: [] };
+    }
+    return { html: GW.escapeHtml(str).replace(/\n/g, '<br>'), gallery: [] };
+  };
+
+  GW.renderContentGallery = function (items, options) {
+    var slides = Array.isArray(items) ? items.filter(function (item) { return item && item.url; }) : [];
+    if (slides.length < 2) return '';
+    var className = (options && options.className) ? ' ' + options.className : '';
+    return '<section class="content-gallery' + className + '" data-gallery-interval="3000">' +
+      '<div class="content-gallery-track">' +
+        '<div class="content-gallery-slides">' +
+        slides.map(function (item, index) {
+          var cap = GW.escapeHtml(item.caption || '');
+          return '<figure class="content-gallery-slide' + (index === 0 ? ' is-active' : '') + '">' +
+            '<div class="content-gallery-media"><img src="' + GW.escapeHtml(item.url) + '" alt="' + cap + '"></div>' +
+            (cap ? '<figcaption class="post-image-caption">' + cap + '</figcaption>' : '') +
+          '</figure>';
+        }).join('') +
+        '</div>' +
+        '<div class="content-gallery-controls">' +
+          '<div class="content-gallery-dots">' +
+            slides.map(function (_, index) {
+              return '<button type="button" class="content-gallery-dot' + (index === 0 ? ' is-active' : '') + '" data-gallery-index="' + index + '" aria-label="슬라이드 ' + (index + 1) + '"></button>';
+            }).join('') +
+          '</div>' +
+          '<button type="button" class="content-gallery-pause" aria-label="슬라이드 일시정지" aria-pressed="false">일시정지</button>' +
+        '</div>' +
+      '</div>' +
+      '<button type="button" class="content-gallery-nav content-gallery-prev" aria-label="이전 사진">‹</button>' +
+      '<button type="button" class="content-gallery-nav content-gallery-next" aria-label="다음 사진">›</button>' +
+    '</section>';
+  };
+
+  GW.initContentGalleries = function (root) {
+    var scope = root || document;
+    scope.querySelectorAll('.content-gallery').forEach(function (gallery) {
+      if (gallery.dataset.galleryReady === '1') return;
+      gallery.dataset.galleryReady = '1';
+      var track = gallery.querySelector('.content-gallery-track');
+      var slidesWrap = gallery.querySelector('.content-gallery-slides');
+      var slides = Array.prototype.slice.call(gallery.querySelectorAll('.content-gallery-slide'));
+      var dots = Array.prototype.slice.call(gallery.querySelectorAll('.content-gallery-dot'));
+      var prevBtn = gallery.querySelector('.content-gallery-prev');
+      var nextBtn = gallery.querySelector('.content-gallery-next');
+      var pauseBtn = gallery.querySelector('.content-gallery-pause');
+      if (slides.length < 2) return;
+      var current = 0;
+      var intervalMs = parseInt(gallery.getAttribute('data-gallery-interval') || '3000', 10) || 3000;
+      var timer = null;
+      var paused = false;
+      var dragStartX = 0;
+      var dragDeltaX = 0;
+      var dragging = false;
+      function updateTrackPosition(offsetPx) {
+        if (!slidesWrap || !track) return;
+        var trackWidth = track.clientWidth || 1;
+        var percentage = (-current * trackWidth + (offsetPx || 0)) / trackWidth * 100;
+        slidesWrap.style.transform = 'translateX(' + percentage + '%)';
+      }
+      function sync(next) {
+        current = (next + slides.length) % slides.length;
+        slides.forEach(function (slide, idx) { slide.classList.toggle('is-active', idx === current); });
+        dots.forEach(function (dot, idx) { dot.classList.toggle('is-active', idx === current); });
+        updateTrackPosition(0);
+      }
+      function advance() { sync((current + 1) % slides.length); }
+      function retreat() { sync((current - 1 + slides.length) % slides.length); }
+      function clearTimer() {
+        if (timer) {
+          window.clearInterval(timer);
+          timer = null;
+        }
+      }
+      function startTimer() {
+        clearTimer();
+        if (paused) return;
+        timer = window.setInterval(advance, intervalMs);
+      }
+      dots.forEach(function (dot) {
+        dot.addEventListener('click', function () {
+          var index = parseInt(dot.getAttribute('data-gallery-index') || '0', 10);
+          sync(index);
+          startTimer();
+        });
+      });
+      if (prevBtn) {
+        prevBtn.addEventListener('click', function () {
+          retreat();
+          startTimer();
+        });
+      }
+      if (nextBtn) {
+        nextBtn.addEventListener('click', function () {
+          advance();
+          startTimer();
+        });
+      }
+      if (pauseBtn) {
+        pauseBtn.addEventListener('click', function () {
+          paused = !paused;
+          pauseBtn.setAttribute('aria-pressed', paused ? 'true' : 'false');
+          pauseBtn.textContent = paused ? '재생' : '일시정지';
+          if (paused) clearTimer();
+          else startTimer();
+        });
+      }
+      function onPointerDown(clientX) {
+        dragging = true;
+        dragStartX = clientX;
+        dragDeltaX = 0;
+        clearTimer();
+        gallery.classList.add('is-dragging');
+      }
+      function onPointerMove(clientX) {
+        if (!dragging) return;
+        dragDeltaX = clientX - dragStartX;
+        updateTrackPosition(dragDeltaX);
+      }
+      function onPointerUp() {
+        if (!dragging) return;
+        dragging = false;
+        gallery.classList.remove('is-dragging');
+        if (Math.abs(dragDeltaX) > 40) {
+          if (dragDeltaX < 0) advance();
+          else retreat();
+        } else {
+          updateTrackPosition(0);
+        }
+        dragDeltaX = 0;
+        startTimer();
+      }
+      gallery.addEventListener('touchstart', function (event) {
+        if (!event.touches || !event.touches[0]) return;
+        onPointerDown(event.touches[0].clientX);
+      }, { passive: true });
+      gallery.addEventListener('touchmove', function (event) {
+        if (!event.touches || !event.touches[0]) return;
+        onPointerMove(event.touches[0].clientX);
+      }, { passive: true });
+      gallery.addEventListener('touchend', onPointerUp);
+      gallery.addEventListener('mousedown', function (event) {
+        if (event.button !== 0) return;
+        onPointerDown(event.clientX);
+      });
+      gallery.addEventListener('mousemove', function (event) {
+        onPointerMove(event.clientX);
+      });
+      gallery.addEventListener('mouseup', onPointerUp);
+      gallery.addEventListener('mouseleave', function () {
+        if (dragging) onPointerUp();
+      });
+      sync(0);
+      startTimer();
+      gallery.addEventListener('mouseenter', clearTimer);
+      gallery.addEventListener('mouseleave', function () {
+        if (!dragging) startTimer();
+      });
+    });
+  };
+
+  /** Strip HTML/JSON and truncate plain text for excerpts. */
+  GW.truncate = function (str, maxLen) {
+    if (!str) return '';
+    // Handle Editor.js JSON
+    if (str.trim().charAt(0) === '{') {
+      try {
+        const doc = JSON.parse(str.trim());
+        if (Array.isArray(doc.blocks)) {
+          str = doc.blocks.map(function (b) {
+            if (b.type === 'paragraph' || b.type === 'header') return b.data.text || '';
+            if (b.type === 'list') return (b.data.items || []).map(function (i) {
+              return typeof i === 'string' ? i : (i.content || '');
+            }).join(' ');
+            if (b.type === 'quote') return b.data.text || '';
+            return '';
+          }).join(' ');
+        }
+      } catch (e) { /* fall through */ }
+    }
+    var plain = str.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+    return plain.length <= maxLen ? plain : plain.slice(0, maxLen).trimEnd() + '…';
+  };
+
+  // ── Toast notifications ───────────────────────────────────
+  /** Show a toast message. type: 'success' | 'error' */
+  GW.showToast = function (msg, type) {
+    let el = document.getElementById('toast');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'toast';
+      el.className = 'toast';
+      document.body.appendChild(el);
+    }
+    el.textContent = msg;
+    el.className   = 'toast ' + (type || 'success') + ' show';
+    clearTimeout(el._timer);
+    el._timer = setTimeout(function () { el.className = 'toast'; }, 2800);
+  };
+
+  GW.copyText = function (text) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      return navigator.clipboard.writeText(text);
+    }
+    return new Promise(function (resolve, reject) {
+      try {
+        var area = document.createElement('textarea');
+        area.value = text;
+        area.setAttribute('readonly', 'readonly');
+        area.style.position = 'fixed';
+        area.style.opacity = '0';
+        area.style.pointerEvents = 'none';
+        document.body.appendChild(area);
+        area.focus();
+        area.select();
+        var ok = document.execCommand('copy');
+        document.body.removeChild(area);
+        if (!ok) throw new Error('copy-failed');
+        resolve();
+      } catch (err) {
+        reject(err);
+      }
+    });
+  };
+
+  GW.KAKAO_JS_KEY = window.GW_KAKAO_JS_KEY || (window.GW_BOOT_RUNTIME && window.GW_BOOT_RUNTIME.kakao_js_key) || window.KAKAO_JS_KEY || '';
+  GW._shareModalState = null;
+  GW._kakaoSdkPromise = null;
+
+  GW.isMobileShareContext = function () {
+    if (window.matchMedia && window.matchMedia('(max-width: 900px)').matches) return true;
+    var ua = navigator.userAgent || '';
+    return /Android|iPhone|iPad|iPod|Mobile/i.test(ua);
+  };
+
+  GW.createShareRef = function () {
+    var seed = GW.ASSET_VERSION || Date.now().toString();
+    return seed + '-' + Date.now().toString();
+  };
+
+  GW.buildShareUrl = function (url, source) {
+    var raw = String(url || window.location.href || '').trim();
+    var channel = String(source || 'share').trim().toLowerCase() || 'share';
+    var parsed;
+    try {
+      parsed = new URL(raw, window.location.origin);
+    } catch (_) {
+      return raw;
+    }
+    parsed.searchParams.delete('utm_source');
+    parsed.searchParams.delete('utm_medium');
+    parsed.searchParams.delete('utm_campaign');
+    parsed.searchParams.delete('fb_share_ref');
+    parsed.searchParams.delete('share_ref');
+    parsed.searchParams.set('share_ref', GW.createShareRef());
+    return parsed.toString();
+  };
+
+  GW.buildFacebookShareTarget = function (url) {
+    return GW.buildShareUrl(url, 'facebook');
+  };
+
+  GW.openSharePopup = function (shareUrl, options) {
+    var width = (options && options.width) || 640;
+    var height = (options && options.height) || 680;
+    var name = (options && options.name) || 'bpmedia_share_popup';
+    var screenLeft = typeof window.screenLeft === 'number' ? window.screenLeft : (window.screenX || 0);
+    var screenTop = typeof window.screenTop === 'number' ? window.screenTop : (window.screenY || 0);
+    var viewportWidth = window.innerWidth || document.documentElement.clientWidth || screen.width || width;
+    var viewportHeight = window.innerHeight || document.documentElement.clientHeight || screen.height || height;
+    var left = Math.max(screenLeft + Math.round((viewportWidth - width) / 2), 0);
+    var top = Math.max(screenTop + Math.round((viewportHeight - height) / 2), 0);
+    var features = [
+      'popup=yes',
+      'toolbar=no',
+      'menubar=no',
+      'location=yes',
+      'status=no',
+      'resizable=yes',
+      'scrollbars=yes',
+      'width=' + width,
+      'height=' + height,
+      'left=' + left,
+      'top=' + top
+    ].join(',');
+    var popup = window.open('', name, features);
+    if (!popup || popup.closed || typeof popup.closed === 'undefined') {
+      return null;
+    }
+    try {
+      popup.opener = null;
+    } catch (_) {}
+    popup.location.replace(shareUrl);
+    try {
+      popup.focus();
+    } catch (_) {}
+    return popup;
+  };
+
+  GW.ensureShareModal = function () {
+    if (document.getElementById('share-modal')) return;
+    var overlay = document.createElement('div');
+    overlay.id = 'share-modal';
+    overlay.className = 'share-modal';
+    overlay.innerHTML =
+      '<div class="share-modal-card" role="dialog" aria-modal="true" aria-labelledby="share-modal-title">' +
+        '<button type="button" class="share-modal-close" id="share-modal-close" aria-label="닫기">×</button>' +
+        '<div class="share-modal-kicker">공유하기</div>' +
+        '<h3 id="share-modal-title" class="share-modal-title"></h3>' +
+        '<p class="share-modal-help">공유하기에 맞는 링크가 자동으로 준비됩니다.</p>' +
+        '<div class="share-modal-actions">' +
+          '<button type="button" class="share-modal-btn share-modal-btn-kakao" data-share-channel="kakaotalk">' +
+            '<span class="share-modal-btn-label">카카오톡</span><span class="share-modal-btn-help">메신저 공유</span>' +
+          '</button>' +
+          '<button type="button" class="share-modal-btn share-modal-btn-facebook" data-share-channel="facebook">' +
+            '<span class="share-modal-btn-label">페이스북</span><span class="share-modal-btn-help">공개 링크 공유</span>' +
+          '</button>' +
+          '<button type="button" class="share-modal-btn share-modal-btn-copy" data-share-channel="copy">' +
+            '<span class="share-modal-btn-label">URL 복사</span><span class="share-modal-btn-help">복사 후 직접 공유</span>' +
+          '</button>' +
+        '</div>' +
+      '</div>';
+    overlay.addEventListener('click', function (event) {
+      if (event.target === overlay) GW.closeShareModal();
+    });
+    document.body.appendChild(overlay);
+    var closeBtn = document.getElementById('share-modal-close');
+    if (closeBtn) closeBtn.addEventListener('click', GW.closeShareModal);
+    overlay.querySelectorAll('[data-share-channel]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        GW.handleShareChannel(btn.getAttribute('data-share-channel') || '');
+      });
+    });
+    document.addEventListener('keydown', function (event) {
+      if (event.key === 'Escape') GW.closeShareModal();
+    });
+  };
+
+  GW.openShareModal = function (options) {
+    options = options || {};
+    GW._shareModalState = {
+      url: String(options.url || window.location.href || '').trim(),
+      title: String(options.title || document.title || '').trim(),
+      text: String(options.text || options.title || document.title || '').trim(),
+      image: String(options.image || GW.readMetaContent('og:image') || '').trim(),
+      description: String(options.description || GW.readMetaContent('og:description') || options.text || '').trim()
+    };
+    GW.ensureShareModal();
+    var overlay = document.getElementById('share-modal');
+    var titleEl = document.getElementById('share-modal-title');
+    if (!overlay || !titleEl) return;
+    titleEl.textContent = GW._shareModalState.title || '이 글을 공유합니다';
+    overlay.classList.add('open');
+    document.body.classList.add('share-modal-open');
+  };
+
+  GW.closeShareModal = function () {
+    var overlay = document.getElementById('share-modal');
+    if (overlay) overlay.classList.remove('open');
+    document.body.classList.remove('share-modal-open');
+  };
+
+  GW.loadKakaoSdk = function () {
+    if (window.Kakao && window.Kakao.Share) {
+      if (GW.KAKAO_JS_KEY && !window.Kakao.isInitialized()) {
+        window.Kakao.init(GW.KAKAO_JS_KEY);
+      }
+      return Promise.resolve(window.Kakao);
+    }
+    if (!GW.KAKAO_JS_KEY) {
+      return Promise.reject(new Error('kakao-unconfigured'));
+    }
+    if (GW._kakaoSdkPromise) return GW._kakaoSdkPromise;
+    GW._kakaoSdkPromise = new Promise(function (resolve, reject) {
+      var existing = document.getElementById('kakao-share-sdk');
+      if (existing) {
+        existing.addEventListener('load', function () {
+          try {
+            if (window.Kakao && !window.Kakao.isInitialized()) window.Kakao.init(GW.KAKAO_JS_KEY);
+            resolve(window.Kakao);
+          } catch (err) {
+            reject(err);
+          }
+        }, { once: true });
+        existing.addEventListener('error', reject, { once: true });
+        return;
+      }
+      var script = document.createElement('script');
+      script.id = 'kakao-share-sdk';
+      script.src = 'https://t1.kakaocdn.net/kakao_js_sdk/2.8.0/kakao.min.js';
+      script.async = true;
+      script.onload = function () {
+        try {
+          if (window.Kakao && !window.Kakao.isInitialized()) window.Kakao.init(GW.KAKAO_JS_KEY);
+          resolve(window.Kakao);
+        } catch (err) {
+          reject(err);
+        }
+      };
+      script.onerror = reject;
+      document.head.appendChild(script);
+    });
+    return GW._kakaoSdkPromise;
+  };
+
+  GW.readMetaContent = function (property) {
+    try {
+      var el = document.querySelector('meta[property="' + property + '"]')
+        || document.querySelector('meta[name="' + property + '"]');
+      return el ? (el.getAttribute('content') || '') : '';
+    } catch (_) {
+      return '';
+    }
+  };
+
+  GW.shareViaKakao = function (state) {
+    var trackedUrl = GW.buildShareUrl(state.url, 'kakaotalk');
+    return GW.loadKakaoSdk()
+      .then(function (Kakao) {
+        // 기본 feed 규격으로 전달하고, 이미지가 없으면 사이트 대표 이미지를 사용한다.
+        if (!Kakao || !Kakao.Share || !Kakao.Share.sendDefault) {
+          throw new Error('kakao-sdk-unavailable');
+        }
+        var content = {
+          title: (state.title || document.title || 'BP미디어').slice(0, 200),
+          imageUrl: new URL('/img/og-default.png', window.location.origin).href,
+          link: { mobileWebUrl: trackedUrl, webUrl: trackedUrl }
+        };
+        if (state.description) content.description = state.description.slice(0, 200);
+        if (state.image) {
+          try {
+            var imageUrl = new URL(state.image, window.location.origin);
+            if (/^https?:$/.test(imageUrl.protocol)) content.imageUrl = imageUrl.href;
+          } catch (_) {}
+        }
+        Kakao.Share.sendDefault({
+          objectType: 'feed',
+          content: content,
+          buttons: [{
+            title: '자세히 보기',
+            link: { mobileWebUrl: trackedUrl, webUrl: trackedUrl }
+          }]
+        });
+      })
+      .catch(function () {
+        if (navigator.share && GW.isMobileShareContext()) {
+          return navigator.share({
+            title: state.title,
+            text: state.text,
+            url: trackedUrl
+          }).then(function () {
+            GW.showToast('공유 시트를 열었습니다. 카카오톡을 선택해주세요.', 'success');
+          }).catch(function (err) {
+            if (err && err.name === 'AbortError') return;
+            return GW.copyText(trackedUrl).then(function () {
+              GW.showToast('카카오 설정이 연결되지 않아 링크를 복사했습니다.', 'success');
+            });
+          });
+        }
+        return GW.copyText(trackedUrl).then(function () {
+            GW.showToast('카카오 설정이 연결되지 않아 링크를 복사했습니다.', 'success');
+          });
+      });
+    };
+
+  GW.handleShareChannel = function (channel) {
+    var state = GW._shareModalState;
+    if (!state || !state.url) return;
+    var trackedUrl = GW.buildShareUrl(state.url, channel || 'share');
+    if (channel === 'facebook') {
+      var facebookTarget = GW.buildFacebookShareTarget(state.url || trackedUrl || '');
+      var facebookUrl = 'https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(facebookTarget);
+      var popup = GW.openSharePopup(facebookUrl, {
+        name: 'bpmedia_facebook_share',
+        width: 640,
+        height: 680
+      });
+      if (!popup) {
+        GW.copyText(facebookTarget)
+          .then(function () {
+            GW.showToast('팝업이 차단되어 공유 링크를 복사했습니다. 팝업 차단을 해제한 뒤 다시 시도해주세요.', 'success');
+          })
+          .catch(function () {
+            GW.showToast('팝업이 차단되어 공유 창을 열지 못했습니다. 팝업 차단을 해제해주세요.', 'error');
+          });
+        return;
+      }
+      GW.showToast('페이스북 공유 창을 열었습니다.', 'success');
+      GW.closeShareModal();
+      return;
+    }
+    if (channel === 'copy') {
+      GW.copyText(trackedUrl)
+        .then(function () {
+          GW.showToast('URL을 복사했습니다. 원하는 곳에 직접 공유해주세요.', 'success');
+          GW.closeShareModal();
+        })
+        .catch(function () {
+          GW.showToast('링크 복사에 실패했습니다.', 'error');
+        });
+      return;
+    }
+    if (channel === 'kakaotalk') {
+      GW.shareViaKakao(state).finally(function () {
+        GW.closeShareModal();
+      });
+      return;
+    }
+  };
+
+  GW.sharePostLink = function (options) {
+    GW.openShareModal(options || {});
+    return Promise.resolve();
+  };
+
+  // ── Session token ─────────────────────────────────────────
+  GW.readCookie = function (name) {
+    var cookie = document.cookie || '';
+    var parts = cookie ? cookie.split(/;\s*/) : [];
+    for (var i = 0; i < parts.length; i += 1) {
+      var item = parts[i];
+      var eqIdx = item.indexOf('=');
+      if (eqIdx <= 0) continue;
+      if (item.slice(0, eqIdx) !== name) continue;
+      return decodeURIComponent(item.slice(eqIdx + 1));
+    }
+    return '';
+  };
+  GW.getToken  = function () {
+    return sessionStorage.getItem('admin_session') || GW.readCookie('admin_session') || '';
+  };
+  GW.setToken  = function () {
+    sessionStorage.setItem('admin_session', '1');
+  };
+  GW.clearToken = function () {
+    sessionStorage.removeItem('admin_session');
+    sessionStorage.removeItem('admin_role');
+    GW._adminSessionVerifiedAt = 0;
+    GW._adminSessionCheckPromise = null;
+    document.cookie = 'admin_session=; Path=/; Max-Age=0; Secure; SameSite=Lax';
+    document.cookie = 'admin_role=; Path=/; Max-Age=0; Secure; SameSite=Lax';
+    fetch('/api/admin/session', {
+      method: 'DELETE',
+      credentials: 'same-origin',
+      keepalive: true,
+    }).catch(function (e) { console.warn('[GW] logout cleanup failed:', e); });
+  };
+  // 사용자 피드백으로 bookmarks/recent 기능 롤백 (2026-04-19). 과거 localStorage 키 청소.
+  try {
+    localStorage.removeItem('gw_bookmarks');
+    localStorage.removeItem('gw_recent');
+  } catch (_) {}
+
+  GW.getAdminRole = function () { return sessionStorage.getItem('admin_role') || GW.readCookie('admin_role') || ''; };
+  GW.setAdminRole = function (role) {
+    sessionStorage.setItem('admin_role', role === 'editor' ? 'editor' : 'full');
+  };
+  GW._adminSessionVerifiedAt = 0;
+  GW._adminSessionCheckPromise = null;
+  GW.verifyAdminSession = function (options) {
+    var opts = options && typeof options === 'object' ? options : {};
+    if (!(GW.getToken && GW.getToken())) return Promise.resolve(false);
+    var now = Date.now();
+    if (!opts.force && GW._adminSessionVerifiedAt && now - GW._adminSessionVerifiedAt < 60000) {
+      return Promise.resolve(true);
+    }
+    if (GW._adminSessionCheckPromise) return GW._adminSessionCheckPromise;
+    GW._adminSessionCheckPromise = fetch('/api/admin/session', {
+      method: 'GET',
+      credentials: 'same-origin',
+      cache: 'no-store',
+      headers: { 'Accept': 'application/json' },
+    })
+      .then(function (res) {
+        return res.json().catch(function () { return {}; }).then(function (data) {
+          if (!res.ok || !data || data.authenticated !== true) {
+            throw new Error((data && data.error) || '관리자 세션이 만료되었습니다.');
+          }
+          GW._adminSessionVerifiedAt = Date.now();
+          if (data.role && GW.setAdminRole) GW.setAdminRole(data.role);
+          if (GW.setToken) GW.setToken();
+          return true;
+        });
+      })
+      .catch(function () {
+        if (GW.clearToken) GW.clearToken();
+        return false;
+      })
+      .finally(function () {
+        GW._adminSessionCheckPromise = null;
+      });
+    return GW._adminSessionCheckPromise;
+  };
+  GW._publicLoadWarnings = {};
+  GW.handlePublicLoadFailure = function (scope, err, hasFallback) {
+    try { console.warn('[GW public-load-failed]', scope, err); } catch (_) {}
+    if (hasFallback || GW._publicLoadWarnings[scope]) return;
+    GW._publicLoadWarnings[scope] = true;
+    if (GW.showToast) GW.showToast(scope + '을(를) 최신 상태로 불러오지 못했습니다.', 'error');
+  };
+
+  // ── API fetch ─────────────────────────────────────────────
+  /**
+   * Fetch a JSON API endpoint.
+   * Uses same-origin cookies for admin auth.
+   * Throws an Error with .status if the response is not ok.
+   */
+  // 응답이 영영 오지 않는 요청을 끊는 기본 상한. 이게 없으면 호출부의 catch 가
+  // 아예 실행되지 않아 스켈레톤이 무한히 돌고, 홈의 경우 in-flight 프로미스가
+  // 해제되지 않아 이후 모든 재시도 경로(포커스·60초·"다시 시도")까지 막힌다.
+  // 값은 chatbot.js 의 검증된 12초와 맞춘다. 호출부가 options.timeoutMs 로 조정
+  // 가능하며, 0 이하이면 상한을 걸지 않는다(장시간 업로드 등).
+  GW.API_FETCH_TIMEOUT_MS = 12000;
+
+  GW.apiFetch = async function (url, options) {
+    const headers = Object.assign({ 'Content-Type': 'application/json' },
+                                   (options && options.headers) || {});
+    const opts = Object.assign({}, options, {
+      headers,
+      credentials: 'same-origin',
+    });
+    delete opts.timeoutMs;
+
+    const timeoutMs = options && typeof options.timeoutMs === 'number'
+      ? options.timeoutMs
+      : GW.API_FETCH_TIMEOUT_MS;
+    // 호출부가 이미 signal 을 넘겼다면 그 제어권을 존중하고 덧씌우지 않는다.
+    const canAbort = timeoutMs > 0 && !opts.signal && typeof AbortController !== 'undefined';
+    const ac = canAbort ? new AbortController() : null;
+    let timeoutId = null;
+    if (ac) {
+      opts.signal = ac.signal;
+      timeoutId = setTimeout(function () {
+        try { ac.abort(); } catch (_) {}
+      }, timeoutMs);
+    }
+
+    let res;
+    try {
+      res = await fetch(url, opts);
+    } finally {
+      if (timeoutId !== null) clearTimeout(timeoutId);
+    }
+    const data = await res.json().catch(function () { return {}; });
+
+    if (!res.ok) {
+      const err = new Error(data.error || 'API 오류가 발생했습니다');
+      err.status = res.status;
+      err.data = data;
+      if (data && typeof data === 'object') {
+        Object.keys(data).forEach(function (key) {
+          if (!(key in err)) err[key] = data[key];
+        });
+      }
+      // Phase 5 note: Only the canonical session check endpoint triggers auto
+      // logout on 401. Many admin APIs still use verifyTokenRole('full') and
+      // respond 401 to valid member sessions that lack the specific role —
+      // those should be treated as "no permission" (403 semantic), not "session
+      // expired", otherwise the user gets kicked back to login immediately
+      // after signing in. A full Phase 5 retrofit will change those handlers
+      // to return 403, but until then the client decides based on the path.
+      var _isSessionEndpoint = /^(\/api\/admin\/session|\/api\/admin\/users\/me)\b/.test(String(url || ''));
+      if (res.status === 401 && _isSessionEndpoint && GW.getToken && GW.getToken()) {
+        try {
+          GW.clearToken();
+        } catch (_) {}
+        if (typeof document !== 'undefined' && document.body && (document.body.classList.contains('admin-page') || document.body.classList.contains('admin-v3'))) {
+          document.dispatchEvent(new CustomEvent('gw:admin-auth-required', {
+            detail: {
+              message: err.message || '관리자 로그인이 필요합니다.',
+              source: url,
+            },
+          }));
+        }
+      }
+      throw err;
+    }
+    return data;
+  };
+
+  GW.trackPageVisit = function () {
+    if (typeof window === 'undefined' || typeof document === 'undefined') return;
+    var path = window.location.pathname || '/';
+    if (!path || path === '/admin.html' || path.indexOf('/api/') === 0) return;
+    var key = 'gw_visit_tracked_' + path;
+    try {
+      if (sessionStorage.getItem(key)) return;
+      sessionStorage.setItem(key, '1');
+    } catch (_) {}
+
+    fetch('/api/analytics/visit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        path: path,
+        current_url: window.location.href || '',
+        referrer: document.referrer || '',
+      }),
+      keepalive: true,
+    }).catch(function (e) { console.warn('[GW] visit track failed:', e); });
+  };
+
+  GW.trackPostEngagement = function () {
+    if (typeof window === 'undefined' || typeof document === 'undefined') return;
+    var match = /^\/post\/(\d+)(?:\/)?$/.exec(window.location.pathname || '');
+    if (!match) return;
+    if (GW.getToken && GW.getToken()) return;
+
+    var postId = parseInt(match[1], 10);
+    if (!Number.isFinite(postId) || postId < 1) return;
+
+    var sessionKey = 'post-' + postId + '-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10);
+    var totalMs = 0;
+    var activeStartedAt = 0;
+    var lastSentSeconds = 0;
+
+    function beginActive(now) {
+      if (document.visibilityState !== 'visible') return;
+      if (!activeStartedAt) activeStartedAt = now || Date.now();
+    }
+
+    function sampleActive(now) {
+      if (!activeStartedAt) return;
+      var current = now || Date.now();
+      totalMs += Math.max(0, current - activeStartedAt);
+      activeStartedAt = current;
+    }
+
+    function currentSeconds() {
+      return Math.floor(totalMs / 1000);
+    }
+
+    function sendPayload(seconds) {
+      if (seconds <= lastSentSeconds) return;
+      lastSentSeconds = seconds;
+      var payload = JSON.stringify({
+        post_id: postId,
+        session_key: sessionKey,
+        engaged_seconds: seconds,
+      });
+      try {
+        if (navigator.sendBeacon) {
+          var blob = new Blob([payload], { type: 'application/json' });
+          navigator.sendBeacon('/api/analytics/post-engagement', blob);
+          return;
+        }
+      } catch (_) {}
+      fetch('/api/analytics/post-engagement', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: payload,
+        keepalive: true,
+      }).catch(function (e) { console.warn('[GW] engagement track failed:', e); });
+    }
+
+    function flush(force) {
+      sampleActive(Date.now());
+      var seconds = currentSeconds();
+      if (!force && seconds < 5) return;
+      if (force && seconds < 1) return;
+      sendPayload(seconds);
+    }
+
+    beginActive(Date.now());
+
+    document.addEventListener('visibilitychange', function () {
+      if (document.visibilityState === 'hidden') {
+        flush(true);
+        activeStartedAt = 0;
+      } else {
+        beginActive(Date.now());
+      }
+    });
+
+    window.addEventListener('pagehide', function () {
+      flush(true);
+      activeStartedAt = 0;
+    });
+
+    window.addEventListener('beforeunload', function () {
+      flush(true);
+      activeStartedAt = 0;
+    });
+
+    window.setInterval(function () {
+      if (document.visibilityState !== 'visible') return;
+      flush(false);
+    }, 15000);
+  };
+
+  // ── Cloudflare Turnstile ──────────────────────────────────
+  /**
+   * Set this to your Cloudflare Turnstile Site Key.
+   * Get it at: dash.cloudflare.com → Turnstile → Add site (bpmedia.net)
+   * Leave empty ('') to disable CAPTCHA until you're ready to configure it.
+   */
+  GW.TURNSTILE_SITE_KEY = ''; // ← Replace with your Turnstile Site Key
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function () {
+      GW.trackPageVisit();
+      GW.trackPostEngagement();
+    }, { once: true });
+  } else {
+    GW.trackPageVisit();
+    GW.trackPostEngagement();
+  }
+
+  /** Lazily load the Turnstile script once, then call cb(). */
+  GW.loadTurnstile = function (cb) {
+    if (!GW.TURNSTILE_SITE_KEY) { cb(); return; }
+    if (window.turnstile) { cb(); return; }
+    if (document.querySelector('script[data-turnstile]')) {
+      // Script already loading — wait for it with timeout
+      var attempts = 0;
+      var wait = setInterval(function () {
+        if (window.turnstile) { clearInterval(wait); cb(); return; }
+        if (++attempts > 100) { clearInterval(wait); console.warn('[GW] Turnstile load timeout'); cb(); }
+      }, 100);
+      return;
+    }
+    var s  = document.createElement('script');
+    s.src  = 'https://challenges.cloudflare.com/turnstile/v0/api.js';
+    s.defer = true;
+    s.setAttribute('data-turnstile', '1');
+    s.onload = function () { cb(); };
+    s.onerror = function () { console.warn('[GW] Turnstile CDN load failed'); cb(); };
+    document.head.appendChild(s);
+  };
+
+  // ── Shared Editor.js Image Tool ───────────────────────────
+  GW.makeEditorImageTool = function () {
+    function ImageTool(opts) {
+      this._data = opts.data || {};
+      this._api  = opts.api;
+    }
+    ImageTool.toolbox = {
+      title: '이미지',
+      icon: '<svg width="17" height="15" viewBox="0 0 336 276" xmlns="http://www.w3.org/2000/svg"><path d="M291 150V79c0-19-15-34-34-34H79c-19 0-34 15-34 34v42l67-44 81 72 56-29 42 30zm0 52l-43-30-56 29-81-72-66 44v46c0 19 15 34 34 34h178c17 0 31-13 34-30zM79 0h178c44 0 79 35 79 79v118c0 44-35 79-79 79H79c-44 0-79-35-79-79V79C0 35 35 0 79 0z"/></svg>',
+    };
+    ImageTool.prototype.render = function () {
+      var self = this;
+      this._wrapper = document.createElement('div');
+      this._wrapper.className = 'editorjs-image-tool';
+      if (this._data && this._data.url) { this._showImage(this._data.url, this._data.caption); return this._wrapper; }
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'editorjs-image-btn';
+      btn.textContent = '이미지 업로드';
+      btn.addEventListener('click', function () { self._upload(); });
+      this._wrapper.appendChild(btn);
+      return this._wrapper;
+    };
+    ImageTool.prototype._upload = function () {
+      var self = this;
+      var input = document.createElement('input');
+      input.type = 'file'; input.accept = 'image/*';
+      input.onchange = function () {
+        var file = input.files[0]; if (!file) return;
+        GW.optimizeImageFile(file, { maxW: 1200, maxH: 1200, quality: 0.8 })
+          .then(function (result) {
+            self._data = { url: result.dataUrl, caption: '' };
+            self._showImage(result.dataUrl, '');
+          })
+          .catch(function () {
+            GW.showToast('본문 이미지 최적화 실패', 'error');
+          });
+      };
+      input.click();
+    };
+    ImageTool.prototype._showImage = function (url, caption) {
+      this._wrapper.innerHTML = '';
+      var img = document.createElement('img'); img.src = url; img.style = 'max-width:100%;display:block;margin:8px 0;';
+      this._wrapper.appendChild(img);
+      var cap = document.createElement('input'); cap.type = 'text'; cap.placeholder = '사진 출처 또는 캡션 (선택)'; cap.value = caption || ''; cap.className = 'editorjs-image-caption';
+      var self = this; cap.addEventListener('input', function () { self._data.caption = cap.value; });
+      this._wrapper.appendChild(cap);
+    };
+    ImageTool.prototype.save = function () { return { url: this._data.url || '', caption: this._data.caption || '' }; };
+    ImageTool.prototype.validate = function (data) { return !!data.url; };
+    return ImageTool;
+  };
+})();

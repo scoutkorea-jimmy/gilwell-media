@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>개인정보 처리방침 — BP미디어</title>
+  <!-- SHARE_META -->
+  <link rel="icon" type="image/svg+xml" href="/img/favicon.svg">
+  <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png">
+  <link rel="apple-touch-icon" href="/img/logo.png">
+  <link rel="shortcut icon" href="/img/favicon-48.png">
+  <style>.nav[data-managed-nav]{visibility:hidden;opacity:0}</style>
+  <link rel="stylesheet" href="/css/style.css?v=20261029073654">
+  <link rel="stylesheet" href="/css/chatbot.css?v=20261029073654">
+  <link rel="stylesheet" href="/css/dark-mode.css?v=20261029073654">
+  <link rel="stylesheet" href="/css/m3-site.css?v=20261029073654">
+  <noscript><style>.nav[data-managed-nav]{visibility:visible!important;opacity:1!important}.nav[data-managed-nav] a{font-size:0!important}.nav[data-managed-nav] a::before{content:attr(data-fallback-label);font-size:12px}</style></noscript>
+  <style>
+    .privacy-wrap { max-width: 860px; margin: 32px auto 64px; padding: 0 20px; }
+    .privacy-wrap h1 { font-size: 28px; margin: 0 0 8px; letter-spacing: -.3px; }
+    .privacy-wrap .privacy-sub { color: var(--muted); font-size: 14px; margin: 0 0 32px; }
+    .privacy-wrap h2 { font-size: 18px; margin: 36px 0 10px; border-bottom: 1px solid var(--border); padding-bottom: 6px; }
+    .privacy-wrap h3 { font-size: 15px; margin: 18px 0 6px; }
+    .privacy-wrap p, .privacy-wrap li { font-size: 14px; line-height: 1.75; color: var(--ink); word-break: keep-all; }
+    .privacy-wrap ul { padding-left: 20px; margin: 6px 0 12px; }
+    .privacy-wrap table { width: 100%; border-collapse: collapse; font-size: 13px; margin: 10px 0 18px; }
+    .privacy-wrap th, .privacy-wrap td { border: 1px solid var(--border); padding: 8px 10px; vertical-align: top; text-align: left; }
+    .privacy-wrap th { background: var(--gray-100); font-weight: 600; }
+    .privacy-wrap .privacy-note { background: var(--gray-100); border-left: 3px solid var(--accent-border); padding: 10px 14px; font-size: 13px; margin: 16px 0; color: var(--gray-700); }
+    .privacy-wrap code { font-family: ui-monospace, Menlo, monospace; background: var(--gray-100); padding: 1px 5px; border-radius: var(--radius-tight); font-size: 12px; }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
+
+  <header class="masthead">
+    <div class="masthead-top">
+      <div class="masthead-date" id="today-date"></div>
+      <div class="masthead-logo">
+        <a href="/">
+          <div class="masthead-logo-row">
+            <img src="/img/logo.svg" alt="" class="masthead-logo-img" aria-hidden="true">
+            <p class="masthead-wordmark">BP미디어</p>
+          </div>
+          <div class="sub">bpmedia.net</div>
+        </a>
+      </div>
+      <div class="masthead-right">
+        <div class="masthead-stats" id="masthead-stats"></div>
+      </div>
+    </div>
+    <nav class="nav" data-managed-nav>
+      <a href="/" data-i18n="nav.home" data-fallback-label="홈"></a>
+      <a href="/latest" data-i18n="nav.latest" data-fallback-label="최신 소식"></a>
+      <a href="/jamboree16" data-i18n="nav.jamboree16" data-fallback-label="제16회 한국잼버리"></a>
+      <a href="/korea" data-i18n="nav.korea" data-fallback-label="Korea"></a>
+      <a href="/apr" data-i18n="nav.apr" data-fallback-label="APR"></a>
+      <a href="/wosm" data-i18n="nav.wosm" data-fallback-label="World"></a>
+      <a href="/wosm-members" data-i18n="nav.wosm_members" data-fallback-label="세계연맹 회원국 현황"></a>
+      <a href="/people" data-i18n="nav.people" data-fallback-label="스카우트 인물"></a>
+      <a href="/calendar" data-i18n="nav.calendar" data-fallback-label="캘린더"></a>
+      <a href="/glossary" data-i18n="nav.glossary" data-fallback-label="용어집"></a>
+      <a href="/memorabilia" data-i18n="nav.memorabilia" data-fallback-label="스카우트 기념품 도감"></a>
+    </nav>
+  </header>
+
+  <main id="main-content" class="privacy-wrap">
+    <div id="privacy-updated-meta" class="privacy-sub" hidden></div>
+    <div id="privacy-body" class="privacy-body">
+      <!-- PUBLIC_SSR:privacy -->
+    </div>
+  </main>
+  <script>
+    (function () {
+      var host = document.getElementById('privacy-body');
+      var meta = document.getElementById('privacy-updated-meta');
+      function render(html, updatedAt) {
+        if (!host) return;
+        var clean = (window.DOMPurify && DOMPurify.sanitize)
+          ? DOMPurify.sanitize(html, { USE_PROFILES: { html: true } })
+          : html;
+        host.innerHTML = clean;
+        if (meta && updatedAt) {
+          try {
+            var d = new Date(updatedAt);
+            if (!isNaN(d.getTime())) {
+              meta.textContent = '최종 개정 ' + d.toLocaleString('ko-KR', { timeZone: 'Asia/Seoul', year: 'numeric', month: '2-digit', day: '2-digit' });
+              meta.hidden = false;
+            }
+          } catch (_) {}
+        }
+      }
+      fetch('/api/settings/privacy-policy', { credentials: 'same-origin' })
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          if (data && data.html) render(data.html, data.updated_at);
+          else host.innerHTML = '<p class="privacy-sub">방침 본문을 불러올 수 없습니다.</p>';
+        })
+        .catch(function () {
+          host.innerHTML = '<p class="privacy-sub">방침 본문을 불러올 수 없습니다.</p>';
+        });
+    })();
+  </script>
+
+  <footer>
+    <div class="footer-inner">
+      <div class="footer-brand">
+        <h4 data-footer-role="title">BP미디어</h4>
+        <p data-footer-role="description">BP미디어는 스카우트 네트워크의 자발적인 봉사로 운영됩니다.</p>
+        <p data-footer-role="domain" style="margin-top:6px;">bpmedia.net</p>
+        <p>기사제보: <!--email_off--><a data-footer-role="tip-email" href="mailto:story@bpmedia.net">story@bpmedia.net</a><!--/email_off--></p>
+        <p>문의: <!--email_off--><a data-footer-role="contact-email" href="mailto:info@bpmedia.net">info@bpmedia.net</a><!--/email_off--></p>
+        <p class="footer-about-link"><a href="/about">About us</a></p>
+        <p class="footer-privacy-link"><a href="/privacy" data-footer-role="privacy-link">개인정보 처리방침</a></p>
+      </div>
+      <div class="footer-admin">
+        <h4>관리자</h4>
+        <a href="/admin.html">관리자 페이지 →</a>
+        <p class="footer-build">Site <span class="site-build-version">V00.195.00</span> · Admin <span class="admin-build-version">V03.161.00</span></p>
+      </div>
+      <div class="footer-bottom">
+        <p data-i18n="footer.copyright">© 2026 BP미디어 · bpmedia.net</p>
+        <p class="footer-credit">기록·편집 <a href="/about">박지민 (Jimmy Park)</a></p>
+      </div>
+    </div>
+  </footer>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.4/dist/purify.min.js" integrity="sha384-eEu5CTj3qGvu9PdJuS+YlkNi7d2XxQROAFYOr59zgObtlcux1ae1Il3u7jvdCSWu" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <script src="/js/main.js?v=20261029073654"></script>
+  <script src="/js/site-chrome.js?v=20261029073654"></script>
+  <script src="/js/chatbot.js?v=20261029073654" defer></script>
+  <script>
+    GW.bootstrapStandardPage();
+  </script>
+</body>
+</html>

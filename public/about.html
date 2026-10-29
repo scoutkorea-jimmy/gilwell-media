@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>운영 주체 — BP미디어</title>
+  <!-- SHARE_META -->
+  <link rel="icon" type="image/svg+xml" href="/img/favicon.svg">
+  <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png">
+  <link rel="apple-touch-icon" href="/img/logo.png">
+  <link rel="shortcut icon" href="/img/favicon-48.png">
+  <style>.nav[data-managed-nav]{visibility:hidden;opacity:0}</style>
+  <link rel="stylesheet" href="/css/style.css?v=20261029073654">
+  <link rel="stylesheet" href="/css/chatbot.css?v=20261029073654">
+  <link rel="stylesheet" href="/css/dark-mode.css?v=20261029073654">
+  <link rel="stylesheet" href="/css/m3-site.css?v=20261029073654">
+  <noscript><style>.nav[data-managed-nav]{visibility:visible!important;opacity:1!important}.nav[data-managed-nav] a{font-size:0!important}.nav[data-managed-nav] a::before{content:attr(data-fallback-label);font-size:12px}</style></noscript>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "AboutPage",
+    "name": "BP미디어 운영 주체",
+    "description": "BP미디어의 운영 주체(한국스카우트연맹 경기남부연맹 제4124대 백룡동우회), 공식 연맹과의 관계, 콘텐츠 편집·재가공 방식, 저작권·출처 정책, 운영·재정을 안내합니다.",
+    "inLanguage": "ko-KR",
+    "url": "https://bpmedia.net/about",
+    "mainEntity": {
+      "@type": "NewsMediaOrganization",
+      "name": "BP미디어",
+      "alternateName": ["BP media"],
+      "url": "https://bpmedia.net/",
+      "logo": "https://bpmedia.net/img/logo.png",
+      "slogan": "스카우트 운동의 소식을 기록·해설하는 독립 매체",
+      "description": "BP미디어는 한국스카우트연맹·세계스카우트연맹의 공식 채널이 아닌 독립 매체로, 한국스카우트연맹 경기남부연맹 제4124대 백룡동우회가 운영합니다.",
+      "publishingPrinciples": "https://bpmedia.net/about",
+      "ownershipFundingInfo": "https://bpmedia.net/about#funding",
+      "parentOrganization": {
+        "@type": "Organization",
+        "name": "한국스카우트연맹 경기남부연맹 제4124대 백룡동우회"
+      },
+      "member": {
+        "@type": "Person",
+        "@id": "https://bpmedia.net/about#person-jimmy-park",
+        "name": "박지민",
+        "alternateName": ["Jimmy Park", "박지민 대장"],
+        "jobTitle": "BP미디어 기록·편집",
+        "url": "https://bpmedia.net/about",
+        "sameAs": ["https://www.linkedin.com/in/jimmy1420/"],
+        "worksFor": {
+          "@id": "https://bpmedia.net/#organization"
+        },
+        "memberOf": [
+          {
+            "@type": "OrganizationRole",
+            "roleName": "커뮤니케이션·파트너십 분과위원회 부위원장",
+            "startDate": "2025",
+            "endDate": "2028",
+            "memberOf": {
+              "@type": "Organization",
+              "name": "아시아태평양지역 커뮤니케이션·파트너십 분과위원회",
+              "alternateName": "Asia-Pacific Region Communication & Partnership Sub-Committee"
+            }
+          },
+          {
+            "@type": "OrganizationRole",
+            "roleName": "중앙커미셔너 홍보 II",
+            "startDate": "2022",
+            "endDate": "2024",
+            "memberOf": {
+              "@type": "Organization",
+              "name": "한국스카우트연맹",
+              "alternateName": "Korea Scout Association",
+              "url": "https://www.scout.or.kr/"
+            }
+          },
+          {
+            "@type": "OrganizationRole",
+            "roleName": "미디어부 부부장",
+            "startDate": "2022",
+            "endDate": "2023",
+            "memberOf": {
+              "@type": "Organization",
+              "name": "제25회 세계스카우트잼버리",
+              "alternateName": "25th World Scout Jamboree"
+            }
+          }
+        ]
+      },
+      "contactPoint": [
+        {
+          "@type": "ContactPoint",
+          "contactType": "관리 책임",
+          "name": "박지민 대장 (Jimmy Park)",
+          "telephone": "+82-10-2646-1635",
+          "email": "info@bpmedia.net"
+        },
+        {
+          "@type": "ContactPoint",
+          "contactType": "콘텐츠 제보",
+          "email": "story@bpmedia.net"
+        }
+      ]
+    }
+  }
+  </script>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
+
+  <header class="masthead">
+    <div class="masthead-top">
+      <div class="masthead-date" id="today-date"></div>
+      <div class="masthead-logo">
+        <a href="/">
+          <div class="masthead-logo-row">
+            <img src="/img/logo.svg" alt="" class="masthead-logo-img" aria-hidden="true">
+            <p class="masthead-wordmark">BP미디어</p>
+          </div>
+          <div class="sub">bpmedia.net</div>
+        </a>
+      </div>
+      <div class="masthead-right">
+        <div class="masthead-stats" id="masthead-stats"></div>
+        <div class="lang-toggle" role="group" aria-label="언어 선택">
+          <button class="lang-btn active" id="lang-btn-ko" data-lang-toggle="ko" aria-pressed="true" aria-label="한국어">KOR</button>
+          <button class="lang-btn" id="lang-btn-en" data-lang-toggle="en" aria-pressed="false" aria-label="English">ENG</button>
+        </div>
+        <div class="masthead-search">
+          <input type="text" id="mh-search-input" class="mh-search-input" placeholder="검색…" autocomplete="off" aria-label="사이트 검색어 입력" />
+          <button class="mh-search-btn" id="mh-search-btn" aria-label="검색"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg></button>
+        </div>
+      </div>
+    </div>
+    <nav class="nav" data-managed-nav>
+      <a href="/contributors" data-i18n="nav.contributors" data-fallback-label="도움을 주신 분들"></a>
+      <a href="/" data-i18n="nav.home" data-fallback-label="홈"></a>
+      <a href="/latest" data-i18n="nav.latest" data-fallback-label="최신 소식"></a>
+      <a href="/jamboree16" data-i18n="nav.jamboree16" data-fallback-label="제16회 한국잼버리"></a>
+      <a href="/korea" data-i18n="nav.korea" data-fallback-label="Korea"></a>
+      <a href="/apr" data-i18n="nav.apr" data-fallback-label="APR"></a>
+      <a href="/wosm" data-i18n="nav.wosm" data-fallback-label="World"></a>
+      <a href="/wosm-members" data-i18n="nav.wosm_members" data-fallback-label="세계연맹 회원국 현황"></a>
+      <a href="/people" data-i18n="nav.people" data-fallback-label="스카우트 인물"></a>
+      <a href="/calendar" data-i18n="nav.calendar" data-fallback-label="캘린더"></a>
+      <a href="/glossary" data-i18n="nav.glossary" data-fallback-label="용어집"></a>
+      <a href="/memorabilia" data-i18n="nav.memorabilia" data-fallback-label="스카우트 기념품 도감"></a>
+    </nav>
+  </header>
+
+  <!-- GNB ↔ 운영주체 본문 사이 가로 배너. 이미지 파일: img/about-banner.jpg -->
+  <section class="about-hero">
+    <img class="about-hero-img" src="/img/about-banner.jpg"
+         alt="서울 도심 전경과 스카우트 지면·BP미디어가 어우러진 배너" />
+  </section>
+
+  <main id="main-content">
+    <article class="static-page about-page">
+      <header class="static-page-head">
+        <h1>운영 주체 <span class="about-head-en">About BP미디어</span></h1>
+        <p class="static-page-lead">BP미디어는 스카우트 운동의 소식을 기록·해설하는 <strong>독립 매체</strong>입니다. 누가 운영하는지, 공식 연맹과 어떤 관계인지, 콘텐츠를 어떻게 만들고 운영하는지를 투명하게 공개합니다.</p>
+      </header>
+
+      <section class="static-page-section about-glance" aria-label="한눈에 보기">
+        <h2>한눈에 보기</h2>
+        <dl class="about-summary">
+          <div class="about-summary-row">
+            <dt>매체명</dt>
+            <dd>BP미디어 <span class="about-summary-sub">영문 BP media</span></dd>
+          </div>
+          <div class="about-summary-row">
+            <dt>성격</dt>
+            <dd>스카우트 분야 전문 독립 콘텐츠·아카이브 매체</dd>
+          </div>
+          <div class="about-summary-row">
+            <dt>운영 주체</dt>
+            <dd>한국스카우트연맹 경기남부연맹 제4124대 백룡동우회</dd>
+          </div>
+          <div class="about-summary-row">
+            <dt>관리 책임</dt>
+            <dd>박지민 대장 (Jimmy Park) <a class="about-summary-tel" href="tel:+821026461635">+82.10.2646.1635</a></dd>
+          </div>
+          <div class="about-summary-row">
+            <dt>도메인</dt>
+            <dd><a href="/">bpmedia.net</a></dd>
+          </div>
+          <div class="about-summary-row">
+            <dt>연락</dt>
+            <dd>제보 <!--email_off--><a href="mailto:story@bpmedia.net">story@bpmedia.net</a><!--/email_off--> · 문의 <!--email_off--><a href="mailto:info@bpmedia.net">info@bpmedia.net</a><!--/email_off--></dd>
+          </div>
+        </dl>
+      </section>
+
+      <section class="static-page-section">
+        <h2><span class="about-sec-num">1</span> 우리는 누구인가</h2>
+        <p>BP미디어는 세계 스카우트 운동(WOSM·WAGGGS 및 각국 연맹)과 한국 스카우팅의 소식을 한국어 독자의 눈높이에서 정리해 전합니다. 매체명 'BP'는 스카우트 운동 창시자 로버트 베이든파월(Baden-Powell)에서 따왔습니다.</p>
+        <p>운영은 <strong>한국스카우트연맹 경기남부연맹 제4124대 백룡동우회</strong>가 맡고 있으며, 관리 책임은 <strong>박지민 대장(Jimmy Park)</strong>에게 있습니다. 운영 주체는 스카우트 조직의 일원이지만, 콘텐츠의 편집 방향은 특정 연맹·기관의 지시를 받지 않고 독립적으로 정합니다.</p>
+        <p>BP미디어는 스카우트를 사랑하는 누구나 자발적으로 함께할 수 있는 열린 매체입니다. 필진은 실명 또는 익명(편집자 코드) 어느 쪽으로도 활동할 수 있으며, 함께해 주신 분들은 <a href="/contributors">도움을 주신 분들</a>에서 확인하실 수 있습니다.</p>
+      </section>
+
+      <section class="static-page-section">
+        <h2><span class="about-sec-num">2</span> 공식 연맹과의 관계 — 우리는 공식 채널이 아닙니다</h2>
+        <p class="static-page-callout"><strong>BP미디어는 한국스카우트연맹, 세계스카우트연맹(WOSM), 세계걸스카우트연맹(WAGGGS), 그 어떤 지역·국가 연맹의 공식 사이트도, 기관지도, 대변 매체도 아닙니다.</strong></p>
+        <ul>
+          <li>본 사이트에서 다루는 연맹·기관의 <strong>명칭·로고·엠블럼</strong>은 대상을 식별하기 위한 <em>지명(指名) 목적</em>으로만 사용하며, 각 권리자의 소유입니다. 그 사용이 해당 기관과의 제휴·후원·승인 관계를 뜻하지는 않습니다.</li>
+          <li>공식 발표·공지·회원 서비스는 각 연맹의 공식 홈페이지를 확인해 주세요. BP미디어의 콘텐츠는 그에 대한 <strong>독립적 기록·해설</strong>입니다.</li>
+          <li>기관을 사칭하거나 공식 정보로 오인하도록 표기하지 않으며, 그런 오인을 발견하면 즉시 바로잡겠습니다.</li>
+        </ul>
+      </section>
+
+      <section class="static-page-section">
+        <h2><span class="about-sec-num">3</span> 무엇을, 어떻게 만드는가 — 편집·재가공 원칙</h2>
+        <p>BP미디어는 보도자료나 원문을 그대로 옮기는 곳이 아닙니다. 1차 자료를 직접 확인하고, 검증·편집·재구성해 <strong>BP미디어 고유의 콘텐츠로 다시 씁니다.</strong></p>
+        <ul>
+          <li><strong>1차 출처 확인</strong> — 연맹 공식 홈페이지·공문·공식 SNS·보도자료 등 1차 자료를 직접 확인합니다.</li>
+          <li><strong>맥락·해설 부가</strong> — 단순 번역·요약이 아니라, 한국 스카우팅 독자에게 의미 있는 <em>배경·국내 영향·관련 역사·용어 해설</em>을 더해 새로 서술합니다. 이것이 우리가 더하는 고유의 가치입니다.</li>
+          <li><strong>언어 병기·용어 표준화</strong> — 고유명사는 한국어·영어(필요 시 프랑스어) 표기를 병기하며, 일관된 기준을 <a href="/glossary">용어집</a>에서 관리하려 노력합니다. 다만 일부 표기는 아직 기준에 미치지 못할 수 있습니다.</li>
+          <li><strong>편집자 서명·검증</strong> — 모든 글에는 담당 편집자 코드(<code>Editor.〈알파벳〉</code>)를 표기하며, 사실관계는 편집자가 직접 검증합니다.</li>
+        </ul>
+        <p>수집·검증·정정·AI 활용 범위는 내부 편집 기준에 따라 운영합니다.</p>
+      </section>
+
+      <section class="static-page-section">
+        <h2><span class="about-sec-num">4</span> 저작권 · 출처 · 이미지</h2>
+        <ul>
+          <li>BP미디어가 직접 작성한 본문의 저작권은 <strong>BP미디어</strong>에 있습니다. 출처를 밝힌 요약 인용과 원문 링크는 환영합니다.</li>
+          <li>인용한 자료는 <strong>자료출처</strong> 표기로 원 출처를 분명히 밝힙니다.</li>
+          <li>콘텐츠에 쓰인 이미지는 정보 전달·비평·인용 목적의 범위에서 사용하며, 가능한 경우 출처를 캡션이나 글 말미에 밝힙니다.</li>
+          <li>제3자 권리 침해가 우려되는 자료를 발견하시면 아래 문의 메일로 알려주시면 신속히 확인·조치하겠습니다.</li>
+        </ul>
+      </section>
+
+      <section class="static-page-section" id="funding">
+        <h2><span class="about-sec-num">5</span> 운영 · 재정</h2>
+        <ul>
+          <li>BP미디어는 스카우트를 사랑하는 누구나 자발적으로 함께할 수 있는 <strong>열린 매체</strong>입니다.</li>
+          <li>현재 BP미디어는 영리를 주목적으로 하지 않습니다. 다만 매체의 지속과 운영비(도메인·호스팅 등)를 위해 <strong>광고·후원·협찬·제휴</strong>를 언제든 도입할 수 있습니다.</li>
+          <li>광고·후원·협찬은 콘텐츠와 <strong>명확히 구분</strong>해 표기합니다.</li>
+          <li>광고·후원·협찬은 기사의 선정·논조에 영향을 주지 않습니다. <strong>편집과 운영은 분리</strong>합니다.</li>
+        </ul>
+      </section>
+
+      <section class="static-page-section">
+        <h2><span class="about-sec-num">6</span> 연락처 · 정보 보호</h2>
+        <p>콘텐츠 제보·정정 요청·제휴·이용 문의는 아래 메일로 연락해 주세요.</p>
+        <ul>
+          <li>콘텐츠 제보 — <!--email_off--><a href="mailto:story@bpmedia.net">story@bpmedia.net</a><!--/email_off--></li>
+          <li>일반 문의 · 제휴 · 권리 신고 — <!--email_off--><a href="mailto:info@bpmedia.net">info@bpmedia.net</a><!--/email_off--></li>
+          <li>개인정보 처리 관련 — <a href="/privacy">개인정보 처리방침</a></li>
+        </ul>
+        <p>민감 개인정보는 관리자 페이지에서 <strong>2단계 인증(2FA)</strong>을 거쳐 접근·관리합니다.</p>
+      </section>
+
+      <div class="static-page-foot">
+        <p class="static-page-updated">이 안내는 별도의 고지 없이 변경될 수 있습니다. 자세한 사항은 <a href="/privacy">개인정보 처리방침</a>에서 확인하실 수 있습니다.</p>
+      </div>
+    </article>
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+      <div class="footer-brand">
+        <h4 data-footer-role="title">BP미디어</h4>
+        <p data-footer-role="description">BP미디어는 스카우트 네트워크의 자발적인 봉사로 운영됩니다.</p>
+        <p data-footer-role="domain" style="margin-top:6px;">bpmedia.net</p>
+        <p>기사제보: <!--email_off--><a data-footer-role="tip-email" href="mailto:story@bpmedia.net">story@bpmedia.net</a><!--/email_off--></p>
+        <p>문의: <!--email_off--><a data-footer-role="contact-email" href="mailto:info@bpmedia.net">info@bpmedia.net</a><!--/email_off--></p>
+        <p class="footer-about-link"><a href="/about">About us</a></p>
+        <p class="footer-privacy-link"><a href="/privacy" data-footer-role="privacy-link">개인정보 처리방침</a></p>
+      </div>
+      <div class="footer-admin">
+        <h4>관리자</h4>
+        <a href="/admin.html">관리자 페이지 →</a>
+        <a href="/glossary-raw">용어집 RAW로 보기 →</a>
+        <p class="footer-build">Site <span class="site-build-version">V00.195.00</span> · Admin <span class="admin-build-version">V03.161.00</span></p>
+      </div>
+      <div class="footer-bottom">
+        <p data-i18n="footer.copyright">© 2026 BP미디어 · bpmedia.net</p>
+        <p class="footer-credit">기록·편집 <a href="/about">박지민 (Jimmy Park)</a></p>
+        <p data-i18n="footer.disclaimer">BP미디어는 전 세계 스카우트 소식과 활동을 기록하고 공유하는 독립 미디어 아카이브입니다. 한국스카우트연맹과 세계스카우트연맹 공식 채널이 아닌 자발적 스카우트 네트워크로 운영됩니다.</p>
+      </div>
+    </div>
+  </footer>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.4/dist/purify.min.js" integrity="sha384-eEu5CTj3qGvu9PdJuS+YlkNi7d2XxQROAFYOr59zgObtlcux1ae1Il3u7jvdCSWu" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <script src="/js/main.js?v=20261029073654"></script>
+  <script src="/js/site-chrome.js?v=20261029073654"></script>
+  <script src="/js/chatbot.js?v=20261029073654" defer></script>
+  <script>
+    GW.bootstrapStandardPage();
+  </script>
+</body>
+</html>

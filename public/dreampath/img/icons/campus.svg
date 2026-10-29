@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="Campus">
+  <path d="M3 21V10l9-5 9 5v11"></path>
+  <path d="M3 21h18"></path>
+  <path d="M9 21v-5h6v5"></path>
+  <path d="M12 5V3"></path>
+</svg>

@@ -1,0 +1,241 @@
+import { recordHomepageIssue } from '../../_shared/homepage-issues.js';
+import { queryRust } from '../../_shared/rust-server.js';
+import { deriveIp, logOperationalEvent } from '../../_shared/ops-log.js';
+import { enforceRateLimit, getClientIp, rateLimitResponse } from '../../_shared/rate-limit.js';
+
+const ISSUE_TEMPLATES = {
+  home_initial_fetch_failed: {
+    title: '홈 초기 데이터 로드 실패',
+    issue_type: 'error',
+    status: 'open',
+    severity: 'high',
+    area: 'homepage',
+    source_path: '/api/home',
+    impact: '홈 주요 영역이 fallback 상태로 내려가며 최신 데이터가 비어 보일 수 있습니다.',
+    action_items: '홈 API 응답, 네트워크 상태, Functions 오류 로그를 우선 확인합니다.',
+  },
+  home_latest_refresh_failed: {
+    title: '홈 백그라운드 새로고침 실패',
+    issue_type: 'issue',
+    status: 'monitoring',
+    severity: 'low',
+    area: 'homepage',
+    source_path: '/api/home',
+    impact: '홈 일부 섹션이 잠시 오래된 상태로 유지될 수 있습니다. 사용자가 새로 로드하면 자연 복구되는 비차단성 이벤트입니다.',
+    action_items: '동일 사용자에서 반복되거나 `home_initial_fetch_failed`와 함께 누적될 때만 /api/home 응답을 점검합니다.',
+  },
+  home_client_runtime_error: {
+    title: '홈 런타임 스크립트 오류',
+    issue_type: 'error',
+    status: 'open',
+    severity: 'high',
+    area: 'ui',
+    source_path: '/js/home.js',
+    impact: '홈 일부 상호작용 또는 렌더링이 중단될 수 있습니다.',
+    action_items: '브라우저 런타임 에러 메시지와 최근 배포 자산 버전을 확인합니다.',
+  },
+  home_client_promise_rejection: {
+    title: '홈 비동기 처리 오류',
+    issue_type: 'error',
+    status: 'monitoring',
+    severity: 'medium',
+    area: 'ui',
+    source_path: '/js/home.js',
+    impact: '홈의 일부 비동기 기능이 조용히 실패할 수 있습니다.',
+    action_items: 'Unhandled rejection 메시지와 관련 API 호출 경로를 확인합니다.',
+  },
+  admin_client_runtime_error: {
+    title: '관리자 런타임 스크립트 오류',
+    issue_type: 'error',
+    status: 'open',
+    severity: 'high',
+    area: 'ui',
+    source_path: '/js/admin-v3.js',
+    impact: '관리자 일부 저장, 목록, 분석 UI가 중단되거나 응답하지 않을 수 있습니다.',
+    action_items: '브라우저 런타임 에러 메시지, 최근 관리자 배포 자산 버전, 재현 경로를 확인합니다.',
+  },
+  admin_client_promise_rejection: {
+    title: '관리자 비동기 처리 오류',
+    issue_type: 'error',
+    status: 'monitoring',
+    severity: 'medium',
+    area: 'ui',
+    source_path: '/js/admin-v3.js',
+    impact: '관리자 비동기 데이터 로딩 또는 저장 후속 처리 일부가 조용히 실패할 수 있습니다.',
+    action_items: 'Unhandled rejection 메시지와 관련 API 호출 경로를 확인합니다.',
+  },
+  admin_client_api_error: {
+    title: '관리자 API 요청 실패',
+    issue_type: 'error',
+    status: 'open',
+    severity: 'medium',
+    area: 'api',
+    source_path: '/api/admin',
+    impact: '관리자 저장, 목록, 분석, 설정 로딩 중 일부 기능이 실패하거나 오래된 상태로 보일 수 있습니다.',
+    action_items: '실패한 API 경로, HTTP 상태 코드, 관리자 패널 구간, 최근 배포 이력을 함께 확인합니다.',
+  },
+};
+
+export async function onRequestPost({ request, env }) {
+  if (!isSameOriginReport(request)) {
+    return json({ error: 'Forbidden' }, 403);
+  }
+
+  // 공개 POST + 인증 없음이므로 rate limit으로 DB 스팸·bloat을 방어.
+  // curl 등으로 Origin 헤더를 위조하면 same-origin 검사는 통과할 수 있어서
+  // IP당 분당 30회로 상한을 건다. 정상 클라이언트(_reportSiteIssue in
+  // admin-v3.js/post-page.js)는 fingerprint dedup 덕에 이 한도에 닿지 않음.
+  const rl = await enforceRateLimit(env, {
+    route: 'homepage-issues-report',
+    identity: getClientIp(request),
+    limit: 30,
+    windowSeconds: 60,
+  });
+  if (!rl.ok) return rateLimitResponse(rl, '이슈 보고 요청이 너무 많습니다. 잠시 후 다시 시도해주세요.');
+
+  let body;
+  try {
+    body = await request.json();
+  } catch (_) {
+    return json({ error: 'Invalid JSON body' }, 400);
+  }
+
+  const code = String(body && body.code || '').trim();
+  const template = ISSUE_TEMPLATES[code];
+  if (!template) {
+    return json({ error: 'Unknown report code' }, 400);
+  }
+
+  const detail = sanitizeDetail(body && body.detail);
+  const sourcePath = normalizeSourcePath(template.source_path, detail);
+  const severity = await resolveSeverity(env, code, template, sourcePath);
+  const item = await recordHomepageIssue(env, {
+    title: template.title,
+    issue_type: template.issue_type,
+    status: template.status,
+    severity,
+    area: template.area,
+    source_path: sourcePath,
+    summary: buildSummary(template.title, detail),
+    impact: template.impact,
+    cause: buildCause(detail),
+    action_items: template.action_items,
+    reporter: 'system:auto-home',
+    occurred_at: nowUtcText(),
+  });
+
+  await logOperationalEvent(env, {
+    channel: 'site',
+    type: 'homepage_issue_report',
+    level: 'warn',
+    ip: deriveIp(request),
+    path: '/api/homepage-issues/report',
+    message: template.title,
+    details: {
+      code,
+      source_path: item && item.source_path ? item.source_path : template.source_path,
+      detail,
+      occurrence_count: item && item.occurrence_count ? item.occurrence_count : 1,
+    },
+  });
+
+  return json({
+    ok: true,
+    item,
+  }, 201);
+}
+
+function isSameOriginReport(request) {
+  try {
+    const url = new URL(request.url);
+    const origin = String(request.headers.get('Origin') || '').trim();
+    if (origin) return origin === url.origin;
+    const referer = String(request.headers.get('Referer') || '').trim();
+    return !referer || referer.indexOf(url.origin + '/') === 0 || referer === url.origin;
+  } catch (_) {
+    return false;
+  }
+}
+
+function sanitizeDetail(input) {
+  const detail = input && typeof input === 'object' ? input : {};
+  return {
+    message: trim(detail.message, 400),
+    path: trim(detail.path, 260),
+    section: trim(detail.section, 80),
+    code: trim(detail.code, 80),
+    source: trim(detail.source, 260),
+    method: trim(detail.method, 20),
+    status: trim(detail.status, 20),
+  };
+}
+
+function normalizeSourcePath(basePath, detail) {
+  const extra = detail && detail.path ? ' [' + detail.path + ']' : '';
+  return trim((basePath || '') + extra, 260);
+}
+
+function buildSummary(title, detail) {
+  const parts = [];
+  if (detail && detail.section) parts.push('section=' + detail.section);
+  if (detail && detail.method) parts.push('method=' + detail.method);
+  if (detail && detail.status) parts.push('status=' + detail.status);
+  if (detail && detail.code) parts.push('code=' + detail.code);
+  if (detail && detail.message) parts.push(detail.message);
+  return trim(parts.join(' | ') || title, 2000);
+}
+
+function buildCause(detail) {
+  const parts = [];
+  if (detail && detail.source) parts.push('source=' + detail.source);
+  if (detail && detail.path) parts.push('path=' + detail.path);
+  if (detail && detail.method) parts.push('method=' + detail.method);
+  if (detail && detail.status) parts.push('status=' + detail.status);
+  if (detail && detail.message) parts.push('message=' + detail.message);
+  return trim(parts.join(' | '), 2000);
+}
+
+function trim(value, max) {
+  const text = String(value || '').trim();
+  if (!text) return '';
+  return text.length > max ? text.slice(0, max) : text;
+}
+
+function nowUtcText() {
+  return new Date().toISOString().slice(0, 19).replace('T', ' ');
+}
+
+// 단발성 네트워크 단절은 사용자 새로고침으로 자연 복구되는 transient 이벤트.
+// 동일 source_path 가 최근 10분 내 누적 occurrence_count >= 3 일 때만 'high' 로
+// escalate; 그 외에는 첫 보고를 'medium' 으로 강등해 알람 잡음을 막는다.
+// home_initial_fetch_failed 와 home_client_runtime_error 가 대상.
+const TRANSIENT_DOWNGRADE_CODES = new Set([
+  'home_initial_fetch_failed',
+  'home_client_runtime_error',
+]);
+
+async function resolveSeverity(env, code, template, sourcePath) {
+  const baseSeverity = template.severity;
+  if (!TRANSIENT_DOWNGRADE_CODES.has(code)) return baseSeverity;
+  if (baseSeverity !== 'high') return baseSeverity;
+  try {
+    const response = await queryRust({env, request:{url:'https://internal.invalid/'}}, 'homepage-issue-recent', {sourcePath});
+    if (!response.ok) throw new Error('Rust recent issue query failed');
+    const {row} = await response.json();
+    const recentCount = (row && Number(row.occurrence_count)) || 0;
+    // recentCount 는 다음 dedup 이전 직전까지의 카운트. +1 = 이번 보고 포함.
+    return (recentCount + 1) >= 3 ? 'high' : 'medium';
+  } catch (_) {
+    return baseSeverity;
+  }
+}
+
+function json(data, status = 200) {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: {
+      'Content-Type': 'application/json',
+      'Cache-Control': 'no-store',
+    },
+  });
+}

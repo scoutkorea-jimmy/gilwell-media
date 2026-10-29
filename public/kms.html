@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>KMS — BP미디어</title>
+  <link rel="icon" type="image/svg+xml" href="/img/favicon.svg">
+  <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png">
+  <link rel="apple-touch-icon" href="/img/logo.png">
+  <link rel="shortcut icon" href="/img/favicon-48.png">
+  <link rel="stylesheet" href="/css/style.css?v=20261029073654">
+  <link rel="stylesheet" href="/css/chatbot.css?v=20261029073654">
+  <link rel="stylesheet" href="/css/admin.css?v=20261029073654">
+</head>
+<body class="kms-page">
+
+  <!-- ── 로그인 화면 ─────────────────────────────────────────── -->
+  <div id="kms-login-screen" class="kms-login-screen">
+    <div class="kms-login-box">
+      <div class="kms-login-brand">
+        <span class="kms-brand-badge">KMS</span>
+        <strong>BP미디어</strong>
+      </div>
+      <p class="kms-login-desc">Knowledge Management System — 관리자 전용</p>
+      <label for="kms-username-input">아이디</label>
+      <input type="text" id="kms-username-input" class="kms-login-input" placeholder="아이디" autocomplete="username" spellcheck="false" autocapitalize="off" style="margin-bottom:8px;" />
+      <label for="kms-pw-input">비밀번호</label>
+      <input type="password" id="kms-pw-input" class="kms-login-input" placeholder="••••••••" autocomplete="current-password" />
+      <button class="kms-login-btn" id="kms-login-btn">KMS 열기</button>
+      <div class="kms-login-error" id="kms-login-error" hidden></div>
+      <p class="kms-login-ver">Site <span class="site-build-version">—</span> · Admin <span class="admin-build-version">—</span></p>
+    </div>
+  </div>
+
+  <!-- ── KMS 앱 ──────────────────────────────────────────────── -->
+  <div id="kms-screen" class="kms-screen" hidden aria-hidden="true">
+
+    <!-- 헤더 -->
+    <header class="kms-header" role="banner">
+      <div class="kms-header-left">
+        <button type="button" class="kms-sidebar-toggle" id="kms-sidebar-toggle" aria-label="사이드바 열기/닫기">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
+        </button>
+        <span class="kms-brand-badge">KMS</span>
+        <span class="kms-header-title">BP미디어 지식 관리 시스템</span>
+      </div>
+
+      <nav class="kms-tab-nav" role="tablist" aria-label="KMS 탭">
+        <button type="button" class="kms-tab-btn is-active" role="tab" aria-selected="true"  data-kms-tab="docs">기능정의서</button>
+        <button type="button" class="kms-tab-btn" role="tab" aria-selected="false" data-kms-tab="api">API 가이드</button>
+        <button type="button" class="kms-tab-btn" role="tab" aria-selected="false" data-kms-tab="changelog">버전기록</button>
+        <button type="button" class="kms-tab-btn" role="tab" aria-selected="false" data-kms-tab="design">디자인</button>
+        <button type="button" class="kms-tab-btn" role="tab" aria-selected="false" data-kms-tab="editorial">기사작성표준</button>
+      </nav>
+
+      <div class="kms-header-right">
+        <a class="kms-back-link" href="/admin.html">관리자 →</a>
+      </div>
+    </header>
+
+    <div class="kms-release-note" id="kms-release-note" role="status" aria-live="polite">
+      <strong>KMS 업데이트 확인용 노트</strong>
+      <span>최신 정책과 관리자 여백·레이아웃 기준까지 함께 반영된 상태여야 정상입니다.</span>
+      <code id="kms-release-note-version">Admin v03.161.00</code>
+    </div>
+
+    <!-- 레이아웃 -->
+    <div class="kms-layout">
+
+      <!-- 사이드바 오버레이 (모바일) -->
+      <div class="kms-overlay" id="kms-overlay" aria-hidden="true"></div>
+
+      <!-- 사이드바 -->
+      <aside class="kms-sidebar" id="kms-sidebar" aria-label="문서 탐색">
+        <div class="kms-sidebar-inner">
+          <div class="kms-search-wrap">
+            <svg class="kms-search-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+            <input type="search" id="kms-search-input" class="kms-search-input" placeholder="KMS 내 검색…" autocomplete="off" />
+          </div>
+
+          <div class="kms-sidebar-meta" id="kms-sidebar-meta">
+            <span>Site&nbsp;<strong id="kms-ver-site">—</strong></span>
+            <span>대목차&nbsp;<strong id="kms-section-count">0</strong></span>
+          </div>
+
+          <div class="kms-sidebar-principles">
+            <div class="kms-principle-item">KMS가 운영 기준의 단일 원본입니다.</div>
+            <div class="kms-principle-item">기능 전 확인 → 구현 → 배포 전 문서 갱신.</div>
+            <div class="kms-principle-item">코드와 문서는 항상 일치해야 합니다.</div>
+          </div>
+
+          <div id="kms-section-list" class="kms-section-list">
+            <div class="kms-list-empty">정의서를 불러오는 중…</div>
+          </div>
+        </div>
+      </aside>
+
+      <!-- 메인 콘텐츠 -->
+      <main class="kms-main" id="kms-main">
+
+        <!-- ── 탭: 기능정의서 ────────────────────────────────── -->
+        <div id="kms-tab-docs" class="kms-tab-panel" role="tabpanel">
+          <div class="kms-panel-header">
+            <div class="kms-panel-header-text">
+              <span class="kms-kicker">운영 기준 문서</span>
+              <h2 id="kms-document-title">기능 정의서</h2>
+              <p id="kms-document-summary">대목차와 세목차를 중심으로 운영 기준, 기능 의도, 세부 규칙, 각주를 문서화합니다.</p>
+            </div>
+            <div class="kms-panel-header-side kms-panel-header-actions">
+              <div class="kms-meta-row">
+                <span>Site&nbsp;<strong id="kms-build-version">—</strong></span>
+                <span>대목차&nbsp;<strong id="kms-section-count-doc">0</strong></span>
+                <span>세부항목&nbsp;<strong id="kms-detail-count">0</strong></span>
+                <span>최종 업데이트&nbsp;<strong id="kms-doc-updated">—</strong></span>
+              </div>
+              <div class="kms-action-row">
+                <div class="kms-mode-switch" id="kms-mode-switch" aria-label="편집 모드">
+                  <button type="button" class="kms-mode-btn is-active" data-kms-mode="read">보기</button>
+                  <button type="button" class="kms-mode-btn" data-kms-mode="edit">편집</button>
+                </div>
+                <button type="button" class="kms-save-btn" id="kms-save-btn">저장</button>
+              </div>
+            </div>
+          </div>
+
+          <div id="kms-search-result-banner" class="kms-search-result-banner" hidden>
+            <span id="kms-search-result-count"></span>
+            <button type="button" class="kms-search-clear-btn" id="kms-search-clear-btn">검색 초기화</button>
+          </div>
+
+          <div id="kms-document-body" class="kms-document-body">
+            <div class="kms-list-empty">정의서를 불러오는 중…</div>
+          </div>
+
+          <div id="kms-editor-panel" class="kms-editor-panel" hidden>
+            <div class="kms-editor-toolbar">
+              <span class="kms-editor-hint">Markdown 편집 — <code>##</code> 대목차 &nbsp;<code>###</code> 소목차 &nbsp;<code>####</code> 세부규칙</span>
+              <span class="kms-editor-hint">Obsidian 호환: frontmatter, 위키링크 <code>[[항목명]]</code> 사용 가능</span>
+            </div>
+            <textarea id="kms-editor-input" class="kms-editor-input" placeholder="기능 정의서를 Markdown으로 입력하세요.&#10;&#10;# 문서 제목&#10;## 대목차&#10;### 소목차&#10;#### 세부규칙"></textarea>
+          </div>
+        </div>
+
+        <!-- ── 탭: API 가이드 ─────────────────────────────────── -->
+        <div id="kms-tab-api" class="kms-tab-panel" hidden role="tabpanel">
+          <div class="kms-panel-header">
+            <div class="kms-panel-header-text">
+              <span class="kms-kicker">개발자 레퍼런스</span>
+              <h2>API 가이드 / 연동 매뉴얼</h2>
+              <p>BP미디어 백엔드 전체 엔드포인트 목록입니다. 인증이 필요한 항목은 <code>Authorization: Bearer &lt;token&gt;</code> 헤더를 포함하세요.</p>
+            </div>
+            <div class="kms-panel-header-side kms-panel-header-meta">
+              <span>Base URL&nbsp;<strong>https://bpmedia.net</strong></span>
+              <span>DB&nbsp;<strong>Cloudflare D1 (SQLite)</strong></span>
+            </div>
+          </div>
+
+          <div class="kms-api-auth-box">
+            <strong>인증 방법</strong>
+            <ol>
+              <li><code>POST /api/admin/login</code> 에 비밀번호를 전송해 JWT 토큰을 발급받습니다.</li>
+              <li>이후 모든 admin 전용 요청에 <code>Authorization: Bearer &lt;token&gt;</code> 헤더를 포함합니다.</li>
+              <li>토큰 유효기간은 24시간입니다. 만료 시 재로그인이 필요합니다.</li>
+            </ol>
+          </div>
+
+          <div id="kms-api-guide" class="kms-api-guide"></div>
+        </div>
+
+        <!-- ── 탭: 버전기록 ──────────────────────────────────── -->
+        <div id="kms-tab-changelog" class="kms-tab-panel" hidden role="tabpanel">
+          <div class="kms-panel-header">
+            <div class="kms-panel-header-text">
+              <span class="kms-kicker">개발 히스토리</span>
+              <h2>버전기록 / Changelog</h2>
+              <p>사이트와 관리자 시스템의 변경 이력입니다. 어떤 기능이 언제 추가되었고, 무엇이 수정·보완되었는지 확인할 수 있습니다.</p>
+            </div>
+            <div class="kms-panel-header-side kms-panel-header-side--chips">
+              <div class="kms-cl-filter" role="group" aria-label="범위 필터">
+                <button type="button" class="kms-chip is-active" data-cl-scope="all">전체</button>
+                <button type="button" class="kms-chip" data-cl-scope="site">Site</button>
+                <button type="button" class="kms-chip" data-cl-scope="admin">Admin</button>
+                <button type="button" class="kms-chip" data-cl-scope="both">Both</button>
+              </div>
+            </div>
+          </div>
+          <!-- 키워드 검색 + 기간 필터 — 페이지네이션은 50/page 로 렌더러가 자동 출력 -->
+          <div class="kms-cl-filters">
+            <input type="search" id="kms-cl-search" class="kms-cl-filters-search" placeholder="키워드 검색 (요약 · 변경사항 · 버전 · 날짜)" autocomplete="off" />
+            <div class="kms-cl-filters-dates">
+              <label class="kms-cl-filters-date">
+                <span>From</span>
+                <input type="date" id="kms-cl-date-from" />
+              </label>
+              <label class="kms-cl-filters-date">
+                <span>To</span>
+                <input type="date" id="kms-cl-date-to" />
+              </label>
+            </div>
+            <label class="kms-cl-filters-pagesize">
+              <span>한 페이지</span>
+              <select id="kms-cl-page-size" aria-label="페이지당 표시 개수">
+                <option value="10">10개</option>
+                <option value="30">30개</option>
+                <option value="50" selected>50개</option>
+                <option value="100">100개</option>
+              </select>
+            </label>
+            <button type="button" class="kms-chip" id="kms-cl-filter-reset">초기화</button>
+            <span class="kms-cl-filters-meta" id="kms-cl-filter-meta"></span>
+          </div>
+          <div id="kms-changelog" class="kms-changelog">
+            <div class="kms-list-empty">버전기록을 불러오는 중…</div>
+          </div>
+        </div>
+
+        <!-- ── 탭: 디자인 시스템 ──────────────────────────────── -->
+        <div id="kms-tab-design" class="kms-tab-panel" hidden role="tabpanel">
+          <div class="kms-panel-header">
+            <div class="kms-panel-header-text">
+              <span class="kms-kicker">UI 컴포넌트 레퍼런스</span>
+              <h2>디자인 시스템</h2>
+              <p>디자인 종류를 한눈에 정리하고, 각 모듈의 코드와 실제 미리보기를 나란히 확인할 수 있도록 다시 설계한 레퍼런스입니다. 데스크톱과 모바일 기준도 함께 봅니다.</p>
+            </div>
+            <div class="kms-panel-header-side kms-panel-header-meta">
+              <span>기본 보기&nbsp;<strong>Preview</strong></span>
+              <span>편집 흐름&nbsp;<strong>코드 → 반영</strong></span>
+              <span>모듈 구조&nbsp;<strong>4 Layers</strong></span>
+            </div>
+          </div>
+          <div class="kms-ds-body"></div>
+        </div>
+
+        <!-- ── 탭: 기사작성표준 ────────────────────────────────── -->
+        <div id="kms-tab-editorial" class="kms-tab-panel" hidden role="tabpanel">
+          <div class="kms-panel-header">
+            <div class="kms-panel-header-text">
+              <span class="kms-kicker">편집 기준 원본</span>
+              <h2>BP미디어 기사 작성 표준 v2.3</h2>
+              <p>스카우트 관련 원문을 기반으로 BP미디어 기사를 일관된 구조로 생성하기 위한 단일 기준. v2.3은 v2.2를 유지한 채 검색 최적화(SEO)와 메시지 전달력 강화를 위해 Title·Subtitle 규칙을 확장한다.</p>
+            </div>
+            <div class="kms-panel-header-side kms-panel-header-meta">
+              <span>버전&nbsp;<strong>v2.3</strong></span>
+              <span>상태&nbsp;<strong>운영 중</strong></span>
+            </div>
+          </div>
+
+          <div class="kms-editorial-body">
+
+            <!-- 1 목적 -->
+            <section class="kms-ed-section" id="kms-ed-s01">
+              <h3 class="kms-ed-heading">목적</h3>
+              <p class="kms-ed-note">이 문서는 스카우트 관련 원문을 기반으로 BP미디어 기사를 일관된 구조로 생성하기 위한 단일 기준이다. v2.3은 기존 v2.2를 유지하면서 검색 최적화(SEO)와 메시지 전달력 강화를 위해 Title과 Subtitle 규칙을 확장한다.</p>
+            </section>
+
+            <!-- 2 핵심 원칙 -->
+            <section class="kms-ed-section" id="kms-ed-s02">
+              <h3 class="kms-ed-heading">핵심 원칙</h3>
+              <div class="kms-ed-principles">
+                <div class="kms-ed-principle"><span class="kms-ed-num">01</span><span>사실은 고정한다</span></div>
+                <div class="kms-ed-principle"><span class="kms-ed-num">02</span><span>구조는 정리한다</span></div>
+                <div class="kms-ed-principle"><span class="kms-ed-num">03</span><span>해석은 통제한다</span></div>
+                <div class="kms-ed-principle"><span class="kms-ed-num">04</span><span>표현은 겸손하고 절제한다</span></div>
+                <div class="kms-ed-principle"><span class="kms-ed-num">05</span><span>홍보는 구조로 드러낸다</span></div>
+              </div>
+            </section>
+
+            <!-- 3 출력 형식 -->
+            <section class="kms-ed-section" id="kms-ed-s03">
+              <h3 class="kms-ed-heading">출력 형식 <span class="kms-ed-badge">고정</span></h3>
+              <p class="kms-ed-note">아래 순서를 반드시 유지한다.</p>
+              <ol class="kms-ed-ol">
+                <li><strong>Title</strong></li>
+                <li><strong>Subtitle</strong></li>
+                <li><strong>Body</strong></li>
+                <li><strong>자료출처:</strong></li>
+                <li><strong>Recommended Tags:</strong></li>
+              </ol>
+            </section>
+
+            <!-- 4 Title 규칙 -->
+            <section class="kms-ed-section" id="kms-ed-s04">
+              <h3 class="kms-ed-heading">Title 규칙 <span class="kms-ed-badge">v2.3 핵심 개정</span></h3>
+              <div class="kms-ed-rule-grid">
+                <div class="kms-ed-rule-col">
+                  <h4 class="kms-ed-sub">기본 구조</h4>
+                  <p>주체 + 행위 + 사건명</p>
+                  <h4 class="kms-ed-sub" style="margin-top:12px;">SEO 확장 규칙</h4>
+                  <ul class="kms-ed-ul">
+                    <li>핵심 키워드를 제목 앞부분에 배치</li>
+                    <li>검색 의도 기반 키워드 사용 (회의, 교육, 프로그램, 다양성·포용 등)</li>
+                    <li>정보 밀도로 후킹 생성 (감정 금지)</li>
+                  </ul>
+                  <h4 class="kms-ed-sub" style="margin-top:12px;">행위 규칙</h4>
+                  <ul class="kms-ed-ul">
+                    <li>실제 발생한 행동만 사용 (개최, 운영, 체결 등)</li>
+                    <li>추상적 표현 금지 (추진, 강화, 확대 단독 사용 금지)</li>
+                  </ul>
+                  <h4 class="kms-ed-sub" style="margin-top:12px;">길이 기준</h4>
+                  <ul class="kms-ed-ul">
+                    <li>28~36자 권장</li>
+                    <li>검색 결과에서 잘리지 않는 길이 유지</li>
+                  </ul>
+                  <h4 class="kms-ed-sub" style="margin-top:12px;">후킹 방식</h4>
+                  <ul class="kms-ed-ul">
+                    <li>감정 유도 금지</li>
+                    <li>정보량으로 클릭 유도</li>
+                    <li>실제 검색 형태 반영</li>
+                  </ul>
+                </div>
+                <div class="kms-ed-rule-col kms-ed-rule-col--deny">
+                  <h4 class="kms-ed-sub kms-ed-sub--deny">금지</h4>
+                  <ul class="kms-ed-ul">
+                    <li>감정 표현</li>
+                    <li>평가</li>
+                    <li>미래 예측</li>
+                    <li>과장 표현</li>
+                    <li>중복 표현</li>
+                  </ul>
+                </div>
+              </div>
+            </section>
+
+            <!-- 5 Subtitle 규칙 -->
+            <section class="kms-ed-section" id="kms-ed-s05">
+              <h3 class="kms-ed-heading">Subtitle 규칙 <span class="kms-ed-badge">v2.3 핵심 개정</span></h3>
+              <div class="kms-ed-rule-grid">
+                <div class="kms-ed-rule-col">
+                  <h4 class="kms-ed-sub">구조 정의</h4>
+                  <p>부제목 = 왜 했는가 + 어떤 임팩트가 있는가</p>
+                  <h4 class="kms-ed-sub" style="margin-top:12px;">표현 방식</h4>
+                  <ul class="kms-ed-ul">
+                    <li>반드시 명사형으로 종료</li>
+                    <li>문장형 금지</li>
+                    <li>설명형 금지</li>
+                  </ul>
+                  <h4 class="kms-ed-sub" style="margin-top:12px;">구성 요소</h4>
+                  <ul class="kms-ed-ul">
+                    <li>목적 (왜 했는가)</li>
+                    <li>적용/변화 (어떤 영향이 있는가)</li>
+                  </ul>
+                  <h4 class="kms-ed-sub" style="margin-top:12px;">권장 단어</h4>
+                  <p>확장 / 적용 / 실행 / 기준 / 방향 / 전환 / 운영 / 구축</p>
+                  <h4 class="kms-ed-sub" style="margin-top:12px;">후킹 방식</h4>
+                  <ul class="kms-ed-ul">
+                    <li>“왜 읽어야 하는지”를 즉시 이해 가능하게 구성</li>
+                    <li>메시지를 압축하여 전달</li>
+                  </ul>
+                </div>
+                <div class="kms-ed-rule-col kms-ed-rule-col--deny">
+                  <h4 class="kms-ed-sub kms-ed-sub--deny">금지 요소</h4>
+                  <ul class="kms-ed-ul">
+                    <li>구조, 개요, 설명 등 추상어</li>
+                    <li>감정 표현</li>
+                    <li>평가</li>
+                    <li>단순 사실 반복</li>
+                  </ul>
+                </div>
+              </div>
+            </section>
+
+            <!-- 6 Body 구조 -->
+            <section class="kms-ed-section" id="kms-ed-s06">
+              <h3 class="kms-ed-heading">Body 구조 <span class="kms-ed-badge">최소 4문단</span></h3>
+              <div class="kms-ed-body-grid">
+                <div class="kms-ed-body-para"><span class="kms-ed-para-num">1</span><div><strong>사건 설명</strong><p>주체, 시점, 장소, 행위 명확히 제시</p></div></div>
+                <div class="kms-ed-body-para"><span class="kms-ed-para-num">2</span><div><strong>배경</strong><p>행사 목적 또는 맥락</p></div></div>
+                <div class="kms-ed-body-para"><span class="kms-ed-para-num">3</span><div><strong>전개</strong><p>참여 주체, 활동, 프로그램 구성</p></div></div>
+                <div class="kms-ed-body-para"><span class="kms-ed-para-num">4</span><div><strong>확장</strong><p>운영 방식 또는 흐름 제시 (단정 금지)</p></div></div>
+              </div>
+              <div class="kms-ed-rule-box">
+                <h4 class="kms-ed-sub">확장 가능</h4>
+                <ul class="kms-ed-ul">
+                  <li>필요 시 5문단 이상 가능</li>
+                  <li>메시지 중복 금지</li>
+                </ul>
+                <h4 class="kms-ed-sub" style="margin-top:12px;">작성 기준</h4>
+                <ul class="kms-ed-ul">
+                  <li>문단당 하나의 메시지</li>
+                  <li>2~5문장 유지</li>
+                  <li>시간 또는 논리 흐름 유지</li>
+                  <li>설명보다 행위 중심 서술</li>
+                </ul>
+              </div>
+            </section>
+
+            <!-- 7 번역 및 표기 규칙 -->
+            <section class="kms-ed-section" id="kms-ed-s07">
+              <h3 class="kms-ed-heading">번역 및 표기 규칙</h3>
+              <ul class="kms-ed-ul">
+                <li>모든 내용은 원문 기반 사실만 사용</li>
+                <li>임의 해석 및 창작 금지</li>
+                <li>연맹명: 국문(영문) 최초 1회 병기 후 국문 사용</li>
+                <li>직함 필요 시 병기</li>
+              </ul>
+            </section>
+
+            <!-- 8 문체 및 홍보 원칙 -->
+            <section class="kms-ed-section" id="kms-ed-s08">
+              <h3 class="kms-ed-heading">문체 및 홍보 원칙</h3>
+              <div class="kms-ed-rule-grid">
+                <div class="kms-ed-rule-col">
+                  <h4 class="kms-ed-sub">기본 톤</h4>
+                  <ul class="kms-ed-ul">
+                    <li>겸손</li>
+                    <li>절제</li>
+                    <li>다정</li>
+                  </ul>
+                  <h4 class="kms-ed-sub" style="margin-top:12px;">우선순위</h4>
+                  <ol class="kms-ed-ol">
+                    <li>사실 전달</li>
+                    <li>구조 정리</li>
+                    <li>의미 전달</li>
+                  </ol>
+                  <h4 class="kms-ed-sub" style="margin-top:12px;">홍보 방식 <em>(직접 표현 금지 · 간접 표현)</em></h4>
+                  <ul class="kms-ed-ul">
+                    <li>협력 구조</li>
+                    <li>참여 주체</li>
+                    <li>프로그램 구성</li>
+                    <li>운영 흐름</li>
+                  </ul>
+                  <h4 class="kms-ed-sub" style="margin-top:12px;">허용 범위</h4>
+                  <ul class="kms-ed-ul">
+                    <li>교육적 가치</li>
+                    <li>참여 확대</li>
+                    <li>운영 방향</li>
+                  </ul>
+                </div>
+                <div class="kms-ed-rule-col kms-ed-rule-col--deny">
+                  <h4 class="kms-ed-sub kms-ed-sub--deny">금지</h4>
+                  <ul class="kms-ed-ul">
+                    <li>과장 표현</li>
+                    <li>감정 과잉</li>
+                    <li>독자 행동 유도</li>
+                  </ul>
+                </div>
+              </div>
+            </section>
+
+            <!-- 9 Tags 규칙 -->
+            <section class="kms-ed-section" id="kms-ed-s09">
+              <h3 class="kms-ed-heading">Tags 규칙</h3>
+              <p class="kms-ed-note">구성: 7~10개</p>
+              <div class="kms-ed-notation-grid">
+                <div class="kms-ed-notation-item">
+                  <span class="kms-ed-notation-label">브랜드</span>
+                  <span>스카우트, 스카우트방법론</span>
+                </div>
+                <div class="kms-ed-notation-item">
+                  <span class="kms-ed-notation-label">사건</span>
+                  <span>회의, 교육프로그램, 국제활동</span>
+                </div>
+                <div class="kms-ed-notation-item">
+                  <span class="kms-ed-notation-label">대상</span>
+                  <span>연맹명, 국가명</span>
+                </div>
+              </div>
+              <div class="kms-ed-rule-box" style="margin-top:12px;">
+                <h4 class="kms-ed-sub">기준</h4>
+                <ul class="kms-ed-ul">
+                  <li>기사 내용과 직접 연결된 키워드만 사용</li>
+                  <li>일반 단어 최소화</li>
+                </ul>
+              </div>
+            </section>
+
+            <!-- 10 Audit 및 채점 기준 -->
+            <section class="kms-ed-section" id="kms-ed-s10">
+              <h3 class="kms-ed-heading">Audit 및 채점 기준 <span class="kms-ed-badge">총 100점</span></h3>
+              <div class="kms-ed-body-grid">
+                <div class="kms-ed-body-para"><span class="kms-ed-para-num">20</span><div><strong>Title</strong><p>구조 정확성 10 · SEO 키워드 5 · 정보 밀도 5</p></div></div>
+                <div class="kms-ed-body-para"><span class="kms-ed-para-num">20</span><div><strong>Subtitle</strong><p>why+impact 10 · 명사형 5 · 후킹 5</p></div></div>
+                <div class="kms-ed-body-para"><span class="kms-ed-para-num">25</span><div><strong>Body 구조</strong><p>문단 구조 10 · 행위 중심 10 · 흐름 연결 5</p></div></div>
+                <div class="kms-ed-body-para"><span class="kms-ed-para-num">15</span><div><strong>사실성</strong><p>원문 기반 정확성 · 정보 왜곡 없음</p></div></div>
+                <div class="kms-ed-body-para"><span class="kms-ed-para-num">10</span><div><strong>문체</strong><p>겸손·절제 유지 · 감정·과장 없음</p></div></div>
+                <div class="kms-ed-body-para"><span class="kms-ed-para-num">5</span><div><strong>홍보 구조</strong><p>구조 기반 의미 전달</p></div></div>
+                <div class="kms-ed-body-para"><span class="kms-ed-para-num">5</span><div><strong>Tags</strong><p>적절한 키워드 구성</p></div></div>
+              </div>
+            </section>
+
+            <!-- 11 최종 정의 -->
+            <section class="kms-ed-section kms-ed-section--definition" id="kms-ed-s11">
+              <h3 class="kms-ed-heading">최종 정의</h3>
+              <blockquote class="kms-ed-definition">
+                BP미디어 기사는<br>
+                사실을 기반으로 구조를 정리하고,<br>
+                검색과 맥락을 동시에 고려하여<br>
+                의미를 압축 전달하는<br>
+                <strong>재구성형 미디어 기사</strong>다.
+              </blockquote>
+            </section>
+
+          </div><!-- /.kms-editorial-body -->
+        </div><!-- /#kms-tab-editorial -->
+
+      </main>
+    </div><!-- /.kms-layout -->
+
+    <!-- 맨 위로 이동 플로팅 버튼 -->
+    <button type="button" class="kms-back-to-top" id="kms-back-to-top" aria-label="맨 위로" hidden>
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4,10 8,6 12,10"/></svg>
+      <span>TOP</span>
+    </button>
+  </div><!-- /#kms-screen -->
+
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.4/dist/purify.min.js" integrity="sha384-eEu5CTj3qGvu9PdJuS+YlkNi7d2XxQROAFYOr59zgObtlcux1ae1Il3u7jvdCSWu" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <script src="/js/main.js?v=20261029073654"></script>
+  <script src="/js/kms.js?v=20261029073654"></script>
+  <script src="/js/chatbot.js?v=20261029073654" defer></script>
+</body>
+</html>

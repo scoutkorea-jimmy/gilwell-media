@@ -1,0 +1,32 @@
+# Copy this file to .dev.vars for local development.
+# NEVER commit .dev.vars to git — it contains secrets.
+#
+# For production, set these as Cloudflare Pages secrets:
+#   wrangler pages secret put ADMIN_PASSWORD
+#   wrangler pages secret put ADMIN_SECRET
+#   wrangler pages secret put CF_ANALYTICS_API_TOKEN
+
+# The admin login password (you choose this)
+ADMIN_PASSWORD=change-me-to-a-strong-password
+
+# A long random string used to sign session tokens.
+# Generate one with: openssl rand -hex 32
+ADMIN_SECRET=replace-with-a-random-64-char-hex-string
+
+# Optional: Cloudflare analytics token with Zone Analytics read permission.
+# Required if you want admin analytics and the homepage footer to use
+# Cloudflare metrics instead of the internal fallback counts.
+CF_ANALYTICS_API_TOKEN=replace-with-a-cloudflare-api-token
+
+# Dreampath project board
+DREAMPATH_PASSWORD=change-me-to-a-strong-password
+DREAMPATH_SECRET=replace-with-a-random-64-char-hex-string
+# Initial admin password for jimmy (used only on first login if hash is null).
+# DO NOT put a real password here — copy this file to .dev.vars and set it there.
+JIMMY_PASSWORD=change-me-to-a-strong-password
+
+# Optional: Google Search Console server-side report access.
+# Add the service account as a restricted user of sc-domain:bpmedia.net.
+# Store its full JSON key ONLY in the ignored .dev.vars or the Pages secret.
+# No real credentials belong in this example file.
+# GOOGLE_SEARCH_CONSOLE_SERVICE_ACCOUNT_JSON=

@@ -1,0 +1,62 @@
+{
+  "items": [
+    {
+      "id": "20261029T135834Z-fe7b2bdb",
+      "version": "00.195.00",
+      "site_version": "00.195.00",
+      "admin_version": "03.161.00",
+      "environment": "production",
+      "commit_sha": "fe7b2bdbbc92c1d358b641f936c5369be8329a4b",
+      "commit_short": "fe7b2bd",
+      "commit_message": "Migrate BP Media server processing to Rust Wasm",
+      "deployment_url": "https://bpmedia.net",
+      "archived_at": "2026-10-29T13:58:36Z",
+      "archive_path": "snapshots/20261029T135834Z-fe7b2bdb.tar.gz",
+      "rollback_workflow": ""
+    },
+    {
+      "id": "20261027T083931Z-af750de",
+      "version": "00.194.03",
+      "site_version": "00.194.03",
+      "admin_version": "03.160.04",
+      "environment": "production",
+      "commit_sha": "af750de0130787f6ea9cb6ca3af83c33fa23b98a",
+      "commit_short": "af750de",
+      "commit_message": "docs: refresh KMS operating standards and API guide",
+      "deployment_url": "https://bpmedia.net",
+      "archived_at": "2026-10-27T08:39:33Z",
+      "archive_path": "snapshots/20261027T083931Z-af750de.tar.gz",
+      "rollback_workflow": ""
+    }
+  ],
+  "deployments": [
+    {
+      "id": "20261029T135834Z-fe7b2bdb",
+      "version": "00.195.00",
+      "site_version": "00.195.00",
+      "admin_version": "03.161.00",
+      "environment": "production",
+      "branch": "main",
+      "source": "fe7b2bdbbc92c1d358b641f936c5369be8329a4b",
+      "url": "https://bpmedia.net",
+      "created_on": "2026-10-29T13:58:36Z",
+      "latest_stage": "success",
+      "is_current_production": true,
+      "commit_message": "Migrate BP Media server processing to Rust Wasm"
+    },
+    {
+      "id": "20261027T083931Z-af750de",
+      "version": "00.194.03",
+      "site_version": "00.194.03",
+      "admin_version": "03.160.04",
+      "environment": "production",
+      "branch": "main",
+      "source": "af750de0130787f6ea9cb6ca3af83c33fa23b98a",
+      "url": "https://bpmedia.net",
+      "created_on": "2026-10-27T08:39:33Z",
+      "latest_stage": "success",
+      "is_current_production": true,
+      "commit_message": "docs: refresh KMS operating standards and API guide"
+    }
+  ]
+}

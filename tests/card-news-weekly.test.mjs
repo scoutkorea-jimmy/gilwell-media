@@ -1,0 +1,117 @@
+import assert from 'node:assert/strict';
+import { DatabaseSync } from 'node:sqlite';
+import { readFileSync } from 'node:fs';
+import { weeklyPeriod, selectWeekly, withSelection, cleanPhotoViews, createWeeklyIssue, cleanWeeklyDesign, loadWeeklyCandidates, COVER_VARIANTS } from '../functions/_shared/card-news-weekly.js';
+import { loadWeeklyCandidates as originalWeeklyCandidates } from './fixtures/rust-card-news-weekly.js';
+import { onRequestPut, onRequestGet } from '../functions/api/admin/card-news/[id].js';
+import { onRequestPost as manual, onRequestGet as weeklyStatus } from '../functions/api/admin/card-news/weekly.js';
+import { weeklyStudioHtml } from '../functions/_shared/card-news-weekly-view.js';
+assert(weeklyStudioHtml(5,true).includes('studio.js?v='));
+import { onRequestGet as frame } from '../functions/card-news/[id]/frame.js';
+import { createToken } from '../functions/_shared/auth.js';
+
+assert.deepEqual(weeklyPeriod(new Date('2026-10-26T00:00:00Z')), { start:'2026-10-19 00:00:00',end:'2026-10-25 23:00:00',timezone:'Asia/Seoul',key:'2026-10-19_2026-10-25' });
+assert.equal(weeklyPeriod(new Date('2026-10-25T14:59:59Z')).end,'2026-10-18 23:00:00');
+const db=new DatabaseSync(':memory:');
+db.exec(readFileSync(new URL('../db/schema.sql',import.meta.url),'utf8'));
+db.exec("CREATE TABLE card_news(id INTEGER PRIMARY KEY,title TEXT,slug TEXT UNIQUE,r2_key TEXT,size_bytes INTEGER,published INTEGER DEFAULT 0,data TEXT,created_at TEXT DEFAULT CURRENT_TIMESTAMP,updated_at TEXT DEFAULT CURRENT_TIMESTAMP)");
+const owner={id:1,role:'owner',status:'active',token_min_iat:0,permissions:'{"access_admin":true,"permissions":[]}'};
+const env={ADMIN_SECRET:'synthetic-weekly-test-only',DB:Object.assign(new (class D1Database {})(),{prepare(sql){let args=[];return{bind(...x){args=x;return this},async first(){if(sql.includes('FROM admin_users'))return owner;return db.prepare(sql).get(...args)||null},async all(){return{results:db.prepare(sql).all(...args)}},async run(){const r=db.prepare(sql).run(...args);return{meta:{changes:Number(r.changes),last_row_id:Number(r.lastInsertRowid)}}}}}})};
+const insert=db.prepare("INSERT INTO posts(id,category,title,subtitle,content,image_url,tag,publish_at,published) VALUES(?,?,?,?,?,?,?,?,1)");
+for(let i=1;i<=12;i++)insert.run(i,['korea','apr','wosm','people'][i%4],`대원이 함께 준비한 합성 활동 ${i}…친구와 함께 배우는 소식`, '지역에서 직접 계획하고 함께 살펴본 합성 프로그램',JSON.stringify({blocks:[{type:'paragraph',data:{text:'대원들이 직접 활동을 준비하고 친구들과 경험을 나누었습니다. 함께 역할을 정하고 지역사회에서 배운 내용을 실천했습니다.'}}]}),i===11?null:`https://bpmedia.net/api/images/test-${i}.jpg`,'소식,합성연맹','2026-10-20 12:00:00');
+insert.run(13,'korea','기간 밖 합성 기사','부제','확인한 활동을 자세히 소개하는 합성 문장입니다.','https://bpmedia.net/api/images/13.jpg','소식','2026-10-26 00:00:00');
+db.prepare("INSERT INTO site_visits(viewer_key,path,visited_at) VALUES('synthetic','/post/2','2026-10-20T00:00:00Z')").run();
+insert.run(14,'korea','마감 시각 합성 기사','부제','마감 시각에 대원들이 직접 준비한 활동을 친구들과 함께 살펴보는 충분한 길이의 합성 기사입니다.','https://bpmedia.net/api/images/14.jpg','소식','2026-10-25 23:00:00');
+insert.run(15,'korea','마감 이후 합성 기사','부제','마감 이후에 대원들이 직접 준비한 활동을 친구들과 함께 살펴보는 충분한 길이의 합성 기사입니다.','https://bpmedia.net/api/images/15.jpg','소식','2026-10-25 23:00:01');
+const originalPosts = db.prepare('SELECT * FROM posts ORDER BY id').all();
+const fetcher=async(url,options)=>{assert.equal(options.method,'GET');return new Response(null,{status:url.includes('/10/')?404:200,headers:{'Content-Type':'image/jpeg'}})};
+const period=weeklyPeriod(new Date('2026-10-26T00:00:00Z'));
+assert.deepEqual(await loadWeeklyCandidates(env,period,'https://bpmedia.net',fetcher),await originalWeeklyCandidates(env,period,'https://bpmedia.net',fetcher));
+const emptyIssue=await createWeeklyIssue(env,{now:new Date('2024-01-08T00:00:00Z'),fetcher});
+assert.equal(emptyIssue.status,'no_articles');
+assert.equal(db.prepare('SELECT COUNT(*) AS n FROM card_news').get().n,0);
+const result=await createWeeklyIssue(env,{now:new Date('2026-10-26T00:00:00Z'),fetcher});
+assert.equal(result.status,'ready');
+let row=db.prepare('SELECT * FROM card_news WHERE id=?').get(result.id),issue=JSON.parse(row.data);
+assert(COVER_VARIANTS.includes(issue.design.cover_variant));
+assert.equal(issue.design.cover_title, '이번 주\n스카우트 소식');
+assert.equal(new Set(COVER_VARIANTS).size,8);
+assert(issue.candidates.some(a=>a.id===14));assert.equal(row.published,0);assert.equal(issue.auto_publish,false);assert.equal(issue.articles.length,5);
+assert(!issue.candidates.some(a=>[10,11,13,15].includes(a.id)));
+assert(issue.candidates.find(a=>a.id===2).attention_score===1);
+for(const c of ['korea','apr','wosm'])assert(issue.articles.some(a=>a.category===c));
+const original=row.data;
+assert.equal((await createWeeklyIssue(env,{now:new Date('2026-10-26T01:00:00Z'),fetcher})).id,result.id);
+assert.equal(db.prepare('SELECT data FROM card_news WHERE id=?').get(result.id).data,original);
+assert.throws(()=>selectWeekly(issue.candidates,[999]),/이번 기간/);
+assert.throws(()=>selectWeekly(issue.candidates,[1,1]),/중복/);
+assert.throws(()=>cleanPhotoViews({'article:1:0':{x:150,y:50,z:1}}),/범위/);
+assert.deepEqual(cleanPhotoViews({'article:1:0':{x:50,y:50,z:1,w:75,h:80}})['article:1:0'],{x:50,y:50,z:1,w:75,h:80});
+assert.throws(()=>cleanPhotoViews({'article:1:0':{x:50,y:50,z:1,w:120,h:80}}),/크기/);
+assert.throws(()=>cleanPhotoViews({'__proto__:0':{x:50,y:50,z:1}}));
+assert.equal(cleanWeeklyDesign({}, issue.candidates).cover_variant, 'classic');
+for (const variant of COVER_VARIANTS) assert.equal(cleanWeeklyDesign({cover_variant:variant}, issue.candidates).cover_variant, variant);
+for (const invalid of [
+  {cover_variant:'unknown'}, {cover_title:'가'.repeat(37)}, {cover_title:'  '}, {cover_subtitle:'가'.repeat(81)},
+  {cover_title:'첫째\n둘째\n셋째\n넷째'}, {cover_subtitle:'첫째\r\n둘째\r\n셋째\r\n넷째'},
+  {cover_title_size:121}, {cover_title_size:NaN}, {articles:null}, {articles:[]},
+  {articles:{999:{layout:'wide'}}}, {articles:{'02':{layout:'wide'}}},
+  {articles:{2:{layout:'free'}}}, {articles:{2:{image_fit:'stretch'}}},
+  {articles:{2:{title_size:43}}}, {articles:{2:{body_size:37}}}, {articles:{2:{image_height:Infinity}}},
+  {articles:Object.fromEntries(Array.from({length:21},(_,i)=>[i+1,{}]))},
+]) assert.throws(()=>cleanWeeklyDesign(invalid,issue.candidates));
+assert.equal(cleanWeeklyDesign({cover_title:'<한 주의 소식>'},issue.candidates).cover_title,'<한 주의 소식>');
+for(const copy of ['첫째\n둘째','첫째\r\n둘째\r\n셋째']){
+  const cleaned=cleanWeeklyDesign({cover_title:copy,cover_subtitle:copy},issue.candidates);
+  assert.equal(cleaned.cover_title,copy);assert.equal(cleaned.cover_subtitle,copy);
+}
+assert.equal(cleanWeeklyDesign({cover_subtitle:''},issue.candidates).cover_subtitle,'');
+const chosen=withSelection(issue,[2]);assert.equal(chosen.articles.length,1);assert(chosen.additional_news.every(g=>!g.articles.some(a=>a.id===2)));
+const token=await createToken(env.ADMIN_SECRET,{role:'owner',uid:1,username:'synthetic'});
+const statusUrl='https://bpmedia.net/api/admin/card-news/weekly';
+const changesBeforeStatus=db.prepare('SELECT total_changes() AS n').get().n;
+const statusResponse=await weeklyStatus({request:new Request(statusUrl,{headers:{Cookie:'admin_token='+token}}),env});
+assert.equal(statusResponse.status,200);
+assert.deepEqual(await statusResponse.json(),{schedule:null,last:null,auto_generate:false,auto_publish:false});
+assert.equal(db.prepare('SELECT total_changes() AS n').get().n,changesBeforeStatus);
+assert.equal((await weeklyStatus({request:new Request(statusUrl),env})).status,401);
+const url='https://bpmedia.net/api/admin/card-news/'+result.id;
+const request=(body,auth=true)=>new Request(url,{method:'PUT',headers:{'Content-Type':'application/json',...(auth?{Cookie:'admin_token='+token}:{})},body:JSON.stringify(body)});
+const frameResponse=await frame({request:new Request(url,{headers:{Cookie:'admin_token='+token}}),env});assert.equal(frameResponse.status,200);assert((await frameResponse.text()).includes('frame.js?v='));assert.equal(frameResponse.headers.get('X-Frame-Options'),'SAMEORIGIN');assert(frameResponse.headers.get('Content-Security-Policy').includes("frame-ancestors 'self'"));assert.equal((await frame({request:new Request(url),env})).status,401);
+const body={expected_revision:1,weekly:{selected_ids:[2,3],photo_views:{'article:2:0':{x:60,y:40,z:1.2}}}};
+assert.equal((await onRequestPut({request:request(body,false),env,params:{id:String(result.id)}})).status,401);
+const saved=await onRequestPut({request:request(body),env,params:{id:String(result.id)}});assert.equal(saved.status,200);
+assert.equal((await onRequestPut({request:request(body),env,params:{id:String(result.id)}})).status,409);
+row=db.prepare('SELECT * FROM card_news WHERE id=?').get(result.id);assert.equal(row.published,0);assert.equal(JSON.parse(row.data).revision,2);
+assert.equal(JSON.parse(row.data).photo_views['article:2:0'].x,60);
+assert.deepEqual(JSON.parse(row.data).design,issue.design);
+const design=cleanWeeklyDesign({cover_variant:'panorama',cover_title:'지금, 세계의 스카우트',cover_subtitle:'함께 살펴보는 한 주의 소식',cover_title_size:100,articles:{2:{layout:'split-left',title_size:60,body_size:29,image_height:420,image_fit:'contain'}}},issue.candidates);
+assert.equal((await onRequestPut({request:request({expected_revision:2,weekly:{design}}),env,params:{id:String(result.id)}})).status,200);
+const reloaded=await(await onRequestGet({request:new Request(url,{headers:{Cookie:'admin_token='+token}}),env,params:{id:String(result.id)}})).json();
+assert.deepEqual(reloaded.data.design,design);
+assert.deepEqual(reloaded.data.articles.map(article=>article.id),[2,3]);
+assert.equal(reloaded.data.photo_views['article:2:0'].x,60);
+assert.equal((await onRequestPut({request:request({expected_revision:3,weekly:{selected_ids:[2]}}),env,params:{id:String(result.id)}})).status,200);
+let stable=JSON.parse(db.prepare('SELECT data FROM card_news WHERE id=?').get(result.id).data);
+assert.deepEqual(stable.design,design);
+assert.equal(stable.photo_views['article:2:0'].x,60);
+const stableData=JSON.stringify(stable);
+assert.equal((await onRequestPut({request:request({expected_revision:4,weekly:{design:{cover_variant:'unsafe'}}}),env,params:{id:String(result.id)}})).status,400);
+for (const weekly of [[], 'invalid', {selected_ids:null}, {design:{cover_title:'첫째\n둘째\n셋째\n넷째'}}, {design:{cover_subtitle:'첫째\n둘째\n셋째\n넷째'}}]) assert.equal((await onRequestPut({request:request({expected_revision:4,weekly}),env,params:{id:String(result.id)}})).status,400);
+assert.equal(db.prepare('SELECT data FROM card_news WHERE id=?').get(result.id).data,stableData);
+await createWeeklyIssue(env,{now:new Date('2026-10-26T02:00:00Z'),fetcher});
+assert.equal(db.prepare('SELECT data FROM card_news WHERE id=?').get(result.id).data,stableData);
+delete stable.design;
+db.prepare('UPDATE card_news SET data=? WHERE id=?').run(JSON.stringify(stable),result.id);
+assert.equal((await onRequestPut({request:request({expected_revision:4,weekly:{selected_ids:[2,3]}}),env,params:{id:String(result.id)}})).status,200);
+assert.equal(JSON.parse(db.prepare('SELECT data FROM card_news WHERE id=?').get(result.id).data).design,undefined);
+assert.equal(db.prepare('SELECT COUNT(*) AS n FROM posts').get().n,15);
+assert.deepEqual(db.prepare('SELECT * FROM posts ORDER BY id').all(),originalPosts);
+assert.equal((await onRequestGet({request:new Request(url),env,params:{id:String(result.id)}})).status,401);
+assert.equal((await manual({request:new Request('https://bpmedia.net/api/admin/card-news/weekly',{method:'POST'}),env})).status,401);
+const viewToken=await createToken(env.ADMIN_SECRET,{role:'member',uid:2,username:'viewer'});
+owner.role='member';owner.permissions='{"access_admin":true,"permissions":["view:card-news"]}';
+assert.equal((await weeklyStatus({request:new Request(statusUrl,{headers:{Cookie:'admin_token='+viewToken}}),env})).status,200);
+assert.equal((await manual({request:new Request(statusUrl,{method:'POST',headers:{Cookie:'admin_token='+viewToken}}),env})).status,403);
+assert.equal((await onRequestPut({request:new Request(url,{method:'PUT',headers:{Cookie:'admin_token='+viewToken,'Content-Type':'application/json'},body:JSON.stringify({...body,expected_revision:2})}),env,params:{id:String(result.id)}})).status,403);
+db.close();console.log('weekly: period boundaries, image exclusion, selection, no publishing, stable random cover, design validation and persistence, immutable sources, photo validation, auth and save conflicts passed');

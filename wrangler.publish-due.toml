@@ -1,0 +1,9 @@
+name = "gilwell-media-publish-due"
+main = "workers/publish-due-scheduler.js"
+compatibility_date = "2024-09-23"
+
+[triggers]
+crons = ["*/5 * * * *"]
+
+[vars]
+SITE_ORIGIN = "https://bpmedia.net"
