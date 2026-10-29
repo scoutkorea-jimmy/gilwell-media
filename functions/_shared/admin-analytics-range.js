@@ -1,4 +1,26 @@
 import { resolveAnalyticsRange } from './cloudflare-analytics.js';
+import { queryRust } from './rust-server.js';
+
+export async function resolveAdminAnalyticsRangeRust(params, env, options = {}, run=queryRust) {
+  let result;
+  try {
+    const {prefix='',days=30,allowAll=false,defaultAll=false}=options;
+    const today = new Intl.DateTimeFormat('en-CA', { timeZone:'Asia/Seoul',year:'numeric',month:'2-digit',day:'2-digit' }).format(new Date());
+    const response=await run({env,request:{url:'https://internal.invalid/'}},'admin-analytics-range',{
+      start:params.get(prefix+'start'),end:params.get(prefix+'end'),days:params.get(prefix+'days'),all:params.get(prefix+'all'),defaultDays:days,allowAll,defaultAll,today,
+    });
+    if (!response.ok) throw new Error('Rust analytics range failed');
+    result=await response.json();
+    if (result.fallback === true) return resolveAdminAnalyticsRange(params,options);
+    if (typeof result.error === 'string') throw new RangeError(result.error);
+    const range=result.range;
+    if (range !== null && (!range || typeof range.startDate !== 'string' || typeof range.endDate !== 'string' || typeof range.label !== 'string' || typeof range.startUtcIso !== 'string' || typeof range.endUtcIso !== 'string' || !Number.isInteger(range.days))) throw new Error('Invalid Rust analytics range');
+    return range;
+  } catch (error) {
+    if (error instanceof RangeError) throw error;
+    return resolveAdminAnalyticsRange(params,options);
+  }
+}
 
 // Admin-only calendar ranges. Public reporting contracts keep their existing helper.
 export function resolveAdminAnalyticsRange(params, { prefix = '', days = 30, allowAll = false, defaultAll = false } = {}) {

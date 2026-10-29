@@ -1,4 +1,4 @@
-const GLOBAL_CITY_NAME_KO_MAP = {
+export const GLOBAL_CITY_NAME_KO_MAP = {
   amman: '암만',
   amsterdam: '암스테르담',
   ankara: '앙카라',
@@ -109,7 +109,7 @@ const GLOBAL_CITY_NAME_KO_MAP = {
   zurich: '취리히',
 };
 
-const COUNTRY_CITY_NAME_KO_MAP = {
+export const COUNTRY_CITY_NAME_KO_MAP = {
   KR: {
     seoul: '서울',
     busan: '부산',

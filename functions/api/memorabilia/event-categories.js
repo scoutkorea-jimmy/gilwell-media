@@ -1,3 +1,4 @@
+import { queryRust } from '../../_shared/rust-server.js';
 /**
  * GET  /api/memorabilia/event-categories          — 행사 카테고리 목록 (공개+관리자)
  * POST /api/memorabilia/event-categories          — 카테고리 생성 (admin write)
@@ -48,17 +49,19 @@ export async function onRequestPost({ request, env }) {
 
   // slug 중복 회피
   for (let i = 0; i < 5; i += 1) {
-    const ex = await env.DB.prepare(`SELECT 1 FROM memorabilia_event_categories WHERE slug = ?`).bind(slug).first();
+    const lookup = await queryRust({env,request}, 'event-category-exists', {slug});
+    if (!lookup.ok) throw new Error('Rust event category lookup failed');
+    const {exists:ex} = await lookup.json();
     if (!ex) break;
     slug = `${slug}-${Math.random().toString(36).slice(2, 5)}`;
   }
 
   try {
-    const res = await env.DB.prepare(
-      `INSERT INTO memorabilia_event_categories (slug, label_en, label_ko, sort_order, archived)
-       VALUES (?, ?, ?, ?, ?)`
-    ).bind(slug, label_en, label_ko, Number.isFinite(sort_order) ? sort_order : 999, archived).run();
-    return json({ id: res.meta.last_row_id, slug }, 201);
+    const response = await queryRust({env,request}, 'event-category-create', {slug,label_en,label_ko,sort_order:Number.isFinite(sort_order) ? sort_order : 999,archived});
+    if (!response.ok) throw new Error('Rust event category creation failed');
+    const {id, error} = await response.json();
+    if (error) throw new Error(error);
+    return json({ id, slug }, 201);
   } catch (err) {
     console.error('POST /api/memorabilia/event-categories error:', err);
     return json({ error: 'create_failed', detail: String(err && err.message || err) }, 500);

@@ -1,8 +1,8 @@
+import { queryRust } from '../../_shared/rust-server.js';
 import { gateMenuAccess } from '../../_shared/admin-permissions.js';
 import { recordSettingChange } from '../../_shared/settings-audit.js';
 
 const SETTING_KEY = 'reference_sites';
-const REV_KEY = 'reference_sites_rev';
 const MAX_ITEMS = 200;
 const ALLOWED_FEDERATIONS = ['Africa', 'Arab', 'Asia-Pacific', 'European', 'Interamerican', 'WOSM', 'Unclassified'];
 
@@ -10,11 +10,11 @@ export async function onRequestGet({ request, env }) {
   const __gate = await gateMenuAccess(request, env, 'reference-sites', 'view'); if (__gate) return __gate;
 
   try {
-    const [row, revRow] = await Promise.all([
-      env.DB.prepare(`SELECT value FROM settings WHERE key = ?`).bind(SETTING_KEY).first(),
-      env.DB.prepare(`SELECT value FROM settings WHERE key = ?`).bind(REV_KEY).first(),
-    ]);
-    const items = parseReferenceSites(row && row.value);
+    const rust = await queryRust({request, env}, 'settings-read', {target:'reference_sites'});
+    if (!rust.ok) throw new Error('Rust reference settings read failed');
+    const {rows} = await rust.json();
+    const [row, revRow] = rows;
+    const items = await sanitizeReferenceSitesRust(parseReferenceSites(row && row.value), env);
     const revision = revRow ? parseInt(revRow.value, 10) : 0;
     return json({ items, revision });
   } catch (err) {
@@ -32,30 +32,23 @@ export async function onRequestPut({ request, env }) {
   }
 
   const ifRevision = body && body.if_revision;
-  const items = sanitizeReferenceSites(body && body.items);
+  const items = await sanitizeReferenceSitesRust(body && body.items, env);
 
   try {
-    const [revRow, prevRow] = await Promise.all([
-      env.DB.prepare(`SELECT value FROM settings WHERE key = ?`).bind(REV_KEY).first(),
-      env.DB.prepare(`SELECT value FROM settings WHERE key = ?`).bind(SETTING_KEY).first(),
-    ]);
+    const snapshot = await queryRust({request, env}, 'settings-read', {target:'reference_save'});
+    if (!snapshot.ok) throw new Error('Rust settings snapshot failed');
+    const {rows} = await snapshot.json();
+    const [prevRow, revRow] = rows;
     const currentRev = revRow ? parseInt(revRow.value, 10) : 0;
     if (Number.isFinite(ifRevision) && parseInt(ifRevision, 10) !== currentRev) {
       return json({ error: '다른 변경이 감지되었습니다', revision: currentRev }, 409);
     }
 
     const nextRev = currentRev + 1;
-    const writes = await env.DB.batch([
-      env.DB.prepare(
-        `INSERT INTO settings (key, value) VALUES (?, ?)
-         ON CONFLICT(key) DO UPDATE SET value = excluded.value WHERE CAST(settings.value AS INTEGER) = ?`
-      ).bind(REV_KEY, String(nextRev), currentRev),
-      env.DB.prepare(
-        `INSERT INTO settings (key, value) SELECT ?, ? WHERE changes() = 1
-         ON CONFLICT(key) DO UPDATE SET value = excluded.value`
-      ).bind(SETTING_KEY, JSON.stringify(items)),
-    ]);
-    if (!writes[0] || !writes[0].meta || writes[0].meta.changes !== 1) return json({ error: '다른 변경이 감지되었습니다. 입력은 유지됩니다.' }, 409);
+    const rust = await queryRust({request, env}, 'settings-save', {target:'reference_sites', currentRev, nextRev:String(nextRev), values:[JSON.stringify(items)]});
+    if (!rust.ok) throw new Error('Rust reference sites write failed');
+    const {changes} = await rust.json();
+    if (changes !== 1) return json({ error: '다른 변경이 감지되었습니다. 입력은 유지됩니다.' }, 409);
     await recordSettingChange(env, {
       key: SETTING_KEY,
       previousValue: prevRow && prevRow.value,
@@ -73,18 +66,40 @@ export async function onRequestPut({ request, env }) {
 function parseReferenceSites(raw) {
   if (!raw) return [];
   try {
-    return sanitizeReferenceSites(JSON.parse(raw));
+    return JSON.parse(raw);
   } catch (_) {
     return [];
   }
 }
 
-function sanitizeReferenceSites(raw) {
+export function sanitizeReferenceSites(raw) {
   const items = Array.isArray(raw) ? raw : [];
   return items
     .slice(0, MAX_ITEMS)
     .map((item) => sanitizeReferenceSiteItem(item))
     .filter((item) => item.name || item.url || item.summary);
+}
+
+export async function sanitizeReferenceSitesRust(raw, env = {}, run = queryRust) {
+  const fallback = () => sanitizeReferenceSites(raw);
+  try {
+    const items=(Array.isArray(raw)?raw:[]).slice(0,MAX_ITEMS).map(item=>{
+      const source=item && typeof item==='object'?item:{};
+      return {name:String(source.name||''),url:String(source.url||''),summary:String(source.summary||''),federations:(Array.isArray(source.related_federations)?source.related_federations:[]).map(value=>String(value||''))};
+    });
+    if (/\\u[dD][89a-fA-F][0-9a-fA-F]{2}/.test(JSON.stringify(items))) return fallback();
+    const response=await run({env,request:{url:'https://internal.invalid/'}},'reference-sites-normalize',{items});
+    if (!response.ok) return fallback();
+    const result=await response.json(); if (!Array.isArray(result.items) || result.items.length > items.length) return fallback();
+    const decode=(units,max)=>{if(!Array.isArray(units)||units.length>max||!units.every(n=>Number.isInteger(n)&&n>=0&&n<=65535)) throw new Error('Invalid text'); let value=''; for(let i=0;i<units.length;i+=512) value+=String.fromCharCode(...units.slice(i,i+512)); return value;};
+    const output=result.items.map(item=>{
+      if(!item || typeof item.url!=='string' || !Array.isArray(item.related_federations) || new Set(item.related_federations).size!==item.related_federations.length || !item.related_federations.every(f=>ALLOWED_FEDERATIONS.includes(f))) throw new Error('Invalid site');
+      if (item.url) { const url=new URL(item.url); if (!['http:','https:'].includes(url.protocol) || url.href!==item.url) throw new Error('Invalid URL'); }
+      return {name:decode(item.name,120),url:item.url,summary:decode(item.summary,1000),related_federations:item.related_federations};
+    });
+    if (output.some(item=>!item.name && !item.url && !item.summary)) return fallback();
+    return output;
+  } catch {return fallback();}
 }
 
 function sanitizeReferenceSiteItem(item) {

@@ -1,3 +1,4 @@
+import { queryRust } from '../../../_shared/rust-server.js';
 /**
  * PATCH /api/admin/memorabilia-comments/:id
  *   body: { status: 'approved' | 'rejected' | 'deleted', rejection_reason?: string }
@@ -35,34 +36,19 @@ export async function onRequestPatch({ request, env, params }) {
 
   const reason = String((body && body.rejection_reason) || '').trim().slice(0, 500) || null;
 
-  const row = await env.DB.prepare(
-    `SELECT id, status FROM memorabilia_comments WHERE id = ?`
-  ).bind(id).first();
+  const lookup = await queryRust({env,request}, 'memorabilia-comment-status', {id});
+  if (!lookup.ok) throw new Error('Rust comment lookup failed');
+  const {row} = await lookup.json();
   if (!row) return json({ error: 'not_found' }, 404);
   if (row.status === 'deleted' && nextStatus !== 'deleted') {
     return json({ error: 'already_deleted' }, 409);
   }
 
   try {
-    if (nextStatus === 'deleted') {
-      await env.DB.prepare(
-        `UPDATE memorabilia_comments
-         SET status = 'deleted',
-             reviewed_at = datetime('now'),
-             reviewed_by = ?,
-             deleted_at = datetime('now')
-         WHERE id = ?`
-      ).bind(reviewerLabel, id).run();
-    } else {
-      await env.DB.prepare(
-        `UPDATE memorabilia_comments
-         SET status = ?,
-             rejection_reason = ?,
-             reviewed_at = datetime('now'),
-             reviewed_by = ?
-         WHERE id = ?`
-      ).bind(nextStatus, nextStatus === 'rejected' ? reason : null, reviewerLabel, id).run();
-    }
+    const response = await queryRust({env,request}, 'memorabilia-comment-moderate', {id,status:nextStatus,reason,reviewerLabel:reviewerLabel || null});
+    if (!response.ok) throw new Error('Rust comment moderation failed');
+    const {changed} = await response.json();
+    if (!changed && nextStatus !== 'deleted') return json({ error: 'already_deleted' }, 409);
     return json({ ok: true, status: nextStatus });
   } catch (err) {
     console.error('PATCH /api/admin/memorabilia-comments/:id error:', err);

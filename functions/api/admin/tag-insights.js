@@ -1,6 +1,6 @@
 import { gateMenuAccess } from '../../_shared/admin-permissions.js';
-import { buildTagInsights } from '../../_shared/tag-insights.js';
-import { resolveAdminAnalyticsRange, analyticsRangeMeta } from '../../_shared/admin-analytics-range.js';
+import { buildTagInsightsRust } from '../../_shared/tag-insights.js';
+import { resolveAdminAnalyticsRangeRust, analyticsRangeMeta } from '../../_shared/admin-analytics-range.js';
 import { queryTagAnalysisPosts } from '../../_shared/admin-tag-analysis.js';
 
 /**
@@ -22,11 +22,11 @@ export async function onRequestGet({ request, env }) {
 
   const url = new URL(request.url);
   let range;
-  try { range = resolveAdminAnalyticsRange(url.searchParams, { allowAll: true, defaultAll: true }); }
+  try { range = await resolveAdminAnalyticsRangeRust(url.searchParams, env, { allowAll: true, defaultAll: true }); }
   catch (err) { return json({ error: err.message }, 400); }
 
   try {
-    const insights = buildTagInsights(await queryTagAnalysisPosts(env, range));
+    const insights = await buildTagInsightsRust(await queryTagAnalysisPosts(env, range), env);
     return json({ ...insights, range: analyticsRangeMeta(range), population: 'published_exact_meta_tag' }, 200, { 'Cache-Control': 'no-store' });
   } catch (err) {
     console.error('GET /api/admin/tag-insights error:', err);

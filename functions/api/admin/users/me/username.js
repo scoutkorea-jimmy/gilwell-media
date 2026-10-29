@@ -14,8 +14,9 @@
  */
 import { loadAdminSession } from '../../../../_shared/admin-permissions.js';
 import { loadAdminUserById, serializeAdminUser } from '../../../../_shared/admin-users.js';
-import { validateUsername } from '../../../../_shared/admin-user-validation.js';
+import { validateIdentityRust } from '../../../../_shared/admin-user-validation.js';
 import { logOperationalEvent } from '../../../../_shared/ops-log.js';
+import { queryRust } from '../../../../_shared/rust-server.js';
 
 export async function onRequestPut({ request, env }) {
   const session = await loadAdminSession(request, env);
@@ -46,7 +47,7 @@ export async function onRequestPut({ request, env }) {
     return json({ error: 'Invalid JSON body' }, 400);
   }
 
-  const v = validateUsername(body && body.username);
+  const v = await validateIdentityRust(env, 'username', body && body.username);
   if (!v.ok) return json({ error: v.error }, 400);
   if (v.value === target.username) {
     return json({ error: '현재 아이디와 다른 값을 입력해주세요.' }, 400);
@@ -54,21 +55,16 @@ export async function onRequestPut({ request, env }) {
 
   // Uniqueness — include soft-deleted rows so members can't collide with a
   // future restore.
-  const clash = await env.DB.prepare(
-    `SELECT id, status FROM admin_users WHERE username = ? AND id != ?`
-  ).bind(v.value, target.id).first();
+  const clashResponse = await queryRust({request, env}, 'admin-user-read', {operation:'username-clash', username:v.value, id:target.id});
+  if (!clashResponse.ok) throw new Error('Rust username check failed');
+  const {row:clash} = await clashResponse.json();
   if (clash) {
     return json({ error: '이미 존재하는 아이디입니다.' }, 409);
   }
 
   try {
-    await env.DB.prepare(
-      `UPDATE admin_users
-          SET username = ?,
-              member_self_rename_used = 1,
-              updated_at = datetime('now')
-        WHERE id = ?`
-    ).bind(v.value, target.id).run();
+    const renamed = await queryRust({request, env}, 'admin-account-mutation', {operation:'self-rename', id:target.id, value:v.value});
+    if (!renamed.ok) throw new Error('Rust self rename failed');
 
     await logOperationalEvent(env, {
       channel: 'admin', type: 'admin_user_self_rename', level: 'info',

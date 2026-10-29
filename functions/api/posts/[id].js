@@ -10,23 +10,23 @@ import { verifyTokenRole, extractToken } from '../../_shared/auth.js';
 import { loadAdminSession, requirePublishAllowed, sessionOwnsPost } from '../../_shared/admin-permissions.js';
 import { hasMenuPermission } from '../../_shared/admin-users.js';
 import { getLikeStats, getViewerKey, isLikelyNonHumanRequest, recordUniqueView } from '../../_shared/engagement.js';
-import { sanitizeYouTubeUrl } from '../../_shared/youtube.js';
 import { serializePostImage } from '../../_shared/images.js';
-import { serializeImageFrameForStore } from '../../_shared/image-frame.js';
+import { serializeImageFrameForStoreRust } from '../../_shared/image-frame.js';
 import { deleteStoredImageByUrl, storeDataImage, upgradeEditorContentImages } from '../../_shared/image-storage.js';
 import { findManualRelatedPosts, findRelatedPosts, parseManualRelatedIds } from '../../_shared/related-posts.js';
-import { recordPostHistory } from '../../_shared/post-history.js';
-import { normalizePublishAtInput, optionalBooleanFlag, optionalIntegerOrNull, optionalTrimmedString, requireNonEmptyString } from '../../_shared/post-input.js';
-import { findSpecialFeaturePosts, sanitizeSpecialFeature } from '../../_shared/special-features.js';
+import { normalizePublishAtInput, validatePostText, encodePostBindings } from '../../_shared/post-input.js';
+import { findSpecialFeaturePosts } from '../../_shared/special-features.js';
 import { purgeContentCache } from '../../_shared/cache-purge.js';
 import { ensureDuePostsPublished } from '../../_shared/publish-due-posts.js';
 import { VALID_POST_CATEGORIES } from '../../_shared/site-structure.mjs';
 import { logOperationalEvent } from '../../_shared/ops-log.js';
 import { clearHomeLeadForPost } from '../../_shared/home-lead-auto.js';
+import { queryRust, singleSetting, postAdminRead, settingSnapshot, saveRevisionedSetting } from '../../_shared/rust-server.js';
 
 // ── GET /api/posts/:id ────────────────────────────────────────
 // Returns the full post including content body.
-export async function onRequestGet({ params, env, request }) {
+export async function onRequestGet(context) {
+  const { params, env, request } = context;
   const id = parseId(params.id);
   if (id === null) return json({ error: '유효하지 않은 게시글 ID입니다' }, 400);
   await ensureDuePostsPublished(env, new URL(request.url).origin).catch((err) => {
@@ -34,9 +34,9 @@ export async function onRequestGet({ params, env, request }) {
   });
 
   try {
-    const post = await env.DB.prepare(
-      `SELECT * FROM posts WHERE id = ?`
-    ).bind(id).first();
+    const rust = await queryRust(context, 'post-detail', { id });
+    if (!rust.ok) throw new Error('Rust post detail query failed');
+    const { post } = await rust.json();
 
     if (!post) return json({ error: '게시글을 찾을 수 없습니다' }, 404);
 
@@ -53,10 +53,11 @@ export async function onRequestGet({ params, env, request }) {
       const counted = await recordUniqueView(env, id, viewerKey).catch(() => false);
       if (counted) post.views = (post.views || 0) + 1;
     }
+    const manualRelatedPromise = findManualRelatedPosts(env, post, 5);
     const [likeStats, relatedPosts, manualRelatedPosts, specialFeaturePosts] = await Promise.all([
       getLikeStats(env, id, viewerKey),
-      findRelatedPosts(env, post, 5),
-      findManualRelatedPosts(env, post, 5),
+      findRelatedPosts(env, post, 5, manualRelatedPromise),
+      manualRelatedPromise,
       findSpecialFeaturePosts(env, post, 50),
     ]);
     post.likes = likeStats.likes;
@@ -67,8 +68,17 @@ export async function onRequestGet({ params, env, request }) {
     post.related_posts_json = post.manual_related_posts || JSON.stringify(post.manual_related_post_ids || []);
     post.special_feature_posts = specialFeaturePosts;
 
+    if (isAdmin) return json({ post });
     const origin = new URL(request.url).origin;
-    return json({ post: isAdmin ? post : sanitizePublicPost(serializePostImage({...post, author: publicAuthor(post.author)}, origin)) });
+    try {
+      const response = await queryRust(context, 'post-public-serialize', {post, origin});
+      if (!response.ok) throw new Error('Rust public post serialization failed');
+      const result = await response.json();
+      if (!result.post || typeof result.post !== 'object' || Array.isArray(result.post)) throw new Error('Invalid public post serialization');
+      return json({post: sanitizePublicPost(result.post)});
+    } catch (error) {
+      return json({post: sanitizePublicPost(serializePostImage({...post, author: publicAuthor(post.author)}, origin))});
+    }
   } catch (err) {
     console.error('GET /api/posts/:id error:', err);
     return json({ error: 'Database error' }, 500);
@@ -117,7 +127,7 @@ export async function onRequestPut({ params, request, env }) {
 
   let currentPost = null;
   try {
-    currentPost = await env.DB.prepare(`SELECT * FROM posts WHERE id = ?`).bind(id).first();
+    currentPost = await postAdminRead(env, 'post', id);
   } catch (_) {}
   if (!currentPost) return json({ error: '게시글을 찾을 수 없습니다' }, 404);
 
@@ -126,6 +136,7 @@ export async function onRequestPut({ params, request, env }) {
   //   member → needs write:list OR write:write AND must be the author.
   //            Unauthored (legacy) posts can only be edited by owner.
   if (!session.isOwner) {
+    if (!session.permissions.access_admin) return json({ error: '관리자 접근 권한이 없습니다.' }, 403);
     const hasWrite = hasMenuPermission(session.permissions, 'list', 'write')
                   || hasMenuPermission(session.permissions, 'write', 'write');
     if (!hasWrite) {
@@ -147,9 +158,11 @@ export async function onRequestPut({ params, request, env }) {
   // 묻히는 사고를 방지. 편집 진입 시 클라이언트가 캡쳐한 updated_at을 보내면 서버의
   // 현재값과 비교. 다르면 409 — 사용자의 입력은 admin drafts에 자동 보존되어 있음.
   // body.expected_updated_at은 선택. 없으면 잠금 비활성 (구버전 클라이언트 호환).
+  let lockStamp = null;
   if (body && body.expected_updated_at) {
     const clientStamp = String(body.expected_updated_at).trim();
     const serverStamp = String(currentPost.updated_at || '').trim();
+    if (clientStamp && serverStamp) lockStamp = clientStamp;
     if (clientStamp && serverStamp && clientStamp !== serverStamp) {
       return json({
         error: '다른 사용자가 이 글을 먼저 수정했습니다. 화면을 새로고침하고 임시저장 카드에서 본인 변경분을 다시 적용해주세요.',
@@ -179,32 +192,35 @@ export async function onRequestPut({ params, request, env }) {
   if (hasField('category') && !VALID_POST_CATEGORIES.includes(category)) {
     return json({ error: '유효하지 않은 카테고리입니다 (korea / apr / wosm / people)' }, 400);
   }
-  const safeTitleInput = hasField('title') ? requireNonEmptyString(title, '제목', 200) : { ok: true, value: undefined };
+  const textInputs = await validatePostText(env, body, false);
+  const safeTitleInput = textInputs.title;
   if (!safeTitleInput.ok) return json({ error: safeTitleInput.error }, 400);
-  const safeContentInput = hasField('content') ? requireNonEmptyString(content, '내용') : { ok: true, value: undefined };
+  const safeContentInput = textInputs.content;
   if (!safeContentInput.ok) return json({ error: safeContentInput.error }, 400);
-  const safeSubtitleInput = optionalTrimmedString(subtitle, '부제', 300);
+  const safeSubtitleInput = textInputs.subtitle;
   if (!safeSubtitleInput.ok) return json({ error: safeSubtitleInput.error }, 400);
-  const safeMetaTagsInput = optionalTrimmedString(meta_tags, '메타 태그', 500);
+  const safeMetaTagsInput = textInputs.meta_tags;
   if (!safeMetaTagsInput.ok) return json({ error: safeMetaTagsInput.error }, 400);
-  const safeTagInput = optionalTrimmedString(tag, '태그', 200);
+  const safeTagInput = textInputs.tag;
   if (!safeTagInput.ok) return json({ error: safeTagInput.error }, 400);
-  const safeAuthorInput = optionalTrimmedString(author, '작성자', 60);
+  const safeAuthorInput = textInputs.author;
   if (!safeAuthorInput.ok) return json({ error: safeAuthorInput.error }, 400);
   if (isPlaceholderAuthor(safeAuthorInput.value)) return json({ error: '작성자 불러오기가 끝난 뒤 다시 저장해주세요.' }, 400);
-  const safeSortOrderInput = optionalIntegerOrNull(sort_order, '정렬 순서');
+  const safeSortOrderInput = textInputs.sort_order;
   if (!safeSortOrderInput.ok) return json({ error: safeSortOrderInput.error }, 400);
-  const safeAiAssistedInput = optionalBooleanFlag(ai_assisted);
+  const safeAiAssistedInput = textInputs.ai_assisted;
   if (!safeAiAssistedInput.ok) return json({ error: safeAiAssistedInput.error }, 400);
-  const safePublishedInput = optionalBooleanFlag(body.published);
+  const safePublishedInput = textInputs.published;
   if (!safePublishedInput.ok) return json({ error: safePublishedInput.error }, 400);
-  const safeFeaturedInput = optionalBooleanFlag(body.featured);
+  const safeFeaturedInput = textInputs.featured;
   if (!safeFeaturedInput.ok) return json({ error: safeFeaturedInput.error }, 400);
 
   // Phase 2 publish kill switch: when global setting is 'on', only owner can
   // flip a post into public visibility. Members trying to publish hit 403.
   // Unpublishing (published=false) stays allowed so writers can always hide.
-  if (hasField('published') && safePublishedInput.value === true) {
+  const normalizedPublishAt = textInputs.publish_at === null ? normalizePublishAtInput(publish_at, publish_date) : textInputs.publish_at;
+  const publishGuard = !session.isOwner && ((hasField('published') && safePublishedInput.value === 1) || (hasField('publish_at', 'publish_date') && isFuturePublishAt(normalizedPublishAt)));
+  if (publishGuard) {
     const session = await loadAdminSession(request, env);
     const gate = await requirePublishAllowed(env, session);
     if (gate.error) return gate.error;
@@ -238,20 +254,18 @@ export async function onRequestPut({ params, request, env }) {
     values.push(serializeGalleryImages(storedGalleryImages));
     oldGalleryToDelete = diffRemovedGalleryUrls(currentPost && currentPost.gallery_images, storedGalleryImages);
   }
-  if (hasField('image_caption')) { fields.push('image_caption = ?'); values.push(sanitizeCaption(image_caption)); }
-  if (hasField('image_frame')) { fields.push('image_frame = ?'); values.push(serializeImageFrameForStore(image_frame)); }
-  if (hasField('youtube_url')) { fields.push('youtube_url = ?'); values.push(sanitizeYouTubeUrl(youtube_url)); }
-  if (hasField('location_name')) { fields.push('location_name = ?'); values.push(sanitizeShortText(location_name, 120)); }
-  if (hasField('location_address')) { fields.push('location_address = ?'); values.push(sanitizeShortText(location_address, 300)); }
+  if (hasField('image_caption')) { fields.push('image_caption = ?'); values.push(textInputs.image_caption); }
+  if (hasField('image_frame')) { fields.push('image_frame = ?'); values.push(await serializeImageFrameForStoreRust(image_frame, env)); }
+  if (hasField('youtube_url')) { fields.push('youtube_url = ?'); values.push(textInputs.youtube_url); }
+  if (hasField('location_name')) { fields.push('location_name = ?'); values.push(textInputs.location_name); }
+  if (hasField('location_address')) { fields.push('location_address = ?'); values.push(textInputs.location_address); }
   if (hasField('meta_tags')) { fields.push('meta_tags = ?'); values.push(safeMetaTagsInput.value); }
   if (hasField('tag')) { fields.push('tag = ?'); values.push(safeTagInput.value); }
-  if (hasField('special_feature')) { fields.push('special_feature = ?'); values.push(sanitizeSpecialFeature(special_feature)); }
+  if (hasField('special_feature')) { fields.push('special_feature = ?'); values.push(textInputs.special_feature); }
   if (hasField('author_user_id') && session.isOwner) {
     const nextAuthorUid = Number(body.author_user_id);
     if (Number.isFinite(nextAuthorUid) && nextAuthorUid > 0) {
-      const authorRow = await env.DB.prepare(
-        `SELECT id, editor_code FROM admin_users WHERE id = ? AND status != 'deleted'`
-      ).bind(nextAuthorUid).first();
+      const authorRow = await postAdminRead(env, 'author', nextAuthorUid);
       if (!authorRow) return json({ error: '지정한 작성자 계정을 찾을 수 없습니다.' }, 400);
       fields.push('author_user_id = ?');
       values.push(nextAuthorUid);
@@ -265,7 +279,7 @@ export async function onRequestPut({ params, request, env }) {
     const editorMatch = safeAuthorInput.value.match(/^Editor\.([A-Z])$/);
     if (editorMatch) {
       try {
-        const editorsRow = await env.DB.prepare(`SELECT value FROM settings WHERE key = 'editors'`).first();
+        const editorsRow = await singleSetting(env, 'editors');
         const editors = editorsRow ? JSON.parse(editorsRow.value) : {};
         const letter = editorMatch[1];
         const REQUIRED = { A: true, B: true, C: true };
@@ -282,7 +296,7 @@ export async function onRequestPut({ params, request, env }) {
     fields.push('manual_related_posts = ?');
     values.push(normalizeManualRelatedPosts(hasField('manual_related_posts') ? manual_related_posts : body.related_posts_json));
   }
-  const normalizedPublishAt = normalizePublishAtInput(publish_at, publish_date);
+
 
   if (fields.length === 0) {
     return json({ error: '변경할 내용을 입력해주세요' }, 400);
@@ -314,14 +328,23 @@ export async function onRequestPut({ params, request, env }) {
     }
     const wasPublicFeatured = Number(currentPost && currentPost.featured || 0) === 1 && Number(currentPost && currentPost.published || 0) === 1;
     if (nextFeatured && !wasPublicFeatured) {
-      const featuredCountRow = await env.DB.prepare(`SELECT COUNT(*) AS n FROM posts WHERE featured = 1 AND published = 1`).first();
+      const featuredCountRow = await postAdminRead(env, 'featured-count');
       const featuredCount = Number(featuredCountRow && featuredCountRow.n || 0);
       if (featuredCount >= 4) {
         return json({ error: '에디터 추천은 최대 4개까지만 선택할 수 있습니다.' }, 409);
       }
       // 메인 스토리 ↔ 에디터 추천 동시 지정 허용(2026-04-19). 배타 체크 제거.
     }
-    const updatedPost = await runPostUpdate(env, id, fields, values);
+    const updatedPost = await runPostUpdate(request, env, id, fields, values, 'update', '게시글 수정', lockStamp, nextFeatured, publishGuard, session.isOwner ? null : Number(session.uid), {uid:session.uid ? Number(session.uid) : null,iat:Number(session.payload.iat) || 0,exp:Number.isFinite(Number(session.payload.exp)) ? Number(session.payload.exp) : null});
+    if (updatedPost?.sessionRevoked) return json({ error: '인증이 필요합니다. 다시 로그인해주세요.' }, 401);
+    if (updatedPost?.accessRevoked) return json({ error: '게시글 수정 권한이 없습니다.' }, 403);
+    if (updatedPost?.ownershipChanged) return json({ error: '본인이 작성한 글만 수정할 수 있습니다.' }, 403);
+    if (updatedPost?.publishBlocked) return json({ error: '현재 공개 전환이 차단되어 있습니다. 오너 승인 후 다시 시도해주세요.' }, 403);
+    if (updatedPost?.featuredLimit) return json({ error: '에디터 추천은 최대 4개까지만 선택할 수 있습니다.' }, 409);
+    if (updatedPost && updatedPost.conflict) return json({
+      error:'다른 사용자가 이 글을 먼저 수정했습니다. 화면을 새로고침하고 임시저장 카드에서 본인 변경분을 다시 적용해주세요.',
+      code:'EDIT_CONFLICT', server_updated_at:updatedPost.serverUpdatedAt,
+    },409);
     if (!updatedPost) return json({ error: '게시글을 찾을 수 없습니다' }, 404);
     if (Number(updatedPost.published || 0) !== 1) {
       await removePostFromHomepageSettings(env, Number(id)).catch(function (err) {
@@ -337,7 +360,6 @@ export async function onRequestPut({ params, request, env }) {
       }));
     }
     if (updatedPost) {
-      await recordPostHistory(env, id, 'update', currentPost, updatedPost, '게시글 수정');
       await logOperationalEvent(env, {
         channel: 'admin',
         type: 'post_updated',
@@ -388,7 +410,7 @@ export async function onRequestPatch({ params, request, env }) {
   }
 
   // Pre-load the post so we can scope member access before any writes.
-  const preCheckPost = await env.DB.prepare(`SELECT * FROM posts WHERE id = ?`).bind(id).first();
+  const preCheckPost = await postAdminRead(env, 'post', id);
   if (!preCheckPost) return json({ error: '게시글을 찾을 수 없습니다' }, 404);
 
   // KMS 7.5.1 원칙: PUT과 동일하게 hasField 패턴으로 통일.
@@ -401,6 +423,7 @@ export async function onRequestPatch({ params, request, env }) {
   }
 
   if (!session.isOwner) {
+    if (!session.permissions.access_admin) return json({ error: '관리자 접근 권한이 없습니다.' }, 403);
     const hasWrite = hasMenuPermission(session.permissions, 'list', 'write')
                   || hasMenuPermission(session.permissions, 'write', 'write');
     if (!hasWrite) return json({ error: '게시글 상태 변경 권한이 없습니다.' }, 403);
@@ -413,9 +436,10 @@ export async function onRequestPatch({ params, request, env }) {
     }
   }
 
-  const featuredInput = optionalBooleanFlag(body.featured);
-  const publishedInput = optionalBooleanFlag(body.published);
-  const sortOrderInput = optionalIntegerOrNull(body.sort_order, '정렬 순서');
+  const statusInputs = await validatePostText(env, {featured:body.featured,published:body.published,sort_order:body.sort_order}, false);
+  const featuredInput = statusInputs.featured;
+  const publishedInput = statusInputs.published;
+  const sortOrderInput = statusInputs.sort_order;
   if (!sortOrderInput.ok) return json({ error: sortOrderInput.error }, 400);
 
   if (!hasField('featured') && !hasField('published') && !hasField('sort_order')) {
@@ -424,14 +448,15 @@ export async function onRequestPatch({ params, request, env }) {
 
   // Phase 2 publish kill switch: same rule as PUT — flip-to-public requires
   // owner when switch is on, unpublish always allowed.
-  if (hasField('published') && publishedInput.value === true) {
+  const publishGuard = !session.isOwner && hasField('published') && publishedInput.value === 1;
+  if (publishGuard) {
     const session = await loadAdminSession(request, env);
     const gate = await requirePublishAllowed(env, session);
     if (gate.error) return gate.error;
   }
 
   try {
-    const beforePost = await env.DB.prepare(`SELECT * FROM posts WHERE id = ?`).bind(id).first();
+    const beforePost = await postAdminRead(env, 'post', id);
     if (!beforePost) return json({ error: '게시글을 찾을 수 없습니다' }, 404);
     const fields = [];
     const values = [];
@@ -453,17 +478,24 @@ export async function onRequestPatch({ params, request, env }) {
 
     const wasPublicFeatured = Number(beforePost.featured || 0) === 1 && Number(beforePost.published || 0) === 1;
     if (nextFeatured && !wasPublicFeatured) {
-      const featuredCountRow = await env.DB.prepare(
-        `SELECT COUNT(*) AS n FROM posts WHERE featured = 1 AND published = 1`
-      ).first();
+      const featuredCountRow = await postAdminRead(env, 'featured-count');
       const featuredCount = Number(featuredCountRow && featuredCountRow.n || 0);
       if (featuredCount >= 4) {
         return json({ error: '에디터 추천은 최대 4개까지만 선택할 수 있습니다.' }, 409);
       }
       // 메인 스토리 ↔ 에디터 추천 동시 지정 허용(2026-04-19). 배타 체크 제거.
     }
+    var summary = [];
+    if (hasField('featured')) summary.push(body.featured ? '에디터 추천 설정' : '에디터 추천 해제');
+    if (hasField('published')) summary.push(body.published ? '공개 전환' : '비공개 전환');
+    if (hasField('sort_order')) summary.push('정렬 순서 변경');
     fields.push("updated_at = datetime('now')");
-    const updatedPost = await runPostUpdate(env, id, fields, values);
+    const updatedPost = await runPostUpdate(request, env, id, fields, values, 'status', summary.join(' · ') || '상태 변경', null, nextFeatured, publishGuard, session.isOwner ? null : Number(session.uid), {uid:session.uid ? Number(session.uid) : null,iat:Number(session.payload.iat) || 0,exp:Number.isFinite(Number(session.payload.exp)) ? Number(session.payload.exp) : null});
+    if (updatedPost?.sessionRevoked) return json({ error: '인증이 필요합니다. 다시 로그인해주세요.' }, 401);
+    if (updatedPost?.accessRevoked) return json({ error: '게시글 상태 변경 권한이 없습니다.' }, 403);
+    if (updatedPost?.ownershipChanged) return json({ error: '본인이 작성한 글만 상태를 변경할 수 있습니다.' }, 403);
+    if (updatedPost?.publishBlocked) return json({ error: '현재 공개 전환이 차단되어 있습니다. 오너 승인 후 다시 시도해주세요.' }, 403);
+    if (updatedPost?.featuredLimit) return json({ error: '에디터 추천은 최대 4개까지만 선택할 수 있습니다.' }, 409);
     if (!updatedPost) return json({ error: '게시글을 찾을 수 없습니다' }, 404);
     if (hasField('published') && !nextPublished) {
       await removePostFromHomepageSettings(env, Number(id)).catch(function (err) {
@@ -471,11 +503,6 @@ export async function onRequestPatch({ params, request, env }) {
       });
     }
     if (updatedPost) {
-      var summary = [];
-      if (hasField('featured')) summary.push(body.featured ? '에디터 추천 설정' : '에디터 추천 해제');
-      if (hasField('published')) summary.push(body.published ? '공개 전환' : '비공개 전환');
-      if (hasField('sort_order')) summary.push('정렬 순서 변경');
-      await recordPostHistory(env, id, 'status', beforePost, updatedPost, summary.join(' · ') || '상태 변경');
       await logOperationalEvent(env, {
         channel: 'admin',
         type: 'post_status_changed',
@@ -522,26 +549,16 @@ export async function onRequestDelete({ params, request, env }) {
   if (id === null) return json({ error: '유효하지 않은 게시글 ID입니다' }, 400);
 
   try {
-    const existing = await env.DB.prepare(`SELECT category, image_url, gallery_images, content FROM posts WHERE id = ?`).bind(id).first();
+    const existing = await postAdminRead(env, 'delete-source', id);
     if (!existing) return json({ error: '게시글을 찾을 수 없습니다' }, 404);
-    const { meta } = await env.DB.prepare(
-      `DELETE FROM posts WHERE id = ?`
-    ).bind(id).run();
+    const rust = await queryRust({ request, env }, 'post-delete', { id });
+    if (!rust.ok) throw new Error('Rust post deletion failed');
+    const { changes } = await rust.json();
 
-    if (meta.changes === 0) return json({ error: '게시글을 찾을 수 없습니다' }, 404);
+    if (changes === 0) return json({ error: '게시글을 찾을 수 없습니다' }, 404);
     await removePostFromHomepageSettings(env, Number(id)).catch(function (err) {
       console.error('DELETE /api/posts/:id homepage cleanup error:', err);
     });
-    await Promise.all([
-      env.DB.prepare(`DELETE FROM post_views WHERE post_id = ?`).bind(id).run().catch(() => {}),
-      env.DB.prepare(`DELETE FROM post_likes WHERE post_id = ?`).bind(id).run().catch(() => {}),
-      env.DB.prepare(`DELETE FROM post_history WHERE post_id = ?`).bind(id).run().catch(() => {}),
-      env.DB.prepare(`DELETE FROM post_engagement WHERE post_id = ?`).bind(id).run().catch(() => {}),
-      env.DB.prepare(`DELETE FROM site_visits WHERE path = ?`).bind('/post/' + id).run().catch(() => {}),
-      // 캘린더 이벤트는 독립 엔티티이므로 삭제하지 않고 끊어진 글 링크만 정리(NULL).
-      // 미정리 시 calendar 의 LEFT JOIN 이 죽은 글을 가리켜 404 링크가 남는다. (안정성 검토 00.170.07)
-      env.DB.prepare(`UPDATE calendar_events SET related_post_id = NULL WHERE related_post_id = ?`).bind(id).run().catch(() => {}),
-    ]);
     const imageUrls = collectStoredImageUrls(existing, origin);
     await Promise.all(imageUrls.map(function (value) {
       return deleteStoredImageByUrl(env, value, origin).catch(() => {});
@@ -606,12 +623,6 @@ function sanitizeCaption(value) {
   if (typeof value !== 'string') return null;
   const trimmed = value.trim();
   return trimmed ? trimmed.slice(0, 300) : null;
-}
-
-function sanitizeShortText(value, maxLength) {
-  if (typeof value !== 'string') return null;
-  const trimmed = value.trim();
-  return trimmed ? trimmed.slice(0, maxLength) : null;
 }
 
 function normalizeGalleryImages(rawItems) {
@@ -756,13 +767,19 @@ function normalizeManualRelatedPosts(raw) {
   return ids.length ? JSON.stringify(ids) : null;
 }
 
-async function runPostUpdate(env, id, fields, values) {
-  const bound = values.concat(id);
-  const result = await env.DB.prepare(
-    `UPDATE posts SET ${fields.join(', ')} WHERE id = ?`
-  ).bind(...bound).run();
-  if (!result || !result.meta || !result.meta.changes) return null;
-  return await env.DB.prepare(`SELECT * FROM posts WHERE id = ?`).bind(id).first();
+async function runPostUpdate(request, env, id, fields, values, action, summary, expectedUpdatedAt = null, featuredGuard = false, publishGuard = false, ownerGuardUid = null, tokenGuard = null) {
+  if (values.some(value => value === undefined)) throw new Error('D1_TYPE_ERROR: undefined post binding');
+  const rust = await queryRust({ request, env }, 'post-update', { id, fields, values:encodePostBindings(values), action, summary, expectedUpdatedAt, featuredGuard:!!featuredGuard, publishGuard:!!publishGuard, ownerGuardUid, memberGuardUid:ownerGuardUid, tokenGuard, claim:'post-history:'+crypto.randomUUID() });
+  if (!rust.ok) throw new Error('Rust post update failed');
+  const { changes, conflict, serverUpdatedAt, featuredLimit, publishBlocked, ownershipChanged, accessRevoked, sessionRevoked } = await rust.json();
+  if (sessionRevoked) return {sessionRevoked:true};
+  if (accessRevoked) return {accessRevoked:true};
+  if (ownershipChanged) return {ownershipChanged:true};
+  if (publishBlocked) return {publishBlocked:true};
+  if (featuredLimit) return {featuredLimit:true};
+  if (conflict) return {conflict:true,serverUpdatedAt};
+  if (!changes) return null;
+  return await postAdminRead(env, 'post', id);
 }
 
 function resolveStoredPublishAt(options) {
@@ -802,34 +819,28 @@ function normalizeSqlDateTime(value) {
 async function removePostFromHomepageSettings(env, postId) {
   const safePostId = Number(postId || 0);
   if (!safePostId) return;
+  await clearHomeLeadForPost(env, safePostId);
 
-  const [leadRow, heroRow, heroMediaRow] = await Promise.all([
-    env.DB.prepare(`SELECT value FROM settings WHERE key = 'home_lead_post'`).first().catch(() => null),
-    env.DB.prepare(`SELECT value FROM settings WHERE key = 'hero'`).first().catch(() => null),
-    env.DB.prepare(`SELECT value FROM settings WHERE key = 'hero_media'`).first().catch(() => null),
-  ]);
-
-  if (leadRow && Number(leadRow.value || 0) === safePostId) {
-    await clearHomeLeadForPost(env, safePostId);
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const { results } = await settingSnapshot(env, 'hero');
+    const rows = Object.fromEntries((results || []).map(row => [row.key, row]));
+    const rawHero = rows.hero?.value;
+    const heroIds = parseIdArray(rawHero);
+    if (!heroIds.includes(safePostId)) return;
+    const nextIds = heroIds.filter(id => id !== safePostId);
+    let hero;
+    try { hero = JSON.parse(rawHero); } catch { hero = null; }
+    if (hero && typeof hero === 'object' && !Array.isArray(hero)) {
+      if (Array.isArray(hero.manual_post_ids)) hero.manual_post_ids = nextIds;
+      else hero.post_ids = nextIds;
+    } else hero = nextIds;
+    const media = parseJsonObject(rows.hero_media?.value);
+    delete media[String(safePostId)];
+    const revision = parseInt(rows.hero_rev?.value, 10) || 0;
+    const values = [JSON.stringify(hero), String(rows.hero_interval?.value ?? ''), JSON.stringify(media)];
+    if (await saveRevisionedSetting(env, 'hero', revision, revision + 1, values) === 1) return;
   }
-
-  const heroIds = parseIdArray(heroRow && heroRow.value);
-  if (!heroIds.length || heroIds.indexOf(safePostId) === -1) return;
-
-  const nextHeroIds = heroIds.filter(function (value) { return value !== safePostId; });
-  await env.DB.prepare(
-    `INSERT INTO settings (key, value) VALUES ('hero', ?)
-     ON CONFLICT(key) DO UPDATE SET value = excluded.value`
-  ).bind(JSON.stringify(nextHeroIds)).run().catch(() => {});
-
-  const mediaMap = parseJsonObject(heroMediaRow && heroMediaRow.value);
-  if (mediaMap && Object.prototype.hasOwnProperty.call(mediaMap, String(safePostId))) {
-    delete mediaMap[String(safePostId)];
-    await env.DB.prepare(
-      `INSERT INTO settings (key, value) VALUES ('hero_media', ?)
-       ON CONFLICT(key) DO UPDATE SET value = excluded.value`
-    ).bind(JSON.stringify(mediaMap)).run().catch(() => {});
-  }
+  throw new Error('Homepage hero cleanup conflicted repeatedly');
 }
 
 function parseIdArray(raw) {

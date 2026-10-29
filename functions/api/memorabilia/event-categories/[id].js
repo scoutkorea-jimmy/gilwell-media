@@ -1,3 +1,4 @@
+import { queryRust } from '../../../_shared/rust-server.js';
 /**
  * PATCH  /api/memorabilia/event-categories/:id  — 분류 수정 (admin write)
  * DELETE /api/memorabilia/event-categories/:id  — 분류 삭제 (admin write)
@@ -17,9 +18,9 @@ export async function onRequestPatch({ request, params, env }) {
   let body;
   try { body = await request.json(); } catch { return json({ error: 'invalid_json' }, 400); }
 
-  const existing = await env.DB.prepare(
-    `SELECT id, slug, label_en, label_ko, sort_order, archived FROM memorabilia_event_categories WHERE id = ?`
-  ).bind(id).first();
+  const lookup = await queryRust({env,request}, 'event-category-get', {id});
+  if (!lookup.ok) throw new Error('Rust event category lookup failed');
+  const {row:existing} = await lookup.json();
   if (!existing) return json({ error: 'not_found' }, 404);
 
   const label_en   = body.label_en   !== undefined ? String(body.label_en   || '').trim().slice(0, 100) : existing.label_en;
@@ -30,12 +31,8 @@ export async function onRequestPatch({ request, params, env }) {
   if (!label_en && !label_ko) return json({ error: 'validation', detail: '영문/국문 라벨 중 하나는 필요합니다.' }, 400);
 
   try {
-    await env.DB.prepare(
-      `UPDATE memorabilia_event_categories
-          SET label_en = ?, label_ko = ?, sort_order = ?, archived = ?,
-              updated_at = datetime('now')
-        WHERE id = ?`
-    ).bind(label_en, label_ko, sort_order, archived, id).run();
+    const response = await queryRust({env,request}, 'event-category-update', {id,label_en,label_ko,sort_order,archived});
+    if (!response.ok) throw new Error('Rust event category update failed');
     return json({ ok: true });
   } catch (err) {
     console.error('PATCH /api/memorabilia/event-categories/:id error:', err);
@@ -51,7 +48,8 @@ export async function onRequestDelete({ request, params, env }) {
   if (!Number.isFinite(id)) return json({ error: 'invalid_id' }, 400);
 
   try {
-    await env.DB.prepare(`DELETE FROM memorabilia_event_categories WHERE id = ?`).bind(id).run();
+    const response = await queryRust({env,request}, 'event-category-delete', {id});
+    if (!response.ok) throw new Error('Rust event category delete failed');
     return json({ ok: true });
   } catch (err) {
     console.error('DELETE /api/memorabilia/event-categories/:id error:', err);

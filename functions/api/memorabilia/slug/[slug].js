@@ -3,9 +3,18 @@
  */
 
 import { getMemorabiliaBySlug } from '../../../_shared/memorabilia-store.js';
+import { queryRust } from '../../../_shared/rust-server.js';
 
-export async function onRequestGet({ env, params }) {
-  const slug = String(params.slug || '').trim().slice(0, 120);
+export async function onRequestGet({ request, env, params }) {
+  const raw=String(params.slug || '');
+  // shortcut: isolated UTF-16 surrogates use the original slug handling.
+  if (!/\\u[dD][89a-fA-F][0-9a-fA-F]{2}/.test(JSON.stringify(raw))) {
+    try {
+      const response=await queryRust({request,env},'memorabilia-public-slug',{slug:raw});
+      if ([200,400,404].includes(response.status)) return response;
+    } catch (_) { /* fallback */ }
+  }
+  const slug = raw.trim().slice(0, 120);
   if (!slug) return json({ error: 'invalid_slug' }, 400);
 
   const item = await getMemorabiliaBySlug(env.DB, slug, { includeDrafts: false });

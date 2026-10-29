@@ -1,99 +1,41 @@
 import { PUBLIC_DATE_EXPR } from './post-public-date.js';
+import { queryRust } from './rust-server.js';
 
-export async function findRelatedPosts(env, basePost, limit = 5) {
+export async function findRelatedPosts(env, basePost, limit = 5, manualPromise) {
   if (!env?.DB || !basePost?.id) return [];
-  const manualPosts = await findManualRelatedPosts(env, basePost, limit);
+  const manualPosts = await (manualPromise || findManualRelatedPosts(env, basePost, limit));
   const manualIds = manualPosts.map((item) => item.id);
   const autoLimit = Math.max(0, limit - manualPosts.length);
   if (!autoLimit) return manualPosts.slice(0, limit);
-  const autoPosts = await findAutoRelatedPosts(env, basePost, autoLimit, manualIds);
-  return manualPosts.concat(autoPosts).slice(0, limit);
+  return findAutoRelatedPosts(env, basePost, autoLimit, manualIds, manualPosts, limit);
 }
 
 export async function findManualRelatedPosts(env, basePost, limit = 5) {
   if (!env?.DB || !basePost?.id) return [];
-  const manualIds = parseManualRelatedIds(basePost && basePost.related_posts_manual).filter((id) => id !== Number(basePost.id)).slice(0, limit);
-  if (!manualIds.length) return [];
-  const placeholders = manualIds.map(() => '?').join(', ');
-  const sql = `
-    SELECT id, title, category, created_at, publish_at
-      FROM posts
-     WHERE published = 1
-       AND id IN (${placeholders})
-  `;
-  const { results } = await env.DB.prepare(sql).bind(...manualIds).all();
-  const byId = new Map((results || []).map((item) => [Number(item.id), mapRelatedPost(item)]));
-  return manualIds.map((id) => byId.get(id)).filter(Boolean);
+  const raw = basePost.related_posts_manual;
+  if (typeof limit === 'bigint') throw new TypeError('Cannot convert a BigInt value to a number');
+  const numericLimit = Number(limit);
+  const limitKind = Number.isNaN(numericLimit) ? 'nan' : numericLimit === Infinity ? 'inf' : numericLimit === -Infinity ? '-inf' : 'finite';
+  const options = {rawJson: JSON.stringify(raw ?? null), postId: Number(basePost.id), limit: Number.isFinite(numericLimit) ? numericLimit : null, limitKind};
+  const rust = await queryRust({ env, request: { url: 'https://internal.invalid/' } }, 'related-manual', options);
+  if (!rust.ok) throw new Error('Rust manual related posts query failed');
+  const result = await rust.json();
+  return result.items || [];
 }
 
-async function findAutoRelatedPosts(env, basePost, limit, excludedIds) {
-  const anchorTagTerms = Array.from(extractRelatedTerms(basePost.tag, basePost.meta_tags)).slice(0, 6);
-  const anchorTitleTerms = Array.from(extractTitleTerms(basePost.title)).slice(0, 8);
-  const anchorTerms = anchorTagTerms.concat(anchorTitleTerms).slice(0, 10);
-  let sql = `
-    SELECT id, title, category, created_at, publish_at, tag, meta_tags
-      FROM posts
-     WHERE published = 1
-       AND id != ?
-  `;
-  const bindings = [basePost.id];
+async function findAutoRelatedPosts(env, basePost, limit, excludedIds, manualPosts, totalLimit) {
   const excluded = Array.isArray(excludedIds) ? excludedIds.filter(Boolean) : [];
-  if (excluded.length) {
-    sql += ` AND id NOT IN (${excluded.map(() => '?').join(', ')})`;
-    bindings.push(...excluded);
-  }
-
-  if (anchorTerms.length) {
-    const likeParts = [];
-    anchorTerms.forEach((term) => {
-      likeParts.push(
-        'LOWER(COALESCE(tag, \'\')) LIKE ?',
-        'LOWER(COALESCE(meta_tags, \'\')) LIKE ?',
-        'LOWER(COALESCE(title, \'\')) LIKE ?'
-      );
-      bindings.push(`%${term}%`, `%${term}%`, `%${term}%`);
-    });
-    sql += ` AND (category = ? OR ${likeParts.join(' OR ')})`;
-    bindings.splice(1 + excluded.length, 0, basePost.category || '');
-  } else if (basePost.category) {
-    sql += ' AND category = ?';
-    bindings.push(basePost.category);
-  }
-
-  sql += ` ORDER BY ${PUBLIC_DATE_EXPR} DESC LIMIT ?`;
-  bindings.push(anchorTerms.length ? 40 : 20);
-
-  const { results } = await env.DB.prepare(sql).bind(...bindings).all();
-
-  const scored = (results || []).map((post) => {
-    const candidateTagTerms = extractRelatedTerms(post.tag, post.meta_tags);
-    const candidateTitleTerms = extractTitleTerms(post.title);
-    const tagOverlap = countOverlap(new Set(anchorTagTerms), candidateTagTerms);
-    const titleOverlap = countOverlap(new Set(anchorTitleTerms), candidateTitleTerms);
-    const categoryBonus = post.category === basePost.category ? 20 : 0;
-    const tagBonus = tagOverlap * 100;
-    const titleBonus = titleOverlap * 20;
-    const score = tagBonus + titleBonus + categoryBonus;
-    return Object.assign(mapRelatedPost(post), {
-      sort_date: post.publish_at || post.created_at || '',
-      score,
-    });
-  }).filter((post) => post.title);
-
-  scored.sort((a, b) => {
-    if (b.score !== a.score) return b.score - a.score;
-    return String(b.sort_date).localeCompare(String(a.sort_date));
+  const rust = await queryRust({ env, request: { url: 'https://internal.invalid/' } }, 'related-auto', {
+    postId: Number(basePost.id), category: basePost.category || '', excluded,
+    tag:String(basePost.tag || ''), metaTags:String(basePost.meta_tags || ''), title:String(basePost.title || ''),
+    limit:Number.isFinite(limit) ? limit : null, unbounded:limit === Infinity,
+    manualItems:manualPosts, totalLimit:Number.isFinite(Number(totalLimit)) ? Number(totalLimit) : null,
+    baseCategory: basePost.category === undefined ? { undefined: true } : basePost.category,
+    publicDateExpr: PUBLIC_DATE_EXPR,
   });
-
-  return scored.slice(0, limit).map(function (post) {
-    return {
-      id: post.id,
-      title: post.title,
-      category: post.category,
-      publish_at: post.publish_at,
-      created_at: post.created_at,
-    };
-  });
+  if (!rust.ok) throw new Error('Rust automatic related posts query failed');
+  const { items } = await rust.json();
+  return items;
 }
 
 export function parseManualRelatedIds(raw) {
@@ -119,16 +61,6 @@ export function parseManualRelatedIds(raw) {
   });
 }
 
-function mapRelatedPost(post) {
-  return {
-    id: post.id,
-    title: post.title || '',
-    category: post.category || '',
-    publish_at: post.publish_at || '',
-    created_at: post.created_at || '',
-  };
-}
-
 export function extractRelatedTerms() {
   const out = new Set();
   Array.from(arguments).forEach((value) => {
@@ -143,24 +75,4 @@ export function extractRelatedTerms() {
       .forEach((item) => out.add(item));
   });
   return out;
-}
-
-function countOverlap(a, b) {
-  if (!a.size || !b.size) return 0;
-  let count = 0;
-  a.forEach((item) => {
-    if (b.has(item)) count += 1;
-  });
-  return count;
-}
-
-function extractTitleTerms(value) {
-  var normalized = String(value || '')
-    .toLowerCase()
-    .replace(/[^a-z0-9가-힣\s]/g, ' ');
-  return new Set(normalized.split(/\s+/).map(function (item) {
-    return item.trim();
-  }).filter(function (item) {
-    return item.length >= 2;
-  }));
 }

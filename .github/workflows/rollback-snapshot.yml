@@ -80,6 +80,16 @@ jobs:
       - name: Install Wrangler
         run: npm install -g wrangler@4.72.0
 
+      - name: Build Rust Server If Present In Restored Source
+        run: |
+          if [ -f server-rust/Cargo.toml ]; then
+            curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs -o /tmp/bpmedia-rustup.sh
+            sh /tmp/bpmedia-rustup.sh -y --profile minimal --no-modify-path --target wasm32-unknown-unknown
+            export PATH="$HOME/.cargo/bin:$PATH"
+            cargo install worker-build --version 0.8.7 --locked
+            bash scripts/build_rust_server.sh
+          fi
+
       - name: Check Cloudflare Secrets
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -100,7 +110,9 @@ jobs:
             COMMIT_SHA="$(git rev-parse HEAD)"
           fi
           COMMIT_MESSAGE="$(git log -1 --pretty=%s)"
-          wrangler pages deploy . \
+          DEPLOY_DIR=.
+          if [ -d public ]; then DEPLOY_DIR=public; fi
+          wrangler pages deploy "$DEPLOY_DIR" \
             --project-name gilwell-media \
             --branch main \
             --commit-hash "${COMMIT_SHA}" \

@@ -4,6 +4,7 @@
  * DELETE /api/memorabilia/:id   — 삭제 (관리자 전용)
  */
 
+import { queryRust } from '../../_shared/rust-server.js';
 import { gateMenuAccess, loadAdminSession } from '../../_shared/admin-permissions.js';
 import { hasMenuPermission } from '../../_shared/admin-users.js';
 import {
@@ -22,6 +23,10 @@ export async function onRequestGet({ request, env, params }) {
   const includeDrafts = !!(session && (session.isOwner || (session.permissions.access_admin && hasMenuPermission(session.permissions, 'memorabilia', 'view'))));
   if (new URL(request.url).searchParams.get('scope') === 'admin' && !includeDrafts) return (await gateMenuAccess(request, env, 'memorabilia', 'view')) || json({ error: '관리자 권한을 확인하지 못했습니다. 다시 시도해주세요.' }, 503);
 
+  try {
+    const response=await queryRust({request,env},'memorabilia-id-response',{id,includeDrafts});
+    if ([200,404].includes(response.status)) return response;
+  } catch (_) { /* fallback */ }
   const item = await getMemorabiliaById(env.DB, id, { includeDrafts });
   if (!item) return json({ error: 'not_found' }, 404);
   return json({ item }, 200, includeDrafts ? { 'Cache-Control': 'no-store' } : {});
@@ -43,9 +48,9 @@ export async function onRequestPatch({ request, env, params }) {
   // 누락 시 잠금 비활성 (구버전 클라이언트 호환).
   if (body && body.expected_updated_at) {
     const clientStamp = String(body.expected_updated_at).trim();
-    const currentRow = await env.DB.prepare(
-      `SELECT updated_at FROM memorabilia WHERE id = ?`
-    ).bind(id).first();
+    const response = await queryRust({request, env}, 'memorabilia-version', {id});
+    if (!response.ok) return json({ error: 'update_failed' }, 500);
+    const { row: currentRow } = await response.json();
     if (!currentRow) return json({ error: 'not_found' }, 404);
     if (String(currentRow.updated_at || '').trim() !== clientStamp) {
       return json({

@@ -1,3 +1,4 @@
+import { queryRust } from '../../../../_shared/rust-server.js';
 /**
  * POST /api/memorabilia/comments/:id/delete
  *
@@ -27,10 +28,9 @@ export async function onRequestPost({ params, env, request }) {
   const password = String((body && body.password) || '');
   if (!password) return json({ error: 'password_required' }, 400);
 
-  const row = await env.DB.prepare(
-    `SELECT id, password_hash, password_salt, status
-     FROM memorabilia_comments WHERE id = ?`
-  ).bind(id).first();
+  const lookup = await queryRust({env,request}, 'memorabilia-comment-get-secret', {id});
+  if (!lookup.ok) throw new Error('Rust comment lookup failed');
+  const {row} = await lookup.json();
 
   if (!row) return json({ error: 'not_found' }, 404);
   if (row.status === 'deleted') return json({ error: 'already_deleted' }, 410);
@@ -39,11 +39,13 @@ export async function onRequestPost({ params, env, request }) {
   if (!ok) return json({ error: 'invalid_password' }, 403);
 
   try {
-    await env.DB.prepare(
-      `UPDATE memorabilia_comments
-       SET status = 'deleted', deleted_at = datetime('now')
-       WHERE id = ?`
-    ).bind(id).run();
+    const response = await queryRust({env,request}, 'memorabilia-comment-delete', {id,hash:row.password_hash,salt:row.password_salt});
+    if (!response.ok) throw new Error('Rust comment deletion failed');
+    const result = await response.json();
+    if (!result.changed) {
+      if (result.status === 'deleted') return json({ error: 'already_deleted' }, 410);
+      return json({ error: 'comment_changed' }, 409);
+    }
     return json({ ok: true });
   } catch (err) {
     console.error('POST /api/memorabilia/comments/:id/delete error:', err);

@@ -183,7 +183,10 @@ test('Geo and tags ignore delayed prior-period responses', async ({ page }) => {
     const key = endpoint + '?days=7'; state.hold.add(key);
     const bar = page.locator(`[data-v3-period-scope="${scope}"]`);
     await bar.locator('[data-days="7"]').click(); await expect.poll(() => state.defers.get(key)?.length || 0).toBe(1);
-    await bar.locator('[data-days="90"]').click(); await expect(page.locator(status)).toContainText('표시 자료:');
+    await bar.locator('[data-days="90"]').click();
+    await expect.poll(() => state.delivered.includes(endpoint + '?days=90')).toBe(true);
+    await expect(page.locator(status)).toContainText('표시 자료:');
+    await expect(page.locator(status)).not.toContainText('조회 중');
     const selected = await page.locator(status).innerText();
     state.hold.delete(key); state.defers.get(key)!.forEach(release => release());
     await expect.poll(() => state.delivered.includes(key)).toBe(true); await settled(page);
@@ -461,11 +464,11 @@ for (const width of [280, 390, 1465, 1920, 2560, 5120]) test(`${width}px visible
     const header = panel.querySelector('.v3-page-head')!.getBoundingClientRect();
     const trend = panel.querySelector('.v3-analytics-trend-card')!.getBoundingClientRect();
     const posts = panel.querySelector('.v3-visit-posts')!.getBoundingClientRect();
-    return { chartWidth: chart.getBoundingClientRect().width, axisFont: parseFloat(getComputedStyle(text).fontSize) * Math.hypot(matrix.a, matrix.b),
+    return { chartWidth: chart.getBoundingClientRect().width, chartHeight: chart.getBoundingClientRect().height, viewWidth: chart.viewBox.baseVal.width, viewHeight: chart.viewBox.baseVal.height, matrix: [matrix.a,matrix.b,matrix.c,matrix.d], axisFont: parseFloat(getComputedStyle(text).fontSize) * Math.hypot(matrix.a, matrix.b),
       titleOverflow: title.scrollWidth > title.clientWidth + 1, titleEllipsis: getComputedStyle(title).textOverflow,
       headerHeight: header.height, trend: { top: trend.top, left: trend.left }, posts: { top: posts.top, left: posts.left } };
   });
-  expect(metrics.axisFont).toBeGreaterThanOrEqual(11.9);
+  expect(metrics.axisFont,JSON.stringify(metrics)).toBeGreaterThanOrEqual(11.9);
   expect(metrics.titleOverflow).toBe(false); expect(metrics.titleEllipsis).not.toBe('ellipsis');
   if (width >= 1920) { expect(metrics.headerHeight).toBeLessThan(230); expect(Math.abs(metrics.trend.top - metrics.posts.top)).toBeLessThan(2); expect(metrics.posts.left).toBeGreaterThan(metrics.trend.left); }
   await assertRenderedBounds(page, `${width}px visual visit overview`);

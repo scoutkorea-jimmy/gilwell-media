@@ -1,49 +1,18 @@
 // isolate당 1회만 스키마 보장 — 매 공개 GET 마다 CREATE + PRAGMA/ALTER 12회를
 // 돌리던 낭비 제거. 스키마는 첫 실행 후 안정적이므로 성공 시에만 플래그를 세워
 // 마이그레이션 실패 시 다음 호출에서 재시도 (00.166.x 성능 개선).
-let _calendarSchemaReady = false;
+const calendarSchemaReady = new WeakSet();
+
+import { queryRust } from './rust-server.js';
 
 export async function ensureCalendarTable(env) {
-  if (_calendarSchemaReady) return;
-  await env.DB.prepare(`
-    CREATE TABLE IF NOT EXISTS calendar_events (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      title TEXT NOT NULL,
-      title_original TEXT,
-      event_category TEXT NOT NULL DEFAULT 'WOSM',
-      event_tags TEXT,
-      description TEXT,
-      country_name TEXT,
-      location_name TEXT,
-      location_address TEXT,
-      latitude REAL,
-      longitude REAL,
-      related_post_id INTEGER,
-      related_posts_json TEXT,
-      start_at TEXT NOT NULL,
-      start_has_time INTEGER NOT NULL DEFAULT 0,
-      end_at TEXT,
-      end_has_time INTEGER NOT NULL DEFAULT 0,
-      link_url TEXT,
-      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-      updated_at TEXT DEFAULT CURRENT_TIMESTAMP
-    )
-  `).run();
-  await ensureCalendarColumn(env, 'title_original', 'TEXT');
-  await ensureCalendarColumn(env, 'event_category', "TEXT NOT NULL DEFAULT 'WOSM'");
-  await ensureCalendarColumn(env, 'event_tags', 'TEXT');
-  await ensureCalendarColumn(env, 'country_name', 'TEXT');
-  await ensureCalendarColumn(env, 'latitude', 'REAL');
-  await ensureCalendarColumn(env, 'longitude', 'REAL');
-  await ensureCalendarColumn(env, 'related_post_id', 'INTEGER');
-  await ensureCalendarColumn(env, 'related_posts_json', 'TEXT');
-  await ensureCalendarColumn(env, 'start_has_time', 'INTEGER DEFAULT 0');
-  await ensureCalendarColumn(env, 'end_has_time', 'INTEGER DEFAULT 0');
-  await ensureCalendarColumn(env, 'target_groups', 'TEXT');
-  _calendarSchemaReady = true;
+  if (calendarSchemaReady.has(env?.DB)) return;
+  const response = await queryRust({env, request:{url:'https://internal.invalid/'}}, 'calendar-ensure', {});
+  if (!response.ok) throw new Error('Rust calendar schema setup failed');
+  calendarSchemaReady.add(env.DB);
 }
 
-export function normalizeCalendarInput(body) {
+export function normalizeCalendarInput(body, dates = null) {
   const title = String(body && body.title || '').trim().slice(0, 200);
   const title_original = String(body && body.title_original || '').trim().slice(0, 200);
   const event_category = normalizeCategory(body && body.event_category);
@@ -54,12 +23,12 @@ export function normalizeCalendarInput(body) {
   const location_address = String(body && body.location_address || '').trim().slice(0, 300);
   const latitude = normalizeCoordinate(body && body.latitude, -90, 90);
   const longitude = normalizeCoordinate(body && body.longitude, -180, 180);
-  const startValue = normalizeCalendarDateTimeValue(
+  const startValue = dates ? dates.start : normalizeCalendarDateTimeValue(
     body && body.start_at,
     body && body.start_date,
     body && body.start_time
   );
-  const endValue = normalizeCalendarDateTimeValue(
+  const endValue = dates ? dates.end : normalizeCalendarDateTimeValue(
     body && body.end_at,
     body && body.end_date,
     body && body.end_time
@@ -93,6 +62,10 @@ export function normalizeCalendarInput(body) {
     link_url,
     target_groups: JSON.stringify(target_groups),
   };
+}
+
+export function calendarValues(item) {
+  return [item.title, item.title_original, item.event_category, item.event_tags, item.description, item.country_name, item.location_name, item.location_address, item.latitude, item.longitude, item.related_post_id, item.related_posts_json, item.start_at, item.start_has_time, item.end_at, item.end_has_time, item.link_url, item.target_groups];
 }
 
 export function normalizeCalendarRows(rows) {
@@ -199,14 +172,6 @@ function normalizeUrl(value) {
     return parsed.toString().slice(0, 500);
   } catch (_) {
     return null;
-  }
-}
-
-async function ensureCalendarColumn(env, columnName, sqlType) {
-  const pragma = await env.DB.prepare(`PRAGMA table_info(calendar_events)`).all();
-  const exists = (pragma.results || []).some(function (row) { return row.name === columnName; });
-  if (!exists) {
-    await env.DB.prepare(`ALTER TABLE calendar_events ADD COLUMN ${columnName} ${sqlType}`).run();
   }
 }
 

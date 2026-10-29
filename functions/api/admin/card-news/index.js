@@ -11,6 +11,7 @@
  * 생성 형식: POST /api/admin/card-news?title=<URL인코딩 제목>  (title 선택)
  *   응답: { ok, id, title, slug, view_url, edit_url }
  */
+import { queryRust } from '../../../_shared/rust-server.js';
 import { gateMenuAccess } from '../../../_shared/admin-permissions.js';
 import { recordSettingChange } from '../../../_shared/settings-audit.js';
 
@@ -80,11 +81,9 @@ export async function onRequestGet({ request, env }) {
   const gate = await gateMenuAccess(request, env, 'card-news', 'view');
   if (gate) return gate;
   try {
-    const rs = await env.DB.prepare(
-      `SELECT id, title, slug, size_bytes, published, created_at, updated_at,
-              (data IS NOT NULL AND data != '') AS has_data
-         FROM card_news ORDER BY created_at DESC, id DESC`
-    ).all();
+    const response = await queryRust({request, env}, 'card-news-admin', {operation:'list'});
+    if (!response.ok) throw new Error('Rust card news list failed');
+    const rs = {results:(await response.json()).items};
     const items = (rs && rs.results ? rs.results : []).map((row) => ({
       id: row.id,
       title: row.title,
@@ -119,7 +118,9 @@ export async function onRequestPost({ request, env }) {
   let data;
   if (fromId && fromId > 0) {
     try {
-      const src = await env.DB.prepare(`SELECT title, data FROM card_news WHERE id = ?`).bind(fromId).first();
+      const response = await queryRust({request, env}, 'card-news-admin', {operation:'clone-source', id:fromId});
+      if (!response.ok) throw new Error('Rust card news source failed');
+      const { row: src } = await response.json();
       if (!src) return json({ error: 'not_found', reason: '복사할 카드뉴스를 찾을 수 없습니다.' }, 404);
       try { data = JSON.parse(src.data || '{}'); } catch (_) { data = { ...DEFAULT_DATA }; }
       if (!data || typeof data !== 'object') data = { ...DEFAULT_DATA };
@@ -150,10 +151,9 @@ export async function onRequestPost({ request, env }) {
   const serialized = JSON.stringify(data);
 
   try {
-    const res = await env.DB.prepare(
-      `INSERT INTO card_news (title, slug, r2_key, size_bytes, data) VALUES (?, ?, '', 0, ?)`
-    ).bind(title, slug, serialized).run();
-    const id = res && res.meta ? res.meta.last_row_id : null;
+    const response = await queryRust({request, env}, 'card-news-admin', {operation:'create', title, slug, data:serialized});
+    if (!response.ok) throw new Error('Rust card news creation failed');
+    const { id } = await response.json();
     await recordSettingChange(env, {
       key: 'card_news',
       path: '/api/admin/card-news',

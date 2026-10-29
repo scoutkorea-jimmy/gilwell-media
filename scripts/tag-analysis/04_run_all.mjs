@@ -14,7 +14,8 @@
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { buildTagInsights } from '../../functions/_shared/tag-insights.js';
+import './rust-node-loader.mjs';
+import { buildTagInsightsRust } from '../../functions/_shared/tag-insights.js';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO = resolve(HERE, '../..');
@@ -23,7 +24,7 @@ const OUT_DIR = resolve(REPO, 'output/tag-analysis');
 mkdirSync(OUT_DIR, { recursive: true });
 
 const raw = JSON.parse(readFileSync(EXPORT_PATH, 'utf8'));
-const insights = buildTagInsights(raw.rows);
+const insights = await buildTagInsightsRust(raw.rows);
 
 writeFileSync(resolve(REPO, 'output/intermediate/tag_insights.json'), JSON.stringify(insights, null, 2));
 

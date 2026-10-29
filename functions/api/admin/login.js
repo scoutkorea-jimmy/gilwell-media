@@ -31,6 +31,13 @@ import {
 import { loadAdminUserByUsername, parsePermissions } from '../../_shared/admin-users.js';
 import { logOperationalEvent } from '../../_shared/ops-log.js';
 import { verifyTurnstile } from '../../_shared/turnstile.js';
+import { queryRust } from '../../_shared/rust-server.js';
+
+async function loginData(env, options) {
+  const response = await queryRust({env, request:{url:'https://internal.invalid/'}}, 'admin-login-data', options);
+  if (!response.ok) throw new Error('Rust login data operation failed');
+  return response.json();
+}
 
 // --- Backoff constants ----------------------------------------------------
 //   FAIL_FREE_ATTEMPTS — how many failures trigger no wait (allows for the
@@ -44,6 +51,7 @@ const FAIL_FREE_ATTEMPTS = 3;
 const BASE_DELAY_SECONDS = 60;
 const MAX_DELAY_SECONDS = 24 * 60 * 60; // 24h
 const IDLE_RESET_SECONDS = 72 * 60 * 60; // 72h
+class RateLimitUnavailable extends Error {}
 
 function requiredDelaySeconds(attemptCount) {
   if (attemptCount < FAIL_FREE_ATTEMPTS) return 0;
@@ -56,18 +64,14 @@ function requiredDelaySeconds(attemptCount) {
 
 async function getRateLimit(env, key) {
   try {
-    const row = await env.DB.prepare(
-      `SELECT attempt_count, first_attempt_at, last_attempt_at
-         FROM admin_login_attempts
-        WHERE ip = ?`
-    ).bind(key).first();
+    const {row} = await loginData(env, {operation:'rate-read', key});
     if (!row) return { count: 0, first: 0, last: 0 };
     return {
       count: parseInt(row.attempt_count, 10) || 0,
       first: parseInt(row.first_attempt_at, 10) || 0,
       last: parseInt(row.last_attempt_at, 10) || 0,
     };
-  } catch { return { count: 0, first: 0, last: 0 }; }
+  } catch { throw new RateLimitUnavailable(); }
 }
 
 async function recordFailedAttempt(env, key) {
@@ -76,22 +80,14 @@ async function recordFailedAttempt(env, key) {
     const existing = await getRateLimit(env, key);
     const nextCount = existing.count > 0 ? existing.count + 1 : 1;
     const firstAttemptAt = existing.count > 0 && existing.first ? existing.first : now;
-    await env.DB.prepare(
-      `INSERT INTO admin_login_attempts (ip, attempt_count, first_attempt_at, last_attempt_at)
-       VALUES (?, ?, ?, ?)
-       ON CONFLICT(ip) DO UPDATE SET
-         attempt_count = excluded.attempt_count,
-         first_attempt_at = excluded.first_attempt_at,
-         last_attempt_at = excluded.last_attempt_at`
-    ).bind(key, nextCount, firstAttemptAt, now).run();
-  } catch {}
+    await loginData(env, {operation:'rate-write', values:[key, nextCount, firstAttemptAt, now]});
+  } catch { throw new RateLimitUnavailable(); }
 }
 
 async function clearRateLimit(env, key) {
   try {
-    await env.DB.prepare(`DELETE FROM admin_login_attempts WHERE ip = ?`)
-      .bind(key).run();
-  } catch {}
+    await loginData(env, {operation:'rate-clear', values:[key]});
+  } catch { throw new RateLimitUnavailable(); }
 }
 
 function normalizeUsername(raw) {
@@ -122,6 +118,15 @@ async function rejected(env, request, ip, username, reasonForAudit, extraLog) {
 }
 
 export async function onRequestPost({ request, env }) {
+  try {
+    return await login({request, env});
+  } catch (error) {
+    if (!(error instanceof RateLimitUnavailable)) throw error;
+    return json({error:'로그인 보안 확인을 사용할 수 없습니다. 잠시 후 다시 시도해주세요.',code:'server_unavailable'}, 503);
+  }
+}
+
+async function login({ request, env }) {
   if (!env.ADMIN_PASSWORD || !env.ADMIN_SECRET) {
     return json({ error: '서버 설정이 완료되지 않았습니다.', code: 'server_unavailable' }, 500);
   }
@@ -217,16 +222,13 @@ export async function onRequestPost({ request, env }) {
     if (ok) {
       try {
         const nextHash = await hashAdminPassword(password);
-        const insert = await env.DB.prepare(
-          `INSERT INTO admin_users (username, display_name, password_hash, role, permissions, status, must_change_password)
-           VALUES (?, ?, ?, 'owner', ?, 'active', 0)`
-        ).bind(
+        const insert = await loginData(env, {operation:'bootstrap', values:[
           'owner',
           'Owner',
           JSON.stringify(nextHash),
           JSON.stringify({ access_admin: true, permissions: [] })
-        ).run();
-        const ownerId = insert && insert.meta && insert.meta.last_row_id;
+        ]});
+        const ownerId = insert.id;
         sessionUser = {
           id: ownerId,
           username: 'owner',
@@ -270,9 +272,7 @@ export async function onRequestPost({ request, env }) {
   await clearRateLimit(env, rlKey);
 
   try {
-    await env.DB.prepare(
-      `UPDATE admin_users SET last_login_at = datetime('now') WHERE id = ?`
-    ).bind(sessionUser.id).run();
+    await loginData(env, {operation:'last-login', values:[sessionUser.id]});
   } catch {}
 
   const role = jwtRoleFor(sessionUser);

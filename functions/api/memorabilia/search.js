@@ -1,3 +1,4 @@
+import { queryRust } from '../../_shared/rust-server.js';
 /**
  * GET /api/memorabilia/search
  *
@@ -30,7 +31,8 @@ const MAX_PAGE_SIZE = 60;
 // 동시에 ORDER BY bm25 를 적용해 후보가 관련도순으로 들어오도록 교정 (기존엔 rowid 순).
 const FTS_CANDIDATE_CAP = 500;
 
-export async function onRequestGet({ request, env }) {
+export async function onRequestGet(context) {
+  const { request, env } = context;
   const url = new URL(request.url);
   const q = String(url.searchParams.get('q') || '').trim();
 
@@ -75,13 +77,9 @@ export async function onRequestGet({ request, env }) {
         const tokens = q.split(/\s+/).filter(Boolean);
         const aliasGroups = await findGlossaryAliases(env.DB, tokens);
         const expanded = expandWithAliases(baseMatch, aliasGroups);
-        const { results } = await env.DB.prepare(`
-          SELECT memorabilia_id, bm25(memorabilia_fts) AS score
-            FROM memorabilia_fts
-           WHERE memorabilia_fts MATCH ?
-           ORDER BY score ASC
-           LIMIT ?
-        `).bind(expanded, FTS_CANDIDATE_CAP).all();
+        const response = await queryRust({env,request}, 'memorabilia-search-candidates', {query:expanded,limit:FTS_CANDIDATE_CAP});
+        if (!response.ok) throw new Error('Rust search candidates failed');
+        const {items:results} = await response.json();
         candidateIds = (results || []).map((r) => ({ id: r.memorabilia_id, score: r.score }));
       } catch (err) {
         console.warn('FTS search error, falling back to no-q:', err?.message);
@@ -92,99 +90,33 @@ export async function onRequestGet({ request, env }) {
     }
   }
 
-  // 2) 메인 SELECT — 필터를 SQL 로 적용
-  const whereParts = [`m.status = 'public'`];
-  const bindings = [];
-
-  if (candidateIds !== null) {
-    if (!candidateIds.length) {
-      return json({ results: [], facets: emptyFacets(), total: 0, page, page_size: pageSize });
-    }
-    const placeholders = candidateIds.map(() => '?').join(',');
-    whereParts.push(`m.id IN (${placeholders})`);
-    bindings.push(...candidateIds.map((c) => c.id));
+  if (candidateIds !== null && !candidateIds.length) {
+    return json({ results: [], facets: emptyFacets(), total: 0, page, page_size: pageSize });
   }
-
-  if (countries.length) {
-    whereParts.push(`m.id IN (SELECT memorabilia_id FROM memorabilia_countries WHERE country_code IN (${countries.map(() => '?').join(',')}))`);
-    bindings.push(...countries);
-  }
-  if (categories.length) {
-    whereParts.push(`m.category_id IN (SELECT id FROM memorabilia_categories WHERE slug IN (${categories.map(() => '?').join(',')}))`);
-    bindings.push(...categories);
-  }
-  // event_id 필터 — 콤마 다중(OR) 또는 단일 정수
-  if (eventParam) {
-    const eventIds = eventParam.split(',')
-      .map((s) => parseInt(s.trim(), 10))
-      .filter((n) => Number.isFinite(n));
-    if (eventIds.length) {
-      whereParts.push(`m.event_id IN (${eventIds.map(() => '?').join(',')})`);
-      bindings.push(...eventIds);
-    }
-  }
-  for (const tagLabel of tags) {
-    whereParts.push(`m.id IN (SELECT mt.memorabilia_id FROM memorabilia_tags mt JOIN memorabilia_tag_pool tp ON tp.id = mt.tag_id WHERE tp.label = ?)`);
-    bindings.push(tagLabel);
-  }
-  if (issuer) {
-    whereParts.push(`(m.issuer_ko LIKE ? OR m.issuer_en LIKE ?)`);
-    bindings.push(`%${issuer}%`, `%${issuer}%`);
-  }
-  if (Number.isFinite(yearFrom)) {
-    whereParts.push(`m.year >= ?`);
-    bindings.push(yearFrom);
-  }
-  if (Number.isFinite(yearTo)) {
-    whereParts.push(`m.year <= ?`);
-    bindings.push(yearTo);
-  }
-
-  const where = `WHERE ${whereParts.join(' AND ')}`;
-  let orderBy;
-  switch (sort) {
-    case 'newest':    orderBy = `COALESCE(m.published_at, m.updated_at) DESC, m.id DESC`; break;
-    case 'year_asc':  orderBy = `m.year ASC NULLS LAST, m.id DESC`; break;
-    case 'year_desc': orderBy = `m.year DESC NULLS LAST, m.id DESC`; break;
-    case 'title':     orderBy = `COALESCE(NULLIF(m.title_en, ''), m.title_ko) ASC, m.id DESC`; break;
-    case 'relevance':
-    default:
-      // 검색어 있으면 후보 순서대로 (BM25 score), 없으면 최신순
-      orderBy = candidateIds && candidateIds.length
-        ? `CASE m.id ${candidateIds.map((c, i) => `WHEN ${c.id} THEN ${i}`).join(' ')} ELSE 999999 END ASC`
-        : `COALESCE(m.published_at, m.updated_at) DESC, m.id DESC`;
-      break;
-  }
-
-  const sql = `
-    SELECT m.id, m.slug, m.title_en, m.title_ko, m.event_name_en, m.event_name_ko,
-           m.year, m.has_event, m.view_count,
-           c.slug AS category_slug, c.label_en AS category_label_en, c.label_ko AS category_label_ko,
-           (SELECT url FROM memorabilia_images
-             WHERE memorabilia_id = m.id ORDER BY is_primary DESC, sort_order ASC, id ASC LIMIT 1) AS primary_image_url
-      FROM memorabilia m
-      LEFT JOIN memorabilia_categories c ON c.id = m.category_id
-      ${where}
-      ORDER BY ${orderBy}
-      LIMIT ? OFFSET ?
-  `;
-
+  const eventIds = eventParam ? eventParam.split(',').map(s => parseInt(s.trim(),10)).filter(Number.isFinite) : [];
+  const searchOptions = {
+    candidateIds: candidateIds === null ? null : candidateIds.map(c => c.id),
+    countries,categories,eventIds,tags,issuer,yearFrom:Number.isFinite(yearFrom) ? yearFrom : null,
+    yearTo:Number.isFinite(yearTo) ? yearTo : null,sort,pageSize,offset,
+  };
   try {
-    const rowsRes = await env.DB.prepare(sql).bind(...bindings, pageSize, offset).all();
-    const totalRow = await env.DB.prepare(`SELECT COUNT(*) AS n FROM memorabilia m ${where}`).bind(...bindings).first();
-    const facets = await computeFacets(env.DB, where, bindings);
-
+    const response = await queryRust({env,request}, 'memorabilia-search-results', searchOptions);
+    if (!response.ok) throw new Error('Rust search results failed');
+    const data = await response.json();
+    const rowsRes = {results:data.results};
+    const totalRow = {n:data.total};
+    const facets = emptyFacets();
+    for (const r of data.countries || []) facets.country[r.country_code] = {count:r.n,label_ko:COUNTRY_CODE_LABELS_KO[r.country_code] || r.country_code};
+    for (const r of data.categories || []) facets.category[r.slug] = {count:r.n,label_en:r.label_en,label_ko:r.label_ko};
+    for (const r of data.tags || []) facets.tag[r.label] = r.n;
     // 검색 로그 (zero-result 추적)
     if (q) {
-      env.DB.prepare(`
-        INSERT INTO memorabilia_search_log (query, hits, filters_json, client_ip)
-        VALUES (?, ?, ?, ?)
-      `).bind(
-        q.slice(0, 200),
-        totalRow?.n || 0,
-        JSON.stringify({ countries, categories, tags, issuer, yearFrom, yearTo, sort }).slice(0, 2000),
-        request.headers.get('cf-connecting-ip') || null,
-      ).run().catch(() => {});
+      const logPromise = queryRust({env,request}, 'memorabilia-search-log', {
+        query:q.slice(0, 200), hits:totalRow?.n || 0,
+        filters:JSON.stringify({ countries, categories, tags, issuer, yearFrom, yearTo, sort }).slice(0, 2000),
+        ip:request.headers.get('cf-connecting-ip') || null,
+      }).then(response => { if (!response.ok) throw new Error('Rust search log failed'); }).catch(() => {});
+      if (context.waitUntil) context.waitUntil(logPromise);
     }
 
     return json({
@@ -198,54 +130,6 @@ export async function onRequestGet({ request, env }) {
     console.error('GET /api/memorabilia/search error:', err);
     return json({ results: [], facets: emptyFacets(), total: 0, error: 'search_failed' }, 500);
   }
-}
-
-async function computeFacets(db, baseWhere, baseBindings) {
-  const facets = emptyFacets();
-  try {
-    const countryRes = await db.prepare(`
-      SELECT mc.country_code, COUNT(DISTINCT m.id) AS n
-        FROM memorabilia m
-        JOIN memorabilia_countries mc ON mc.memorabilia_id = m.id
-        LEFT JOIN memorabilia_categories c ON c.id = m.category_id
-        ${baseWhere}
-        GROUP BY mc.country_code
-        ORDER BY n DESC LIMIT 30
-    `).bind(...baseBindings).all();
-    for (const r of (countryRes.results || [])) {
-      facets.country[r.country_code] = { count: r.n, label_ko: COUNTRY_CODE_LABELS_KO[r.country_code] || r.country_code };
-    }
-
-    const catRes = await db.prepare(`
-      SELECT c.slug, c.label_en, c.label_ko, COUNT(*) AS n
-        FROM memorabilia m
-        LEFT JOIN memorabilia_categories c ON c.id = m.category_id
-        ${baseWhere}
-        AND c.id IS NOT NULL
-        GROUP BY c.slug
-        ORDER BY n DESC
-    `).bind(...baseBindings).all();
-    for (const r of (catRes.results || [])) {
-      facets.category[r.slug] = { count: r.n, label_en: r.label_en, label_ko: r.label_ko };
-    }
-
-    const tagRes = await db.prepare(`
-      SELECT tp.label, COUNT(*) AS n
-        FROM memorabilia m
-        JOIN memorabilia_tags mt ON mt.memorabilia_id = m.id
-        JOIN memorabilia_tag_pool tp ON tp.id = mt.tag_id
-        LEFT JOIN memorabilia_categories c ON c.id = m.category_id
-        ${baseWhere}
-        GROUP BY tp.label
-        ORDER BY n DESC LIMIT 20
-    `).bind(...baseBindings).all();
-    for (const r of (tagRes.results || [])) {
-      facets.tag[r.label] = r.n;
-    }
-  } catch (err) {
-    console.warn('facet compute failed:', err?.message);
-  }
-  return facets;
 }
 
 function emptyFacets() {

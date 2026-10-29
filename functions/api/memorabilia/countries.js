@@ -5,21 +5,23 @@
  * 공개 도감 페이지(/memorabilia) + 관리자 도감 패널이 단일 카탈로그를 공유한다.
  * 새 국가 추가 시 functions/_shared/country-code-labels.js 만 수정하면 양쪽 자동 반영.
  */
-import { getCountryCatalogSorted } from '../../_shared/country-code-labels.js';
+import { COUNTRY_CODE_LABELS_KO, getCountryCatalogSorted } from '../../_shared/country-code-labels.js';
+import { queryRust } from '../../_shared/rust-server.js';
 
-export async function onRequestGet() {
-  const list = getCountryCatalogSorted();
-  let display;
+export async function onRequestGet({env, request} = {}) {
+  let items;
   try {
-    display = new Intl.DisplayNames(['en'], { type: 'region' });
+    const rust = await queryRust({env,request:request || {url:'https://internal.invalid/'}}, 'country-catalog', {entries:Object.entries(COUNTRY_CODE_LABELS_KO)});
+    if (!rust.ok) throw new Error('Rust country catalog failed');
+    const result = await rust.json();
+    if (!Array.isArray(result.items)) throw new Error('Invalid country catalog');
+    items = result.items;
   } catch (_) {
-    display = null;
+    const list = getCountryCatalogSorted();
+    let display;
+    try { display = new Intl.DisplayNames(['en'], { type: 'region' }); } catch (_) { display = null; }
+    items = list.map(({code,name_ko}) => ({code,name_ko,name_en:display ? (display.of(code) || code) : code}));
   }
-  const items = list.map(({ code, name_ko }) => ({
-    code,
-    name_ko,
-    name_en: display ? (display.of(code) || code) : code,
-  }));
   return new Response(JSON.stringify({ items }), {
     status: 200,
     headers: {

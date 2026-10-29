@@ -1,3 +1,4 @@
+import { queryRust } from '../../../_shared/rust-server.js';
 import { getViewerKey, getLikeStats, isLikelyNonHumanRequest } from '../../../_shared/engagement.js';
 import { enforceRateLimit, getClientIp, rateLimitResponse } from '../../../_shared/rate-limit.js';
 
@@ -24,25 +25,18 @@ export async function onRequestPost({ params, env, request }) {
   });
   if (!rl.ok) return rateLimitResponse(rl, '공감 요청이 너무 많습니다. 잠시 후 다시 시도해주세요.');
 
-  const post = await env.DB.prepare(`SELECT id FROM posts WHERE id = ? AND published = 1`).bind(id).first();
+  const lookup = await queryRust({env,request}, 'post-public-check', {id});
+  if (!lookup.ok) throw new Error('Rust public post lookup failed');
+  const {post} = await lookup.json();
   if (!post) return json({ error: '게시글을 찾을 수 없습니다' }, 404);
 
   const viewerKey = await getViewerKey(request, env);
   if (!viewerKey) return json({ error: '공감 처리에 필요한 정보를 확인할 수 없습니다' }, 400);
 
   try {
-    // Short-circuit when the viewer has already liked — avoids an unnecessary
-    // INSERT round-trip on spammy repeat clicks and gives the client fresh counts.
-    const existing = await env.DB.prepare(
-      `SELECT 1 FROM post_likes WHERE post_id = ? AND viewer_key = ? LIMIT 1`
-    ).bind(id, viewerKey).first();
-
-    if (!existing) {
-      await env.DB.prepare(
-        `INSERT OR IGNORE INTO post_likes (post_id, viewer_key) VALUES (?, ?)`
-      ).bind(id, viewerKey).run();
-    }
-
+    const response = await queryRust({env,request}, 'post-like-add', {id,viewerKey});
+    if (!response.ok) throw new Error('Rust post like failed');
+    if ((await response.json()).notPublic) return json({ error: '게시글을 찾을 수 없습니다' }, 404);
     const stats = await getLikeStats(env, id, viewerKey);
     return json(stats);
   } catch (err) {

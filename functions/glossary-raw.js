@@ -1,5 +1,6 @@
 import { renderTopicLinks } from './topics/[slug].js';
-import { buildShareMetaBlock, getResolvedShareImage, loadSiteMeta } from './_shared/site-meta.js';
+import { buildShareMetaBlockRust, getResolvedShareImage, loadSiteMeta } from './_shared/site-meta.js';
+import { queryRust } from './_shared/rust-server.js';
 
 const BUCKETS = ['가', '나', '다', '라', '마', '바', '사', '아', '자', '차', '카', '타', '파', '하'];
 const CHOSEONG_BUCKETS = ['가', '가', '나', '다', '다', '라', '마', '바', '바', '사', '사', '아', '자', '자', '차', '카', '타', '파', '하'];
@@ -18,19 +19,7 @@ async function renderGlossaryRawPage({ request, env }, headOnly = false) {
   const title = '스카우트 용어집 원문 색인 · BP미디어';
   const description = 'BP미디어 용어집의 모든 스카우트 용어를 한국어·영어·프랑스어와 설명까지 한 페이지에서 원문 그대로 볼 수 있는 공개 색인 페이지입니다.';
   const imageUrl = getResolvedShareImage(siteMeta, origin);
-  let items = [];
-
-  try {
-    const result = await env.DB.prepare(`
-      SELECT id, bucket, term_ko, term_en, term_fr, description_ko, sort_order, created_at, updated_at
-      FROM glossary_terms
-    `).all();
-    items = normalizeGlossaryRows(result.results || []);
-  } catch (err) {
-    console.error('GET /glossary-raw error:', err);
-  }
-
-  const metaBlock = buildShareMetaBlock({
+  const metaBlock = await buildShareMetaBlockRust({
     pageKey: 'glossary',
     title,
     description,
@@ -38,19 +27,45 @@ async function renderGlossaryRawPage({ request, env }, headOnly = false) {
     imageUrl,
     googleVerification: siteMeta.google_verification,
     naverVerification: siteMeta.naver_verification,
-  });
+  }, {request, env});
+  const links = renderTopicLinks();
+  let count = 0, cards = '', body = null;
+  try {
+    const result = await queryRust({request, env}, 'glossary-raw-page', {title, meta: metaBlock, links});
+    if (!result.ok) throw new Error('Rust glossary raw lookup failed');
+    const data = await result.json();
+    if (data.rendered === true && typeof data.html === 'string') {
+      body = data.html;
+    } else {
+      const items = normalizeGlossaryRows(data.rows || []);
+      count = items.length; cards = items.map(renderItemCard).join('\n');
+    }
+  } catch (err) {
+    console.error('GET /glossary-raw error:', err);
+  }
+  if (body === null) body = renderGlossaryRawShell({title, metaBlock, count, cards, links, date: new Date().toISOString().slice(0, 10)});
 
-  const body = `<!doctype html>
+  return new Response(headOnly ? null : body, {
+    status: 200,
+    headers: {
+      'Content-Type': 'text/html; charset=UTF-8',
+      'Cache-Control': 'public, max-age=300, s-maxage=300, stale-while-revalidate=1800',
+    },
+  });
+}
+
+export function renderGlossaryRawShell({title, metaBlock, count, cards, links, date}) {
+  return `<!doctype html>
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${escapeHtml(title)}</title>
   ${metaBlock}
-  <link rel="stylesheet" href="/css/style.css?v=20261027082848">
-  <link rel="stylesheet" href="/css/glossary.css?v=20261027082848">
-  <link rel="stylesheet" href="/css/m3-site.css?v=20261027082848">
-  <link rel="stylesheet" href="/css/topics.css?v=20261027082848">
+  <link rel="stylesheet" href="/css/style.css?v=20261029073654">
+  <link rel="stylesheet" href="/css/glossary.css?v=20261029073654">
+  <link rel="stylesheet" href="/css/m3-site.css?v=20261029073654">
+  <link rel="stylesheet" href="/css/topics.css?v=20261029073654">
   <style>
     body.glossary-raw-page {
       margin: 0;
@@ -175,28 +190,20 @@ async function renderGlossaryRawPage({ request, env }, headOnly = false) {
       <span class="category-tag tag-glossary">용어집 원문 색인</span>
       <h1>스카우트 용어집 원문 색인</h1>
       <p>검색엔진과 사람, 그리고 외부 도구가 용어집의 원문을 한 번에 읽을 수 있도록 만든 공개 색인 페이지입니다. 한국어·영어·프랑스어 용어와 한국어 설명을 그대로 모아 보여줍니다.</p>
-      <div class="glossary-raw-meta">총 ${items.length}개 용어 · 공개 데이터 원문 보기 · 업데이트 ${escapeHtml(new Date().toISOString().slice(0, 10))}</div>
+      <div class="glossary-raw-meta">총 ${count}개 용어 · 공개 데이터 원문 보기 · 업데이트 ${escapeHtml(date)}</div>
       <div class="glossary-raw-links">
-        ${renderTopicLinks()}
+        ${links}
         <a href="/glossary">일반 용어집 보기</a>
         <a href="/api/glossary">공개 JSON API</a>
         <a href="/api/glossary/bot?format=text">텍스트 내보내기</a>
       </div>
     </section>
     <section class="glossary-raw-list">
-      ${items.map(renderItemCard).join('\n')}
+      ${cards}
     </section>
   </main>
 </body>
 </html>`;
-
-  return new Response(headOnly ? null : body, {
-    status: 200,
-    headers: {
-      'Content-Type': 'text/html; charset=UTF-8',
-      'Cache-Control': 'public, max-age=300, s-maxage=300, stale-while-revalidate=1800',
-    },
-  });
 }
 
 function renderItemCard(item) {

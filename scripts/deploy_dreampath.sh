@@ -14,6 +14,9 @@ set -e
 # git 조작은 저장소 루트를 기준으로 해야 하므로 루트로 이동한 뒤 실행한다.
 cd "$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
+# This Pages deployment also bundles Site Functions, including Rust/Wasm.
+bash scripts/build_rust_server.sh
+
 DB="gilwell-posts"
 PROJECT="gilwell-media"
 

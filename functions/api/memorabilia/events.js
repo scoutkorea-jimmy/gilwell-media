@@ -5,14 +5,16 @@
  * 응답: { items: [{id, slug, name_en, name_ko, start_year, …, period_text, usage_count, …}] }
  */
 import { gateMenuAccess } from '../../_shared/admin-permissions.js';
-import { listEvents, createEvent, normalizeEventInput } from '../../_shared/memorabilia-events.js';
+import { createEvent, normalizeEventInput } from '../../_shared/memorabilia-events.js';
+import { queryRust } from '../../_shared/rust-server.js';
 
 export async function onRequestGet({ request, env }) {
   const url = new URL(request.url);
   const includeArchived = url.searchParams.get('include_archived') === '1';
   try {
-    const items = await listEvents(env.DB, { archived: includeArchived });
-    return json({ items });
+    const response=await queryRust({request,env},'memorabilia-events-list',{archived:includeArchived});
+    if (!response.ok) throw new Error('Rust event list failed');
+    return new Response(response.body,{status:200,headers:{'Content-Type':'application/json; charset=utf-8'}});
   } catch (err) {
     console.error('GET /api/memorabilia/events error:', err);
     return json({ items: [], error: 'list_failed' }, 500);
@@ -30,7 +32,7 @@ export async function onRequestPost({ request, env }) {
   let body;
   try { body = await request.json(); } catch { return json({ error: 'invalid_json' }, 400); }
 
-  const { errors, input } = normalizeEventInput(body || {});
+  const { errors, input } = await normalizeEventInput(body || {}, env);
   if (errors.length) return json({ error: 'validation', details: errors }, 400);
 
   try {

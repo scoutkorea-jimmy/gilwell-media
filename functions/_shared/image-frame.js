@@ -1,3 +1,5 @@
+import { queryRust } from './rust-server.js';
+
 /**
  * Per-post 대표 이미지 프레이밍 (초점 위치)
  *
@@ -41,5 +43,39 @@ export function serializeImageFrameForStore(raw) {
   const frame = normalizeImageFrame(raw);
   if (!frame) return null;
   if (frame.x === 50 && frame.y === 50) return null;
+  return JSON.stringify(frame);
+}
+
+
+// Keep JavaScript's result for input that Rust cannot represent or normalize identically.
+export async function normalizeImageFrameRust(raw, env = {}, run = queryRust) {
+  const fallback = () => normalizeImageFrame(raw);
+  try {
+    if (raw == null) return null;
+    let input = raw;
+    if (typeof input === 'string') {
+      const text = input.trim();
+      if (!text) return null;
+      try { input = JSON.parse(text); } catch { return null; }
+    }
+    if (input && typeof input === 'object' && !Array.isArray(input) && (Object.getPrototypeOf(input) === Object.prototype || Object.getPrototypeOf(input) === null)) {
+      if (input.x == null && input.y == null) return null;
+      if ([input.x,input.y].some(value => value != null && !['string','number','boolean'].includes(typeof value) || typeof value === 'number' && !Number.isFinite(value))) return fallback();
+    } else return fallback();
+    if (/\\u[dD][89a-fA-F][0-9a-fA-F]{2}/.test(JSON.stringify(input))) return fallback();
+    const response = await run({env,request:{url:'https://internal.invalid/'}}, 'post-image-frame', {raw:input});
+    if (!response.ok) return fallback();
+    const result = await response.json();
+    if (!result || !Object.hasOwn(result,'frame')) return fallback();
+    const {frame} = result;
+    if (frame === null) return null;
+    if (!frame || typeof frame !== 'object' || !['x','y'].every(key => Number.isInteger(frame[key]) && frame[key] >= 0 && frame[key] <= 100)) return fallback();
+    return {x:frame.x === 0 ? 0 : frame.x,y:frame.y === 0 ? 0 : frame.y};
+  } catch { return fallback(); }
+}
+
+export async function serializeImageFrameForStoreRust(raw, env = {}) {
+  const frame = await normalizeImageFrameRust(raw, env);
+  if (!frame || (frame.x === 50 && frame.y === 50)) return null;
   return JSON.stringify(frame);
 }

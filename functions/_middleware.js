@@ -179,6 +179,9 @@ const BLOCKED_PREFIXES = [
   '/scripts/',
   '/migrations/',
   '/workers/',
+  '/server-rust/',
+  '/work/',
+  '/__internal/',
   '/tests/',
   '/test-results/',
   '/playwright-report/',
@@ -209,6 +212,7 @@ const BLOCKED_FILES = new Set([
   '/.dev.vars',
   '/.dev.vars.example',
   '/.ds_store',
+  '/__internal',
 ]);
 
 // `scripts/audit_public_exposure.mjs` 가 preflight 에서 이 함수를 직접 import 해

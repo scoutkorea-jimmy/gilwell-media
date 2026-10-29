@@ -1,3 +1,5 @@
+import { queryRust } from './rust-server.js';
+
 const IMAGE_ROUTE_PREFIX = '/api/images/';
 
 export function hasPostImageBucket(env) {
@@ -19,12 +21,27 @@ export function extractImageKeyFromUrl(value, origin) {
   }
 }
 
+export async function extractImageKeyFromUrlRust(value, origin, env, run=queryRust) {
+  const fallback = () => extractImageKeyFromUrl(value, origin);
+  const unpaired = /[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/;
+  if (typeof value !== 'string' || !value || typeof origin !== 'string' || value.length > 16384 || origin.length > 16384 || unpaired.test(value) || unpaired.test(origin)) return fallback();
+  try {
+    const response=await run({env,request:{url:'https://internal.invalid/'}},'image-storage-key',{value,origin});
+    if (!response.ok) throw new Error('Rust image key extraction failed');
+    const result=await response.json();
+    // Cleanup is destructive: preserve the legacy target until both parsers agree.
+    const expected=fallback();
+    if (typeof result.key !== 'string' || result.key !== expected) return expected;
+    return result.key;
+  } catch (_) { return fallback(); }
+}
+
 export async function storeDataImage(env, dataUrl, origin, prefix) {
   if (!hasPostImageBucket(env) || !isDataImageUrl(dataUrl)) {
     return { url: dataUrl || null, key: '' };
   }
 
-  const { mimeType, bytes, ext } = decodeDataImage(dataUrl);
+  const { mimeType, bytes, ext } = await decodeDataImage(dataUrl, env);
   const key = `${prefix}-${crypto.randomUUID()}.${ext}`;
   await env.POST_IMAGES.put(key, bytes, {
     httpMetadata: {
@@ -36,8 +53,9 @@ export async function storeDataImage(env, dataUrl, origin, prefix) {
 }
 
 export async function deleteStoredImageByUrl(env, value, origin) {
-  const key = extractImageKeyFromUrl(value, origin);
-  if (!key || !hasPostImageBucket(env)) return;
+  if (!hasPostImageBucket(env)) return;
+  const key = await extractImageKeyFromUrlRust(value, origin, env);
+  if (!key) return;
   await env.POST_IMAGES.delete(key);
 }
 
@@ -111,33 +129,51 @@ const ALLOWED_IMAGE_MIMES = new Set([
   'image/gif',
 ]);
 
-function decodeDataImage(dataUrl) {
+async function decodeDataImage(dataUrl, env) {
   const commaIdx = dataUrl.indexOf(',');
   if (commaIdx < 0) throw new Error('Invalid data URL');
   const header = dataUrl.slice(0, commaIdx);
   const b64 = dataUrl.slice(commaIdx + 1);
-  const mimeMatch = header.match(/data:([^;]+)/);
-  const rawMime = (mimeMatch ? mimeMatch[1] : 'image/jpeg').toLowerCase();
-  if (!ALLOWED_IMAGE_MIMES.has(rawMime)) {
-    throw new Error(`Unsupported image type: ${rawMime}`);
-  }
-  const mimeType = rawMime === 'image/jpg' ? 'image/jpeg' : rawMime;
+  const parsed = await parseImageMimeRust(header, env);
+  if (parsed.error) throw new Error(parsed.error);
+  const {mimeType, ext} = parsed;
   const binary = atob(b64);
   const bytes = new Uint8Array(binary.length);
   for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i);
   // Magic byte 검증 — MIME 헤더가 위조됐는지 실제 파일 시그니처로 재확인.
   // 데이터 URL 의 "data:image/jpeg" 라벨만 믿으면 GIF/PNG 가 JPEG 로 위장
   // 가능 (예: SVG 본문을 jpeg MIME 로 끼워넣는 변형). 시그니처 불일치 시 거부.
-  const detected = detectImageMagic(bytes);
+  const detected = await detectImageMagicRust(bytes, env);
   if (!detected) throw new Error('Unrecognized image bytes (magic mismatch)');
   if (detected !== mimeType) {
     throw new Error(`Image magic ${detected} does not match declared MIME ${mimeType}`);
   }
-  return { mimeType, bytes, ext: mimeToExt(mimeType) };
+  return { mimeType, bytes, ext };
+}
+
+function parseImageMime(header) {
+  const mimeMatch = header.match(/data:([^;]+)/);
+  const rawMime = (mimeMatch ? mimeMatch[1] : 'image/jpeg').toLowerCase();
+  if (!ALLOWED_IMAGE_MIMES.has(rawMime)) return {error:`Unsupported image type: ${rawMime}`};
+  const mimeType = rawMime === 'image/jpg' ? 'image/jpeg' : rawMime;
+  return {mimeType,ext:mimeToExt(mimeType)};
+}
+
+export async function parseImageMimeRust(header, env, run=queryRust) {
+  const fallback = () => parseImageMime(header);
+  if (header.length > 16384 || /[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/.test(header)) return fallback();
+  try {
+    const response=await run({env,request:{url:'https://internal.invalid/'}},'image-mime',{header});
+    if (!response.ok) throw new Error('Rust image MIME validation failed');
+    const result=await response.json();
+    if (typeof result.error === 'string' && result.error.startsWith('Unsupported image type: ')) return {error:result.error};
+    if (['image/jpeg','image/png','image/gif','image/webp'].includes(result.mimeType) && result.ext === mimeToExt(result.mimeType)) return {mimeType:result.mimeType,ext:result.ext};
+    throw new Error('Invalid image MIME validation');
+  } catch (_) { return fallback(); }
 }
 
 // 첫 12바이트로 비트맵 시그니처 식별. 허용된 5종(jpeg/png/webp/gif) 만 인식.
-function detectImageMagic(bytes) {
+export function detectImageMagic(bytes) {
   if (!bytes || bytes.length < 12) return null;
   // JPEG: FF D8 FF
   if (bytes[0] === 0xFF && bytes[1] === 0xD8 && bytes[2] === 0xFF) return 'image/jpeg';
@@ -151,6 +187,17 @@ function detectImageMagic(bytes) {
   if (bytes[0] === 0x52 && bytes[1] === 0x49 && bytes[2] === 0x46 && bytes[3] === 0x46 &&
       bytes[8] === 0x57 && bytes[9] === 0x45 && bytes[10] === 0x42 && bytes[11] === 0x50) return 'image/webp';
   return null;
+}
+
+export async function detectImageMagicRust(bytes, env, run=queryRust) {
+  const header=Array.from(bytes.subarray(0,12));
+  try {
+    const response=await run({env,request:{url:'https://internal.invalid/'}},'image-magic',{header});
+    if (!response.ok) throw new Error('Rust image detection failed');
+    const result=await response.json();
+    if (result.detected===null || ['image/jpeg','image/png','image/gif','image/webp'].includes(result.detected)) return result.detected;
+    throw new Error('Invalid image detection result');
+  } catch (_) { return detectImageMagic(bytes); }
 }
 
 function mimeToExt(mimeType) {

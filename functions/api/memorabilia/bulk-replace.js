@@ -1,3 +1,4 @@
+import { queryRust } from '../../_shared/rust-server.js';
 /**
  * POST /api/memorabilia/bulk-replace
  *
@@ -99,7 +100,7 @@ export async function onRequestPost({ request, env }) {
     if (!field || !find) continue;
     if (find === replace) continue;
     const table = op._table || classifyField(field);
-    if (!table) {
+    if (!table || (table === 'memorabilia' && !MEMORABILIA_FIELDS.has(field)) || (table === 'memorabilia_events' && !EVENTS_FIELDS.has(field)) || (table !== 'memorabilia' && table !== 'memorabilia_events')) {
       return json({ error: 'invalid_field', detail: `허용되지 않는 필드: ${field}` }, 400);
     }
     normalized.push({ field, find, replace, table });
@@ -114,66 +115,35 @@ export async function onRequestPost({ request, env }) {
     const { field, find, replace, table } = op;
     const likePattern = `%${escapeLike(find)}%`;
 
+    const response = await queryRust({env,request}, 'memorabilia-bulk-replace', {
+      table,field,find,replace,likePattern,replacementPattern:`%${escapeLike(replace)}%`,dryRun,
+    });
+    if (!response.ok) throw new Error('Rust bulk replacement failed');
+    const data = await response.json();
     if (dryRun) {
-      const { results: cnt } = await env.DB.prepare(
-        `SELECT COUNT(*) AS n FROM ${table} WHERE ${field} LIKE ? ESCAPE '\\'`
-      ).bind(likePattern).all();
-      const matched = (cnt && cnt[0] && cnt[0].n) || 0;
-      results.push({ table, field, find, replace, matched, changed: 0 });
+      results.push({ table, field, find, replace, matched:data.matched, changed:0 });
       continue;
     }
-
-    // 영향 받는 memorabilia ids 캡쳐 (FTS 동기화용)
-    if (table === 'memorabilia') {
-      const { results: idsRows } = await env.DB.prepare(
-        `SELECT id FROM memorabilia WHERE ${field} LIKE ? ESCAPE '\\'`
-      ).bind(likePattern).all();
-      for (const r of (idsRows || [])) affectedMemoIds.add(r.id);
-    }
-
-    // 실제 치환 — REPLACE() 는 모든 occurrences 치환
-    const res = await env.DB.prepare(
-      `UPDATE ${table}
-          SET ${field} = REPLACE(${field}, ?, ?),
-              updated_at = datetime('now')
-        WHERE ${field} LIKE ? ESCAPE '\\'`
-    ).bind(find, replace, likePattern).run();
-
-    const changed = (res.meta && res.meta.changes) || 0;
-    totalChanged += changed;
-    results.push({ table, field, find, replace, changed });
-
-    // event 카탈로그 이름 변경 시, 도감 측 denormalized event_name_* 도 함께 동기화
-    if (table === 'memorabilia_events' && (field === 'name_en' || field === 'name_ko')) {
-      const memoField = field === 'name_en' ? 'event_name_en' : 'event_name_ko';
-      // event_name_* 가 같은 변형을 갖고 있으면 동시 치환
-      const memoRes = await env.DB.prepare(
-        `UPDATE memorabilia
-            SET ${memoField} = REPLACE(${memoField}, ?, ?),
-                updated_at = datetime('now')
-          WHERE ${memoField} LIKE ? ESCAPE '\\'`
-      ).bind(find, replace, likePattern).run();
-      const cascadedChanged = (memoRes.meta && memoRes.meta.changes) || 0;
-      if (cascadedChanged) {
-        totalChanged += cascadedChanged;
-        results.push({ table: 'memorabilia', field: memoField, find, replace, changed: cascadedChanged, cascaded_from: field });
-        // affected ids 도 갱신 — 위에서 SELECT 안 했으므로 한 번 더
-        const { results: idsRows } = await env.DB.prepare(
-          `SELECT id FROM memorabilia WHERE ${memoField} LIKE ? ESCAPE '\\'`
-        ).bind(`%${escapeLike(replace)}%`).all();
-        for (const r of (idsRows || [])) affectedMemoIds.add(r.id);
-      }
+    for (const id of data.ids || []) affectedMemoIds.add(id);
+    totalChanged += data.changed;
+    results.push({ table, field, find, replace, changed:data.changed });
+    if (data.cascadedChanged) {
+      totalChanged += data.cascadedChanged;
+      results.push({ table:'memorabilia', field:data.cascadedField, find, replace, changed:data.cascadedChanged, cascaded_from:field });
+      for (const id of data.cascadedIds || []) affectedMemoIds.add(id);
     }
   }
 
   // FTS 동기화 — 영향 받은 memorabilia rows 만 재계산
   let ftsSynced = 0;
+  const ftsFailed = [];
   if (!dryRun && affectedMemoIds.size) {
     for (const id of affectedMemoIds) {
       try {
         await syncFtsForId(env.DB, id);
         ftsSynced += 1;
       } catch (err) {
+        ftsFailed.push(id);
         console.error('FTS sync failed for memorabilia id', id, err);
       }
     }
@@ -184,6 +154,7 @@ export async function onRequestPost({ request, env }) {
     results,
     total_changed: totalChanged,
     fts_synced: ftsSynced,
+    ...(ftsFailed.length ? {fts_failed:ftsFailed} : {}),
     affected_memorabilia_ids: Array.from(affectedMemoIds),
   });
 }

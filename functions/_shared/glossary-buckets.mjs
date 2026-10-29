@@ -8,8 +8,8 @@
  * ⚠ 미러 주의 (빌드 단계 없음 → import 공유 불가):
  *  - 클라이언트 js/glossary.js 의 BUCKETS/CHOSEONG_BUCKETS/inferBucket 은 이 파일의 사본이다.
  *    이 파일을 바꾸면 js/glossary.js 도 함께 갱신할 것.
- *  - functions/api/glossary/bot.js 는 의도적으로 음절 버킷(14개)만 노출(MISC/UNMATCHED 제외)하므로
- *    BUCKETS 가 아니라 SYLLABLE_BUCKETS 를 참조한다.
+ *  - server-rust/src/lib.rs 의 읽기 분류 규칙도 같은 계약을 유지한다.
+ *    bot 출력은 의도적으로 음절 버킷(14개)만 노출한다. 변경 시 npm run test:rust로 동등성을 확인한다.
  */
 
 export const MISC_BUCKET = '기타';
@@ -51,4 +51,20 @@ export function inferBucket(termKo) {
 // Legacy D1 CHECK accepts syllable buckets only; read paths infer 기타/국문 미확정.
 export function storageBucket(bucket) {
   return SYLLABLE_BUCKETS.includes(bucket) ? bucket : '가';
+}
+
+// Keep JS string/number coercion and UTF-16 limits identical while D1 handling moves to Rust.
+export function normalizeGlossaryInput(body) {
+  const requestedBucket = String(body.bucket || '').trim();
+  const term_ko = normalizeTermValue(body.term_ko, 120);
+  const term_en = normalizeTermValue(body.term_en, 160);
+  const term_fr = normalizeTermValue(body.term_fr, 160);
+  const description_ko = String(body.description_ko || '').trim().slice(0, 800);
+  const sort_order = Number.isFinite(Number(body.sort_order)) ? Math.max(0, Math.min(9999, parseInt(body.sort_order, 10))) : 0;
+  const bucket = isMiscTerm(term_ko, term_en, term_fr)
+    ? MISC_BUCKET
+    : (isUnmatchedTerm(term_ko, term_en, term_fr) ? UNMATCHED_BUCKET : (inferBucket(term_ko) || requestedBucket));
+  if (!BUCKETS.includes(bucket)) return { error: '올바른 분류를 선택해주세요' };
+  if (!term_ko && !term_en && !term_fr) return { error: '한국어, 영어, 프랑스어 중 하나 이상 입력해주세요' };
+  return { bucket, term_ko, term_en, term_fr, description_ko, sort_order };
 }

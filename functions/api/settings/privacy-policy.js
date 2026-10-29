@@ -1,3 +1,4 @@
+import { queryRust, privacySnapshot } from '../../_shared/rust-server.js';
 /**
  * Gilwell Media · /api/settings/privacy-policy
  *
@@ -106,7 +107,7 @@ export async function onRequestDelete({ request, env }) {
 }
 
 async function readPrivacyState(env) {
-  const { results } = await env.DB.prepare(`SELECT key, value FROM settings WHERE key IN (?, ?, 'privacy_policy_rev')`).bind(PRIVACY_SETTINGS_KEY, PRIVACY_SETTINGS_UPDATED_KEY).all();
+  const { results } = await privacySnapshot(env);
   const values = Object.fromEntries((results || []).map((row) => [row.key, row.value]));
   return { html: values[PRIVACY_SETTINGS_KEY] ?? null, updated: values[PRIVACY_SETTINGS_UPDATED_KEY] ?? null, revision: parseInt(values.privacy_policy_rev, 10) || 0 };
 }
@@ -117,22 +118,12 @@ async function commitPrivacyState(env, expected, html, timestamp) {
   await ensureSettingsHistoryTable(env);
   const revision = previous.revision + 1;
   const claim = String(revision) + '|' + crypto.randomUUID();
-  const owned = `EXISTS(SELECT 1 FROM settings WHERE key = 'privacy_policy_rev' AND value = ?)`;
-  const statements = [
-    env.DB.prepare(`INSERT INTO settings(key, value) SELECT 'privacy_policy_rev', ?
-      WHERE (SELECT value FROM settings WHERE key = ?) IS ? AND (SELECT value FROM settings WHERE key = ?) IS ?
-      ON CONFLICT(key) DO UPDATE SET value = excluded.value WHERE CAST(settings.value AS INTEGER) = ?`).bind(claim, PRIVACY_SETTINGS_KEY, previous.html, PRIVACY_SETTINGS_UPDATED_KEY, previous.updated, previous.revision),
-    env.DB.prepare(`INSERT INTO settings_history(key, value) SELECT key, value FROM settings WHERE key = ? AND ${owned}`).bind(PRIVACY_SETTINGS_KEY, claim),
-  ];
-  if (html === null) {
-    statements.push(env.DB.prepare(`DELETE FROM settings WHERE key IN (?, ?) AND ${owned}`).bind(PRIVACY_SETTINGS_KEY, PRIVACY_SETTINGS_UPDATED_KEY, claim));
-  } else {
-    statements.push(env.DB.prepare(`INSERT INTO settings(key, value) SELECT ?, ? WHERE ${owned} ON CONFLICT(key) DO UPDATE SET value = excluded.value`).bind(PRIVACY_SETTINGS_KEY, html, claim));
-    statements.push(env.DB.prepare(`INSERT INTO settings(key, value) SELECT ?, ? WHERE ${owned} ON CONFLICT(key) DO UPDATE SET value = excluded.value`).bind(PRIVACY_SETTINGS_UPDATED_KEY, timestamp, claim));
-  }
-  statements.push(env.DB.prepare(`UPDATE settings SET value = ? WHERE key = 'privacy_policy_rev' AND value = ?`).bind(String(revision), claim));
-  const writes = await env.DB.batch(statements);
-  return { committed: !!(writes[0].meta && writes[0].meta.changes === 1), revision };
+  const response = await queryRust({env, request:{url:'https://internal.invalid/'}}, 'privacy-commit', {
+    previousHtml:previous.html, previousUpdated:previous.updated, previousRevision:previous.revision,
+    revision:String(revision), claim, html, timestamp,
+  });
+  if (!response.ok) throw new Error('Rust privacy commit failed');
+  return { committed: (await response.json()).committed, revision };
 }
 function json(data, status = 200, extraHeaders = {}) {
   const headers = new Headers({ 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });

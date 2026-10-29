@@ -1,3 +1,4 @@
+import { singleSetting, compareAndSetSetting, queryRust } from '../../_shared/rust-server.js';
 import { verifyTokenRole, extractToken } from '../../_shared/auth.js';
 import { gateMenuAccess } from '../../_shared/admin-permissions.js';
 import { recordSettingChange } from '../../_shared/settings-audit.js';
@@ -13,8 +14,8 @@ const DEFAULT_BOARD_BANNER = Object.freeze({
 
 export async function onRequestGet({ env, request }) {
   try {
-    const row = await env.DB.prepare(`SELECT value FROM settings WHERE key = 'board_banner_events'`).first();
-    return json(normalizeBoardBannerSettings(row && row.value));
+    const row = await singleSetting(env, 'board_banner_events');
+    return json(await normalizeBoardBannerSettings(env, row && row.value));
   } catch (err) {
     if (request && new URL(request.url).searchParams.get('scope') === 'admin') return json({ error: '설정을 불러오지 못했습니다. 다시 시도해주세요.' }, 500);
     console.error('GET /api/settings/board-banner error:', err);
@@ -32,15 +33,12 @@ export async function onRequestPut({ request, env }) {
     return json({ error: 'Invalid JSON' }, 400);
   }
 
-  const normalized = normalizeBoardBannerSettings(body);
   try {
-    const prevRow = await env.DB.prepare(`SELECT value FROM settings WHERE key = 'board_banner_events'`).first();
-    if (body.if_current && JSON.stringify(normalizeBoardBannerSettings(body.if_current)) !== JSON.stringify(normalizeBoardBannerSettings(prevRow && prevRow.value))) return json({ error: '게시판 배너가 다른 화면에서 변경되었습니다. 입력을 보존하고 최신 값을 확인해주세요.' }, 409);
-    const write = await env.DB.prepare(
-      `INSERT INTO settings (key, value) VALUES ('board_banner_events', ?)
-       ON CONFLICT(key) DO UPDATE SET value = excluded.value WHERE settings.value IS ?`
-    ).bind(JSON.stringify(normalized), prevRow ? prevRow.value : null).run();
-    if (write.meta && write.meta.changes !== 1) return json({ error: '동시 게시판 배너 변경이 감지되었습니다.' }, 409);
+    const normalized = await normalizeBoardBannerSettings(env, body);
+    const prevRow = await singleSetting(env, 'board_banner_events');
+    if (body.if_current && JSON.stringify(await normalizeBoardBannerSettings(env, body.if_current)) !== JSON.stringify(await normalizeBoardBannerSettings(env, prevRow && prevRow.value))) return json({ error: '게시판 배너가 다른 화면에서 변경되었습니다. 입력을 보존하고 최신 값을 확인해주세요.' }, 409);
+    const changes = await compareAndSetSetting(env, 'board_banner_events', JSON.stringify(normalized), prevRow ? prevRow.value : null);
+    if (changes !== 1) return json({ error: '동시 게시판 배너 변경이 감지되었습니다.' }, 409);
     await recordSettingChange(env, {
       key: 'board_banner_events',
       previousValue: prevRow && prevRow.value,
@@ -54,35 +52,13 @@ export async function onRequestPut({ request, env }) {
   }
 }
 
-function normalizeBoardBannerSettings(raw) {
-  let parsed = raw;
-  if (typeof raw === 'string') {
-    try {
-      parsed = JSON.parse(raw);
-    } catch (_) {
-      parsed = null;
-    }
-  }
-
+async function normalizeBoardBannerSettings(env, raw) {
+  const response = await queryRust({env,request:{url:'https://internal.invalid/'}}, 'board-banner-normalize', raw === undefined ? null : raw);
+  if (!response.ok) throw new Error('Rust board banner normalization failed');
+  const {items:rows} = await response.json();
   const items = {};
-  Object.keys(DEFAULT_BOARD_BANNER.items).forEach((category) => {
-    const source = parsed && parsed.items ? (parsed.items[category] || (category === 'wosm' ? parsed.items.worm : null)) : null;
-    items[category] = {
-      event_name: sanitizeName(source && source.event_name),
-      event_date: sanitizeDate(source && source.event_date),
-    };
-  });
-
+  for (const row of rows) items[row.category] = {event_name:row.name,event_date:row.date};
   return { items };
-}
-
-function sanitizeName(value) {
-  return String(value || '').trim().slice(0, 80);
-}
-
-function sanitizeDate(value) {
-  const text = String(value || '').trim();
-  return /^\d{4}-\d{2}-\d{2}$/.test(text) ? text : '';
 }
 
 function json(data, status = 200) {

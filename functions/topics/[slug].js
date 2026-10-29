@@ -1,7 +1,8 @@
-import { buildShareMetaBlock, getResolvedShareImage, loadSiteMeta } from '../_shared/site-meta.js';
+import { buildShareMetaBlockRust, getResolvedShareImage, loadSiteMeta } from '../_shared/site-meta.js';
 import { resolvePostImageUrl } from '../_shared/images.js';
 import { normalizeImageFrame } from '../_shared/image-frame.js';
 import { ASSET_VERSION, SITE_VERSION, ADMIN_VERSION } from '../_shared/build-version.js';
+import { queryRust } from '../_shared/rust-server.js';
 
 export const SCOUT_TOPICS = [
   {
@@ -66,14 +67,11 @@ async function renderTopicPage({ params, request, env }, headOnly = false) {
   const origin = new URL(request.url).origin;
   const url = `${origin}/topics/${topic.slug}`;
   // 한국어 띄어쓰기 변형과 영문 명칭을 함께 찾되 사용자 입력은 SQL로 받지 않는다.
-  const searchable = "replace(COALESCE(title,'') || ' ' || COALESCE(subtitle,'') || ' ' || COALESCE(tag,'') || ' ' || COALESCE(meta_tags,'') || ' ' || COALESCE(content,''), ' ', '')";
   let posts, siteMeta;
   try {
-    const result = await env.DB.prepare(`SELECT id, title, subtitle, image_url, image_frame, publish_at, created_at FROM posts
-      WHERE published = 1 AND (${topic.aliases.map(() => `${searchable} LIKE ?`).join(' OR ')})
-      ORDER BY datetime(COALESCE(NULLIF(publish_at, ''), created_at)) DESC, id DESC LIMIT 18`)
-      .bind(...topic.aliases.map(alias => `%${alias.replace(/\s+/g, '')}%`)).all();
-    posts = result.results || [];
+    const response = await queryRust({env, request}, 'topic-posts', {aliases:topic.aliases.map(alias => `%${alias.replace(/\s+/g, '')}%`)});
+    if (!response.ok) throw new Error('Rust topic posts query failed');
+    posts = (await response.json()).posts || [];
     siteMeta = await loadSiteMeta(env);
   } catch (error) {
     console.error('GET /topics/:slug error:', error);
@@ -83,15 +81,18 @@ async function renderTopicPage({ params, request, env }, headOnly = false) {
   }
   const title = `${topic.name} 뜻·활동·최신 소식 | BP미디어`;
   const description = `${topic.intro} BP미디어에서 ${topic.name} 관련 국내외 기사와 활동 기록을 확인하세요.`;
-  const meta = buildShareMetaBlock({
+  const meta = await buildShareMetaBlockRust({
     pageKey: 'topics', title, description, url, imageUrl: getResolvedShareImage(siteMeta, origin),
     googleVerification: siteMeta.google_verification, naverVerification: siteMeta.naver_verification,
+  }, {request, env});
+  const html = await renderTopicPageRust({posts,origin,topic,title,meta}, {request,env});
+  return new Response(headOnly ? null : html, {
+    headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'public, max-age=300' },
   });
-  const articleList = JSON.stringify({
-    '@context': 'https://schema.org', '@type': 'ItemList', name: `${topic.name} 관련 최신 소식`,
-    itemListElement: posts.map((post, index) => ({ '@type': 'ListItem', position: index + 1, url: `${origin}/post/${post.id}`, name: post.title })),
-  }).replace(/</g, '\\u003c');
-  const html = `<!doctype html>
+}
+
+export function renderTopicShell({title,meta,articleList,news,topic}) {
+  return `<!doctype html>
 <html lang="ko"><head>
   <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
   <title>${escapeHtml(title)}</title>${meta}
@@ -170,13 +171,7 @@ async function renderTopicPage({ params, request, env }, headOnly = false) {
     </div>
     <section id="topic-news" aria-labelledby="news-heading"><h2 id="news-heading">${topic.name} 관련 최신 소식</h2>
       <p>국내외 기사에서 이 주제를 언급한 소식을 최신순으로 모았습니다. 행사 일정과 참가 대상은 기사 원문에서 확인하세요.</p>
-      <div class="topic-news-grid">${posts.length ? posts.map(post => `<article class="topic-news-card">
-        ${resolvePostImageUrl(origin,post.id,post.image_url) ? `<a class="topic-news-image" href="/post/${post.id}" tabindex="-1" aria-hidden="true"><img src="${escapeHtml(resolvePostImageUrl(origin,post.id,post.image_url))}" alt="" width="640" height="400" loading="lazy" decoding="async" style="object-position:${normalizeImageFrame(post.image_frame)?.x ?? 50}% ${normalizeImageFrame(post.image_frame)?.y ?? 50}%"></a>` : ''}
-        <div class="topic-news-body"><p class="topic-note">${escapeHtml(formatPublicDate(post))}</p>
-        <h3><a href="/post/${post.id}">${escapeHtml(post.title)}</a></h3>
-        ${post.subtitle ? `<p>${escapeHtml(post.subtitle)}</p>` : ''}
-        <a href="/post/${post.id}" class="topic-read">기사 읽기 →</a></div>
-      </article>`).join('') : '<p>아직 관련 기사가 없습니다. 새로운 소식이 올라오면 여기에 표시됩니다.</p>'}</div>
+      <div class="topic-news-grid">${news}</div>
       <p><a href="/search?q=${encodeURIComponent(topic.name)}">${topic.name} 기사 더 찾아보기 →</a></p>
     </section>
   </main>
@@ -210,9 +205,78 @@ async function renderTopicPage({ params, request, env }, headOnly = false) {
   <script src="/js/chatbot.js?v=${ASSET_VERSION}" defer></script>
   <script>GW.bootstrapStandardPage();</script>
 </body></html>`;
-  return new Response(headOnly ? null : html, {
-    headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'public, max-age=300' },
+}
+
+export async function renderTopicShellRust(options, context, run = queryRust) {
+  const data = {...options, topics:SCOUT_TOPICS, asset_version:ASSET_VERSION, site_version:SITE_VERSION, admin_version:ADMIN_VERSION, encoded_name:encodeURIComponent(options.topic.name)};
+  // shortcut: isolated UTF-16 surrogates use the existing renderer.
+  if (/\\u[dD][89a-fA-F][0-9a-fA-F]{2}/.test(JSON.stringify(data))) return renderTopicShell(options);
+  try {
+    const response = await run(context, 'topic-shell-render',data);
+    if (!response.ok) throw new Error('Rust topic shell rendering failed');
+    const result = await response.json();
+    if (typeof result.html !== 'string') throw new Error('Invalid topic HTML');
+    return result.html;
+  } catch (_) { return renderTopicShell(options); }
+}
+
+export async function renderTopicPageRust({posts,origin,topic,title,meta}, context, run = queryRust) {
+  const fallback = () => renderTopicShell({title,meta,topic,news:renderTopicNews(posts,origin),articleList:buildTopicArticleList(posts,origin,topic.name)});
+  // shortcut: non-string legacy titles use JSON.stringify's original object context.
+  if (posts.some(post => post.title != null && typeof post.title !== 'string')) return fallback();
+  const data = {
+    news:{items:topicNewsInputs(posts,origin),origin,topic_name:topic.name},
+    shell:{title,meta,topic,articleList:'',news:'',topics:SCOUT_TOPICS,asset_version:ASSET_VERSION,site_version:SITE_VERSION,admin_version:ADMIN_VERSION,encoded_name:encodeURIComponent(topic.name)},
+  };
+  // shortcut: isolated UTF-16 surrogates use the existing renderer.
+  if (/\\u[dD][89a-fA-F][0-9a-fA-F]{2}/.test(JSON.stringify(data))) return fallback();
+  try {
+    const response = await run(context,'topic-page-render',data);
+    if (!response.ok) throw new Error('Rust topic page rendering failed');
+    const result=await response.json();
+    if (typeof result.html !== 'string') throw new Error('Invalid topic HTML');
+    return result.html;
+  } catch (_) { return fallback(); }
+}
+
+export function renderTopicNews(posts, origin) {
+  return posts.length ? posts.map(post => `<article class="topic-news-card">
+        ${resolvePostImageUrl(origin,post.id,post.image_url) ? `<a class="topic-news-image" href="/post/${post.id}" tabindex="-1" aria-hidden="true"><img src="${escapeHtml(resolvePostImageUrl(origin,post.id,post.image_url))}" alt="" width="640" height="400" loading="lazy" decoding="async" style="object-position:${normalizeImageFrame(post.image_frame)?.x ?? 50}% ${normalizeImageFrame(post.image_frame)?.y ?? 50}%"></a>` : ''}
+        <div class="topic-news-body"><p class="topic-note">${escapeHtml(formatPublicDate(post))}</p>
+        <h3><a href="/post/${post.id}">${escapeHtml(post.title)}</a></h3>
+        ${post.subtitle ? `<p>${escapeHtml(post.subtitle)}</p>` : ''}
+        <a href="/post/${post.id}" class="topic-read">기사 읽기 →</a></div>
+      </article>`).join('') : '<p>아직 관련 기사가 없습니다. 새로운 소식이 올라오면 여기에 표시됩니다.</p>';
+}
+
+export function buildTopicArticleList(posts, origin, topicName) {
+  return JSON.stringify({
+    '@context': 'https://schema.org', '@type': 'ItemList', name: `${topicName} 관련 최신 소식`,
+    itemListElement: posts.map((post, index) => ({ '@type': 'ListItem', position: index + 1, url: `${origin}/post/${post.id}`, name: post.title })),
+  }).replace(/</g, '\\u003c');
+}
+
+function topicNewsInputs(posts,origin) {
+  return posts.map(post => {
+    const frame = normalizeImageFrame(post.image_frame);
+    return {id:String(post.id), title:String(post.title || ''), name_json:JSON.stringify(post.title), subtitle:String(post.subtitle || ''), show_subtitle:!!post.subtitle, image:resolvePostImageUrl(origin,post.id,post.image_url) || '', x:String(frame?.x ?? 50), y:String(frame?.y ?? 50), date:formatPublicDate(post)};
   });
+}
+
+export async function renderTopicNewsRust(posts, origin, topicName, context, run = queryRust) {
+  const fallback = () => ({html:renderTopicNews(posts, origin), articleList:buildTopicArticleList(posts, origin, topicName)});
+  // shortcut: non-string legacy titles use JSON.stringify's original object context.
+  if (posts.some(post => post.title != null && typeof post.title !== 'string')) return fallback();
+  const items = topicNewsInputs(posts,origin);
+  // shortcut: isolated UTF-16 surrogates use the existing renderer.
+  if (/\\u[dD][89a-fA-F][0-9a-fA-F]{2}/.test(JSON.stringify({items,origin,topicName}))) return fallback();
+  try {
+    const response = await run(context, 'topic-news-render', {items, origin, topic_name:topicName});
+    if (!response.ok) throw new Error('Rust topic news rendering failed');
+    const result = await response.json();
+    if (typeof result.html !== 'string' || typeof result.articleList !== 'string') throw new Error('Invalid topic news HTML');
+    return result;
+  } catch (_) { return fallback(); }
 }
 
 function formatPublicDate(post) {

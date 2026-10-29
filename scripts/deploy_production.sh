@@ -9,6 +9,9 @@ chmod +x "$ROOT_DIR/scripts/verify_release_metadata.sh"
 chmod +x "$ROOT_DIR/scripts/release_preflight.sh"
 "$ROOT_DIR/scripts/release_preflight.sh"
 
+# Pages bundles the Rust Wasm module alongside the existing Functions.
+bash "$ROOT_DIR/scripts/build_rust_server.sh"
+
 VERSION="$(cat public/VERSION)"
 ASSET_VERSION="$(cat public/ASSET_VERSION)"
 COMMIT_SHA="$(git rev-parse --short HEAD)"

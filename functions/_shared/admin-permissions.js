@@ -17,6 +17,7 @@ import {
   parsePermissions,
 } from './admin-users.js';
 import { enforceRateLimit, getClientIp, rateLimitResponse } from './rate-limit.js';
+import { singleSetting } from './rust-server.js';
 
 // Admin write API 공통 rate-limit: 운영자 1명당 분당 60회.
 // 자동저장 디바운스(1.8s)·드래그앤드롭·일괄 처리 등을 감안해 여유롭게 잡되,
@@ -126,9 +127,7 @@ export function sessionOwnsPost(session, postRow) {
 export async function isPublishKillSwitchOn(env) {
   if (!env || !env.DB) return false;
   try {
-    const row = await env.DB.prepare(
-      `SELECT value FROM settings WHERE key = 'publish_kill_switch'`
-    ).first();
+    const row = await singleSetting(env, 'publish_kill_switch');
     return row && String(row.value).toLowerCase() === 'on';
   } catch {
     return false;

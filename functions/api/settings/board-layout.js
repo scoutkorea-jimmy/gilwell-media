@@ -1,3 +1,4 @@
+import { singleSetting, queryRust } from '../../_shared/rust-server.js';
 import { verifyTokenRole, extractToken } from '../../_shared/auth.js';
 import { gateMenuAccess } from '../../_shared/admin-permissions.js';
 import { recordSettingChange } from '../../_shared/settings-audit.js';
@@ -6,8 +7,8 @@ const DEFAULT_GAP = 6;
 
 export async function onRequestGet({ env }) {
   try {
-    const row = await env.DB.prepare(`SELECT value FROM settings WHERE key = 'board_card_gap'`).first();
-    return json({ gap_px: sanitizeGap(row && row.value) });
+    const row = await singleSetting(env, 'board_card_gap');
+    return json({ gap_px: await sanitizeGapRust(row && row.value, env) });
   } catch (err) {
     console.error('GET /api/settings/board-layout error:', err);
     return json({ gap_px: DEFAULT_GAP });
@@ -22,13 +23,9 @@ export async function onRequestPut({ request, env }) {
     return json({ error: 'Invalid JSON' }, 400);
   }
 
-  const gap = sanitizeGap(body && body.gap_px);
+  const gap = await sanitizeGapRust(body && body.gap_px, env);
   try {
-    const prevRow = await env.DB.prepare(`SELECT value FROM settings WHERE key = 'board_card_gap'`).first();
-    await env.DB.prepare(
-      `INSERT INTO settings (key, value) VALUES ('board_card_gap', ?)
-       ON CONFLICT(key) DO UPDATE SET value = excluded.value`
-    ).bind(String(gap)).run();
+    const prevRow = await singleSetting(env, 'board_card_gap', 'put', String(gap));
     await recordSettingChange(env, {
       key: 'board_card_gap',
       previousValue: prevRow && prevRow.value,
@@ -43,10 +40,20 @@ export async function onRequestPut({ request, env }) {
   }
 }
 
-function sanitizeGap(value) {
+export function sanitizeGap(value) {
   const parsed = parseInt(value, 10);
   if (!Number.isFinite(parsed)) return DEFAULT_GAP;
   return Math.min(40, Math.max(5, parsed));
+}
+
+export async function sanitizeGapRust(value, env = {}) {
+  const original=sanitizeGap(value);
+  try {
+    const response=await queryRust({env,request:{url:'https://internal.invalid/'}},'board-gap-normalize',{value:String(value)});
+    if(!response.ok) return original;
+    const {gap}=await response.json();
+    return Number.isInteger(gap) && gap===original ? gap : original;
+  } catch {return original;}
 }
 
 function json(data, status = 200) {

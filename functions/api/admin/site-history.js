@@ -1,3 +1,4 @@
+import { queryRust } from '../../_shared/rust-server.js';
 import { extractToken, verifyTokenRole } from '../../_shared/auth.js';
 import { gateMenuAccess } from '../../_shared/admin-permissions.js';
 import { requireOtp } from '../../_shared/otp-session.js';
@@ -20,40 +21,84 @@ export async function onRequestGet({ request, env }) {
     const url = new URL(request.url);
     const limit = Math.max(50, Math.min(MAX_LIMIT, parseInt(url.searchParams.get('limit') || String(DEFAULT_LIMIT), 10) || DEFAULT_LIMIT));
 
-    const [operationalRows, issueRows, settingsRows, postHistoryRows] = await Promise.all([
-      env.DB.prepare(
-        `SELECT id, channel, type, level, actor, ip, path, message, details, created_at
-           FROM operational_events
-          ORDER BY datetime(created_at) DESC, id DESC
-          LIMIT ?`
-      ).bind(limit).all().catch(function () { return { results: [], failed: true }; }),
-      env.DB.prepare(
-        `SELECT *
-           FROM homepage_issues
-          ORDER BY datetime(updated_at) DESC, id DESC
-          LIMIT ?`
-      ).bind(Math.min(limit, 200)).all().catch(function () { return { results: [], failed: true }; }),
-      env.DB.prepare(
-        `SELECT id, key, value, saved_at
-           FROM settings_history
-          ORDER BY datetime(saved_at) DESC, id DESC
-          LIMIT ?`
-      ).bind(Math.min(limit, 150)).all().catch(function () { return { results: [], failed: true }; }),
-      env.DB.prepare(
-        `SELECT id, post_id, action, summary, before_snapshot, after_snapshot, created_at
-           FROM post_history
-          ORDER BY datetime(created_at) DESC, id DESC
-          LIMIT ?`
-      ).bind(Math.min(limit, 150)).all().catch(function () { return { results: [], failed: true }; }),
-    ]);
+    const readSource = async (source, sourceLimit) => {
+      const response = await queryRust({ env, request }, 'site-history-source', { source, limit: sourceLimit });
+      if (!response.ok) throw new Error('Rust site history source failed');
+      return response.json();
+    };
+    let operationalRows, issueRows, settingsRows, postHistoryRows;
+    try {
+      const response = await queryRust({env, request}, 'site-history-sources', {limit});
+      if (!response.ok) throw new Error('Rust site history sources failed');
+      const result = await response.json();
+      if (!['operational','issues','settings','posts'].every(key => result[key] && Array.isArray(result[key].results) && (result[key].failed === undefined || result[key].failed === true))) throw new Error('Invalid Rust site history sources');
+      ({operational:operationalRows,issues:issueRows,settings:settingsRows,posts:postHistoryRows} = result);
+    } catch (_) {
+      [operationalRows, issueRows, settingsRows, postHistoryRows] = await Promise.all([
+        readSource('operational', limit).catch(function () { return { results: [], failed: true }; }),
+        readSource('issues', Math.min(limit, 200)).catch(function () { return { results: [], failed: true }; }),
+        readSource('settings', Math.min(limit, 150)).catch(function () { return { results: [], failed: true }; }),
+        readSource('posts', Math.min(limit, 150)).catch(function () { return { results: [], failed: true }; }),
+      ]);
+    }
 
-    const items = dedupeHistoryItems([]
-      .concat((operationalRows.results || []).map(normalizeOperationalHistoryItem))
-      .concat((issueRows.results || []).map(function (row) { return normalizeIssueHistoryItem(normalizeHomepageIssue(row)); }))
-      .concat((settingsRows.results || []).map(normalizeSettingsHistoryItem))
-      .concat((postHistoryRows.results || []).map(normalizePostHistoryItem)))
-      .sort(compareHistoryItems)
-      .slice(0, limit);
+    const regular = (item) => ({item, time:toTimeValue(item.occurred_at)});
+    const entries = []
+      .concat((operationalRows.results || []).map(function (row) {
+        const details = parseJson(row && row.details);
+        const meta = extractDetailMeta(details);
+        const type = String(row && row.type || '').trim();
+        const simpleObject = value => value == null || (typeof value === 'object' && !Array.isArray(value));
+        if (!row || typeof row !== 'object' || Object.hasOwn(Object.prototype, type) || !simpleObject(details) || !simpleObject(meta) ||
+            [row.type,row.level,row.channel,row.path,row.actor,row.message,row.created_at,details?.area,details?.stack,meta?.key,meta?.cause,meta?.summary,meta?.revision].some(value => value != null && typeof value !== 'string') ||
+            (row.id != null && typeof row.id !== 'string' && !Number.isSafeInteger(row.id)) ||
+            (meta?.post_id != null && !Number.isSafeInteger(meta.post_id))) {
+          return regular(normalizeOperationalHistoryItem(row));
+        }
+        return {operational:{row,details,meta},time:toTimeValue(String(row.created_at || ''))};
+      }))
+      .concat((issueRows.results || []).map(function (row) {
+        const issue = normalizeHomepageIssue(row);
+        if (!Number.isSafeInteger(issue.id)) return regular(normalizeIssueHistoryItem(issue));
+        return {issue,time:toTimeValue(issue.updated_at || issue.last_seen_at || issue.occurred_at || issue.created_at || '')};
+      }))
+      .concat((settingsRows.results || []).map(function (row) {
+        const key = String(row && row.key || '').trim();
+        if (!row || typeof row !== 'object' || Object.hasOwn(Object.prototype, key) ||
+            [row.key,row.value,row.saved_at].some(value => value != null && typeof value !== 'string') ||
+            (row.id != null && typeof row.id !== 'string' && !Number.isSafeInteger(row.id))) {
+          return regular(normalizeSettingsHistoryItem(row));
+        }
+        return {settings:row, time:toTimeValue(String(row.saved_at || ''))};
+      }))
+      .concat((postHistoryRows.results || []).map(function (row) {
+        const current = parseJson(row && row.after_snapshot) || parseJson(row && row.before_snapshot) || {};
+        const action = String(row && row.action || '').trim() || 'update';
+        if (!row || typeof row !== 'object' || !current || typeof current !== 'object' || Array.isArray(current) ||
+            Object.hasOwn(Object.prototype, action) ||
+            [row.action,row.summary,row.created_at,current.title,current.category].some(value => value != null && typeof value !== 'string') ||
+            (row.id != null && typeof row.id !== 'string' && !Number.isSafeInteger(row.id)) ||
+            (row.post_id != null && !Number.isSafeInteger(row.post_id))) {
+          return regular(normalizePostHistoryItem(row));
+        }
+        return {post:{row,current}, time:toTimeValue(String(row.created_at || ''))};
+      }));
+    let items, groups;
+    try {
+      const response = await queryRust({env, request}, 'site-history-merge', {
+        entries, limit,
+      });
+      if (!response.ok) throw new Error('Rust site history merge failed');
+      const merged = await response.json();
+      if (!Array.isArray(merged.items) || !merged.groups ||
+          !['error','issue','auth','settings','content'].every(key => Number.isInteger(merged.groups[key]) && merged.groups[key] >= 0)) {
+        throw new Error('Invalid Rust site history merge');
+      }
+      ({items, groups} = merged);
+    } catch (_) {
+      items = dedupeHistoryItems(entries.map(entry => entry.item || (entry.operational ? normalizeOperationalHistoryItem(entry.operational.row) : entry.post ? normalizePostHistoryItem(entry.post.row) : entry.issue ? normalizeIssueHistoryItem(entry.issue) : normalizeSettingsHistoryItem(entry.settings)))).sort(compareHistoryItems).slice(0, limit);
+      groups = Object.fromEntries(['error','issue','auth','settings','content'].map(key => [key, countBy(items, 'group', key)]));
+    }
 
     return json({
       items,
@@ -61,13 +106,7 @@ export async function onRequestGet({ request, env }) {
       limit,
       sources: { operational: !operationalRows.failed, issues: !issueRows.failed, settings: !settingsRows.failed, posts: !postHistoryRows.failed },
       partial: [operationalRows, issueRows, settingsRows, postHistoryRows].some((row) => row.failed),
-      groups: {
-        error: countBy(items, 'group', 'error'),
-        issue: countBy(items, 'group', 'issue'),
-        auth: countBy(items, 'group', 'auth'),
-        settings: countBy(items, 'group', 'settings'),
-        content: countBy(items, 'group', 'content'),
-      },
+      groups,
     });
   } catch (err) {
     console.error('GET /api/admin/site-history error:', err);

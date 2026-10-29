@@ -1,40 +1,17 @@
 import { recordHomepageIssue } from './homepage-issues.js';
+import { queryRust } from './rust-server.js';
 
 export async function ensureOperationalEventsTable(env) {
   if (!env || !env.DB) return;
-  await env.DB.prepare(
-    `CREATE TABLE IF NOT EXISTS operational_events (
-      id         INTEGER PRIMARY KEY AUTOINCREMENT,
-      channel    TEXT NOT NULL DEFAULT 'site',
-      type       TEXT NOT NULL,
-      level      TEXT NOT NULL DEFAULT 'info',
-      actor      TEXT,
-      ip         TEXT,
-      path       TEXT,
-      message    TEXT,
-      details    TEXT,
-      created_at TEXT NOT NULL DEFAULT (datetime('now'))
-    )`
-  ).run();
-  await env.DB.prepare(
-    `CREATE INDEX IF NOT EXISTS idx_operational_events_time
-       ON operational_events(created_at DESC)`
-  ).run();
-  await env.DB.prepare(
-    `CREATE INDEX IF NOT EXISTS idx_operational_events_level_type
-       ON operational_events(level, type, created_at DESC)`
-  ).run();
+  const response = await queryRust({env, request:{url:'https://internal.invalid/'}}, 'operational-ensure', {});
+  if (!response.ok) throw new Error('Rust operational event setup failed');
 }
 
 export async function logOperationalEvent(env, input) {
   if (!env || !env.DB) return false;
   const payload = input && typeof input === 'object' ? input : {};
   try {
-    await ensureOperationalEventsTable(env);
-    await env.DB.prepare(
-      `INSERT INTO operational_events (channel, type, level, actor, ip, path, message, details)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
-    ).bind(
+    const values = [
       truncate(payload.channel || 'site', 40),
       truncate(payload.type || 'event', 60),
       truncate(payload.level || 'info', 20),
@@ -42,8 +19,10 @@ export async function logOperationalEvent(env, input) {
       truncate(payload.ip || '', 80) || null,
       truncate(payload.path || '', 260) || null,
       truncate(payload.message || '', 500) || null,
-      serializeDetails(payload.details)
-    ).run();
+      serializeDetails(payload.details),
+    ];
+    const response = await queryRust({env, request:{url:'https://internal.invalid/'}}, 'operational-write', {values});
+    if (!response.ok) throw new Error('Rust operational event write failed');
     return true;
   } catch (error) {
     console.warn('logOperationalEvent skipped:', error);

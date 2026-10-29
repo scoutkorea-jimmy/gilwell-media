@@ -9,6 +9,16 @@
  */
 
 import { SITE_BRAND_NAME } from './site-copy.mjs';
+import { queryRust } from './rust-server.js';
+
+export async function buildRustPostMarkdownResponse({ post, postUrl, origin, request, env }) {
+  const response = await queryRust({request,env}, 'post-markdown-render', {
+    post, postUrl, origin, brand:SITE_BRAND_NAME,
+  });
+  if (!response.ok) throw new Error('Rust article markdown rendering failed');
+  const {text} = await response.json();
+  return new Response(text, {headers:{'Content-Type':'text/markdown; charset=UTF-8','Cache-Control':'public, max-age=900','X-Robots-Tag':'noindex'}});
+}
 
 export function buildPostMarkdownResponse({ post, postUrl, origin }) {
   const pubDate = String(post.publish_at || post.created_at || '').slice(0, 10);

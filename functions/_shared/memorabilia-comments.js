@@ -1,3 +1,5 @@
+import { queryRust } from './rust-server.js';
+
 /**
  * Shared helpers for the memorabilia public comments + likes feature.
  *
@@ -105,6 +107,29 @@ export function validateCommentSubmission(raw) {
     errors: [],
     data: { author_name, affiliation, password, content },
   };
+}
+
+// Only UTF-16 lengths cross the Wasm boundary; the password stays in the existing Web Crypto path.
+export async function validateCommentSubmissionRust(raw, env = {}, run = queryRust) {
+  const fallback = () => validateCommentSubmission(raw);
+  try {
+    const data = {
+      author_name:String((raw && raw.author_name) || '').trim(),
+      affiliation:String((raw && raw.affiliation) || '').trim(),
+      password:String((raw && raw.password) || ''),
+      content:String((raw && raw.content) || '').trim(),
+    };
+    const lengths = {author:data.author_name.length, affiliation:data.affiliation.length, password:data.password.length, content:data.content.length};
+    const response = await run({env,request:{url:'https://internal.invalid/'}}, 'memorabilia-comment-validate', lengths);
+    if (!response.ok) return fallback();
+    const {errors} = await response.json();
+    const invalidCount = Number(lengths.author === 0 || lengths.author > 40) + Number(lengths.affiliation === 0 || lengths.affiliation > 80) +
+      Number(lengths.password < 6 || lengths.password > 128) + Number(lengths.content === 0 || lengths.content > 1000);
+    const allowed = new Set(['이름을 입력해주세요.','이름은 40자 이하여야 합니다.','소속연맹을 입력해주세요.','소속연맹은 80자 이하여야 합니다.',
+      '비밀번호를 입력해주세요.','비밀번호는 6자 이상이어야 합니다.','비밀번호가 너무 깁니다.','내용을 입력해주세요.','내용은 1000자 이하여야 합니다.']);
+    if (!Array.isArray(errors) || errors.length !== invalidCount || new Set(errors).size !== errors.length || !errors.every(error => allowed.has(error))) return fallback();
+    return errors.length ? {errors} : {errors:[],data};
+  } catch { return fallback(); }
 }
 
 /**

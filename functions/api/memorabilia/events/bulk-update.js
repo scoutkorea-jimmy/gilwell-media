@@ -1,3 +1,4 @@
+import { queryRust } from '../../../_shared/rust-server.js';
 /**
  * POST /api/memorabilia/events/bulk-update
  *
@@ -24,40 +25,17 @@ export async function onRequestPost({ request, env }) {
   let body;
   try { body = await request.json(); } catch { return json({ error: 'invalid_json' }, 400); }
 
-  const ids = Array.isArray(body?.ids) ? body.ids.map((n) => parseInt(n, 10)).filter(Number.isFinite) : [];
-  const updates = (body && typeof body.updates === 'object') ? body.updates : null;
-  if (!ids.length)   return json({ error: 'no_ids',     detail: '하나 이상의 행사를 선택하세요.' }, 400);
-  if (!updates)      return json({ error: 'no_updates', detail: '변경할 필드를 지정하세요.' }, 400);
-
-  const u = {};
-  if (updates.category_id !== undefined) {
-    if (updates.category_id === null) u.category_id = null;
-    else {
-      const n = parseInt(updates.category_id, 10);
-      if (!Number.isFinite(n)) return json({ error: 'invalid_category_id' }, 400);
-      // 존재 여부 확인
-      const exists = await env.DB.prepare(`SELECT 1 FROM memorabilia_event_categories WHERE id = ?`).bind(n).first();
-      if (!exists) return json({ error: 'category_not_found' }, 400);
-      u.category_id = n;
-    }
-  }
-  if (updates.archived !== undefined) u.archived = updates.archived ? 1 : 0;
-
-  if (!Object.keys(u).length) return json({ error: 'no_updates', detail: '체크된 필드가 없습니다.' }, 400);
-
-  const setParts = [];
-  const setBinds = [];
-  if ('category_id' in u) { setParts.push('category_id = ?'); setBinds.push(u.category_id); }
-  if ('archived'    in u) { setParts.push('archived = ?');    setBinds.push(u.archived);    }
-  setParts.push("updated_at = datetime('now')");
-
-  const placeholders = ids.map(() => '?').join(',');
-  const sql = `UPDATE memorabilia_events SET ${setParts.join(', ')} WHERE id IN (${placeholders})`;
-  const allBinds = setBinds.concat(ids);
+  const checked = await queryRust({env, request}, 'memorabilia-events-bulk-validate', body);
+  if (!checked.ok) throw new Error('Rust event bulk validation failed');
+  const normalized = await checked.json();
+  if (normalized.error) return json(normalized, 400);
+  const {ids} = normalized;
 
   try {
-    const res = await env.DB.prepare(sql).bind(...allBinds).run();
-    const updated = (res.meta && res.meta.changes) || 0;
+    const response = await queryRust({env,request}, 'memorabilia-events-bulk-update', normalized);
+    if (!response.ok) throw new Error('Rust event bulk update failed');
+    const {updated, error} = await response.json();
+    if (error) throw new Error(error);
     return json({ ok: true, updated, applied_ids: ids });
   } catch (err) {
     console.error('POST /api/memorabilia/events/bulk-update error:', err);

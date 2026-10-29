@@ -1,3 +1,5 @@
+import { queryRust } from './rust-server.js';
+
 /**
  * 홈 '에디터 추천' · '인기 소식' 산출 (2026-07-22)
  *
@@ -35,69 +37,22 @@ export const POPULAR_WEIGHTS = {
  * @returns {{ pickIds: number[], popularIds: number[] }}
  */
 export async function selectHomeRailIds(env, limit = 4) {
-  const { results } = await env.DB.prepare(
-    `SELECT posts.id AS id,
-            SUM(CASE WHEN pv.viewed_at >= datetime('now','-7 day') THEN 1 ELSE 0 END) AS v7,
-            SUM(CASE WHEN pv.viewed_at >= datetime('now','-14 day')
-                      AND pv.viewed_at <  datetime('now','-7 day')  THEN 1 ELSE 0 END) AS v14,
-            SUM(CASE WHEN pv.viewed_at >= datetime('now','-30 day')
-                      AND pv.viewed_at <  datetime('now','-14 day') THEN 1 ELSE 0 END) AS v30,
-            SUM(CASE WHEN pv.viewed_at <  datetime('now','-30 day') THEN 1 ELSE 0 END) AS vold,
-            COALESCE(posts.publish_at, posts.created_at) AS pub
-       FROM posts
-       LEFT JOIN post_views pv ON pv.post_id = posts.id
-      WHERE posts.published = 1
-      GROUP BY posts.id`
-  ).all();
-
-  const rows = (results || []).map((r) => ({
-    id: r.id,
-    v7: Number(r.v7) || 0,
-    v14: Number(r.v14) || 0,
-    v30: Number(r.v30) || 0,
-    vold: Number(r.vold) || 0,
-    pub: r.pub || '',
-  }));
-
-  const byDateDesc = (a, b) => (a.pub < b.pub ? 1 : a.pub > b.pub ? -1 : b.id - a.id);
-
-  // ── 에디터 추천 — 최근 30일 조회수 상위 ────────────────────
-  const views30 = (r) => r.v7 + r.v14 + r.v30;
-  const picks = rows
-    .filter((r) => views30(r) > 0)
-    .sort((a, b) => views30(b) - views30(a) || byDateDesc(a, b))
-    .slice(0, limit);
-  // 조회 기록이 부족하면 최신 공개글로 채운다 (섹션이 비지 않게)
-  if (picks.length < limit) {
-    const have = new Set(picks.map((r) => r.id));
-    rows.slice().sort(byDateDesc).forEach((r) => {
-      if (picks.length < limit && !have.has(r.id)) { picks.push(r); have.add(r.id); }
-    });
-  }
-  const pickIds = picks.map((r) => r.id);
-  const pickSet = new Set(pickIds);
-
-  // ── 인기 소식 — 시간 감쇠 점수, 추천과 중복 제외 ───────────
-  const W = POPULAR_WEIGHTS;
-  const score = (r) => r.v7 * W.recent7 + r.v14 * W.days8to14 + r.vold * W.olderThan30;
-  const popular = rows
-    .filter((r) => !pickSet.has(r.id))
-    .sort((a, b) => score(b) - score(a) || byDateDesc(a, b))
-    .slice(0, limit);
-
-  return { pickIds, popularIds: popular.map((r) => r.id) };
+  const rust = await queryRust({ env, request: { url: 'https://internal.invalid/' } }, 'home-rails', {
+    limit, weights: POPULAR_WEIGHTS,
+  });
+  if (!rust.ok) throw new Error('Rust home rails query failed');
+  return rust.json();
 }
 
 /**
  * id 목록 순서를 그대로 유지해 카드 데이터를 붙인다.
  * @param {(row:any)=>any} serialize  행 → 카드 객체 변환기 (호출부 규약이 달라 주입받는다)
  */
-export async function hydrateByIds(env, ids, columns, serialize) {
+export async function hydrateByIds(env, ids, columns, serialize, card = false, origin) {
   if (!ids.length) return [];
-  const placeholders = ids.map(() => '?').join(', ');
-  const { results } = await env.DB.prepare(
-    `SELECT ${columns} FROM posts WHERE id IN (${placeholders})`
-  ).bind(...ids).all();
+  const rust = await queryRust({ env, request: { url: 'https://internal.invalid/' } }, 'home-hydrate', { ids, columns, card, origin });
+  if (!rust.ok) throw new Error('Rust home card hydration query failed');
+  const { posts: results } = await rust.json();
   const byId = new Map((results || []).map((r) => [r.id, r]));
   return ids.map((id) => byId.get(id)).filter(Boolean).map(serialize);
 }

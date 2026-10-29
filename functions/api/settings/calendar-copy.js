@@ -1,3 +1,4 @@
+import { singleSetting } from '../../_shared/rust-server.js';
 import { extractToken, verifyTokenRole } from '../../_shared/auth.js';
 import { gateMenuAccess } from '../../_shared/admin-permissions.js';
 import { DEFAULT_CALENDAR_COPY, loadCalendarCopy, sanitizeCalendarCopy } from '../../_shared/calendar-copy.js';
@@ -21,13 +22,9 @@ export async function onRequestPut({ request, env }) {
   } catch (_) {
     return json({ error: 'Invalid JSON' }, 400);
   }
-  const copy = sanitizeCalendarCopy(body && body.copy);
+  const copy = await sanitizeCalendarCopy(body && body.copy, env);
   try {
-    const prevRow = await env.DB.prepare(`SELECT value FROM settings WHERE key = 'calendar_copy'`).first();
-    await env.DB.prepare(
-      `INSERT INTO settings (key, value) VALUES ('calendar_copy', ?)
-       ON CONFLICT(key) DO UPDATE SET value = excluded.value`
-    ).bind(JSON.stringify(copy)).run();
+    const prevRow = await singleSetting(env, 'calendar_copy', 'put', JSON.stringify(copy));
     await recordSettingChange(env, {
       key: 'calendar_copy',
       previousValue: prevRow && prevRow.value,

@@ -1,0 +1,1290 @@
+// Compatibility reference from origin/main 835a326a; test-only.
+import { publicAuthor } from '../../functions/_shared/post-author.js';
+import { renderTopicLinks } from '../../functions/topics/[slug].js';
+import { verifyTokenRole, extractToken } from '../../functions/_shared/auth.js';
+import { getLikeStats, getViewerKey, isLikelyNonHumanRequest, recordUniqueView } from '../../functions/_shared/engagement.js';
+import { getYouTubeEmbedUrl } from '../../functions/_shared/youtube.js';
+import { ADSENSE_ACCOUNT, getResolvedShareImage, loadSiteMeta } from '../../functions/_shared/site-meta.js';
+import { findManualRelatedPosts, findRelatedPosts } from '../../functions/_shared/related-posts.js';
+import { findSpecialFeaturePosts, slugifySpecialFeature } from '../../functions/_shared/special-features.js';
+import { ensureDuePostsPublished } from '../../functions/_shared/publish-due-posts.js';
+import { getNavLabel, loadNavLabels } from '../../functions/_shared/nav-labels.js';
+import { getCategoryMeta, listEditablePostCategories } from '../../functions/_shared/category-meta.mjs';
+import { SITE_BRAND_NAME, SITE_DOMAIN_LABEL, DEFAULT_CONTACT_EMAILS } from '../../functions/_shared/site-copy.mjs';
+import { buildPostMarkdownResponse, buildMarkdownErrorResponse } from '../../functions/_shared/post-markdown.js';
+import { normalizeImageFrame } from '../../functions/_shared/image-frame.js';
+
+/**
+ * Gilwell Media · Individual Post Page
+ *
+ * GET /post/:id  — server-side rendered HTML for SEO
+ *
+ * Returns a full HTML page with:
+ *  - <title> set to the post title
+ *  - <meta name="description"> from subtitle
+ *  - <meta name="keywords"> from meta_tags
+ *  - Open Graph tags (og:title, og:description, og:image)
+ *  - Full post content rendered from Editor.js JSON
+ */
+
+export async function onRequestGet({ params, env, request }) {
+  // params.id는 숫자만(/post/123) 또는 .md suffix(/post/123.md) 중 하나만 허용.
+  // 다른 확장자(.json, .txt 등)는 명시적 404. AI 봇이 plain markdown을 가져갈 수 있도록 .md는 별도 분기.
+  // Pages는 [id].md.js 같은 dynamic+literal 패턴을 인식 못 해 같은 함수 안에서 분기 처리.
+  const rawId = String(params.id || '');
+  const mdMatch = /^(\d+)\.md$/.exec(rawId);
+  if (mdMatch) {
+    return serveMarkdown(parseInt(mdMatch[1], 10), env, request);
+  }
+  if (!/^\d+$/.test(rawId)) {
+    return notFound(request);
+  }
+  const id = parseInt(rawId, 10);
+  if (!Number.isFinite(id) || id < 1) {
+    return notFound(request);
+  }
+
+  await ensureDuePostsPublished(env, new URL(request.url).origin).catch((err) => {
+    console.error('GET /post/:id auto publish error:', err);
+  });
+
+  let post, disclaimerRow, publicRuntimeRow, navLabels, siteMeta;
+  try {
+    [post, disclaimerRow, publicRuntimeRow, navLabels, siteMeta] = await Promise.all([
+      env.DB.prepare('SELECT * FROM posts WHERE id = ?').bind(id).first(),
+      env.DB.prepare("SELECT value FROM settings WHERE key = 'ai_disclaimer'").first(),
+      env.DB.prepare("SELECT value FROM settings WHERE key = 'public_runtime'").first(),
+      loadNavLabels(env),
+      loadSiteMeta(env),
+    ]);
+  } catch (err) {
+    console.error('GET /post/:id DB error:', err);
+    return errorPage(request);
+  }
+  const aiDisclaimer = disclaimerRow?.value || '이 기사는 AI 도구로 번역·요약·초안 작성을 보조하고, BP미디어 편집자가 1차 출처를 확인해 사실관계를 검수·편집했습니다.';
+  const publicRuntime = parseJsonObject(publicRuntimeRow && publicRuntimeRow.value);
+  if (!publicRuntimeRow) console.warn('[post/:id] public_runtime setting not found — using empty fallback');
+  const navContributors = getNavLabel(navLabels, 'nav.contributors', 'ko');
+  const navHome = getNavLabel(navLabels, 'nav.home', 'ko');
+  const navLatest = getNavLabel(navLabels, 'nav.latest', 'ko');
+  const navJamboree16 = getNavLabel(navLabels, 'nav.jamboree16', 'ko');
+  const navKorea = getNavLabel(navLabels, 'nav.korea', 'ko');
+  const navApr = getNavLabel(navLabels, 'nav.apr', 'ko');
+  const navWosm = getNavLabel(navLabels, 'nav.wosm', 'ko');
+  const navWosmMembers = getNavLabel(navLabels, 'nav.wosm_members', 'ko');
+  const navPeople = getNavLabel(navLabels, 'nav.people', 'ko');
+  const navCalendar = getNavLabel(navLabels, 'nav.calendar', 'ko');
+  const navGlossary = getNavLabel(navLabels, 'nav.glossary', 'ko');
+  const navMemorabilia = getNavLabel(navLabels, 'nav.memorabilia', 'ko');
+  if (!post) return notFound(request);
+  let isAdmin = false;
+  if (post.published === 0) {
+    const token = extractToken(request);
+    isAdmin = token ? await verifyTokenRole(token, env, 'full').catch(() => false) : false;
+    if (!isAdmin) return notFound(request);
+  }
+  const viewerKey = await getViewerKey(request, env).catch(() => null);
+  if (!isAdmin && !isLikelyNonHumanRequest(request)) {
+    const counted = await recordUniqueView(env, id, viewerKey).catch(() => false);
+    if (counted) post.views = (post.views || 0) + 1;
+  }
+  const [likeStats, relatedPosts, manualRelatedPosts, specialFeaturePosts] = await Promise.all([
+    getLikeStats(env, id, viewerKey),
+    findRelatedPosts(env, post, 5),
+    findManualRelatedPosts(env, post, 5),
+    findSpecialFeaturePosts(env, post, 50),
+  ]);
+
+  const requestUrlObj = new URL(request.url);
+  const siteUrl  = requestUrlObj.origin;
+  const cat = getCategoryMeta(navLabels, post.category, 'ko');
+  const editableCategories = listEditablePostCategories(navLabels, 'ko');
+  const titleText = post.title || '';
+  const subtitleText = post.subtitle || '';
+  const title    = escapeHtml(titleText);
+  const subtitle = escapeHtml(subtitleText);
+  const descText = subtitleText || truncatePlain(post.content || '', 160);
+  const desc     = escapeHtml(descText);
+  const keywords = post.meta_tags ? escapeHtml(post.meta_tags) : '';
+  const publicDateValue = post.publish_at || post.created_at;
+  // publish_at = KST, created_at·updated_at = UTC. 수정 시각이 게시 시각보다 앞서지 않게 한다.
+  const publishedIso = post.publish_at ? toIsoString(post.publish_at) : toIsoUtc(post.created_at);
+  const modifiedRaw = toIsoUtc(post.updated_at || post.created_at);
+  const modifiedIso = modifiedRaw && publishedIso && modifiedRaw < publishedIso ? publishedIso : (modifiedRaw || publishedIso);
+  // coverImage = 실제 페이지 본문에 표시되는 이미지 (LCP candidate). 글에 이미지가 있을 때만 채워짐.
+  // ogImage = 공유 카드용 — coverImage가 비면 사이트 기본 OG로 fallback해 카카오/페북 카드가 비지 않게.
+  // 두 값을 분리하는 이유: preload는 실제로 페이지에 보이는 이미지만 강제 다운로드해야 LCP가 줄어든다.
+  // 합쳐두면 이미지 없는 글에서 og-default.png를 preload해 화면에는 안 보이는 이미지를 다운로드하는 낭비.
+  const coverImage = post.image_url
+    ? (post.image_url.startsWith('http')
+        ? escapeHtml(post.image_url)
+        : `${siteUrl}/api/posts/${id}/image`)
+    : '';
+  // ogImage: 운영자가 초점(image_frame)을 지정한 글은 1200×630 초점-크롭 엔드포인트로
+  // 보내 카카오/페북 카드가 의도한 부분을 보여주게 한다. 초점 미지정이면 기존처럼 원본/기본 OG.
+  // (Cloudflare 변환 미활성 시 엔드포인트가 원본을 그대로 반환 — 자가 복구.)
+  const ogFrame = normalizeImageFrame(post.image_frame);
+  const ogImage = (coverImage && ogFrame)
+    ? `${siteUrl}/api/og-image/${id}`
+    : (coverImage || escapeHtml(getResolvedShareImage(siteMeta, siteUrl)));
+  const dateStr  = formatDate(publicDateValue);
+  const renderedContent = renderContent(post.content || '');
+  post.author = publicAuthor(post.author);
+  const bodyHtml = renderedContent.html;
+  const readingMins = calcReadingTime(post.content || '');
+  const bodyGalleryHtml = renderContentGallery(parseGalleryImages(post.gallery_images));
+  const locationSectionHtml = renderPostLocationSection(post);
+  const youtubeEmbedUrl = getYouTubeEmbedUrl(post.youtube_url);
+  const visibleTags = collectVisiblePostTags(post);
+  const postUrl  = `${siteUrl}/post/${id}`;
+  // share_ref는 FB 스크래퍼 캐시를 매 클릭마다 무효화하려는 목적일 뿐,
+  // 기사의 고유 식별자가 아니다. og:url에 share_ref를 포함시키면 FB Graph에서
+  // 공유마다 별개 객체로 등록돼 좋아요·댓글이 집계되지 않는다. canonical과
+  // 동일하게 clean URL로 고정하고, cache-bust 효과는 request URL(쿼리 포함)로만 얻는다.
+  const isShareMetaRequest = requestUrlObj.searchParams.has('share_ref') || requestUrlObj.searchParams.has('fb_share_ref');
+  const categoryUrl = `${siteUrl}/${post.category}`;
+  const editSeed = serializeForScript({
+    id,
+    category: post.category,
+    title: post.title || '',
+    subtitle: post.subtitle || '',
+    content: post.content || '',
+    image_url: post.image_url || '',
+    gallery_images: post.gallery_images || '',
+    image_caption: post.image_caption || '',
+    youtube_url: post.youtube_url || '',
+    location_name: post.location_name || '',
+    location_address: post.location_address || '',
+    meta_tags: post.meta_tags || '',
+    tag: post.tag || '',
+    special_feature: post.special_feature || '',
+    manual_related_posts: manualRelatedPosts || [],
+    author: post.author || 'Editor.A',
+    published: !!post.published,
+    featured: !!post.featured,
+    ai_assisted: !!post.ai_assisted,
+    publish_at: String(publicDateValue || '').replace(' ', 'T').slice(0, 16),
+    publish_date: String(publicDateValue || '').slice(0, 10),
+  });
+  const isNew    = isTodayKst(publicDateValue);
+  // AI 검색·뉴스 패널이 인용할 수 있도록 본문 plain text를 NewsArticle.articleBody에 직접 노출.
+  // 5000자 cap = JSON-LD 직렬화 크기 폭증 방지 + Google이 권장하는 "본문 요약" 범위.
+  // wordCount는 공백 분리 토큰 수 — 한국어/영어 혼용에서도 일관된 단순 지표.
+  const articleBodyFull = extractPlainBody(post.content || '');
+  const articleBodySchema = articleBodyFull.length > 5000
+    ? articleBodyFull.slice(0, 5000).trimEnd() + '…'
+    : articleBodyFull;
+  const articleWordCount = articleBodyFull ? (articleBodyFull.match(/\S+/g) || []).length : 0;
+  const articleJsonLd = buildArticleStructuredData({
+    title: post.title,
+    subtitle: post.subtitle,
+    description: descText,
+    siteUrl,
+    url: postUrl,
+    categoryUrl,
+    image: ogImage,
+    datePublished: publishedIso,
+    dateModified: modifiedIso,
+    author: post.author,
+    category: cat.label,
+    keywords: post.meta_tags || post.tag,
+    locationName: post.location_name,
+    citations: renderedContent.citations || [],
+    articleBody: articleBodySchema,
+    wordCount: articleWordCount,
+  });
+  // BreadcrumbList JSON-LD 는 buildArticleStructuredData() 가 NewsArticle 과
+  // 같은 배열에 담아 이미 내보낸다. 여기서 한 벌 더 만들어 붙였더니 기사마다
+  // BreadcrumbList 엔티티가 2개씩 나갔다 (2026-08-26 실측: /post/395 에서 2건).
+  // 중복 엔티티는 구조화 데이터 해석을 흐리기만 하므로 빌더 쪽 하나로 통일한다.
+
+  const html = `<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <style>.nav[data-managed-nav]{visibility:hidden;opacity:0}</style>
+  <noscript><style>.nav[data-managed-nav]{visibility:visible!important;opacity:1!important}.nav[data-managed-nav] a{font-size:0!important}.nav[data-managed-nav] a::before{content:attr(data-fallback-label);font-size:12px}</style></noscript>
+  <title>${title} — BP미디어</title>
+  <meta name="google-adsense-account" content="${ADSENSE_ACCOUNT}"/>
+  <meta name="robots" content="index,follow,max-image-preview:large"/>
+  <meta name="description" content="${desc}"/>
+  <meta name="author" content="${escapeHtml(post.author || 'Editor.A')}"/>
+  ${keywords ? `<meta name="keywords" content="${keywords}"/>` : ''}
+  <meta property="og:locale"      content="ko_KR"/>
+  <meta property="og:type"        content="article"/>
+  <meta property="og:title"       content="${title}"/>
+  <meta property="og:description" content="${desc}"/>
+  <meta property="og:url"         content="${postUrl}"/>
+  ${ogImage ? `<meta property="og:image" content="${ogImage}"/>
+  <meta property="og:image:secure_url" content="${ogImage}"/>
+  <meta property="og:image:alt" content="${title}"/>` : ''}
+  <meta property="og:site_name"   content="${SITE_BRAND_NAME} · ${SITE_DOMAIN_LABEL}"/>
+  <meta property="article:published_time" content="${escapeHtml(publishedIso)}"/>
+  <meta property="article:modified_time" content="${escapeHtml(modifiedIso)}"/>
+  <meta property="article:section" content="${escapeHtml(cat.label)}"/>
+  ${post.author ? `<meta property="article:author" content="${escapeHtml(post.author)}"/>` : ''}
+  <meta name="twitter:card"       content="${ogImage ? 'summary_large_image' : 'summary'}"/>
+  <meta name="twitter:title"      content="${title}"/>
+  <meta name="twitter:description" content="${desc}"/>
+  ${ogImage ? `<meta name="twitter:image" content="${ogImage}"/>` : ''}
+  <link rel="canonical" href="${postUrl}"/>
+  <link rel="alternate" type="text/markdown" title="${title} (Markdown)" href="${postUrl}.md"/>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin/>
+  <link rel="preconnect" href="https://t1.kakaocdn.net" crossorigin/>
+  <link rel="dns-prefetch" href="https://t1.daumcdn.net"/>
+  <link rel="dns-prefetch" href="https://display.ad.daum.net"/>
+  ${coverImage ? `<link rel="preload" as="image" href="${coverImage}" fetchpriority="high"/>` : ''}
+  <script type="application/ld+json">${articleJsonLd}</script>
+  <link rel="icon" type="image/svg+xml" href="/img/favicon.svg"/>
+  <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png"/>
+  <link rel="apple-touch-icon" href="/img/logo.png"/>
+  <link rel="shortcut icon" href="/img/favicon-48.png"/>
+  <link rel="stylesheet" href="/css/style.css?v=20261027082848">
+  <link rel="stylesheet" href="/css/post.css?v=20261027082848">
+  <link rel="stylesheet" href="/css/chatbot.css?v=20261027082848">
+  <link rel="stylesheet" href="/css/dark-mode.css?v=20261027082848">
+  <link rel="stylesheet" href="/css/m3-site.css?v=20261027082848">
+  <link rel="stylesheet" href="/css/topics.css?v=20261027082848">
+</head>
+<body class="post-page">
+  <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
+
+  <div class="post-mobile-header" aria-label="기사 페이지 모바일 상단">
+    <div class="post-mobile-header-bar">
+      <a href="/${post.category}" data-action="history-back" class="post-mobile-back" aria-label="뒤로가기">←</a>
+      <a href="/" class="post-mobile-brand" aria-label="BP미디어 홈으로 이동">
+        <img src="/img/logo.svg" alt="" class="post-mobile-brand-mark" aria-hidden="true">
+        <span class="post-mobile-brand-text">BP미디어</span>
+      </a>
+      <div class="post-mobile-header-actions">
+        <a href="/${post.category}" class="post-mobile-section-chip">${cat.label}</a>
+        <a href="/search" class="post-mobile-search" aria-label="검색"></a>
+      </div>
+    </div>
+    <nav class="post-mobile-quicknav" aria-label="빠른 이동">
+      <a href="/latest">${escapeHtml(navLatest)}</a>
+      <a href="/korea">${escapeHtml(navKorea)}</a>
+      <a href="/apr">${escapeHtml(navApr)}</a>
+      <a href="/wosm">${escapeHtml(navWosm)}</a>
+      <a href="/people">${escapeHtml(navPeople)}</a>
+    </nav>
+  </div>
+
+  <!-- ── MASTHEAD ── -->
+  <header class="masthead">
+    <div class="masthead-top">
+      <div class="masthead-date" id="today-date"></div>
+      <div class="masthead-logo">
+        <a href="/">
+          <div class="masthead-logo-row">
+            <img src="/img/logo.svg" alt="" class="masthead-logo-img" aria-hidden="true">
+            <p class="masthead-wordmark">BP미디어</p>
+          </div>
+          <div class="sub">${SITE_DOMAIN_LABEL}</div>
+        </a>
+      </div>
+      <div class="masthead-right">
+        <div class="masthead-stats" id="masthead-stats"></div>
+        <div class="lang-toggle">
+          <button class="lang-btn active" id="lang-btn-ko" data-lang-toggle="ko" type="button" aria-pressed="true" aria-label="한국어">KOR</button>
+          <button class="lang-btn" id="lang-btn-en" data-lang-toggle="en" type="button" aria-pressed="false" aria-label="English">ENG</button>
+        </div>
+        <div class="masthead-search">
+          <input type="text" id="mh-search-input" class="mh-search-input" placeholder="검색…" autocomplete="off" aria-label="사이트 검색어 입력" />
+          <button class="mh-search-btn" id="mh-search-btn" aria-label="검색"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg></button>
+        </div>
+      </div>
+    </div>
+    <!-- site-chrome.js 가 NAV_STRUCTURE 기반으로 그룹화된 메뉴(스카우트 소식/리소스)로
+         교체. data-fallback-label 은 JS 미실행 시(noscript) 노출용. -->
+    <nav class="nav" data-managed-nav>
+      <a href="/contributors" data-i18n="nav.contributors" data-fallback-label="${escapeHtml(navContributors)}" aria-label="${escapeHtml(navContributors)}"></a>
+      <a href="/" data-i18n="nav.home" data-fallback-label="${escapeHtml(navHome)}" aria-label="${escapeHtml(navHome)}"></a>
+      <a href="/latest" data-i18n="nav.latest" data-fallback-label="${escapeHtml(navLatest)}" aria-label="${escapeHtml(navLatest)}"></a>
+      <a href="/jamboree16" data-i18n="nav.jamboree16" data-fallback-label="${escapeHtml(navJamboree16)}" aria-label="${escapeHtml(navJamboree16)}"></a>
+      <a href="/korea" data-i18n="nav.korea" data-fallback-label="${escapeHtml(navKorea)}" aria-label="Korea"></a>
+      <a href="/apr" data-i18n="nav.apr" data-fallback-label="${escapeHtml(navApr)}" aria-label="APR"></a>
+      <a href="/wosm" data-i18n="nav.wosm" data-fallback-label="${escapeHtml(navWosm)}" aria-label="World"></a>
+      <a href="/wosm-members" data-i18n="nav.wosm_members" data-fallback-label="${escapeHtml(navWosmMembers)}" aria-label="${escapeHtml(navWosmMembers)}"></a>
+      <a href="/people" data-i18n="nav.people" data-fallback-label="${escapeHtml(navPeople)}" aria-label="${escapeHtml(navPeople)}"></a>
+      <a href="/calendar" data-i18n="nav.calendar" data-fallback-label="${escapeHtml(navCalendar)}" aria-label="${escapeHtml(navCalendar)}"></a>
+      <a href="/glossary" data-i18n="nav.glossary" data-fallback-label="${escapeHtml(navGlossary)}" aria-label="${escapeHtml(navGlossary)}"></a>
+      <a href="/memorabilia" data-i18n="nav.memorabilia" data-fallback-label="${escapeHtml(navMemorabilia)}"></a>
+    </nav>
+  </header>
+
+  <!-- ── TICKER ── -->
+  <div class="ticker">
+    <div class="ticker-inner" id="ticker-inner">
+      길웰 미디어 · The BP Media · ${SITE_DOMAIN_LABEL}
+      &nbsp;&nbsp;&nbsp;<span class="ticker-diamond">◆</span>&nbsp;&nbsp;&nbsp;
+      길웰 미디어 · The BP Media · ${SITE_DOMAIN_LABEL}
+      &nbsp;&nbsp;&nbsp;<span class="ticker-diamond">◆</span>&nbsp;&nbsp;&nbsp;
+    </div>
+  </div>
+
+  <!-- ── ARTICLE ── -->
+  <main id="main-content" class="post-page-wrap">
+    <div class="post-page-layout">
+
+      <!-- ── Main Content ── -->
+      <div class="post-page-main">
+
+        <div class="post-page-back">
+          <a href="/${post.category}" data-action="history-back" class="post-page-back-link">← 뒤로가기</a>
+          <a href="/${post.category}" class="post-page-back-link" style="margin-left:16px;">
+            <span style="display:inline-block;background:${cat.color};color:#fff;font-size:9px;letter-spacing:0.12em;text-transform:uppercase;padding:2px 7px;border-radius:var(--radius-tight);font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;">${cat.label}</span>
+          </a>
+        </div>
+
+        <h1 class="post-page-title">${title}</h1>
+        ${subtitle ? `<p class="post-page-subtitle">${subtitle}</p>` : ''}
+        <div class="post-page-meta">
+          <span class="category-tag" style="background:${cat.color};">${cat.label}</span>
+          ${isNew ? `<span class="post-kicker post-kicker-new">NEW</span>` : ''}
+          ${(post.tag || '').split(',').map(tag => tag.trim()).filter(Boolean).map(tag => `<span class="post-kicker ${cat.tagClass}-kicker">${escapeHtml(tag)}</span>`).join('')}
+          <time class="post-page-date" datetime="${escapeHtml(post.publish_at || post.created_at || '')}">${dateStr}</time>
+        </div>
+        <div class="post-page-share">
+          <button id="post-share-btn" class="post-action-btn" type="button">공유하기</button>
+          <button id="post-edit-btn" class="post-action-btn" type="button">수정하기</button>
+        </div>
+
+        ${post.image_url ? renderPostCover(post, id, title) : ''}
+        ${youtubeEmbedUrl ? `<div class="post-page-video">${renderYouTubeEmbed(youtubeEmbedUrl, post.title)}</div>` : ''}
+
+        <div class="post-page-body modal-body">
+          ${bodyHtml}
+        </div>
+        ${locationSectionHtml}
+        ${bodyGalleryHtml}
+
+        <nav class="post-page-tags topic-links" aria-label="관련 스카우트 주제">${renderTopicLinks([post.title, post.subtitle, post.meta_tags, post.tag, post.content].filter(Boolean).join(" "))}</nav>
+        ${visibleTags.length ? `<div class="post-page-tags"><span class="post-page-tags-label">Tags:</span> ${visibleTags.map((tag) => `<button type="button" class="post-page-tag post-page-tag-btn" data-tag="${escapeHtml(tag)}">${escapeHtml(tag)}</button>`).join('')}</div>` : ''}
+        ${renderSpecialFeatureSection(post, specialFeaturePosts)}
+        ${renderRelatedPostsSection(relatedPosts, false, navLabels)}
+
+        ${post.ai_assisted ? `<div class="ai-disclaimer"><span class="ai-disclaimer-text">${escapeHtml(aiDisclaimer)}</span> <a class="ai-disclaimer-link" href="/editorial-policy">편집·AI 정책 ›</a></div>` : ''}
+
+        <div class="post-byline">
+          <span class="post-like-wrap">
+            <button id="post-like-btn" class="post-like-btn${likeStats.liked ? ' liked' : ''}"${likeStats.liked ? ' disabled' : ''}>공감 <span id="post-like-count">${likeStats.likes}</span></button>
+            <span class="post-like-help">${likeStats.liked ? '이미 공감한 기사입니다' : '한 IP당 1회 공감할 수 있습니다'}</span>
+          </span>
+          <span class="post-byline-report">오류제보 <!--email_off--><a href="mailto:${DEFAULT_CONTACT_EMAILS.contact}">${DEFAULT_CONTACT_EMAILS.contact}</a><!--/email_off--></span>
+        </div>
+
+        <!-- Kakao AdFit horizontal — 기사 본문 하단, 기사 너비 기준 중앙 정렬.
+             PC 728x90 / 모바일 320x50. 이전에는 그리드 바깥에 두어 페이지 전체
+             중앙에 정렬됐지만(사이드바 공간 때문에 기사보다 우측으로 치우침),
+             여기로 옮겨 기사 column 내부에서 centering되도록 함. -->
+        <aside class="kakao-adfit kakao-adfit-horizontal" aria-label="광고">
+          <div class="kakao-adfit-pc">
+            <ins class="kakao_ad_area" style="display:none;width:100%;" data-ad-unit="DAN-Hcz89LyJbpNeh8B0" data-ad-width="728" data-ad-height="90"></ins>
+          </div>
+          <div class="kakao-adfit-mobile">
+            <ins class="kakao_ad_area" style="display:none;width:100%;" data-ad-unit="DAN-R2YAuLwc7UVkfzQb" data-ad-width="320" data-ad-height="50"></ins>
+          </div>
+        </aside>
+
+      </div>
+
+      ${renderRelatedPostsSection(relatedPosts, true, navLabels)}
+
+      <!-- ── Sidebar ── -->
+      <aside class="post-page-sidebar">
+
+        <div class="pps-section">
+          <p class="pps-label">섹션</p>
+          <a href="/${post.category}" class="pps-category" style="background:${cat.color};">${cat.label}</a>
+        </div>
+
+        <div class="pps-section">
+          <p class="pps-label">정보</p>
+          ${post.author ? `<div class="pps-row"><span class="pps-key">작성자</span><span class="pps-val">${escapeHtml(post.author)}</span></div>` : ''}
+          <div class="pps-row"><span class="pps-key">게시일</span><span class="pps-val">${dateStr}</span></div>
+          <div class="pps-row"><span class="pps-key">읽기 시간</span><span class="pps-val">약 ${readingMins}분</span></div>
+          <div class="pps-row"><span class="pps-key">조회수</span><span class="pps-val">${post.views || 0}</span></div>
+          ${post.ai_assisted ? `<div class="pps-row"><span class="pps-key">AI</span><span class="pps-val" style="color:#622599;">AI 지원 작성</span></div>` : ''}
+        </div>
+
+        <!-- Kakao AdFit 160x600 (vertical) — PC 사이드바 하단, AI 행 아래 -->
+        <aside class="kakao-adfit kakao-adfit-vertical" aria-label="광고">
+          <ins class="kakao_ad_area" style="display:none;width:100%;" data-ad-unit="DAN-XitWF05D9NK5NjVi" data-ad-width="160" data-ad-height="600"></ins>
+        </aside>
+      </aside>
+
+    </div>
+  </main>
+
+  <!-- ── FOOTER ── -->
+  <footer>
+    <div class="footer-inner">
+      <div class="footer-brand">
+        <h4 data-footer-role="title">${SITE_BRAND_NAME}</h4>
+        <p data-footer-role="description">${SITE_BRAND_NAME}는 스카우트 네트워크의 자발적인 봉사로 운영됩니다.</p>
+        <p data-footer-role="domain" style="margin-top:6px;">${SITE_DOMAIN_LABEL}</p>
+        <p>기사제보: <!--email_off--><a data-footer-role="tip-email" href="mailto:${DEFAULT_CONTACT_EMAILS.tip}">${DEFAULT_CONTACT_EMAILS.tip}</a><!--/email_off--></p>
+        <p>문의: <!--email_off--><a data-footer-role="contact-email" href="mailto:${DEFAULT_CONTACT_EMAILS.contact}">${DEFAULT_CONTACT_EMAILS.contact}</a><!--/email_off--></p>
+      </div>
+      <div class="footer-admin">
+        <h4>관리자</h4>
+        <a href="/admin.html">관리자 페이지 →</a>
+        <a href="/glossary-raw">용어집 RAW로 보기 →</a>
+        <p class="footer-build">Site <span class="site-build-version">V00.194.03</span> · Admin <span class="admin-build-version">V03.160.04</span></p>
+      </div>
+      <div class="footer-bottom">
+        <p data-i18n="footer.copyright">© 2026 ${SITE_BRAND_NAME} · ${SITE_DOMAIN_LABEL}</p>
+        <p class="footer-credit">기록·편집 <a href="/about">박지민 (Jimmy Park)</a></p>
+        <p data-i18n="footer.disclaimer">${SITE_BRAND_NAME}는 전 세계 스카우트 소식과 활동을 기록하고 공유하는 독립 미디어 아카이브입니다. 한국스카우트연맹과 세계스카우트연맹 공식 채널이 아닌 자발적 스카우트 네트워크로 운영됩니다.</p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ── 수정 로그인 모달 ── -->
+  <div id="post-login-modal" class="board-pw-overlay" aria-hidden="true" inert>
+    <div class="board-pw-box" role="dialog" aria-modal="true" aria-labelledby="post-login-title">
+      <h3 id="post-login-title" class="board-pw-header">관리자 로그인</h3>
+      <p id="post-login-desc" class="board-pw-desc">관리자 페이지에서 사용하는 아이디와 비밀번호로 로그인하세요. 기사 수정 권한이 있는 계정이 필요합니다.</p>
+      <form id="post-login-form" aria-describedby="post-login-desc">
+        <label for="post-login-username">아이디</label>
+        <input id="post-login-username" name="username" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" required>
+        <label for="post-login-pw">비밀번호</label>
+        <div class="board-pw-input-wrap">
+          <input id="post-login-pw" name="password" type="password" autocomplete="current-password" required>
+          <button type="button" class="board-pw-eye" id="post-login-pw-eye" aria-label="비밀번호 표시/숨기기" tabindex="-1">
+            <svg id="post-login-pw-eye-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+        </div>
+        <div id="post-login-turnstile" style="margin-top:12px;"></div>
+        <div class="board-pw-actions">
+          <button id="post-login-submit-btn" type="submit">로그인</button>
+          <button id="post-login-cancel-btn" type="button">취소</button>
+        </div>
+        <p id="post-login-err" class="board-pw-error" role="alert"></p>
+      </form>
+    </div>
+  </div>
+
+  <div id="post-edit-overlay" class="board-write-overlay bw-overlay" aria-hidden="true">
+    <div class="board-write-box bw-box post-edit-box" role="dialog" aria-modal="true" aria-labelledby="post-edit-title">
+      <header class="bw-header">
+        <div class="bw-header-meta">
+          <span class="bw-cat-badge" id="post-edit-category-chip" style="background:${cat.color};">${escapeHtml(cat.label)}</span>
+          <span class="bw-header-hint">기사 수정 · 저장 시 즉시 반영</span>
+        </div>
+        <h2 class="bw-title" id="post-edit-title">기사 수정</h2>
+        <button class="bw-close" id="post-edit-close-x" type="button" aria-label="수정 모달 닫기">
+          <svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="3" y1="3" x2="13" y2="13"/><line x1="13" y1="3" x2="3" y2="13"/></svg>
+        </button>
+      </header>
+
+      <!-- 카드 순서·제목·2열 구성은 게시판 작성 창(js/board-write.js)과 같게 유지한다. -->
+      <div class="bw-layout">
+        <div class="bw-main">
+
+          <!-- 기본 정보 -->
+          <section class="bw-card">
+            <header class="bw-card-head"><h2 class="bw-card-title">기본 정보</h2></header>
+            <div class="bw-form-grid">
+              <div class="bw-form-group">
+                <label class="bw-label" for="post-edit-title-input">제목 <span class="bw-label-req">*</span></label>
+                <input class="bw-input" type="text" id="post-edit-title-input" maxlength="200" placeholder="기사 제목을 입력하세요" />
+              </div>
+              <div class="bw-form-group">
+                <label class="bw-label" for="post-edit-subtitle-input">부제목 <span class="bw-label-opt">선택</span></label>
+                <input class="bw-input" type="text" id="post-edit-subtitle-input" maxlength="300" placeholder="부제목 또는 요약 문장" />
+              </div>
+              <div class="bw-form-group">
+                <label class="bw-label" for="post-edit-special-feature">특집 기사 묶음 <span class="bw-label-opt">선택</span></label>
+                <input class="bw-input" type="text" id="post-edit-special-feature" maxlength="120" placeholder="예: 세계잼버리 리더십 특집" />
+              </div>
+            </div>
+          </section>
+
+          <!-- 저자 · 게시 시각 -->
+          <section class="bw-card">
+            <header class="bw-card-head"><h2 class="bw-card-title">저자 · 게시 시각</h2></header>
+            <div class="bw-form-grid bw-form-2col">
+              <div class="bw-form-group">
+                <label class="bw-label" for="post-edit-author">저자</label>
+                <select class="bw-select" id="post-edit-author">
+                  <option value="Editor.A">Editor.A</option>
+                </select>
+              </div>
+              <div class="bw-form-group">
+                <label class="bw-label" for="post-edit-date">퍼블리싱 시각</label>
+                <input class="bw-input" type="datetime-local" id="post-edit-date" />
+              </div>
+            </div>
+          </section>
+
+          <!-- 글머리 태그 -->
+          <section class="bw-card">
+            <header class="bw-card-head"><h2 class="bw-card-title">글머리 태그 <span class="bw-label-opt">복수 선택</span></h2></header>
+            <div id="post-tag-selector" class="bw-tag-pills"><span class="bw-field-hint">불러오는 중…</span></div>
+            <div class="bw-inline-row bw-inline-row-compact">
+              <input class="bw-input bw-input-sm" type="text" id="post-tag-new-input" maxlength="30" placeholder="현재 카테고리에 새 태그 추가" />
+              <button type="button" class="bw-btn bw-btn-outline bw-btn-sm" id="post-tag-new-btn">추가</button>
+            </div>
+          </section>
+
+          <!-- 대표 이미지 · 링크 -->
+          <section class="bw-card">
+            <header class="bw-card-head">
+              <h2 class="bw-card-title">대표 이미지 · 링크</h2>
+              <button class="bw-btn bw-btn-outline bw-btn-sm" type="button" id="post-cover-btn">대표 이미지 선택</button>
+            </header>
+            <div class="bw-cover-wrap">
+              <div id="post-cover-preview"></div>
+            </div>
+            <div class="bw-form-group">
+              <label class="bw-label" for="post-edit-image-caption">캡션 <span class="bw-label-opt">선택 · 출처 또는 설명</span></label>
+              <input class="bw-input" type="text" id="post-edit-image-caption" maxlength="300" placeholder="사진 출처 또는 캡션" />
+            </div>
+            <div class="bw-form-group">
+              <label class="bw-label" for="post-edit-youtube">YouTube 링크 <span class="bw-label-opt">선택</span></label>
+              <input class="bw-input" type="url" id="post-edit-youtube" placeholder="https://www.youtube.com/watch?v=..." />
+              <p class="bw-field-hint">영상 링크를 넣으면 기사 페이지 상단 히어로 영역에 임베드됩니다.</p>
+            </div>
+          </section>
+
+          <!-- 본문 -->
+          <section class="bw-card bw-card-editor">
+            <header class="bw-card-head">
+              <h2 class="bw-card-title">본문 <span class="bw-label-req">*</span></h2>
+              <span class="bw-field-hint">본문 이미지는 기사 안에 그대로 표시됩니다</span>
+            </header>
+            <div id="post-edit-editorjs" class="board-editorjs-wrap post-edit-editor-holder"></div>
+          </section>
+
+          <!-- 슬라이드 이미지 -->
+          <section class="bw-card">
+            <header class="bw-card-head">
+              <h2 class="bw-card-title">슬라이드 이미지 <span class="bw-label-opt" id="post-gallery-count">최대 10장</span></h2>
+              <button type="button" class="bw-btn bw-btn-outline bw-btn-sm" id="post-gallery-btn">이미지 추가</button>
+            </header>
+            <div id="post-gallery-preview" class="bw-gallery-preview gallery-upload-preview">
+              <p class="gallery-upload-empty">슬라이드 전용 이미지를 올리면 기사 하단에 별도 슬라이드로 노출됩니다.</p>
+            </div>
+            <p class="bw-field-hint">2장 이상일 때만 슬라이드가 활성화됩니다.</p>
+          </section>
+
+          <!-- 위치 정보 — 수정 때는 기존 값을 바로 보도록 펼친 상태로 연다. -->
+          <section class="bw-card bw-card-collapsible">
+            <details class="bw-details" id="post-edit-location-toggle" open>
+              <summary class="bw-card-head bw-card-head-summary">
+                <h2 class="bw-card-title">위치 정보 <span class="bw-label-opt">선택 · OpenStreetMap</span></h2>
+                <span class="bw-chevron" aria-hidden="true">▾</span>
+              </summary>
+              <div class="bw-card-body">
+                <div class="bw-form-grid bw-form-2col">
+                  <div class="bw-form-group">
+                    <label class="bw-label" for="post-edit-location-name">위치 이름</label>
+                    <input class="bw-input" type="text" id="post-edit-location-name" maxlength="120" placeholder="예: 강원특별자치도 세계잼버리수련장" />
+                  </div>
+                  <div class="bw-form-group">
+                    <label class="bw-label" for="post-edit-location-address">주소 <span class="bw-label-opt">OSM 실주소</span></label>
+                    <input class="bw-input" type="text" id="post-edit-location-address" maxlength="300" placeholder="예: 강원도 고성군 토성면 ..." />
+                  </div>
+                </div>
+              </div>
+            </details>
+          </section>
+
+          <!-- SEO · 옵션 -->
+          <section class="bw-card">
+            <header class="bw-card-head"><h2 class="bw-card-title">SEO · 옵션</h2></header>
+            <div class="bw-form-group">
+              <label class="bw-label" for="post-edit-metatags-input">SEO 해시태그 <span class="bw-label-opt">쉼표로 구분</span></label>
+              <input class="bw-input" type="text" id="post-edit-metatags-input" placeholder="예: 스카우트, 잼버리, WOSM, 세계스카우트" maxlength="500" />
+            </div>
+            <label class="bw-check-row"><input type="checkbox" id="post-edit-ai-assisted" /><span>AI 지원으로 작성했습니다 (기사 하단에 자동 고지)</span></label>
+          </section>
+
+        </div>
+
+        <!-- 수정 전용 항목은 작성 창의 보조 열 자리에 둔다. -->
+        <aside class="bw-side">
+
+          <section class="bw-card bw-card-tight">
+            <h2 class="bw-card-title bw-card-title-sm">게시 설정</h2>
+            <div class="bw-form-group">
+              <label class="bw-label" for="post-edit-category">카테고리</label>
+              <select class="bw-select" id="post-edit-category">
+                ${editableCategories.map((item) => `<option value="${item.key}">${escapeHtml(item.label)}</option>`).join('')}
+              </select>
+            </div>
+            <label class="bw-check-row"><input type="checkbox" id="post-edit-published" checked /><span>공개</span></label>
+            <label class="bw-check-row"><input type="checkbox" id="post-edit-featured" /><span>특집 표시 (홈 추천 레일과 무관)</span></label>
+          </section>
+
+          <section class="bw-card bw-card-tight">
+            <h2 class="bw-card-title bw-card-title-sm">관련 기사 <span class="bw-label-opt">선택</span></h2>
+            <div class="bw-form-group post-edit-related-group">
+              <div id="post-edit-related-selected" class="calendar-related-post-selected"></div>
+              <input class="bw-input" type="text" id="post-edit-related-search" placeholder="기사 제목 검색…" />
+              <div id="post-edit-related-results" class="calendar-related-post-results"></div>
+            </div>
+          </section>
+
+          <div class="bw-shortcut-hint">Esc 닫기</div>
+
+        </aside>
+      </div>
+
+      <footer class="bw-footer">
+        <div class="bw-footer-left"><span class="bw-footer-hint">수정 후 반드시 미리보기를 확인하세요</span></div>
+        <div class="bw-footer-actions">
+          <button class="bw-btn bw-btn-ghost cancel-btn visible" type="button" id="post-edit-cancel">취소</button>
+          <button class="bw-btn bw-btn-primary bw-btn-submit submit-btn" type="button" id="post-edit-submit">수정 완료</button>
+        </div>
+      </footer>
+    </div>
+  </div>
+
+  <div id="post-tag-modal" class="modal-overlay" aria-hidden="true">
+    <div class="modal post-tag-modal" role="dialog" aria-modal="true" aria-labelledby="post-tag-modal-title">
+      <button class="modal-close" id="post-tag-modal-close" type="button" aria-label="태그 관련 기사 모달 닫기">×</button>
+      <div class="modal-header">
+        <div class="category-tag tag-korea" id="post-tag-modal-chip">TAG</div>
+        <h2 id="post-tag-modal-title">태그 관련 기사</h2>
+        <div class="modal-date" id="post-tag-modal-desc">선택한 태그와 연결된 기사를 보여줍니다.</div>
+      </div>
+      <div class="modal-body">
+        <div id="post-tag-modal-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>window.GW_BOOT_RUNTIME=${serializeForScript(publicRuntime)};window.GW_KAKAO_JS_KEY=${serializeForScript(String(publicRuntime.kakao_js_key || ''))};window.GW_POST_BOOT=${serializeForScript({ editPostId: id, sharePostUrl: postUrl, sharePostTitle: titleText, sharePostSubtitle: subtitleText, editSeed: JSON.parse(editSeed), visibleTags })};</script>
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.4/dist/purify.min.js" integrity="sha384-eEu5CTj3qGvu9PdJuS+YlkNi7d2XxQROAFYOr59zgObtlcux1ae1Il3u7jvdCSWu" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <script src="/js/main.js?v=20261027082848"></script>
+  <script src="/js/site-chrome.js?v=20261027082848"></script>
+  <script src="/js/chatbot.js?v=20261027082848" defer></script>
+  <script src="/js/post-page.js?v=20261027082848"></script>
+  <script async type="text/javascript" charset="utf-8" src="https://t1.kakaocdn.net/kas/static/ba.min.js"></script>
+</body>
+</html>`;
+
+  const isFacebookShareRequest = isShareMetaRequest || requestUrlObj.searchParams.get('utm_medium') === 'social-share';
+  return new Response(html, {
+    status: 200,
+    headers: {
+      'Content-Type': 'text/html; charset=utf-8',
+      'Cache-Control': (isAdmin || isFacebookShareRequest) ? 'no-store' : 'public, max-age=60, stale-while-revalidate=300',
+    },
+  });
+}
+
+export async function onRequestHead(context) {
+  const response = await onRequestGet(context);
+  const headers = new Headers(response.headers);
+  return new Response(null, {
+    status: response.status,
+    statusText: response.statusText,
+    headers,
+  });
+}
+
+// ── Helpers ───────────────────────────────────────────────────
+
+// [2026-07-22] 예전엔 302 → /404.html 로 리다이렉트했다(soft-404). 검색엔진은
+// 이걸 '정상 리다이렉트'로 보고 죽은 URL 을 계속 색인하며, 링크 체커도 302→200
+// 을 '살아있음'으로 판단한다. 없는·삭제된 기사는 404.html 내용을 그대로 두되
+// HTTP 상태만 404 로 서빙해야 한다(오류는 500).
+async function serveStatusPage(request, status) {
+  const file = status === 500 ? '/500.html' : '/404.html';
+  try {
+    const res = await fetch(new URL(file, request.url));
+    return new Response(res.body, {
+      status: status,
+      headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' },
+    });
+  } catch (_) {
+    return new Response(status === 500 ? 'Server Error' : 'Not Found', {
+      status: status,
+      headers: { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store' },
+    });
+  }
+}
+
+function notFound(request) {
+  return serveStatusPage(request, 404);
+}
+
+// /post/:id.md 분기 — Cloudflare Pages가 [id].md.js 같은 dynamic+literal 라우트를
+// 인식 못 해서 같은 함수에서 분기 처리. AI 봇이 HTML 파싱 없이 본문을 인용하도록 markdown 응답.
+async function serveMarkdown(id, env, request) {
+  if (!Number.isFinite(id) || id < 1) return buildMarkdownErrorResponse(404);
+  let post;
+  try {
+    post = await env.DB.prepare('SELECT * FROM posts WHERE id = ?').bind(id).first();
+  } catch (err) {
+    console.error('GET /post/:id.md DB error:', err);
+    return buildMarkdownErrorResponse(500, '게시글을 불러오지 못했습니다.');
+  }
+  if (!post || post.published === 0) return buildMarkdownErrorResponse(404);
+  const origin = new URL(request.url).origin;
+  const postUrl = `${origin}/post/${id}`;
+  return buildPostMarkdownResponse({ post, postUrl, origin });
+}
+
+function errorPage(request) {
+  return serveStatusPage(request, 500);
+}
+
+function parseTranslationStrings(raw) {
+  try {
+    const parsed = raw ? JSON.parse(raw) : {};
+    return parsed && typeof parsed === 'object' ? (parsed.strings || {}) : {};
+  } catch (_) {
+    return {};
+  }
+}
+
+function getKoString(strings, key, fallback) {
+  const entry = strings && typeof strings === 'object' ? strings[key] : null;
+  if (entry && typeof entry.ko !== 'undefined') return String(entry.ko);
+  return fallback;
+}
+
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+// ⚠ 클라 미러 (XSS 패리티 필수): normalizeInlineHref / sanitizeEditorInlineHtml /
+// decodeHtmlEntitiesOnce 는 클라 js/main.js 의 GW.* 동명 함수와 반드시 byte-identical 해야 한다.
+// 한쪽만 고치면 SSR 본문과 클라 본문의 살균 결과가 갈려 XSS·렌더 불일치가 생긴다.
+// (빌드 단계가 없어 import 공유 불가 — 둘을 동시에 수정할 것.)
+function normalizeInlineHref(value) {
+  const raw = String(value || '').trim();
+  if (!raw) return '';
+  if (/^(https?:|mailto:|tel:)/i.test(raw)) return raw;
+  if (/^(\/|#|\?|\.\.?\/)/.test(raw)) return raw;
+  if (/^[a-z][a-z0-9+.-]*:/i.test(raw) || raw.indexOf('//') === 0) return '';
+  return '/' + raw.replace(/^\/+/, '');
+}
+
+function sanitizeEditorInlineHtml(value) {
+  const source = String(value || '')
+    .replace(/&nbsp;|&#160;|&#xA0;/gi, ' ')
+    .replace(/\u00A0/g, ' ')
+    .replace(/\r\n?/g, '\n');
+  if (!source) return '';
+  const tokens = [];
+  let anchorDepth = 0;
+  const tokenized = source.replace(/<(\/?)(a|strong|b|em|i|u|s|mark|code|br)\b([^>]*)>/gi, (_, closing, tagName, attrs) => {
+    const tag = String(tagName || '').toLowerCase();
+    let replacement = '';
+    if (tag === 'br') {
+      replacement = '<br>';
+    } else if (closing) {
+      if (tag === 'a') {
+        if (!anchorDepth) {
+          return '';
+        }
+        anchorDepth -= 1;
+      }
+      replacement = `</${tag}>`;
+    } else if (tag === 'a') {
+      const hrefMatch = String(attrs || '').match(/href\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))/i);
+      const normalizedHref = normalizeInlineHref(hrefMatch ? (hrefMatch[1] || hrefMatch[2] || hrefMatch[3] || '') : '');
+      if (!normalizedHref) {
+        return '';
+      }
+      anchorDepth += 1;
+      const external = /^https?:/i.test(normalizedHref);
+      replacement = `<a href="${escapeHtml(normalizedHref)}"${external ? ' target="_blank" rel="noopener noreferrer"' : ''}>`;
+    } else {
+      replacement = `<${tag}>`;
+    }
+    const token = `%%INLINE_${tokens.length}%%`;
+    tokens.push({ token, html: replacement });
+    return token;
+  });
+  // Round-trip guard: Editor.js stores text with ampersands/brackets already
+  // encoded (e.g. "D&amp;I"). Escaping again produces "D&amp;amp;I" which the
+  // browser renders as literal "D&amp;I". Decode once so the final output is
+  // always single-encoded regardless of how many save/load cycles ran.
+  const normalized = decodeHtmlEntitiesOnce(tokenized);
+  let escaped = escapeHtml(normalized).replace(/\n/g, '<br>');
+  tokens.forEach((entry) => {
+    escaped = escaped.replace(entry.token, entry.html);
+  });
+  return escaped;
+}
+
+// Single-pass HTML entity decoder. Must handle every named/numeric entity in
+// ONE pass — if we chained `.replace('&amp;', '&').replace('&lt;', '<')` the
+// second call would decode `&amp;lt;` twice and produce `<` instead of the
+// intended literal `&lt;`. A single regex per match guarantees round-trip
+// safety.
+function decodeHtmlEntitiesOnce(str) {
+  return String(str).replace(/&(amp|lt|gt|quot|apos|#39|#x[0-9a-fA-F]+|#\d+);/g, function (match, entity) {
+    if (entity === 'amp')  return '&';
+    if (entity === 'lt')   return '<';
+    if (entity === 'gt')   return '>';
+    if (entity === 'quot') return '"';
+    if (entity === 'apos' || entity === '#39') return "'";
+    if (entity.charAt(0) === '#') {
+      const code = entity.charAt(1) === 'x' || entity.charAt(1) === 'X'
+        ? parseInt(entity.slice(2), 16)
+        : parseInt(entity.slice(1), 10);
+      return Number.isFinite(code) && code > 0 ? String.fromCodePoint(code) : match;
+    }
+    return match;
+  });
+}
+
+function formatDate(dateStr) {
+  if (!dateStr) return '';
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return dateStr;
+  return `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일`;
+}
+
+function formatDateShort(dateStr) {
+  if (!dateStr) return '';
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return String(dateStr).slice(0, 10);
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+// created_at·updated_at 은 SQLite datetime('now') 로 저장된 UTC naive 문자열이다.
+// publish_at 만 KST naive 이므로 두 종류를 같은 함수로 읽으면 9시간 어긋난다.
+function toIsoUtc(dateStr) {
+  if (!dateStr) return '';
+  const normalized = String(dateStr).replace(' ', 'T');
+  const withZone = /Z$|[+-]\d{2}:\d{2}$/.test(normalized) ? normalized : `${normalized}Z`;
+  const d = new Date(withZone);
+  return Number.isNaN(d.getTime()) ? '' : d.toISOString();
+}
+
+function toIsoString(dateStr) {
+  if (!dateStr) return '';
+  const normalized = String(dateStr).replace(' ', 'T');
+  const withZone = /Z$|[+-]\d{2}:\d{2}$/.test(normalized) ? normalized : `${normalized}+09:00`;
+  const d = new Date(withZone);
+  return Number.isNaN(d.getTime()) ? normalized : d.toISOString();
+}
+
+// Citation lead tokens — paragraphs whose plain-text preview starts with any
+// of these are treated as an attribution/citation block. Rendered with
+// semantic <cite> + a .post-citation class so they (a) visually stand out
+// for readers and (b) carry a structured signal AI crawlers can pick up.
+// The captured URLs are also surfaced as NewsArticle.citation in JSON-LD.
+const CITATION_PREFIXES = [
+  '자료출처:', '자료 출처:', '출처:',
+  'source:', 'sources:', 'reference:', 'references:',
+];
+
+function isCitationText(plain) {
+  if (!plain) return false;
+  const head = plain.trim().slice(0, 30).toLowerCase();
+  return CITATION_PREFIXES.some((p) => head.startsWith(p.toLowerCase()));
+}
+
+function extractUrls(plain) {
+  if (!plain) return [];
+  const matches = String(plain).match(/https?:\/\/[^\s<>"'()]+/g) || [];
+  return matches.map((u) => u.replace(/[.,)\]]+$/, ''));
+}
+
+/** Render Editor.js JSON or plain text to HTML (server-side). */
+function renderContent(str) {
+  if (!str) return { html: '', gallery: [], citations: [] };
+  const trimmed = str.trim();
+  const citationUrls = [];
+
+  if (trimmed.charAt(0) === '{') {
+    try {
+      const doc = JSON.parse(trimmed);
+      if (Array.isArray(doc.blocks)) {
+        const html = doc.blocks.map(b => {
+          switch (b.type) {
+            case 'paragraph': {
+              const rawText = b.data.text || '';
+              const inlineHtml = renderEditorInlineText(rawText);
+              if (isCitationText(rawText.replace(/<[^>]+>/g, ''))) {
+                extractUrls(rawText).forEach((u) => {
+                  if (!citationUrls.includes(u)) citationUrls.push(u);
+                });
+                return '<aside class="post-citation" role="note"><cite>' + inlineHtml + '</cite></aside>';
+              }
+              return '<p>' + inlineHtml + '</p>';
+            }
+            case 'header': {
+              const lvl = b.data.level || 2;
+              return `<h${lvl}>${renderEditorInlineText(b.data.text || '')}</h${lvl}>`;
+            }
+            case 'list': {
+              const tag   = b.data.style === 'ordered' ? 'ol' : 'ul';
+              const items = renderEditorListItems(b.data.items || [], tag);
+              return `<${tag}>${items}</${tag}>`;
+            }
+            case 'quote':
+              return `<blockquote>${renderEditorInlineText(b.data.text || '')}</blockquote>`;
+            case 'image': {
+              const url = (b.data.file && b.data.file.url) ? b.data.file.url : (b.data.url || '');
+              const cap = escapeHtml(b.data.caption || '');
+              let html = `<div class="post-inline-media"><img src="${escapeHtml(url)}" alt="${cap}" style="max-width:100%;height:auto;display:block;margin:0 auto;"></div>`;
+              if (cap) html += `<p class="post-image-caption">${cap}</p>`;
+              return html;
+            }
+            default: return '';
+          }
+        }).join('');
+        return { html, gallery: [], citations: citationUrls };
+      }
+    } catch (e) { /* fall through */ }
+  }
+
+  return { html: escapeHtml(str).replace(/\r\n?/g, '\n').replace(/\n/g, '<br>'), gallery: [], citations: [] };
+}
+
+function renderEditorInlineText(value) {
+  return sanitizeEditorInlineHtml(value);
+}
+
+function renderEditorListItems(items, listTag) {
+  const childTag = listTag === 'ol' ? 'ol' : 'ul';
+  return (Array.isArray(items) ? items : []).map((item) => {
+    if (typeof item === 'string') return `<li>${renderEditorInlineText(String(item).trim())}</li>`;
+    if (!item || typeof item !== 'object') return '';
+    const nested = Array.isArray(item.items) && item.items.length
+      ? `<${childTag}>${renderEditorListItems(item.items, childTag)}</${childTag}>`
+      : '';
+    // item.content 앞뒤 공백·개행을 trim — Editor.js가 저장할 때 들어가는
+    // leading/trailing \n이 sanitizer를 통해 <br>로 변환되면서 bullet 옆이
+    // 빈 줄이 되고 텍스트가 새 줄에서 시작하던 버그 방지.
+    const content = String(item.content || '').replace(/^[\s\u00A0]+|[\s\u00A0]+$/g, '');
+    return `<li>${renderEditorInlineText(content)}${nested}</li>`;
+  }).join('');
+}
+
+/** Editor.js JSON 또는 HTML 문자열을 plain text로 변환 (truncate 없이 전체). */
+function extractPlainBody(str) {
+  if (!str) return '';
+  let raw = String(str);
+  if (raw.trim().charAt(0) === '{') {
+    try {
+      const doc = JSON.parse(raw.trim());
+      if (Array.isArray(doc.blocks)) {
+        raw = doc.blocks.map(b => {
+          const d = b.data || {};
+          if (b.type === 'paragraph' || b.type === 'header' || b.type === 'quote') return d.text || '';
+          if (b.type === 'list') return (d.items || []).map(i => typeof i === 'string' ? i : (i.content || '')).join(' ');
+          if (b.type === 'image' || b.type === 'embed') return d.caption || '';
+          return '';
+        }).join('\n');
+      }
+    } catch (e) { /* fall through */ }
+  }
+  return raw.replace(/<[^>]+>/g, ' ').replace(/&[a-z#0-9]+;/gi, ' ').replace(/\s+/g, ' ').trim();
+}
+
+/** Strip tags/JSON and return plain text truncated to maxLen chars. */
+function truncatePlain(str, maxLen) {
+  const plain = extractPlainBody(str);
+  return plain.length <= maxLen ? plain : plain.slice(0, maxLen).trimEnd() + '…';
+}
+
+function calcReadingTime(str) {
+  let text = '';
+  if (str && str.trim().charAt(0) === '{') {
+    try {
+      const doc = JSON.parse(str.trim());
+      if (Array.isArray(doc.blocks)) {
+        text = doc.blocks.map(b => {
+          const d = b.data || {};
+          if (b.type === 'list') return (d.items || []).map(i => typeof i === 'string' ? i : (i.content || '')).join(' ');
+          return d.text || d.content || '';
+        }).join(' ');
+      }
+    } catch (_) { text = str; }
+  } else {
+    text = str || '';
+  }
+  const plain = text.replace(/<[^>]+>/g, '').replace(/&[a-z#0-9]+;/gi, ' ');
+  const koreans = (plain.match(/[\uAC00-\uD7A3]/g) || []).length;
+  const words = (plain.match(/[a-zA-Z]+/g) || []).length;
+  return Math.max(1, Math.ceil(koreans / 500 + words / 200));
+}
+
+function isTodayKst(dateStr) {
+  if (!dateStr) return false;
+  const today = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Seoul',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(new Date());
+  return String(dateStr).slice(0, 10) === today;
+}
+
+function renderYouTubeEmbed(embedUrl, title) {
+  return `<div class="youtube-embed-wrap">
+    <iframe class="youtube-embed" src="${escapeHtml(embedUrl)}" title="${escapeHtml((title || '유튜브 영상') + ' 영상')}"
+      loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+      allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>
+  </div>`;
+}
+
+function renderImageCaption(value) {
+  const text = typeof value === 'string' ? value.trim() : '';
+  if (!text) return '';
+  return `<p class="post-image-caption">${escapeHtml(text)}</p>`;
+}
+
+function renderPostCover(post, id, title) {
+  const src = post.image_url.startsWith('http') ? escapeHtml(post.image_url) : `/api/posts/${id}/image`;
+  const pngClass = isTransparentPng(post.image_url) ? ' is-png' : '';
+  return `<div class="post-page-cover-frame${pngClass}">
+    <img class="post-page-cover" src="${src}" alt="${title}" fetchpriority="high" decoding="async">
+  </div>${renderImageCaption(post.image_caption)}`;
+}
+
+function renderContentGallery(items) {
+  const slides = Array.isArray(items) ? items.filter((item) => item && item.url) : [];
+  if (slides.length < 2) return '';
+  return `<section class="content-gallery post-content-gallery" data-gallery-interval="3000">
+    <div class="content-gallery-track">
+      <div class="content-gallery-slides">
+        ${slides.map((item, index) => {
+          const cap = escapeHtml(item.caption || '');
+          return `<figure class="content-gallery-slide${index === 0 ? ' is-active' : ''}">
+            <div class="content-gallery-media"><img src="${escapeHtml(item.url)}" alt="${cap}"></div>
+            ${cap ? `<figcaption class="post-image-caption">${cap}</figcaption>` : ''}
+          </figure>`;
+        }).join('')}
+      </div>
+      <div class="content-gallery-controls">
+        <div class="content-gallery-dots">
+          ${slides.map((_, index) => `<button type="button" class="content-gallery-dot${index === 0 ? ' is-active' : ''}" data-gallery-index="${index}" aria-label="슬라이드 ${index + 1}"></button>`).join('')}
+        </div>
+        <button type="button" class="content-gallery-pause" aria-label="슬라이드 일시정지" aria-pressed="false">일시정지</button>
+      </div>
+    </div>
+    <button type="button" class="content-gallery-nav content-gallery-prev" aria-label="이전 사진">‹</button>
+    <button type="button" class="content-gallery-nav content-gallery-next" aria-label="다음 사진">›</button>
+  </section>`;
+}
+
+function renderPostLocationSection(post) {
+  const locationAddress = String(post && post.location_address || '').trim();
+  if (!locationAddress) return '';
+  const locationName = String(post && post.location_name || '').trim();
+  const mapTitle = locationName || locationAddress;
+  // Map is loaded async by post-page.js via Nominatim (OpenStreetMap)
+  return `<details class="post-location-section" open>
+    <summary>위치 정보 보기</summary>
+    <div class="post-location-body">
+      ${locationName ? `<div class="post-location-name">${escapeHtml(locationName)}</div>` : ''}
+      <div class="post-location-address">${escapeHtml(locationAddress)}</div>
+      <div class="post-location-map-frame" data-location-addr="${escapeHtml(locationAddress)}" data-location-title="${escapeHtml(mapTitle)}">
+        <div class="post-location-map-loading" style="display:flex;align-items:center;justify-content:center;height:280px;color:#888;font-size:13px;">지도를 불러오는 중…</div>
+      </div>
+    </div>
+  </details>`;
+}
+
+function parseGalleryImages(raw) {
+  if (!raw) return [];
+  if (Array.isArray(raw)) return raw;
+  try {
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (_) {
+    return [];
+  }
+}
+
+function renderSpecialFeatureSection(post, items) {
+  if (!post || !post.special_feature || !Array.isArray(items) || !items.length) return '';
+  const slug = slugifySpecialFeature(post.special_feature);
+  const featureUrl = `/feature/${post.category}/${slug}`;
+  const visibleCount = 5;
+  return `<section class="post-special-feature-posts">
+    <div class="post-special-feature-heading-row">
+      <div>
+        <h3 class="post-related-heading">특집 기사 몰아보기</h3>
+        <p class="post-special-feature-name">${escapeHtml(post.special_feature)}</p>
+      </div>
+      <a class="post-special-feature-page-link" href="${featureUrl}">컬렉션 페이지로 보기</a>
+    </div>
+    <ul class="post-related-list post-special-feature-list" data-initial-limit="${visibleCount}">
+      ${items.map((item, index) => {
+        const publicDate = item.publish_at || item.created_at || '';
+        return `<li class="${index >= visibleCount ? 'is-collapsed' : ''}">
+          <a href="/post/${item.id}">
+            <span class="post-related-title">[${escapeHtml(resolveCategoryLabel(item.category))}] ${escapeHtml(item.title || '')}</span>
+            <span class="post-related-date">${escapeHtml(formatDateShort(publicDate))}</span>
+          </a>
+        </li>`;
+      }).join('')}
+    </ul>
+    ${items.length > visibleCount ? `<button type="button" class="post-special-feature-toggle" id="post-special-feature-toggle">전체 목록보기</button>` : ''}
+  </section>`;
+}
+
+function renderRelatedPostsSection(items, mobileOnly, navLabels) {
+  if (!Array.isArray(items) || !items.length) return '';
+  return `<section class="post-related-posts post-related-surface${mobileOnly ? ' post-related-posts-mobile' : ' post-related-posts-desktop'}">
+    <h3 class="post-related-heading">유관기사 읽어보기</h3>
+    <ul class="post-related-list">
+      ${items.map((item) => {
+        const publicDate = item.publish_at || item.created_at || '';
+        return `<li>
+          <a href="/post/${item.id}">
+            <span class="post-related-title">[${escapeHtml(resolveCategoryLabel(item.category, navLabels))}] ${escapeHtml(item.title || '')}</span>
+            <span class="post-related-date">${escapeHtml(formatDateShort(publicDate))}</span>
+          </a>
+        </li>`;
+      }).join('')}
+    </ul>
+  </section>`;
+}
+
+function collectVisiblePostTags(post) {
+  const seen = new Set();
+  return [post && post.tag, post && post.meta_tags]
+    .join(',')
+    .split(',')
+    .map((value) => String(value || '').trim())
+    .filter((value) => {
+      if (!value || seen.has(value)) return false;
+      seen.add(value);
+      return true;
+    })
+    .slice(0, 16);
+}
+
+function resolveCategoryLabel(category, navLabels) {
+  return getCategoryMeta(navLabels, category, 'ko').label;
+}
+
+function isTransparentPng(value) {
+  const source = String(value || '').trim().toLowerCase();
+  return source.startsWith('data:image/png') || /\.png(?:$|[?#])/i.test(source);
+}
+
+function buildArticleStructuredData(meta) {
+  const siteOrigin = String(meta.siteUrl || '').replace(/\/+$/, '');
+  const homeUrl = siteOrigin ? `${siteOrigin}/` : '';
+  // 구글 기사 구조화 데이터는 발행처 로고로 SVG 를 받지 않는다 — 래스터(PNG) 사용.
+  const logoUrl = siteOrigin ? `${siteOrigin}/img/logo.png` : '';
+  const authorName = meta.author || 'BP미디어';
+  // author.url 은 넣지 않는다. 예전에는 `Editor.A` 같은 코드명 바이라인을
+  // `/editor/<이름>` 으로 링크했는데 그 라우트가 존재한 적이 없어 구조화
+  // 데이터가 404 를 가리키고 있었다 (2026-08-26 실측: /editor/Editor.A → 404).
+  // 없는 URL 은 아예 없는 것보다 나쁘다 — 필자 소개 페이지를 실제로 만들면
+  // 그때 authorUrl 을 되살린다.
+  const datelineCity = meta.locationName
+    ? String(meta.locationName).split(',')[0].trim() || undefined
+    : undefined;
+  const citationList = Array.isArray(meta.citations) && meta.citations.length
+    ? meta.citations.map((u) => ({ '@type': 'CreativeWork', url: u }))
+    : undefined;
+  return JSON.stringify([
+    {
+      '@context': 'https://schema.org',
+      '@type': 'NewsArticle',
+      headline: meta.title || '',
+      alternativeHeadline: meta.subtitle || undefined,
+      description: meta.description || '',
+      // articleBody + wordCount — Google News·ChatGPT·Claude·Perplexity가
+      // 인용·요약 시 텍스트 우선순위로 사용. 무엇이 본문인지 HTML 파싱 없이 명시.
+      articleBody: meta.articleBody || undefined,
+      wordCount: typeof meta.wordCount === 'number' && meta.wordCount > 0 ? meta.wordCount : undefined,
+      mainEntityOfPage: {
+        '@type': 'WebPage',
+        '@id': meta.url || '',
+      },
+      url: meta.url || '',
+      image: meta.image ? [meta.image] : undefined,
+      datePublished: meta.datePublished || '',
+      dateModified: meta.dateModified || meta.datePublished || '',
+      articleSection: meta.category || '',
+      // Space-separated keyword list is the schema.org Article convention
+      // that Google News + AI retrieval systems parse into topic signals.
+      keywords: meta.keywords || undefined,
+      inLanguage: 'ko-KR',
+      dateline: datelineCity,
+      // CreativeWork references extracted from "자료출처:" paragraphs. Lets
+      // AI answer systems and search engines trace our factual claims back
+      // to the primary source we verified against.
+      citation: citationList,
+      isAccessibleForFree: true,
+      author: {
+        '@type': authorName === 'BP미디어' ? 'Organization' : 'Person',
+        name: authorName,
+      },
+      publisher: {
+        '@type': 'Organization',
+        name: 'BP미디어',
+        alternateName: 'Gilwell Media',
+        url: siteOrigin || undefined,
+        logo: logoUrl ? {
+          '@type': 'ImageObject',
+          url: logoUrl,
+          width: 250,
+          height: 250,
+        } : undefined,
+      },
+    },
+    {
+      '@context': 'https://schema.org',
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        {
+          '@type': 'ListItem',
+          position: 1,
+          name: '홈',
+          item: homeUrl,
+        },
+        {
+          '@type': 'ListItem',
+          position: 2,
+          name: meta.category || '기사',
+          item: meta.categoryUrl || homeUrl,
+        },
+        {
+          '@type': 'ListItem',
+          position: 3,
+          name: meta.title || '기사',
+          item: meta.url || '',
+        },
+      ],
+    },
+  ]).replace(/</g, '\\u003c');
+}
+
+function serializeForScript(value) {
+  return JSON.stringify(value)
+    .replace(/</g, '\\u003c')
+    .replace(/>/g, '\\u003e')
+    .replace(/&/g, '\\u0026')
+    .replace(/\u2028/g, '\\u2028')
+    .replace(/\u2029/g, '\\u2029');
+}
+
+function parseJsonObject(raw) {
+  try {
+    const parsed = raw ? JSON.parse(raw) : {};
+    return parsed && typeof parsed === 'object' ? parsed : {};
+  } catch (_) {
+    return {};
+  }
+}

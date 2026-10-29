@@ -31,3 +31,8 @@ output/
 # Admin reorganization QA screenshots and operational snapshots
 /work/gpt-admin-reorganization-20261015/
 /work/gpt-admin-internals-20261015/
+
+# Rust compiler output and local migration evidence
+/server-rust/target/
+/server-rust/build/
+/work/rust-migration/

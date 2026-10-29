@@ -22,6 +22,7 @@
 
 import { gateMenuAccess } from '../../_shared/admin-permissions.js';
 import { hasPostImageBucket, storeDataImage } from '../../_shared/image-storage.js';
+import { queryRust } from '../../_shared/rust-server.js';
 
 const UPLOAD_MAX_BYTES = 12 * 1024 * 1024; // data URL 12MB ≈ raw ~9MB
 const ALLOWED_MIMES = new Set(['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif']);
@@ -49,22 +50,8 @@ export async function onRequestPost({ request, env }) {
   }
 
   const dataUrl = String(body?.data_url || '');
-  if (!dataUrl) return errorJson('missing_data_url', 400);
-  if (!dataUrl.startsWith('data:image/')) return errorJson('invalid_data_url', 400);
-
-  // 헤더 MIME 추출 후 allowlist 검증 (HEIC/SVG/TIFF 등 사전 차단).
-  const mimeMatch = dataUrl.slice(5).match(/^([^;,]+)/);
-  const mime = (mimeMatch ? mimeMatch[1] : '').toLowerCase();
-  if (!ALLOWED_MIMES.has(mime)) {
-    return errorJson('unsupported_type', 415, { detected: mime || 'unknown' });
-  }
-
-  if (dataUrl.length > UPLOAD_MAX_BYTES) {
-    return errorJson('too_large', 413, {
-      received_bytes: dataUrl.length,
-      limit_bytes: UPLOAD_MAX_BYTES,
-    });
-  }
+  const validation=await validateUploadRust(dataUrl,{request,env});
+  if (validation) return errorJson(validation.code,validation.status,validation.extra);
 
   if (!hasPostImageBucket(env)) {
     return errorJson('bucket_unavailable', 503);
@@ -80,13 +67,45 @@ export async function onRequestPost({ request, env }) {
     });
   } catch (err) {
     console.error('memorabilia upload-image error:', err);
-    // storeDataImage 가 decodeDataImage 내부에서 `Unsupported image type` 을 throw 할 수 있음.
     const message = String(err && err.message || '');
-    if (message.startsWith('Unsupported image type')) {
-      return errorJson('unsupported_type', 415);
-    }
+    if (message.startsWith('Unsupported image type')) return errorJson('unsupported_type', 415);
     return errorJson('upload_failed', 500, { detail: message });
   }
+}
+
+export function validateUpload(dataUrl) {
+  if (!dataUrl) return {code:'missing_data_url',status:400};
+  if (!dataUrl.startsWith('data:image/')) return {code:'invalid_data_url',status:400};
+
+  // 헤더 MIME 추출 후 allowlist 검증 (HEIC/SVG/TIFF 등 사전 차단).
+  const mimeMatch = dataUrl.slice(5).match(/^([^;,]+)/);
+  const mime = (mimeMatch ? mimeMatch[1] : '').toLowerCase();
+  if (!ALLOWED_MIMES.has(mime)) {
+    return {code:'unsupported_type',status:415,extra:{ detected: mime || 'unknown' }};
+  }
+
+  if (dataUrl.length > UPLOAD_MAX_BYTES) {
+    return {code:'too_large',status:413,extra:{
+      received_bytes: dataUrl.length,
+      limit_bytes: UPLOAD_MAX_BYTES,
+    }};
+  }
+  return null;
+}
+
+export async function validateUploadRust(dataUrl,context,run=queryRust) {
+  const boundary=dataUrl.search(/[;,]/);
+  const header=dataUrl.slice(0,boundary<0 ? dataUrl.length : boundary);
+  // shortcut: isolated UTF-16 surrogates use the existing validator.
+  if (/\\u[dD][89a-fA-F][0-9a-fA-F]{2}/.test(JSON.stringify(header))) return validateUpload(dataUrl);
+  try {
+    const response=await run(context,'memorabilia-upload-validate',{header,length:dataUrl.length,limit:UPLOAD_MAX_BYTES});
+    if (!response.ok) throw new Error('Rust image validation failed');
+    const result=await response.json();
+    if (result.valid===true) return null;
+    if (typeof result.code==='string' && Number.isInteger(result.status) && ['missing_data_url','invalid_data_url','unsupported_type','too_large'].includes(result.code)) return {code:result.code,status:result.status,...(result.extra ? {extra:result.extra} : {})};
+    throw new Error('Invalid image validation result');
+  } catch (_) { return validateUpload(dataUrl); }
 }
 
 function errorJson(code, status, extra) {

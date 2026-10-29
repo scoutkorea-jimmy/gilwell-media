@@ -1,3 +1,4 @@
+import { queryRust } from './rust-server.js';
 /**
  * Gilwell Media · Memorabilia (기념품 도감) 저장소 헬퍼
  *
@@ -8,8 +9,8 @@
 import { COUNTRY_CODE_LABELS_KO } from './country-code-labels.js';
 import {
   extractEditorJsPlain,
+  buildMemorabiliaFtsValues,
   upsertMemorabiliaFtsRow,
-  deleteMemorabiliaFtsRow,
 } from './memorabilia-search.js';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -196,79 +197,36 @@ export function normalizeMemorabiliaInput(body) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export async function loadCategoryMap(db) {
-  const { results } = await db.prepare(`
-    SELECT id, slug, label_en, label_ko, sort_order, archived
-      FROM memorabilia_categories
-     ORDER BY archived ASC, sort_order ASC, id ASC
-  `).all();
-  const list = results || [];
+  const response = await queryRust({env:{DB:db},request:{url:'https://internal.invalid/'}}, 'memorabilia-categories-list', {});
+  if (!response.ok) throw new Error('Rust memorabilia categories lookup failed');
+  const {items:list} = await response.json();
   const byId = {};
   for (const row of list) byId[row.id] = row;
   return { list, byId };
 }
 
 export async function getMemorabiliaById(db, id, { includeDrafts = false } = {}) {
-  const row = await db.prepare(`
-    SELECT m.*, c.slug AS category_slug, c.label_en AS category_label_en, c.label_ko AS category_label_ko
-      FROM memorabilia m
-      LEFT JOIN memorabilia_categories c ON c.id = m.category_id
-     WHERE m.id = ?
-  `).bind(id).first();
-  if (!row) return null;
-  if (!includeDrafts && row.status !== 'public') return null;
-  return hydrateOne(db, row);
+  return getMemorabiliaDetail(db, {id, includeDrafts});
 }
 
 export async function getMemorabiliaBySlug(db, slug, { includeDrafts = false } = {}) {
-  const row = await db.prepare(`
-    SELECT m.*, c.slug AS category_slug, c.label_en AS category_label_en, c.label_ko AS category_label_ko
-      FROM memorabilia m
-      LEFT JOIN memorabilia_categories c ON c.id = m.category_id
-     WHERE m.slug = ?
-  `).bind(slug).first();
-  if (!row) return null;
-  if (!includeDrafts && row.status !== 'public') return null;
-  return hydrateOne(db, row);
+  return getMemorabiliaDetail(db, {slug, includeDrafts});
 }
 
-async function hydrateOne(db, row) {
-  const [imagesRes, countriesRes, tagsRes, eventRow] = await Promise.all([
-    db.prepare(`
-      SELECT id, url, alt_en, alt_ko, credit, is_primary, sort_order
-        FROM memorabilia_images
-       WHERE memorabilia_id = ?
-       ORDER BY is_primary DESC, sort_order ASC, id ASC
-    `).bind(row.id).all(),
-    db.prepare(`
-      SELECT country_code FROM memorabilia_countries WHERE memorabilia_id = ? ORDER BY country_code
-    `).bind(row.id).all(),
-    db.prepare(`
-      SELECT p.id, p.label
-        FROM memorabilia_tag_pool p
-        JOIN memorabilia_tags mt ON mt.tag_id = p.id
-       WHERE mt.memorabilia_id = ?
-       ORDER BY p.label
-    `).bind(row.id).all(),
-    // 카탈로그 행사가 연결된 경우 함께 가져옴 (없으면 null)
-    row.event_id
-      ? db.prepare(`
-          SELECT id, slug, name_en, name_ko,
-                 start_year, start_month, start_day, end_year, end_month, end_day,
-                 description_en, description_ko, usage_count
-            FROM memorabilia_events WHERE id = ?
-        `).bind(row.event_id).first()
-      : Promise.resolve(null),
-  ]);
-  // event period_text 는 클라이언트에서도 사용하므로 여기서 미리 포맷
-  let event = null;
-  if (eventRow) {
-    const { formatEventPeriod, formatEventPeriodEn } = await import('./memorabilia-events.js');
-    event = {
-      ...eventRow,
-      period_text: formatEventPeriod(eventRow),
-      period_text_en: formatEventPeriodEn(eventRow),
-    };
-  }
+async function getMemorabiliaDetail(db, options) {
+  const response = await queryRust({env:{DB:db}, request:{url:'https://internal.invalid/'}}, 'memorabilia-detail', {...options, hydrate:true});
+  if (!response.ok) throw new Error('Rust memorabilia detail failed');
+  const data = await response.json();
+  if (data.item) return data.item;
+  if (!data.row) return null;
+  return hydrateOne(db, data.row, data);
+}
+
+async function hydrateOne(db, row, data) {
+  const imagesRes = {results:data.images};
+  const countriesRes = {results:data.countries};
+  const tagsRes = {results:data.tags};
+  const event = data.event;
   // 관련 기념품 — 저장 순서 보존, 자기 자신 제외, 공개(public) 항목만 노출.
   // 비공개/draft 누출 방지를 위해 어디서나 status='public' 만 하이드레이트한다
   // (관련 항목은 공개 기념품끼리 연결하는 용도; draft 가 섞이면 표시에서 자동 제외).
@@ -276,18 +234,7 @@ async function hydrateOne(db, row) {
     .map((x) => parseInt(x, 10)).filter((x) => Number.isFinite(x) && x !== row.id);
   let related_memorabilia = [];
   if (relatedIds.length) {
-    const ph = relatedIds.map(() => '?').join(',');
-    const { results } = await db.prepare(`
-      SELECT m.id, m.slug, m.title_en, m.title_ko, m.year, m.category_id,
-             c.label_ko AS category_label_ko, c.label_en AS category_label_en,
-             (SELECT country_code FROM memorabilia_countries WHERE memorabilia_id = m.id
-               ORDER BY country_code LIMIT 1) AS country_code,
-             (SELECT url FROM memorabilia_images WHERE memorabilia_id = m.id
-               ORDER BY is_primary DESC, sort_order ASC, id ASC LIMIT 1) AS image_url
-        FROM memorabilia m
-        LEFT JOIN memorabilia_categories c ON c.id = m.category_id
-       WHERE m.id IN (${ph}) AND m.status = 'public'
-    `).bind(...relatedIds).all();
+    const results = data.relatedRows;
     const byId = new Map((results || []).map((r) => [r.id, r]));
     related_memorabilia = relatedIds.map((id) => byId.get(id)).filter(Boolean).map((r) => ({
       ...r,
@@ -316,153 +263,111 @@ function safeParseJson(s) {
 // 생성 / 수정
 // ─────────────────────────────────────────────────────────────────────────────
 
-/**
- * D1 has no traditional transactions across multiple statements via the binding,
- * but each statement is atomic. We use batch() for related writes when possible.
- * For simplicity here we do sequential writes — if a follow-up fails the row
- * exists but its relations might be partial. Acceptable for low-write admin flows.
- */
 export async function createMemorabilia(db, input, { createdBy = null } = {}) {
-  // event_id 가 주어지면 events 카탈로그에서 name 을 가져와 cache 갱신
-  await maybeHydrateEventName(db, input);
-
-  const result = await db.prepare(`
-    INSERT INTO memorabilia (
-      slug,
-      title_en, title_ko,
-      has_event, event_id, event_name_en, event_name_ko,
-      year, category_id,
-      material_en, material_ko,
-      size_text,
-      issuer_en, issuer_ko,
-      description_en, description_ko,
-      description_plain_en, description_plain_ko,
-      related_links_json,
-      related_memorabilia_json,
-      status,
-      created_by, created_at, updated_at, published_at
-    ) VALUES (
-      ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-      datetime('now'), datetime('now'),
-      CASE WHEN ? = 'public' THEN datetime('now') ELSE NULL END
-    )
-    RETURNING id
-  `).bind(
-    `__pending__${Date.now()}`,                  // 임시 slug (id 받은 후 갱신)
-    input.title_en, input.title_ko,
-    input.has_event, input.event_id, input.event_name_en, input.event_name_ko,
-    input.year, input.category_id,
-    input.material_en, input.material_ko,
-    input.size_text,
-    input.issuer_en, input.issuer_ko,
-    input.description_en, input.description_ko,
-    extractEditorJsPlain(input.description_en),
-    extractEditorJsPlain(input.description_ko),
-    JSON.stringify(input.related_links || []),
-    JSON.stringify(input.related_memorabilia || []),
-    input.status,
-    createdBy,
-    input.status,
-  ).first();
-
-  const id = result.id;
-  if (input.event_id) {
-    await db.prepare(`UPDATE memorabilia_events SET usage_count = usage_count + 1 WHERE id = ?`).bind(input.event_id).run();
+  const snapshot = await loadEditSnapshot(db, input);
+  const eventSnapshot = maybeHydrateEventName(input, snapshot.event);
+  const plainEn = extractEditorJsPlain(input.description_en), plainKo = extractEditorJsPlain(input.description_ko);
+  const tagRows = snapshot.tagRows;
+  const tagOrder = new Map(tagRows.map(row => [row.label, Number(row.id)]));
+  const orderedTags = input.tags.slice().sort((a, b) => (tagOrder.get(a) ?? Number.MAX_SAFE_INTEGER) - (tagOrder.get(b) ?? Number.MAX_SAFE_INTEGER));
+  const category = snapshot.category;
+  const fts = buildMemorabiliaFtsValues({
+    ...input, id:0, description_plain_en:plainEn, description_plain_ko:plainKo,
+    category_label_en:category?.label_en || '', category_label_ko:category?.label_ko || '',
+    country_codes:input.country_codes.slice().sort(), tags:orderedTags,
+  });
+  const related = [];
+  for (const {id:otherId,row} of snapshot.related) {
+    let list = safeParseJson(row.related_memorabilia_json) || [];
+    if (!Array.isArray(list)) list = [];
+    const norm = list.map(x => parseInt(x, 10)).filter(Number.isFinite);
+    related.push({id:otherId, previous:row.related_memorabilia_json ?? null, normalized:JSON.stringify(norm), limited:JSON.stringify(norm.slice(0, 12))});
   }
-
-  // slug 갱신 (id 기반)
-  const finalSlug = generateSlug(input.title_en, input.title_ko, id);
-  await db.prepare(`UPDATE memorabilia SET slug = ? WHERE id = ?`).bind(finalSlug, id).run();
-
-  await syncRelations(db, id, input);
-  await syncMutualRelated(db, id, input.related_memorabilia);
-  await syncFtsForId(db, id);
-  return id;
+  if (input.images.some(image => !Number.isFinite(image.sort_order))) throw new Error('D1_TYPE_ERROR: invalid image order');
+  const claim = '__pending__' + crypto.randomUUID();
+  const values = [claim,input.title_en,input.title_ko,input.has_event,input.event_id,input.event_name_en,input.event_name_ko,
+    input.year,input.category_id,input.material_en,input.material_ko,input.size_text,input.issuer_en,input.issuer_ko,
+    input.description_en,input.description_ko,plainEn,plainKo,JSON.stringify(input.related_links || []),
+    JSON.stringify(input.related_memorabilia || []),input.status,createdBy,input.status];
+  if (values.some(value => value === undefined)) throw new Error('D1_TYPE_ERROR: undefined memorabilia binding');
+  const response = await queryRust({env:{DB:db}, request:{url:'https://internal.invalid/'}}, 'memorabilia-create', {
+    values, claim, slugBase:generateSlug(input.title_en,input.title_ko,0).slice(0,-2),
+    eventId:input.event_id || null, countries:input.country_codes, tags:input.tags, images:input.images, related, fts,
+    tagSnapshots:input.tags.map(label => ({label, id:tagOrder.get(label) ?? null})),
+    categorySnapshot:input.category_id ? {id:input.category_id, exists:!!category, en:category?.label_en ?? null, ko:category?.label_ko ?? null} : null,
+    eventSnapshot:eventSnapshot ? {id:input.event_id, en:eventSnapshot.name_en ?? null, ko:eventSnapshot.name_ko ?? null} : null,
+  });
+  if (!response.ok) throw new Error('Rust memorabilia create failed');
+  return (await response.json()).id;
 }
 
 export async function updateMemorabilia(db, id, input, { expectedUpdatedAt = null } = {}) {
-  const existing = await db.prepare(`SELECT id, status, event_id FROM memorabilia WHERE id = ?`).bind(id).first();
+  const snapshot = await loadEditSnapshot(db, input, id);
+  const existing = snapshot.existing;
   if (!existing) return null;
 
-  const isPublishingNow = input.status === 'public' && existing.status !== 'public';
+  const eventSnapshot = maybeHydrateEventName(input, snapshot.event);
 
-  await maybeHydrateEventName(db, input);
-
-  const saved = await db.prepare(`
-    UPDATE memorabilia SET
-      title_en = ?, title_ko = ?,
-      has_event = ?, event_id = ?, event_name_en = ?, event_name_ko = ?,
-      year = ?, category_id = ?,
-      material_en = ?, material_ko = ?,
-      size_text = ?,
-      issuer_en = ?, issuer_ko = ?,
-      description_en = ?, description_ko = ?,
-      description_plain_en = ?, description_plain_ko = ?,
-      related_links_json = ?,
-      related_memorabilia_json = ?,
-      status = ?,
-      updated_at = CASE WHEN julianday(updated_at) >= julianday('now') THEN strftime('%Y-%m-%d %H:%M:%f', updated_at, '+0.001 seconds') ELSE strftime('%Y-%m-%d %H:%M:%f', 'now') END,
-      published_at = CASE
-        WHEN ? = 'public' AND published_at IS NULL THEN datetime('now')
-        WHEN ? = 'draft' THEN published_at
-        ELSE published_at
-      END
-    WHERE id = ? AND (? IS NULL OR updated_at = ?)
-    RETURNING id, updated_at
-  `).bind(
-    input.title_en, input.title_ko,
-    input.has_event, input.event_id, input.event_name_en, input.event_name_ko,
-    input.year, input.category_id,
-    input.material_en, input.material_ko,
-    input.size_text,
-    input.issuer_en, input.issuer_ko,
-    input.description_en, input.description_ko,
-    extractEditorJsPlain(input.description_en),
-    extractEditorJsPlain(input.description_ko),
-    JSON.stringify(input.related_links || []),
-    JSON.stringify(input.related_memorabilia || []),
-    input.status,
-    input.status,
-    input.status,
-    id,
-    expectedUpdatedAt,
-    expectedUpdatedAt,
-  ).first();
-  if (!saved) return { conflict: true };
-
-  // A failed compare-and-swap must not change event counts or child relations.
-  const oldEventId = existing.event_id || null;
-  const newEventId = input.event_id || null;
-  if (oldEventId !== newEventId) {
-    if (oldEventId) await db.prepare(`UPDATE memorabilia_events SET usage_count = MAX(usage_count - 1, 0) WHERE id = ?`).bind(oldEventId).run();
-    if (newEventId) await db.prepare(`UPDATE memorabilia_events SET usage_count = usage_count + 1 WHERE id = ?`).bind(newEventId).run();
+  const values = [
+    input.title_en, input.title_ko, input.has_event, input.event_id, input.event_name_en, input.event_name_ko,
+    input.year, input.category_id, input.material_en, input.material_ko, input.size_text, input.issuer_en, input.issuer_ko,
+    input.description_en, input.description_ko, extractEditorJsPlain(input.description_en), extractEditorJsPlain(input.description_ko),
+    JSON.stringify(input.related_links || []), JSON.stringify(input.related_memorabilia || []), input.status, input.status, input.status,
+    id, expectedUpdatedAt, expectedUpdatedAt,
+  ];
+  if (values.some(value => value === undefined)) throw new Error('D1_TYPE_ERROR: undefined memorabilia binding');
+  const tagRows = snapshot.tagRows;
+  const tagOrder = new Map(tagRows.map(row => [row.label, Number(row.id)]));
+  const orderedTags = input.tags.slice().sort((a, b) => (tagOrder.get(a) ?? Number.MAX_SAFE_INTEGER) - (tagOrder.get(b) ?? Number.MAX_SAFE_INTEGER));
+  const category = snapshot.category;
+  const fts = buildMemorabiliaFtsValues({
+    ...input, id, description_plain_en:values[15], description_plain_ko:values[16],
+    category_label_en:category?.label_en || '', category_label_ko:category?.label_ko || '',
+    country_codes:input.country_codes.slice().sort(), tags:orderedTags,
+  });
+  const related = [];
+  for (const {id:otherId,row} of snapshot.related) {
+    let list = safeParseJson(row.related_memorabilia_json) || [];
+    if (!Array.isArray(list)) list = [];
+    const norm = list.map(x => parseInt(x, 10)).filter(Number.isFinite);
+    const change = !norm.includes(id);
+    if (change) norm.push(id);
+    related.push({id:otherId, previous:row.related_memorabilia_json ?? null, value:change ? JSON.stringify(norm.slice(0, 12)) : '', change});
   }
-
-  await syncRelations(db, id, input);
-  await syncMutualRelated(db, id, input.related_memorabilia);
-  await syncFtsForId(db, id);
+  if (input.images.some(image => !Number.isFinite(image.sort_order))) throw new Error('D1_TYPE_ERROR: invalid image order');
+  const claim = 'memo:' + crypto.randomUUID();
+  const response = await queryRust({env:{DB:db}, request:{url:'https://internal.invalid/'}}, 'memorabilia-update', {
+    values, previousUpdated:existing.updated_at ?? null, oldEventId:existing.event_id || null, newEventId:input.event_id || null,
+    countries:input.country_codes, tags:input.tags, images:input.images, related, fts, claim,
+    tagSnapshots:input.tags.map(label => ({label, id:tagOrder.get(label) ?? null})),
+    categorySnapshot:input.category_id ? {id:input.category_id, exists:!!category, en:category?.label_en ?? null, ko:category?.label_ko ?? null} : null,
+    eventSnapshot:eventSnapshot ? {id:input.event_id, en:eventSnapshot.name_en ?? null, ko:eventSnapshot.name_ko ?? null} : null,
+  });
+  if (!response.ok) throw new Error('Rust memorabilia update failed');
+  const {row:saved} = await response.json();
+  if (!saved) return { conflict: true };
   return saved;
 }
 
 export async function deleteMemorabilia(db, id) {
-  // usage_count 감산용: 삭제 전에 event_id 캡쳐
-  const row = await db.prepare(`SELECT event_id FROM memorabilia WHERE id = ?`).bind(id).first();
-  await deleteMemorabiliaFtsRow(db, id);
-  // 부속 테이블은 FK ON DELETE CASCADE 로 자동 정리
-  await db.prepare(`DELETE FROM memorabilia WHERE id = ?`).bind(id).run();
-  if (row && row.event_id) {
-    await db.prepare(`UPDATE memorabilia_events SET usage_count = MAX(usage_count - 1, 0) WHERE id = ?`).bind(row.event_id).run();
-  }
+  const response = await queryRust({env:{DB:db}, request:{url:'https://internal.invalid/'}}, 'memorabilia-delete', {id});
+  if (!response.ok) throw new Error('Rust memorabilia delete failed');
 }
 
 // event_id 가 주어지면 events 카탈로그에서 name_en/ko 를 가져와 input 의
 // denormalized event_name 캐시를 덮어쓴다 (행사 이름 변경 시 일관성).
 // has_event 가 false 거나 event_id 가 없으면 free-text 입력 그대로 유지.
-async function maybeHydrateEventName(db, input) {
+async function loadEditSnapshot(db, input, id = null) {
+  const response = await queryRust({env:{DB:db},request:{url:'https://internal.invalid/'}}, 'memorabilia-edit-snapshot', {
+    id, eventId:input.has_event && input.event_id ? input.event_id : null, categoryId:input.category_id || null,
+    tags:input.tags, related:input.related_memorabilia || [],
+  });
+  if (!response.ok) throw new Error('Rust memorabilia edit snapshot failed');
+  return response.json();
+}
+
+function maybeHydrateEventName(input, row) {
   if (!input.has_event || !input.event_id) return;
-  const row = await db.prepare(
-    `SELECT name_en, name_ko FROM memorabilia_events WHERE id = ?`
-  ).bind(input.event_id).first();
   if (!row) {
     // 잘못된 event_id → 카탈로그 참조 해제, free-text fallback
     input.event_id = null;
@@ -470,84 +375,14 @@ async function maybeHydrateEventName(db, input) {
   }
   input.event_name_en = row.name_en || input.event_name_en || '';
   input.event_name_ko = row.name_ko || input.event_name_ko || '';
-}
-
-// 관련 기념품 상호등록 — A 가 B 를 관련으로 선택하면 B 의 관련 목록에도 A 를 추가(additive·idempotent).
-// 공개/비공개 무관하게 대상 행이 존재하면 추가(표시는 hydrate 에서 공개만 필터). 최대 12개 유지.
-async function syncMutualRelated(db, itemId, relatedIds) {
-  const ids = (relatedIds || []).map((x) => parseInt(x, 10)).filter((x) => Number.isFinite(x) && x !== itemId);
-  for (const bid of ids) {
-    const row = await db.prepare(`SELECT related_memorabilia_json FROM memorabilia WHERE id = ?`).bind(bid).first();
-    if (!row) continue;
-    let list = safeParseJson(row.related_memorabilia_json) || [];
-    if (!Array.isArray(list)) list = [];
-    const norm = list.map((x) => parseInt(x, 10)).filter((x) => Number.isFinite(x));
-    if (norm.includes(itemId)) continue;          // 이미 상호등록됨
-    norm.push(itemId);
-    await db.prepare(`UPDATE memorabilia SET related_memorabilia_json = ? WHERE id = ?`)
-      .bind(JSON.stringify(norm.slice(0, 12)), bid).run();
-  }
-}
-
-async function syncRelations(db, id, input) {
-  // 1) 국가
-  await db.prepare(`DELETE FROM memorabilia_countries WHERE memorabilia_id = ?`).bind(id).run();
-  for (const code of input.country_codes) {
-    await db.prepare(`
-      INSERT OR IGNORE INTO memorabilia_countries (memorabilia_id, country_code) VALUES (?, ?)
-    `).bind(id, code).run();
-  }
-
-  // 2) 태그 (풀에 없으면 추가, 카운트 증가)
-  await db.prepare(`DELETE FROM memorabilia_tags WHERE memorabilia_id = ?`).bind(id).run();
-  for (const label of input.tags) {
-    let row = await db.prepare(`SELECT id FROM memorabilia_tag_pool WHERE label = ?`).bind(label).first();
-    if (!row) {
-      row = await db.prepare(`
-        INSERT INTO memorabilia_tag_pool (label) VALUES (?) RETURNING id
-      `).bind(label).first();
-    }
-    await db.prepare(`
-      INSERT OR IGNORE INTO memorabilia_tags (memorabilia_id, tag_id) VALUES (?, ?)
-    `).bind(id, row.id).run();
-  }
-  // usage_count 재계산
-  await db.prepare(`
-    UPDATE memorabilia_tag_pool
-       SET usage_count = (SELECT COUNT(*) FROM memorabilia_tags WHERE tag_id = memorabilia_tag_pool.id),
-           updated_at  = datetime('now')
-     WHERE id IN (SELECT tag_id FROM memorabilia_tags WHERE memorabilia_id = ?)
-  `).bind(id).run();
-
-  // 3) 이미지
-  await db.prepare(`DELETE FROM memorabilia_images WHERE memorabilia_id = ?`).bind(id).run();
-  for (const img of input.images) {
-    await db.prepare(`
-      INSERT INTO memorabilia_images (memorabilia_id, url, alt_en, alt_ko, credit, is_primary, sort_order)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
-    `).bind(id, img.url, img.alt_en, img.alt_ko, img.credit || '', img.is_primary, img.sort_order).run();
-  }
+  return row;
 }
 
 export async function syncFtsForId(db, id) {
-  // 1) 메인 + 카테고리 라벨
-  const row = await db.prepare(`
-    SELECT m.*, c.label_en AS category_label_en, c.label_ko AS category_label_ko
-      FROM memorabilia m
-      LEFT JOIN memorabilia_categories c ON c.id = m.category_id
-     WHERE m.id = ?
-  `).bind(id).first();
+  const response = await queryRust({env:{DB:db},request:{url:'https://internal.invalid/'}}, 'memorabilia-fts-snapshot', {id});
+  if (!response.ok) throw new Error('Rust memorabilia search snapshot failed');
+  const {row,countries,tags} = await response.json();
   if (!row) return;
-
-  // 2) 부수 데이터 조회
-  const [countriesRes, tagsRes] = await Promise.all([
-    db.prepare(`SELECT country_code FROM memorabilia_countries WHERE memorabilia_id = ?`).bind(id).all(),
-    db.prepare(`
-      SELECT p.label FROM memorabilia_tag_pool p
-        JOIN memorabilia_tags mt ON mt.tag_id = p.id
-       WHERE mt.memorabilia_id = ?
-    `).bind(id).all(),
-  ]);
 
   await upsertMemorabiliaFtsRow(db, {
     id: row.id,
@@ -558,8 +393,15 @@ export async function syncFtsForId(db, id) {
     description_plain_en: row.description_plain_en, description_plain_ko: row.description_plain_ko,
     category_label_en: row.category_label_en || '',
     category_label_ko: row.category_label_ko || '',
-    country_codes: (countriesRes.results || []).map((r) => r.country_code),
-    tags:          (tagsRes.results || []).map((r) => r.label),
+    country_codes: countries.map((r) => r.country_code),
+    tags:          tags.map((r) => r.label),
+  }, {
+    values: [row.id,row.updated_at ?? null,row.title_en ?? null,row.title_ko ?? null,
+      row.event_name_en ?? null,row.event_name_ko ?? null,row.issuer_en ?? null,row.issuer_ko ?? null,
+      row.material_en ?? null,row.material_ko ?? null,row.description_plain_en ?? null,row.description_plain_ko ?? null,
+      row.category_id ?? null,row.category_label_en ?? null,row.category_label_ko ?? null],
+    countries: countries.map(r => r.country_code),
+    tags: tags.map(r => ({id:r.id,label:r.label})),
   });
 }
 
@@ -570,28 +412,14 @@ export async function syncFtsForId(db, id) {
 export async function suggestIssuers(db, prefix, limit = 8) {
   const p = trimStr(prefix, 80);
   if (!p) return [];
-  const like = `%${p}%`;
-  const { results } = await db.prepare(`
-    SELECT DISTINCT v FROM (
-      SELECT issuer_ko AS v FROM memorabilia WHERE issuer_ko LIKE ? AND issuer_ko != ''
-      UNION
-      SELECT issuer_en AS v FROM memorabilia WHERE issuer_en LIKE ? AND issuer_en != ''
-    ) ORDER BY v LIMIT ?
-  `).bind(like, like, limit).all();
-  return (results || []).map((r) => r.v);
+  const response = await queryRust({env:{DB:db},request:{url:'https://internal.invalid/'}}, 'memorabilia-suggest', {type:'issuer',prefix:p,limit});
+  if (!response.ok) throw new Error('Rust issuer suggestions failed');
+  return (await response.json()).items;
 }
 
 export async function suggestTags(db, prefix, limit = 10) {
   const p = trimStr(prefix, 60);
-  if (!p) {
-    const { results } = await db.prepare(`
-      SELECT label, usage_count FROM memorabilia_tag_pool ORDER BY usage_count DESC, label ASC LIMIT ?
-    `).bind(limit).all();
-    return (results || []).map((r) => r.label);
-  }
-  const like = `%${p}%`;
-  const { results } = await db.prepare(`
-    SELECT label FROM memorabilia_tag_pool WHERE label LIKE ? ORDER BY usage_count DESC, label ASC LIMIT ?
-  `).bind(like, limit).all();
-  return (results || []).map((r) => r.label);
+  const response = await queryRust({env:{DB:db},request:{url:'https://internal.invalid/'}}, 'memorabilia-suggest', {type:'tag',prefix:p,limit});
+  if (!response.ok) throw new Error('Rust tag suggestions failed');
+  return (await response.json()).items;
 }

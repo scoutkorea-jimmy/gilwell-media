@@ -1,6 +1,7 @@
+import { singleSetting } from '../../_shared/rust-server.js';
 import { extractToken, verifyTokenRole } from '../../_shared/auth.js';
 import { gateMenuAccess } from '../../_shared/admin-permissions.js';
-import { loadScoreRubric, normalizeScoreRubric, DEFAULT_SCORE_RUBRIC, RUBRIC_MAX_CHARS } from '../../_shared/score-rubric.js';
+import { loadScoreRubric, normalizeScoreRubricRust, DEFAULT_SCORE_RUBRIC, RUBRIC_MAX_CHARS } from '../../_shared/score-rubric.js';
 import { recordSettingChange } from '../../_shared/settings-audit.js';
 
 const json = (data, status = 200) =>
@@ -34,15 +35,11 @@ export async function onRequestPut({ request, env }) {
   try { body = await request.json(); }
   catch (_) { return json({ error: '요청 형식 오류' }, 400); }
 
-  const content = normalizeScoreRubric(body && body.content || '');
+  const content = await normalizeScoreRubricRust(body && body.content || '', env);
   if (!content) return json({ error: '평가 기준이 비어 있습니다. 기본값으로 복원하려면 DELETE를 사용하세요.' }, 400);
 
   try {
-    const prevRow = await env.DB.prepare(`SELECT value FROM settings WHERE key = 'score_rubric'`).first();
-    await env.DB.prepare(
-      `INSERT INTO settings (key, value) VALUES ('score_rubric', ?)
-       ON CONFLICT(key) DO UPDATE SET value = excluded.value`
-    ).bind(content).run();
+    const prevRow = await singleSetting(env, 'score_rubric', 'put', content);
     await recordSettingChange(env, {
       key: 'score_rubric',
       previousValue: prevRow && prevRow.value,
@@ -59,8 +56,7 @@ export async function onRequestPut({ request, env }) {
 export async function onRequestDelete({ request, env }) {
   const __gate = await gateMenuAccess(request, env, 'article-scorer', 'write'); if (__gate) return __gate
   try {
-    const prevRow = await env.DB.prepare(`SELECT value FROM settings WHERE key = 'score_rubric'`).first();
-    await env.DB.prepare(`DELETE FROM settings WHERE key = 'score_rubric'`).run();
+    const prevRow = await singleSetting(env, 'score_rubric', 'delete');
     await recordSettingChange(env, {
       key: 'score_rubric',
       previousValue: prevRow && prevRow.value,

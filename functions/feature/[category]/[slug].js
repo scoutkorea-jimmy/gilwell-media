@@ -1,8 +1,9 @@
-import { buildShareMetaBlock, getResolvedShareImage, loadSiteMeta } from '../../_shared/site-meta.js';
+import { buildShareMetaBlockRust, getResolvedShareImage, loadSiteMeta } from '../../_shared/site-meta.js';
 import { getSpecialFeatureCollection } from '../../_shared/special-features.js';
 import { getNavLabel, loadNavLabels } from '../../_shared/nav-labels.js';
 import { getCategoryMeta } from '../../_shared/category-meta.mjs';
 import { SITE_BRAND_NAME, SITE_DOMAIN_LABEL, DEFAULT_CONTACT_EMAILS } from '../../_shared/site-copy.mjs';
+import { queryRust } from '../../_shared/rust-server.js';
 
 export async function onRequestGet(context) {
   return renderFeaturePage(context);
@@ -30,7 +31,7 @@ async function renderFeaturePage({ params, request, env }, headOnly = false) {
   const description = `${categoryMeta.label} 카테고리에서 "${collection.special_feature}"를 주제로 묶인 기사 ${collection.items.length}건을 한 페이지에서 읽을 수 있는 특집 컬렉션입니다.`;
   const imageUrl = resolveFeatureImage(origin, leadItem) || getResolvedShareImage(siteMeta, origin);
   const url = `${origin}/feature/${category}/${slug}`;
-  const metaBlock = buildShareMetaBlock({
+  const metaBlock = await buildShareMetaBlockRust({
     pageKey: category,
     title,
     description,
@@ -38,7 +39,7 @@ async function renderFeaturePage({ params, request, env }, headOnly = false) {
     imageUrl,
     googleVerification: siteMeta.google_verification,
     naverVerification: siteMeta.naver_verification,
-  });
+  }, {request, env});
   const latestDate = formatDate(leadItem && (leadItem.publish_at || leadItem.created_at || ''));
   const footerTitle = escapeHtml((siteMeta && siteMeta.footer && siteMeta.footer.title) || SITE_BRAND_NAME);
   const footerDescription = escapeHtml((siteMeta && siteMeta.footer && siteMeta.footer.description) || `${SITE_BRAND_NAME}는 스카우트 네트워크의 자발적인 봉사로 운영됩니다.`);
@@ -57,8 +58,9 @@ async function renderFeaturePage({ params, request, env }, headOnly = false) {
   const navCalendar = getNavLabel(navLabels, 'nav.calendar', 'ko');
   const navGlossary = getNavLabel(navLabels, 'nav.glossary', 'ko');
   const navMemorabilia = getNavLabel(navLabels, 'nav.memorabilia', 'ko');
-
-  const body = `<!doctype html>
+  const fallback = () => {
+    const featureParts = {lead:renderFeatureLead(leadItem,categoryMeta,origin),cards:restItems.map(item=>renderFeatureCard(item,categoryMeta,origin)).join(''),rail:collection.items.map((item,index)=>renderFeatureRailItem(item,index===0)).join('')};
+    return `<!doctype html>
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
@@ -72,11 +74,11 @@ async function renderFeaturePage({ params, request, env }, headOnly = false) {
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png">
   <link rel="apple-touch-icon" href="/img/logo.png">
   <link rel="shortcut icon" href="/img/favicon-48.png">
-  <link rel="stylesheet" href="/css/style.css?v=20261027082848">
-  <link rel="stylesheet" href="/css/post.css?v=20261027082848">
-  <link rel="stylesheet" href="/css/chatbot.css?v=20261027082848">
-  <link rel="stylesheet" href="/css/dark-mode.css?v=20261027082848">
-  <link rel="stylesheet" href="/css/m3-site.css?v=20261027082848">
+  <link rel="stylesheet" href="/css/style.css?v=20261029073654">
+  <link rel="stylesheet" href="/css/post.css?v=20261029073654">
+  <link rel="stylesheet" href="/css/chatbot.css?v=20261029073654">
+  <link rel="stylesheet" href="/css/dark-mode.css?v=20261029073654">
+  <link rel="stylesheet" href="/css/m3-site.css?v=20261029073654">
   <style>
     .feature-page {
       background:
@@ -457,8 +459,8 @@ async function renderFeaturePage({ params, request, env }, headOnly = false) {
 
     <section class="feature-page-content">
       <div>
-        ${renderFeatureLead(leadItem, categoryMeta, origin)}
-        ${restItems.length ? `<div class="feature-page-grid">${restItems.map((item) => renderFeatureCard(item, categoryMeta, origin)).join('')}</div>` : ''}
+        ${featureParts.lead}
+        ${restItems.length ? `<div class="feature-page-grid">${featureParts.cards}</div>` : ''}
       </div>
       <aside class="feature-page-rail">
         <div class="feature-page-rail-head">
@@ -466,7 +468,7 @@ async function renderFeaturePage({ params, request, env }, headOnly = false) {
           <p class="post-card-excerpt" style="margin-bottom:0;">이 특집에 묶인 기사 흐름을 최신순으로 빠르게 훑어볼 수 있습니다.</p>
         </div>
         <div class="feature-page-rail-list">
-          ${collection.items.map((item, index) => renderFeatureRailItem(item, index === 0)).join('')}
+          ${featureParts.rail}
         </div>
       </aside>
     </section>
@@ -495,7 +497,7 @@ async function renderFeaturePage({ params, request, env }, headOnly = false) {
         <h4>바로가기</h4>
         <a href="/${category}">${escapeHtml(categoryMeta.label)} 목록 →</a>
         <a href="/latest">최신 기사 보기 →</a>
-        <p class="footer-build">Site <span class="site-build-version">V00.194.03</span> · Admin <span class="admin-build-version">V03.160.04</span></p>
+        <p class="footer-build">Site <span class="site-build-version">V00.195.00</span> · Admin <span class="admin-build-version">V03.161.00</span></p>
       </div>
       <div class="footer-bottom">
         <p>© 2026 ${footerTitle} · ${footerDomain}</p>
@@ -504,13 +506,49 @@ async function renderFeaturePage({ params, request, env }, headOnly = false) {
     </div>
   </footer>
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.4/dist/purify.min.js" integrity="sha384-eEu5CTj3qGvu9PdJuS+YlkNi7d2XxQROAFYOr59zgObtlcux1ae1Il3u7jvdCSWu" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-  <script src="/js/main.js?v=20261027082848"></script>
-  <script src="/js/site-chrome.js?v=20261027082848"></script>
-  <script src="/js/chatbot.js?v=20261027082848" defer></script>
+  <script src="/js/main.js?v=20261029073654"></script>
+  <script src="/js/site-chrome.js?v=20261029073654"></script>
+  <script src="/js/chatbot.js?v=20261029073654" defer></script>
   <script>GW.bootstrapStandardPage();</script>
   <script async type="text/javascript" charset="utf-8" src="https://t1.kakaocdn.net/kas/static/ba.min.js"></script>
 </body>
 </html>`;
+  };
+  const shellValues = [
+    String(escapeHtml(title)),
+    String(metaBlock),
+    String(hexToRgba(categoryMeta.color, 0.12)),
+    String(hexToRgba(categoryMeta.color, 0.22)),
+    String(footerDomain),
+    String(escapeHtml(navContributors)),
+    String(escapeHtml(navHome)),
+    String(escapeHtml(navLatest)),
+    String(escapeHtml(navJamboree16)),
+    String(escapeHtml(navKorea)),
+    String(escapeHtml(navApr)),
+    String(escapeHtml(navWosm)),
+    String(escapeHtml(navWosmMembers)),
+    String(escapeHtml(navPeople)),
+    String(escapeHtml(navCalendar)),
+    String(escapeHtml(navGlossary)),
+    String(escapeHtml(navMemorabilia)),
+    String(category),
+    String(escapeHtml(categoryMeta.label)),
+    String(leadItem.id),
+    String(categoryMeta.color),
+    String(escapeHtml(collection.special_feature)),
+    String(escapeHtml(description)),
+    String(collection.items.length),
+    String(escapeHtml(latestDate || '미정')),
+    '', // lead, grid and rail are populated by Rust
+    '',
+    '',
+    String(footerTitle),
+    String(footerDescription),
+    String(footerTipEmail),
+    String(footerContactEmail)
+  ];
+  const body = await renderFeaturePageRust(collection.items,categoryMeta,origin,shellValues,fallback,{request,env});
 
   return new Response(headOnly ? null : body, {
     status: 200,
@@ -521,7 +559,32 @@ async function renderFeaturePage({ params, request, env }, headOnly = false) {
   });
 }
 
-function renderFeatureLead(item, categoryMeta, origin) {
+export async function renderFeatureShellRust(values, fallback, context, run = queryRust) {
+  // shortcut: isolated UTF-16 surrogates use the existing renderer.
+  if (/\\u[dD][89a-fA-F][0-9a-fA-F]{2}/.test(JSON.stringify(values))) return fallback();
+  try {
+    const response = await run(context,'feature-shell-render',{values});
+    if (!response.ok) throw new Error('Rust feature shell rendering failed');
+    const result = await response.json();
+    if (typeof result.html !== 'string') throw new Error('Invalid feature HTML');
+    return result.html;
+  } catch (_) { return fallback(); }
+}
+
+export async function renderFeaturePageRust(items,categoryMeta,origin,values,fallback,context,run=queryRust) {
+  const data={parts:featurePartsInput(items,categoryMeta,origin),values};
+  // shortcut: isolated UTF-16 surrogates use the existing renderer.
+  if (/\\u[dD][89a-fA-F][0-9a-fA-F]{2}/.test(JSON.stringify(data))) return fallback();
+  try {
+    const response=await run(context,'feature-page-render',data);
+    if (!response.ok) throw new Error('Rust feature page rendering failed');
+    const result=await response.json();
+    if (typeof result.html !== 'string') throw new Error('Invalid feature HTML');
+    return result.html;
+  } catch (_) { return fallback(); }
+}
+
+export function renderFeatureLead(item, categoryMeta, origin) {
   const image = resolveFeatureImage(origin, item);
   const excerpt = item.subtitle || truncatePlain(item.content || '', 220);
   const imageBlock = image
@@ -543,7 +606,7 @@ function renderFeatureLead(item, categoryMeta, origin) {
   </article>`;
 }
 
-function renderFeatureCard(item, categoryMeta, origin) {
+export function renderFeatureCard(item, categoryMeta, origin) {
   const image = resolveFeatureImage(origin, item);
   const excerpt = item.subtitle || truncatePlain(item.content || '', 120);
   const thumb = image
@@ -570,13 +633,37 @@ function renderFeatureCard(item, categoryMeta, origin) {
   </article>`;
 }
 
-function renderFeatureRailItem(item, isLead) {
+export function renderFeatureRailItem(item, isLead) {
   return `<article class="feature-page-rail-item">
     <a href="/post/${item.id}">
       <strong>${escapeHtml(item.title || '')}</strong>
       <span>${isLead ? 'Lead Story · ' : ''}${escapeHtml(formatDate(item.publish_at || item.created_at || ''))}</span>
     </a>
   </article>`;
+}
+
+function featurePartsInput(items,categoryMeta,origin) {
+  const inputs = items.map((item,index) => {
+    const excerpt = item.subtitle || truncatePlain(item.content || '', index===0 ? 220 : 120);
+    return {id:String(item.id), title:String(item.title || ''), image:resolveFeatureImage(origin,item),
+      excerpt:String(excerpt), has_excerpt:!!excerpt, tag:String(item.tag || ''), has_tag:!!item.tag,
+      author:String(item.author || ''), has_author:!!item.author, date:formatDate(item.publish_at || item.created_at || '')};
+  });
+  return {items:inputs, label:String(categoryMeta.label || ''), color:String(categoryMeta.color), background:hexToRgba(categoryMeta.color,0.24)};
+}
+
+export async function renderFeaturePartsRust(items, categoryMeta, origin, context, run = queryRust) {
+  const fallback = () => ({lead:renderFeatureLead(items[0],categoryMeta,origin), cards:items.slice(1).map(item=>renderFeatureCard(item,categoryMeta,origin)).join(''), rail:items.map((item,index)=>renderFeatureRailItem(item,index===0)).join('')});
+  const data = featurePartsInput(items,categoryMeta,origin);
+  // shortcut: isolated UTF-16 surrogates use the existing renderer.
+  if (/\\u[dD][89a-fA-F][0-9a-fA-F]{2}/.test(JSON.stringify(data))) return fallback();
+  try {
+    const response = await run(context,'feature-parts-render',data);
+    if (!response.ok) throw new Error('Rust feature rendering failed');
+    const result = await response.json();
+    if (['lead','cards','rail'].some(key => typeof result[key] !== 'string')) throw new Error('Invalid feature HTML');
+    return result;
+  } catch (_) { return fallback(); }
 }
 
 function resolveFeatureImage(origin, item) {

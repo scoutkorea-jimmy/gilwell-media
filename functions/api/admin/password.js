@@ -31,6 +31,7 @@ import {
 } from '../../_shared/auth.js';
 import { loadAdminUserById } from '../../_shared/admin-users.js';
 import { logOperationalEvent } from '../../_shared/ops-log.js';
+import { queryRust } from '../../_shared/rust-server.js';
 
 const MIN_PASSWORD_LENGTH = 8;
 const MAX_PASSWORD_LENGTH = 256;
@@ -70,9 +71,9 @@ export async function onRequestPost({ request, env }) {
 
   // ── Path A: per-user row update (Phase 2 sessions) ──
   if (uid) {
-    const userRow = await env.DB.prepare(
-      `SELECT id, username, display_name, role, password_hash, status FROM admin_users WHERE id = ?`
-    ).bind(uid).first();
+    const lookup = await queryRust({request, env}, 'admin-user-read', {operation:'password-user', id:uid});
+    if (!lookup.ok) throw new Error('Rust password user lookup failed');
+    const {row:userRow} = await lookup.json();
     if (!userRow || userRow.status !== 'active') {
       return json({ error: '계정을 찾을 수 없거나 비활성화되었습니다.' }, 404);
     }
@@ -93,14 +94,8 @@ export async function onRequestPost({ request, env }) {
     try {
       const nextHash = await hashAdminPassword(newPassword);
       const nowMs = Date.now();
-      await env.DB.prepare(
-        `UPDATE admin_users
-            SET password_hash = ?,
-                must_change_password = 0,
-                token_min_iat = ?,
-                updated_at = datetime('now')
-          WHERE id = ?`
-      ).bind(JSON.stringify(nextHash), nowMs, uid).run();
+      const saved = await queryRust({request, env}, 'admin-account-mutation', {operation:'password-change', id:uid, value:JSON.stringify(nextHash), epoch:nowMs});
+      if (!saved.ok) throw new Error('Rust password change failed');
 
       const role = userRow.role === 'owner' ? 'full' : 'member';
       const newToken = await createToken(env.ADMIN_SECRET, {

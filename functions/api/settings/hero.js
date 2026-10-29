@@ -1,3 +1,4 @@
+import { queryRust, settingSnapshot, saveRevisionedSetting } from '../../_shared/rust-server.js';
 /**
  * BP미디어 · Hero Posts Setting
  *
@@ -12,7 +13,6 @@ import { recordSettingChange } from '../../_shared/settings-audit.js';
 const MAX_MANUAL_HERO_POSTS = 2;
 const AUTO_HERO_POST_COUNT = 3;
 const MAX_TOTAL_HERO_POSTS = MAX_MANUAL_HERO_POSTS + AUTO_HERO_POST_COUNT;
-const DEFAULT_HERO_MANUAL_POSITION = 'after_auto';
 
 const DEFAULT_HERO_MEDIA = {
   fit: 'cover',
@@ -32,18 +32,16 @@ const DEFAULT_HERO_MEDIA = {
 export async function onRequestGet({ env, request }) {
   try {
     const origin = new URL(request.url).origin;
-    const { results } = await env.DB.prepare(`SELECT key, value FROM settings WHERE key IN ('hero', 'hero_interval', 'hero_rev', 'hero_media')`).all();
+    const { results, hero: heroSettings, media: normalizedMedia, interval } = await settingSnapshot(env, 'hero');
     const rows = Object.fromEntries((results || []).map((row) => [row.key, row]));
-    const row = rows.hero, intervalRow = rows.hero_interval, mediaRow = rows.hero_media;
     const revision = rows.hero_rev ? parseInt(rows.hero_rev.value, 10) || 0 : 0;
 
-    const heroSettings = parseHeroSettings(row && row.value);
-    const mediaMap = normalizeHeroMediaMap(parseJsonValue(mediaRow && mediaRow.value), heroSettings.manual_post_ids);
+    const mediaMap = Object.fromEntries(heroSettings.manual_post_ids.map(String).filter(id => Object.hasOwn(normalizedMedia, id)).map(id => [id, normalizedMedia[id]]));
     const posts = await buildHeroPosts(env, origin, heroSettings.manual_post_ids, heroSettings.manual_position, mediaMap);
 
     return json({
       posts,
-      interval_ms: getSafeInterval(intervalRow && intervalRow.value),
+      interval_ms: interval,
       revision,
       media_map: mediaMap,
       post_ids: heroSettings.manual_post_ids,
@@ -75,19 +73,8 @@ export async function onRequestPut({ request, env }) {
     return json({ error: 'manual_post_ids 배열을 입력해주세요' }, 400);
   }
 
-  const safeIds = manualPostIdsInput
-    .map(id => parseInt(id, 10))
-    .filter(id => Number.isFinite(id) && id > 0)
-    .slice(0, MAX_MANUAL_HERO_POSTS);
-  const manualPosition = body && body.manual_position === 'before_auto'
-    ? 'before_auto'
-    : DEFAULT_HERO_MANUAL_POSITION;
-  const safeInterval = getSafeInterval(interval_ms);
-  const hasMediaMap = !!(body && typeof body.media_map === 'object' && body.media_map);
-  const requestedMediaMap = hasMediaMap ? normalizeHeroMediaMap(body.media_map, safeIds) : null;
-
   try {
-    const { results } = await env.DB.prepare(`SELECT key, value FROM settings WHERE key IN ('hero', 'hero_interval', 'hero_rev', 'hero_media')`).all();
+    const { results } = await settingSnapshot(env, 'hero');
     const rows = Object.fromEntries((results || []).map((row) => [row.key, row]));
     const prevHero = rows.hero, prevInterval = rows.hero_interval, prevHeroMedia = rows.hero_media;
     const currentRev = rows.hero_rev ? parseInt(rows.hero_rev.value, 10) || 0 : 0;
@@ -95,29 +82,17 @@ export async function onRequestPut({ request, env }) {
       return json({ error: '다른 변경이 감지되었습니다', revision: currentRev }, 409);
     }
     const nextRev = currentRev + 1;
-    const currentMediaMap = normalizeHeroMediaMap(parseJsonValue(prevHeroMedia && prevHeroMedia.value), safeIds);
-    const nextMediaMap = hasMediaMap ? requestedMediaMap : currentMediaMap;
+    const normalized = await queryRust({env, request}, 'hero-write-normalize', {
+      ids: manualPostIdsInput, position: body.manual_position, interval: interval_ms,
+      media: body.media_map, existing: prevHeroMedia?.value,
+    });
+    if (!normalized.ok) throw new Error('Rust hero settings normalization failed');
+    const { ids: safeIds, position: manualPosition, interval: safeInterval, media } = await normalized.json();
+    const nextMediaMap = Object.fromEntries(Object.entries(media).map(([key, value]) => [key, { fit: value.fit, desktop: value.desktop, mobile: value.mobile }]));
 
-    const writes = await env.DB.batch([
-      env.DB.prepare(`INSERT INTO settings (key, value) VALUES ('hero_rev', ?)
-        ON CONFLICT(key) DO UPDATE SET value = excluded.value WHERE CAST(settings.value AS INTEGER) = ?`).bind(String(nextRev), currentRev),
-      env.DB.prepare(
-        `INSERT INTO settings (key, value) SELECT 'hero', ? WHERE changes() = 1
-         ON CONFLICT(key) DO UPDATE SET value = excluded.value`
-      ).bind(JSON.stringify({
-        manual_post_ids: safeIds,
-        manual_position: manualPosition,
-      })),
-      env.DB.prepare(
-        `INSERT INTO settings (key, value) SELECT 'hero_interval', ? WHERE changes() = 1
-         ON CONFLICT(key) DO UPDATE SET value = excluded.value`
-      ).bind(String(safeInterval)),
-      env.DB.prepare(
-        `INSERT INTO settings (key, value) SELECT 'hero_media', ? WHERE changes() = 1
-         ON CONFLICT(key) DO UPDATE SET value = excluded.value`
-      ).bind(JSON.stringify(nextMediaMap)),
-    ]);
-    if (!writes[0] || !writes[0].meta || writes[0].meta.changes !== 1) return json({ error: '동시 변경이 감지되었습니다. 입력을 보존하고 최신 설정을 확인해주세요.' }, 409);
+    const values = [JSON.stringify({manual_post_ids:safeIds, manual_position:manualPosition}), String(safeInterval), JSON.stringify(nextMediaMap)];
+    const changes = await saveRevisionedSetting(env, 'hero', currentRev, nextRev, values);
+    if (changes !== 1) return json({ error: '동시 변경이 감지되었습니다. 입력을 보존하고 최신 설정을 확인해주세요.' }, 409);
     await Promise.all([
       recordSettingChange(env, {
         key: 'hero',
@@ -158,51 +133,6 @@ export async function onRequestPut({ request, env }) {
   }
 }
 
-function parseHeroSettings(raw) {
-  const fallback = {
-    manual_post_ids: [],
-    manual_position: DEFAULT_HERO_MANUAL_POSITION,
-  };
-  if (!raw) return fallback;
-
-  const value = String(raw).trim();
-  if (!value) return fallback;
-
-  if (value.startsWith('{')) {
-    const parsed = parseJsonValue(value);
-    const manualIds = Array.isArray(parsed && parsed.manual_post_ids)
-      ? parsed.manual_post_ids
-      : Array.isArray(parsed && parsed.post_ids)
-        ? parsed.post_ids
-        : [];
-    return {
-      manual_post_ids: manualIds
-        .map((id) => parseInt(id, 10))
-        .filter((id) => Number.isFinite(id) && id > 0)
-        .slice(0, MAX_MANUAL_HERO_POSTS),
-      manual_position: parsed && parsed.manual_position === 'before_auto'
-        ? 'before_auto'
-        : DEFAULT_HERO_MANUAL_POSITION,
-    };
-  }
-
-  if (value.startsWith('[')) {
-    const parsed = parseJsonValue(value);
-    return {
-      manual_post_ids: Array.isArray(parsed)
-        ? parsed.map((id) => parseInt(id, 10)).filter((id) => Number.isFinite(id) && id > 0).slice(0, MAX_MANUAL_HERO_POSTS)
-        : [],
-      manual_position: DEFAULT_HERO_MANUAL_POSITION,
-    };
-  }
-
-  const single = parseInt(value, 10);
-  return {
-    manual_post_ids: Number.isFinite(single) && single > 0 ? [single] : [],
-    manual_position: DEFAULT_HERO_MANUAL_POSITION,
-  };
-}
-
 async function buildHeroPosts(env, origin, manualPostIds, manualPosition, mediaMap) {
   const manualPosts = await loadManualHeroPosts(env, origin, manualPostIds, mediaMap);
   const autoPosts = await loadAutomaticHeroPosts(env, origin, manualPosts.map((post) => post.id));
@@ -215,18 +145,14 @@ async function buildHeroPosts(env, origin, manualPostIds, manualPosition, mediaM
 async function loadManualHeroPosts(env, origin, postIds, mediaMap) {
   if (!Array.isArray(postIds) || !postIds.length) return [];
 
-  const posts = [];
-  for (const id of postIds) {
-    const post = await env.DB.prepare(
-      `SELECT id, category, title, subtitle, image_url, created_at, publish_at
-         FROM posts
-        WHERE id = ? AND published = 1`
-    ).bind(id).first();
-    if (!post) continue;
+  const response = await queryRust({env, request:{url:origin}}, 'home-hero-manual', {ids:postIds});
+  if (!response.ok) throw new Error('Rust manual hero query failed');
+  const {posts: rows} = await response.json();
+  const posts = rows.map(post => {
     const serialized = serializePostImage(post, origin);
-    serialized.media = mediaMap[String(id)] || DEFAULT_HERO_MEDIA;
-    posts.push(serialized);
-  }
+    serialized.media = mediaMap[String(post.id)] || DEFAULT_HERO_MEDIA;
+    return serialized;
+  });
   return posts;
 }
 
@@ -234,87 +160,17 @@ async function loadAutomaticHeroPosts(env, origin, excludedIds) {
   const exclusions = Array.isArray(excludedIds)
     ? excludedIds.map((id) => parseInt(id, 10)).filter((id) => Number.isFinite(id) && id > 0)
     : [];
-  const conditions = ['published = 1'];
-  const bindings = [];
-
-  if (exclusions.length) {
-    conditions.push(`id NOT IN (${exclusions.map(() => '?').join(', ')})`);
-    bindings.push(...exclusions);
-  }
-
-  const { results } = await env.DB.prepare(
-    `SELECT id, category, title, subtitle, image_url, created_at, publish_at
-       FROM posts
-      WHERE ${conditions.join(' AND ')}
-      ORDER BY COALESCE(publish_at, created_at) DESC, id DESC
-      LIMIT ?`
-  ).bind(...bindings, AUTO_HERO_POST_COUNT).all();
+  const response = await queryRust({env, request:{url:origin}}, 'home-hero-auto', {
+    excluded:exclusions, limit:AUTO_HERO_POST_COUNT, publicDateExpr:'COALESCE(publish_at, created_at)',
+  });
+  if (!response.ok) throw new Error('Rust automatic hero query failed');
+  const {posts:results} = await response.json();
 
   return (results || []).map((post) => {
     const serialized = serializePostImage(post, origin);
     serialized.media = DEFAULT_HERO_MEDIA;
     return serialized;
   });
-}
-
-function getSafeInterval(value) {
-  const parsed = parseInt(value, 10);
-  if (!Number.isFinite(parsed)) return 3000;
-  return Math.min(15000, Math.max(2000, parsed));
-}
-
-function parseJsonValue(raw) {
-  if (!raw) return null;
-  try {
-    return JSON.parse(raw);
-  } catch (_) {
-    return null;
-  }
-}
-
-function normalizeHeroMediaMap(input, allowedIds) {
-  const map = input && typeof input === 'object' ? input : {};
-  const allowed = Array.isArray(allowedIds) ? allowedIds.map(String) : null;
-  return Object.keys(map).reduce((acc, key) => {
-    if (allowed && allowed.indexOf(String(key)) === -1) return acc;
-    acc[String(key)] = normalizeHeroMedia(map[key]);
-    return acc;
-  }, {});
-}
-
-function normalizeHeroMedia(input) {
-  const raw = input && typeof input === 'object' ? input : {};
-  const fallbackDesktop = {
-    position_x: clampNumber(raw.position_x, 0, 100, DEFAULT_HERO_MEDIA.desktop.position_x),
-    position_y: clampNumber(raw.position_y, 0, 100, DEFAULT_HERO_MEDIA.desktop.position_y),
-    zoom: clampNumber(raw.zoom, 60, 150, DEFAULT_HERO_MEDIA.desktop.zoom),
-  };
-  const fallbackMobile = {
-    position_x: fallbackDesktop.position_x,
-    position_y: fallbackDesktop.position_y,
-    zoom: fallbackDesktop.zoom,
-  };
-  const desktop = raw.desktop && typeof raw.desktop === 'object' ? raw.desktop : raw;
-  const mobile = raw.mobile && typeof raw.mobile === 'object' ? raw.mobile : raw;
-  return {
-    fit: raw.fit === 'contain' ? 'contain' : 'cover',
-    desktop: {
-      position_x: clampNumber(desktop.position_x, 0, 100, fallbackDesktop.position_x),
-      position_y: clampNumber(desktop.position_y, 0, 100, fallbackDesktop.position_y),
-      zoom: clampNumber(desktop.zoom, 60, 150, fallbackDesktop.zoom),
-    },
-    mobile: {
-      position_x: clampNumber(mobile.position_x, 0, 100, fallbackMobile.position_x),
-      position_y: clampNumber(mobile.position_y, 0, 100, fallbackMobile.position_y),
-      zoom: clampNumber(mobile.zoom, 60, 150, fallbackMobile.zoom),
-    },
-  };
-}
-
-function clampNumber(value, min, max, fallback) {
-  const parsed = parseInt(value, 10);
-  if (!Number.isFinite(parsed)) return fallback;
-  return Math.min(max, Math.max(min, parsed));
 }
 
 function json(data, status = 200, extraHeaders = {}) {

@@ -1,10 +1,10 @@
 import { BOARD_KEYS, loadPublicPage, applyPublicParts, pageNumber } from './_shared/public-page-ssr.js';
-import { buildShareMetaBlock, getResolvedShareImage, getSitePageKey, loadSiteMeta } from './_shared/site-meta.js';
-import { selectHomeRailIds, hydrateByIds } from './_shared/home-rails.js';
-import { serializePostImage } from './_shared/images.js';
+import { buildShareMetaBlockRust, getResolvedShareImage, getSitePageKey, loadSiteMeta, getPageSeoDescriptor } from './_shared/site-meta.js';
+import { POPULAR_WEIGHTS } from './_shared/home-rails.js';
 import { loadNavLabels, getNavLabel } from './_shared/nav-labels.js';
 import { ensureDuePostsPublished } from './_shared/publish-due-posts.js';
 import { getPostExcerpt } from './_shared/post-excerpt.js';
+import { queryRust, singleSetting } from './_shared/rust-server.js';
 
 const PUBLIC_DATE_EXPR = "CASE WHEN publish_at IS NOT NULL AND trim(publish_at) <> '' THEN CASE WHEN instr(publish_at, 'Z') > 0 OR instr(substr(publish_at, 11), '+') > 0 THEN datetime(replace(publish_at, 'T', ' '), '+9 hours') ELSE datetime(replace(publish_at, 'T', ' ')) END ELSE CASE WHEN created_at IS NOT NULL AND trim(created_at) <> '' THEN datetime(replace(created_at, 'T', ' '), '+9 hours') ELSE NULL END END";
 
@@ -50,10 +50,11 @@ export async function onRequest(context) {
   const pageMeta = siteMeta.pages[pageKey] || siteMeta.pages.home;
   const publicPage = await loadPublicPage(env, url, pageKey, request).catch(err => { console.error('Public SSR failed:', pageKey, err); return null; });
   const page = pageNumber(url);
-  const canonicalPath = getCanonicalPath(url.pathname, pageKey) + (BOARD_KEYS.includes(pageKey) && page > 1 ? '?page=' + page : '');
+  const canonical = await resolveCanonical(context, url.pathname, pageKey, page, pageMeta.title);
+  const canonicalPath = canonical.path;
   const itemListElements = publicPage?.posts ? publicPage.posts.map(post => ({url: `${url.origin}/post/${post.id}`, title: post.title})) : await loadPageItemList(env, url.origin, pageKey);
-  const resolvedTitle = pageMeta.title + (BOARD_KEYS.includes(pageKey) && page > 1 ? ' · '+page+'페이지' : '');
-  const shareMeta = buildShareMetaBlock({
+  const resolvedTitle = canonical.title;
+  const shareMeta = await buildShareMetaBlockRust({
     pageKey,
     title: resolvedTitle,
     description: pageMeta.description,
@@ -62,7 +63,8 @@ export async function onRequest(context) {
     googleVerification: siteMeta.google_verification,
     naverVerification: siteMeta.naver_verification,
     itemListElements,
-  });
+    descriptor: canonical.descriptor,
+  }, context);
 
   const updated = applyPublicParts(html, publicPage)
     .replace(/<title>[\s\S]*?<\/title>/, `<title>${escapeHtml(resolvedTitle)}</title>`)
@@ -79,6 +81,23 @@ export async function onRequest(context) {
     baseResponse = applyHomeSsrContent(baseResponse, homeSsr);
   }
   return applyTranslationBootstrap(baseResponse, translationStrings, publicRuntime, navLabels);
+}
+
+export async function resolveCanonical(context, pathname, pageKey, page, title, run = queryRust) {
+  const fallback = () => ({
+    path:getCanonicalPath(pathname, pageKey) + (BOARD_KEYS.includes(pageKey) && page > 1 ? '?page=' + page : ''),
+    title:title + (BOARD_KEYS.includes(pageKey) && page > 1 ? ' · '+page+'페이지' : ''),
+    descriptor:getPageSeoDescriptor(pageKey),
+  });
+  // shortcut: isolated UTF-16 surrogates retain the existing page metadata path.
+  if (/\\u[dD][89a-fA-F][0-9a-fA-F]{2}/.test(JSON.stringify({pathname,pageKey,title}))) return fallback();
+  try {
+    const response = await run(context, 'public-canonical', {pathname,pageKey,page,title});
+    if (!response.ok) throw new Error('Rust canonical metadata failed');
+    const result = await response.json();
+    if (typeof result.path !== 'string' || typeof result.title !== 'string' || !result.descriptor || !['schema','breadcrumb','topic','keywords'].every(key => typeof result.descriptor[key] === 'string')) throw new Error('Invalid Rust canonical metadata');
+    return result;
+  } catch (_) { return fallback(); }
 }
 
 function getCanonicalPath(pathname, pageKey) {
@@ -101,15 +120,9 @@ function getCanonicalPath(pathname, pageKey) {
 async function loadPageItemList(env, origin, pageKey) {
   if (!['home', 'latest', 'korea', 'apr', 'wosm', 'people', 'glossary'].includes(pageKey)) return [];
   try {
-    const category = pageKey === 'home' || pageKey === 'latest' ? null : pageKey;
-    const query = category
-      ? `SELECT id, title FROM posts WHERE published = 1 AND category = ? ORDER BY datetime(COALESCE(publish_at, created_at)) DESC, id DESC LIMIT 10`
-      : pageKey === 'latest'
-        ? `SELECT id, title FROM posts WHERE published = 1 AND datetime(COALESCE(publish_at, created_at)) >= datetime('now', '-30 days') ORDER BY datetime(COALESCE(publish_at, created_at)) DESC, id DESC LIMIT 10`
-        : `SELECT id, title FROM posts WHERE published = 1 ORDER BY datetime(COALESCE(publish_at, created_at)) DESC, id DESC LIMIT 10`;
-    const result = category
-      ? await env.DB.prepare(query).bind(category).all()
-      : await env.DB.prepare(query).all();
+    const response = await queryRust({env, request:{url:'https://internal.invalid/'}}, 'public-schema', {key:pageKey});
+    if (!response.ok) throw new Error('Rust page item list query failed');
+    const result = await response.json();
     return (result.results || []).map((item) => ({
       url: `${origin}/post/${item.id}`,
       title: item.title || `post-${item.id}`,
@@ -137,98 +150,31 @@ async function loadPageExtraSchema(env, origin, pageKey) {
 }
 
 async function buildGlossarySchema(env, origin) {
-  const rs = await env.DB.prepare(
-    `SELECT id, bucket, term_ko, term_en, term_fr, description_ko
-       FROM glossary_terms
-       ORDER BY bucket, COALESCE(sort_order, 0), term_ko`
-  ).all();
-  const rows = Array.isArray(rs && rs.results) ? rs.results : [];
-  if (!rows.length) return '';
-  const termList = rows.map((row) => {
-    const names = [row.term_ko, row.term_en, row.term_fr].filter(Boolean).map((v) => String(v).trim()).filter(Boolean);
-    const primary = names[0] || '';
-    const alternates = names.slice(1);
-    const entry = {
-      '@type': 'DefinedTerm',
-      '@id': `${origin}/glossary#term-${row.id}`,
-      name: primary,
-      inDefinedTermSet: `${origin}/glossary`,
-    };
-    if (alternates.length) entry.alternateName = alternates;
-    const desc = String(row.description_ko || '').trim();
-    if (desc) entry.description = desc;
-    if (row.bucket) entry.termCode = row.bucket;
-    return entry;
-  });
-  const termSet = {
-    '@context': 'https://schema.org',
-    '@type': 'DefinedTermSet',
-    '@id': `${origin}/glossary`,
-    name: 'BP미디어 스카우팅 용어집',
-    description: '한국어·영어·프랑스어 스카우팅 용어 사전. WOSM·APR·한국스카우트연맹 공식 표기 기준.',
-    url: `${origin}/glossary`,
-    inLanguage: ['ko-KR', 'en', 'fr'],
-    hasDefinedTerm: termList,
-    publisher: { '@type': 'Organization', name: 'BP미디어', url: origin },
-  };
-  return `\n<script type="application/ld+json">${safeJsonForScript(termSet)}</script>`;
+  const response = await queryRust({env, request:{url:'https://internal.invalid/'}}, 'public-schema', {key:'glossary-schema', origin});
+  if (!response.ok) throw new Error('Rust glossary schema query failed');
+  return (await response.json()).html || '';
 }
 
 async function buildWosmMembersSchema(env, origin) {
-  // Count active member countries from the settings-backed blob. Kept as a
-  // Dataset (not an ItemList) because AI systems treat Datasets as citable
-  // source data for fact-check answers about WOSM membership.
-  let memberCount = 0;
-  try {
-    const row = await env.DB.prepare(
-      `SELECT value FROM settings WHERE key = 'wosm_members'`
-    ).first();
-    if (row && row.value) {
-      const parsed = JSON.parse(row.value);
-      if (Array.isArray(parsed)) memberCount = parsed.length;
-      else if (Array.isArray(parsed && parsed.items)) memberCount = parsed.items.length;
-    }
-  } catch (_) {
-    memberCount = 0;
-  }
-  const dataset = {
-    '@context': 'https://schema.org',
-    '@type': 'Dataset',
-    '@id': `${origin}/wosm-members`,
-    name: '세계스카우트연맹(WOSM) 회원국 현황',
-    alternateName: 'WOSM Member Countries Dataset',
-    description: '세계스카우트연맹 가입 회원 연맹 목록과 국가·지역연맹·가입 연도·등록 규모 등 구조화 데이터. 한국어·영어 명칭 병기.',
-    url: `${origin}/wosm-members`,
-    inLanguage: ['ko-KR', 'en'],
-    isAccessibleForFree: true,
-    license: `${origin}/editorial-policy`,
-    keywords: ['WOSM', '세계스카우트연맹', 'World Organization of the Scout Movement', '회원국', '지역연맹', 'Asia-Pacific', 'Europe', 'Africa'],
-    creator: { '@type': 'Organization', name: 'BP미디어', url: origin },
-    publisher: { '@type': 'Organization', name: 'BP미디어', url: origin },
-    variableMeasured: [
-      { '@type': 'PropertyValue', name: '등록 연맹 수', value: memberCount || undefined },
-      { '@type': 'PropertyValue', name: '국가명(한글)', description: 'country_ko' },
-      { '@type': 'PropertyValue', name: '국가명(영문)', description: 'country_en' },
-      { '@type': 'PropertyValue', name: '국가명(불어)', description: 'country_fr' },
-      { '@type': 'PropertyValue', name: '지역연맹', description: 'WOSM 6개 지역 분류' },
-      { '@type': 'PropertyValue', name: '가입 연도', description: '세계연맹 가입 연도' },
-      { '@type': 'PropertyValue', name: '등록 회원 수', description: 'Census-reported scout count' },
-    ],
-  };
-  return `\n<script type="application/ld+json">${safeJsonForScript(dataset)}</script>`;
-}
-
-function safeJsonForScript(value) {
-  return JSON.stringify(value)
-    .replace(/</g, '\\u003c')
-    .replace(/>/g, '\\u003e')
-    .replace(/&/g, '\\u0026');
+  const response = await queryRust({env, request:{url:'https://internal.invalid/'}}, 'public-schema', {key:'wosm-schema', origin});
+  if (!response.ok) throw new Error('Rust WOSM schema query failed');
+  return (await response.json()).html || '';
 }
 
 async function loadTranslationStrings(env) {
   try {
-    const row = await env.DB.prepare(`SELECT value FROM settings WHERE key = 'translations'`).first();
-    return normalizeTranslationStrings(row ? JSON.parse(row.value || '{}') : {});
+    const response = await queryRust({env, request:{url:'https://internal.invalid/'}}, 'home-setting', {key:'translations',normalize:true});
+    if (!response.ok) throw new Error('Rust translations query failed');
+    const {normalized, row, error} = await response.json();
+    if (normalized !== undefined) return normalized;
+    if (!row || error) return {};
+    const parsed = JSON.parse(row.value || '{}');
+    const source = parsed && typeof parsed === 'object' && !Array.isArray(parsed)
+      ? (parsed.strings && typeof parsed.strings === 'object' && !Array.isArray(parsed.strings) ? parsed.strings : parsed)
+      : {};
+    const sanitized = {};
+    Object.keys(source).forEach(key => { if (!key.startsWith('nav.')) sanitized[key] = source[key]; });
+    return sanitized;
   } catch {
     return {};
   }
@@ -264,7 +210,7 @@ function applyTranslationBootstrap(response, strings, runtime, navLabels) {
 
 async function loadPublicRuntime(env) {
   try {
-    const row = await env.DB.prepare(`SELECT value FROM settings WHERE key = 'public_runtime'`).first();
+    const row = await singleSetting(env, 'public_runtime');
     const parsed = row ? JSON.parse(row.value || '{}') : {};
     return parsed && typeof parsed === 'object' ? parsed : {};
   } catch {
@@ -290,64 +236,32 @@ function serializeForInlineScript(value) {
     .replace(/\u2029/g, '\\u2029');
 }
 
-function normalizeTranslationStrings(parsed) {
-  const source = parsed && typeof parsed === 'object' && !Array.isArray(parsed)
-    ? (parsed.strings && typeof parsed.strings === 'object' && !Array.isArray(parsed.strings) ? parsed.strings : parsed)
-    : {};
-  const sanitized = {};
-  Object.keys(source).forEach((key) => {
-    if (key.indexOf('nav.') === 0) return;
-    sanitized[key] = source[key];
-  });
-  return sanitized;
-}
-
 async function loadHomeSsrContent(env, origin, navLabelsPromise) {
   try {
+    const railsPromise = loadSsrRails(env, origin);
     const [navLabels, leadData, latestPosts, popularPosts, picksPosts, koreaPosts, aprPosts, wosmPosts, peoplePosts, footerAnalytics] = await Promise.all([
       navLabelsPromise,
       loadHomeLead(env, origin).catch(() => ({ post: null })),
       loadLatestPosts(env, origin, 4).catch(() => []),
       // 추천·인기는 /api/home 과 같은 기준을 써야 초기 페인트 후 목록이 바뀌지 않는다.
-      loadSsrRails(env, origin).then((r) => r.popular).catch(() => []),
-      loadSsrRails(env, origin).then((r) => r.picks).catch(() => []),
+      railsPromise.then((r) => r.popular).catch(() => []),
+      railsPromise.then((r) => r.picks).catch(() => []),
       loadPostList(env, origin, { category: 'korea', limit: 4 }).catch(() => []),
       loadPostList(env, origin, { category: 'apr', limit: 4 }).catch(() => []),
       loadPostList(env, origin, { category: 'wosm', limit: 4 }).catch(() => []),
       loadPostList(env, origin, { category: 'people', limit: 4 }).catch(() => []),
       loadFooterAnalytics(env).catch(() => ({
-        total_unique: 0,
-        total_pageviews: 0,
-        today_unique: 0,
+        totalVisitors: '0',
+        totalViews: '0',
+        todayVisitors: '0',
       })),
     ]);
 
-    const latestRail = latestPosts.slice(0, 3);
-    const popularRail = (popularPosts.length ? popularPosts : latestPosts).slice(0, 4);
-    const picksRail = picksPosts.slice(0, 4);
-    const leadPost = leadData.post || picksPosts[0] || latestPosts[0] || null;
-
-    // 메인 스토리 이미지는 홈 LCP candidate. 실제 이미지(placeholder 아님)일 때만 preload 후보로 노출.
-    // HTML 파싱 후 <img>에 도달해야 비로소 요청이 발생하던 것을 head에서 미리 hint해 200~500ms 단축.
-    const heroPreloadUrl = leadPost && leadPost.image_url && !leadPost.image_is_placeholder
-      ? String(leadPost.image_url)
-      : '';
+    const minis = await renderHomeParts(env,navLabels,{lead:leadData.post,latest:latestPosts,popular:popularPosts,picks:picksPosts,korea:koreaPosts,apr:aprPosts,wosm:wosmPosts,people:peoplePosts});
 
     const payload = {
-      lead: renderHomeLeadStory(leadPost, navLabels),
-      latest: renderMiniList(latestRail, navLabels, {}),
-      popular: renderMiniList(popularRail, navLabels, {}),
-      picks: renderMiniList(picksRail, navLabels, {}),
-      korea: renderMiniList(koreaPosts.slice(0, 4), navLabels, { hideCategoryChip: true }),
-      apr: renderMiniList(aprPosts.slice(0, 4), navLabels, { hideCategoryChip: true }),
-      wosm: renderMiniList(wosmPosts.slice(0, 4), navLabels, { hideCategoryChip: true }),
-      people: renderMiniList(peoplePosts.slice(0, 4), navLabels, { hideCategoryChip: true }),
-      heroPreloadUrl,
-      footer: {
-        totalVisitors: formatCount(footerAnalytics.total_unique),
-        totalViews: formatCount(footerAnalytics.total_pageviews),
-        todayVisitors: formatCount(footerAnalytics.today_unique),
-      },
+      ...minis,
+      footer: footerAnalytics,
     };
     if (hasMeaningfulHomeSsrPayload(payload)) return payload;
     const emergencyPosts = latestPosts.length ? latestPosts : await loadLatestPosts(env, origin, 4).catch(() => []);
@@ -355,6 +269,35 @@ async function loadHomeSsrContent(env, origin, navLabelsPromise) {
   } catch (err) {
     console.error('[home-ssr] failed to build fallback:', err);
     return buildEmergencyHomeSsrPayload([], {});
+  }
+}
+
+export async function renderHomeParts(env, navLabels, data, run = queryRust) {
+  const {lead,latest,popular,picks,korea,apr,wosm,people} = data;
+  try {
+    const sections = {
+      latest:miniInput(latest,navLabels,{}),popular:miniInput(popular,navLabels,{}),picks:miniInput(picks,navLabels,{}),
+      korea:miniInput(korea,navLabels,{hideCategoryChip:true}),apr:miniInput(apr,navLabels,{hideCategoryChip:true}),
+      wosm:miniInput(wosm,navLabels,{hideCategoryChip:true}),people:miniInput(people,navLabels,{hideCategoryChip:true}),
+    };
+    const categoryLabels = Object.fromEntries(['korea','apr','wosm','people'].map(key=>[key,String(getNavLabel(navLabels,key,'ko') || '')]));
+    const leadCandidates = [lead,picks[0],latest[0]].map(post=>leadInput(post,navLabels));
+    const response = await run({env,request:{url:'https://internal.invalid/'}}, 'home-ssr-minis', {sections,categoryLabels,leadCandidates});
+    if (!response.ok) throw new Error('Rust home SSR rendering failed');
+    const parts = await response.json();
+    if (!['lead','latest','popular','picks','korea','apr','wosm','people','heroPreloadUrl'].every(key=>typeof parts[key] === 'string')) throw new Error('Invalid Rust home SSR response');
+    return parts;
+  } catch (error) {
+    console.error('[home-ssr] Rust rendering failed:',error);
+    const post = lead || picks[0] || latest[0] || null;
+    const html = (rows,options={}) => renderMiniList(rows,navLabels,options).toWellFormed();
+    return {
+      lead:renderHomeLeadStory(post,navLabels).toWellFormed(),
+      latest:html(latest.slice(0,3)),popular:html((popular.length ? popular : latest).slice(0,4)),picks:html(picks.slice(0,4)),
+      korea:html(korea.slice(0,4),{hideCategoryChip:true}),apr:html(apr.slice(0,4),{hideCategoryChip:true}),
+      wosm:html(wosm.slice(0,4),{hideCategoryChip:true}),people:html(people.slice(0,4),{hideCategoryChip:true}),
+      heroPreloadUrl:post && post.image_url && !post.image_is_placeholder ? String(post.image_url) : '',
+    };
   }
 }
 
@@ -413,91 +356,52 @@ function applyHomeSsrContent(response, payload) {
 }
 
 async function loadFooterAnalytics(env) {
-  const [todayUnique, totalUnique, totalViews] = await Promise.all([
-    scalar(env, `SELECT COUNT(DISTINCT viewer_key) AS count
-                   FROM site_visits
-                  WHERE path NOT LIKE '/api/%'
-                    AND path NOT IN ('/admin', '/admin.html')
-                    AND datetime(visited_at, '+9 hours') >= datetime(date('now', '+9 hours'))`),
-    scalar(env, `SELECT COUNT(DISTINCT viewer_key) AS count
-                   FROM site_visits
-                  WHERE path NOT LIKE '/api/%'
-                    AND path NOT IN ('/admin', '/admin.html')`),
-    scalar(env, `SELECT COUNT(*) AS count
-                   FROM site_visits
-                  WHERE path NOT LIKE '/api/%'
-                    AND path NOT IN ('/admin', '/admin.html')`),
-  ]);
-  return {
-    today_unique: todayUnique,
-    total_unique: totalUnique,
-    total_pageviews: totalViews,
-  };
+  const context = { env, request: { url: 'https://internal.invalid/' } };
+  const response = await queryRust(context, 'home-footer-analytics', {strict:true});
+  if (!response.ok) throw new Error('Rust SSR footer query failed');
+  const {ssr_footer} = await response.json();
+  if (!ssr_footer || !['totalVisitors','totalViews','todayVisitors'].every(key => typeof ssr_footer[key] === 'string')) throw new Error('Invalid Rust SSR footer');
+  return ssr_footer;
 }
 
+const SSR_CARD_COLUMNS = 'id, category, title, subtitle, content, image_url, created_at, publish_at, tag, author';
+
 async function loadHomeLead(env, origin) {
-  const row = await env.DB.prepare(`SELECT value FROM settings WHERE key = 'home_lead_post'`).first();
+  const row = await singleSetting(env, 'home_lead_post');
   const postId = row ? parseInt(row.value, 10) : 0;
   if (!postId) return { post: null };
-  const post = await env.DB.prepare(
-    `SELECT id, category, title, subtitle, content, image_url, created_at, publish_at, tag, author
-       FROM posts
-      WHERE id = ? AND published = 1`
-  ).bind(postId).first();
-  return { post: post ? serializePostImage(post, origin) : null };
+  const rust = await queryRust({env, request:{url:'https://internal.invalid/'}}, 'home-lead-post', {id:postId, columns:SSR_CARD_COLUMNS, origin});
+  if (!rust.ok) throw new Error('Rust SSR lead query failed');
+  const { post } = await rust.json();
+  return { post };
 }
 
 async function loadLatestPosts(env, origin, limit) {
-  const safeLimit = Math.max(1, Math.min(10, parseInt(limit || 4, 10)));
-  const { results } = await env.DB.prepare(
-    `SELECT id, category, title, subtitle, content, image_url, created_at, publish_at, tag, author
-       FROM posts
-      WHERE published = 1
-      ORDER BY ${PUBLIC_DATE_EXPR} DESC, id DESC
-      LIMIT ?`
-  ).bind(safeLimit).all();
-  return (results || []).map((post) => serializePostImage(post, origin));
+  return loadPostList(env, origin, { limit });
 }
 
 /**
  * SSR 폴백용 추천·인기 레일. functions/_shared/home-rails.js 의 기준을 그대로 쓴다.
  * 요청 안에서 한 번만 계산해 두 섹션이 나눠 쓴다.
  */
-function loadSsrRails(env, origin) {
-  if (!env.__ssrRailsPromise) {
-    env.__ssrRailsPromise = (async () => {
-      const { pickIds, popularIds } = await selectHomeRailIds(env, 4);
-      const ids = [...new Set([...pickIds, ...popularIds])];
-      const cards = await hydrateByIds(env, ids, `id, category, title, subtitle, content, image_url, created_at, publish_at, tag, author`, (row) => serializePostImage(row, origin));
-      const byId = new Map(cards.map((c) => [c.id, c]));
-      return {
-        picks: pickIds.map((id) => byId.get(id)).filter(Boolean),
-        popular: popularIds.map((id) => byId.get(id)).filter(Boolean),
-      };
-    })();
-  }
-  return env.__ssrRailsPromise;
-}
-async function loadPostList(env, origin, opts = {}) {
-  const conditions = ['published = 1'];
-  const bindings = [];
-  if (opts.category) {
-    conditions.push('category = ?');
-    bindings.push(opts.category);
-  }
-  if (opts.featured) conditions.push('featured = 1');
-  const safeLimit = Math.max(1, Math.min(10, parseInt(opts.limit || 4, 10)));
-  const { results } = await env.DB.prepare(
-    `SELECT id, category, title, subtitle, content, image_url, created_at, publish_at, tag, author
-       FROM posts
-      WHERE ${conditions.join(' AND ')}
-      ORDER BY ${PUBLIC_DATE_EXPR} DESC, id DESC
-      LIMIT ?`
-  ).bind(...bindings, safeLimit).all();
-  return (results || []).map((post) => serializePostImage(post, origin));
+async function loadSsrRails(env, origin) {
+  const rust = await queryRust({env,request:{url:'https://internal.invalid/'}}, 'home-rails-cards', {limit:4,weights:POPULAR_WEIGHTS,columns:SSR_CARD_COLUMNS,origin});
+  if (!rust.ok) throw new Error('Rust SSR rails query failed');
+  return rust.json();
 }
 
-function renderHomeLeadStory(post, navLabels) {
+async function loadPostList(env, origin, opts = {}) {
+  const limit = Math.max(1, Math.min(10, parseInt(opts.limit || 4, 10)));
+  const rust = await queryRust({env, request:{url:'https://internal.invalid/'}}, 'home-posts', {
+    category: opts.category || null, featured: !!opts.featured, limit,
+    columns: SSR_CARD_COLUMNS, publicDateExpr: PUBLIC_DATE_EXPR, origin,
+  });
+  if (!rust.ok) throw new Error('Rust SSR posts query failed');
+  const { posts } = await rust.json();
+  return posts || [];
+}
+
+export function renderHomeLeadStory(post, navLabels) {
   if (!post) return '<div class="mini-empty">대표 기사를 준비 중입니다</div>';
   const excerpt = escapeHtml(getPostExcerpt(post, 220));
   const subtitle = escapeHtml(String(post.subtitle || '').trim());
@@ -530,7 +434,16 @@ function renderHomeLeadStory(post, navLabels) {
   );
 }
 
-function renderMiniList(posts, navLabels, options) {
+export function miniInput(posts, navLabels, options) {
+  return posts.map(post=>({id:String(post.id),title:String(post.title || ''),image:String(post.image_url || ''),placeholder:!!post.image_is_placeholder,category:String(post.category || 'korea'),tag:String(post.tag || ''),hide_category:!!options.hideCategoryChip,date:String(post.publish_at || post.created_at || '')}));
+}
+
+export function leadInput(post, navLabels) {
+  if (!post) return null;
+  return {...miniInput([post],navLabels,{})[0],subtitle:String(post.subtitle || '').trim(),author:String(post.author || ''),has_author:!!post.author,content:String(post.content || '')};
+}
+
+export function renderMiniList(posts, navLabels, options) {
   const opts = options || {};
   if (!Array.isArray(posts) || !posts.length) {
     return '<div class="mini-empty">게시글이 없습니다</div>';
@@ -564,20 +477,6 @@ function buildEmergencyHomeSsrPayload(posts, navLabels) {
       todayVisitors: '0',
     },
   };
-}
-
-function formatCount(value) {
-  const number = Number(value || 0);
-  if (!Number.isFinite(number)) return '0';
-  return new Intl.NumberFormat('ko-KR').format(number);
-}
-
-async function scalar(env, sql) {
-  const row = await env.DB.prepare(sql).first();
-  if (!row) return 0;
-  const value = row.count ?? row.total ?? row.n ?? Object.values(row)[0] ?? 0;
-  const num = Number(value);
-  return Number.isFinite(num) ? num : 0;
 }
 
 function renderMiniItem(post, navLabels, options) {

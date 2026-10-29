@@ -1,3 +1,4 @@
+import { singleSetting, queryRust } from '../../_shared/rust-server.js';
 import { verifyTokenRole, extractToken } from '../../_shared/auth.js';
 import { gateMenuAccess } from '../../_shared/admin-permissions.js';
 import { recordSettingChange } from '../../_shared/settings-audit.js';
@@ -14,10 +15,8 @@ const DEFAULT_CALENDAR_TAGS = [
 
 export async function onRequestGet({ request, env }) {
   try {
-    const row = await env.DB.prepare(
-      `SELECT value FROM settings WHERE key = 'calendar_tags'`
-    ).first();
-    const items = normalizeCalendarTags(row ? JSON.parse(row.value) : DEFAULT_CALENDAR_TAGS);
+    const row = await singleSetting(env, 'calendar_tags');
+    const items = await normalizeCalendarTagsRust(row ? JSON.parse(row.value) : DEFAULT_CALENDAR_TAGS, env);
     return json({ items });
   } catch (err) {
     console.error('GET /api/settings/calendar-tags error:', err);
@@ -32,13 +31,9 @@ export async function onRequestPut({ request, env }) {
   try { body = await request.json(); } catch (_) {
     return json({ error: 'Invalid JSON' }, 400);
   }
-  const items = normalizeCalendarTags(body && body.items);
+  const items = await normalizeCalendarTagsRust(body && body.items, env);
   try {
-    const prevRow = await env.DB.prepare(`SELECT value FROM settings WHERE key = 'calendar_tags'`).first();
-    await env.DB.prepare(
-      `INSERT INTO settings (key, value) VALUES ('calendar_tags', ?)
-       ON CONFLICT(key) DO UPDATE SET value = excluded.value`
-    ).bind(JSON.stringify(items)).run();
+    const prevRow = await singleSetting(env, 'calendar_tags', 'put', JSON.stringify(items));
     await recordSettingChange(env, {
       key: 'calendar_tags',
       previousValue: prevRow && prevRow.value,
@@ -53,7 +48,7 @@ export async function onRequestPut({ request, env }) {
   }
 }
 
-function normalizeCalendarTags(items) {
+export function normalizeCalendarTags(items) {
   const seen = new Set();
   return (Array.isArray(items) ? items : [])
     .map(function (item) { return String(item || '').trim(); })
@@ -63,6 +58,23 @@ function normalizeCalendarTags(items) {
       return true;
     })
     .slice(0, 50);
+}
+
+export async function normalizeCalendarTagsRust(raw, env = {}, run = queryRust) {
+  const fallback = () => normalizeCalendarTags(raw);
+  try {
+    const items = (Array.isArray(raw) ? raw : []).map(item => String(item || ''));
+    // Rust strings cannot represent unpaired UTF-16 code units. Keep the exact
+    // JavaScript behavior for such legacy data without passing it through Wasm.
+    if (items.some(item => /[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/.test(item))) return fallback();
+    const response = await run({env, request:{url:'https://internal.invalid/'}}, 'calendar-tags-normalize', {items});
+    if (!response.ok) return fallback();
+    const result = await response.json();
+    if (!Array.isArray(result.items) || result.items.length > 50 ||
+        !result.items.every(item => typeof item === 'string' && item.length > 0 && item.length <= 40 && item === item.trim()) ||
+        new Set(result.items).size !== result.items.length) return fallback();
+    return result.items;
+  } catch { return fallback(); }
 }
 
 function json(data, status = 200) {

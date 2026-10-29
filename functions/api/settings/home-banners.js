@@ -1,3 +1,4 @@
+import { queryRust } from '../../_shared/rust-server.js';
 /**
  * 홈 팝업 배너 관리 API
  *
@@ -118,22 +119,9 @@ export async function onRequestPut({ env, request }) {
     // 전체 교체 — 기존 행을 지우고 새로 넣는다.
     const nextRev = currentRev + 1;
     const claim = String(nextRev) + '|' + crypto.randomUUID();
-    const stmts = [
-      env.DB.prepare(`INSERT INTO settings(key, value) VALUES('home_banners_rev', ?)
-        ON CONFLICT(key) DO UPDATE SET value = excluded.value WHERE CAST(settings.value AS INTEGER) = ?`).bind(claim, currentRev),
-      env.DB.prepare(`DELETE FROM home_banners WHERE EXISTS(SELECT 1 FROM settings WHERE key = 'home_banners_rev' AND value = ?)`).bind(claim),
-    ];
-    rows.forEach((r) => {
-      stmts.push(
-        env.DB.prepare(
-          `INSERT INTO home_banners (image_url, link_url, title, sort_order, active, starts_at, ends_at, updated_at)
-           SELECT ?, ?, ?, ?, ?, ?, ?, datetime('now') WHERE EXISTS(SELECT 1 FROM settings WHERE key = 'home_banners_rev' AND value = ?)`
-        ).bind(r.image_url, r.link_url || null, r.title, r.sort_order, r.active, r.starts_at || null, r.ends_at || null, claim)
-      );
-    });
-    stmts.push(env.DB.prepare(`UPDATE settings SET value = ? WHERE key = 'home_banners_rev' AND value = ?`).bind(String(nextRev), claim));
-    const writes = await env.DB.batch(stmts);
-    if (!writes[0].meta || writes[0].meta.changes !== 1) { await cleanupOwnedImages(); return json({ error: '동시 홈 배너 변경이 감지되었습니다. 입력을 보존하고 최신 배너를 확인해주세요.' }, 409); }
+    const response = await queryRust({env, request}, 'banner-commit', {currentRev, nextRev:String(nextRev), claim, rows});
+    if (!response.ok) throw new Error('Rust banner commit failed');
+    if (!(await response.json()).committed) { await cleanupOwnedImages(); return json({ error: '동시 홈 배너 변경이 감지되었습니다. 입력을 보존하고 최신 배너를 확인해주세요.' }, 409); }
 
     await recordSettingChange(env, {
       key: 'home_banners',
@@ -156,11 +144,10 @@ export async function onRequestPut({ env, request }) {
 }
 
 async function readHomeBannerState(env) {
-  const reads = await env.DB.batch([
-    env.DB.prepare(`SELECT id, image_url, link_url, title, sort_order, active, starts_at, ends_at, created_at, updated_at FROM home_banners ORDER BY sort_order ASC, id ASC`),
-    env.DB.prepare(`SELECT value FROM settings WHERE key = 'home_banners_rev'`),
-  ]);
-  const banners = (reads[0].results || []).map((row) => ({ ...serializeBanner(row), created_at: row.created_at, updated_at: row.updated_at }));
-  const revision = parseInt(reads[1].results && reads[1].results[0] && reads[1].results[0].value, 10) || 0;
+  const response = await queryRust({env, request:{url:'https://internal.invalid/'}}, 'banner-snapshot', {});
+  if (!response.ok) throw new Error('Rust banner snapshot failed');
+  const result = await response.json();
+  const banners = (result.banners || []).map((row) => ({ ...serializeBanner(row), created_at: row.created_at, updated_at: row.updated_at }));
+  const revision = parseInt(result.revisionRows && result.revisionRows[0] && result.revisionRows[0].value, 10) || 0;
   return { banners, revision };
 }

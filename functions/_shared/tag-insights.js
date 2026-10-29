@@ -1,3 +1,5 @@
+import { queryRust } from './rust-server.js';
+
 /**
  * functions/_shared/tag-insights.js
  *
@@ -15,21 +17,7 @@
 
 export function buildTagInsights(rows, options) {
   const opts = options || {};
-  const posts = (Array.isArray(rows) ? rows : [])
-    .filter((r) => {
-      const pub = r ? r.published : 1;
-      return Number(pub == null ? 1 : pub) === 1;
-    })
-    .map((r) => ({
-      id: Number(r.id || 0),
-      title: String(r.title || ''),
-      category: String(r.category || ''),
-      publish_at: r.publish_at || r.created_at || '',
-      created_at: r.created_at || '',
-      views: Number(r.views || 0),
-      header_tokens: splitCommaTokens(r.tag),
-      meta_tokens: splitCommaTokens(r.meta_tags),
-    }));
+  const posts = prepareTagInsights(rows);
 
   const statistics = buildStatistics(posts);
   const headerRanking = buildHeaderRanking(posts);
@@ -50,6 +38,53 @@ export function buildTagInsights(rows, options) {
     coverage,
     suggestions,
   };
+}
+
+// Both the API and offline report use this adapter and the same Wasm algorithms.
+// Preserve the established result when Wasm cannot represent or process input.
+export async function buildTagInsightsRust(rows, env = {}) {
+  try {
+    const posts = prepareTagInsights(rows);
+    const context = {env, request: {url: 'https://internal.invalid/'}};
+    const [statisticsResponse, analysisResponse] = await Promise.all([
+      queryRust(context, 'tag-insight-statistics', {posts}),
+      queryRust(context, 'tag-insight-rankings', {posts}),
+    ]);
+    if (!statisticsResponse.ok || !analysisResponse.ok) throw new Error('Rust tag analysis unavailable');
+    const [statistics, analysis] = await Promise.all([statisticsResponse.json(), analysisResponse.json()]);
+    if (!statistics || !Array.isArray(statistics.category_avg) || !Array.isArray(statistics.missing_posts) ||
+        !analysis || !Array.isArray(analysis.header_ranking) || !Array.isArray(analysis.meta_ranking) ||
+        !Array.isArray(analysis.graph?.nodes) || !Array.isArray(analysis.graph?.links) ||
+        !Array.isArray(analysis.health?.isolated_tags) || !Array.isArray(analysis.health?.duplicate_suspects) ||
+        !Array.isArray(analysis.health?.isolated_clusters) || !Array.isArray(analysis.health?.overly_common) ||
+        !Array.isArray(analysis.coverage?.by_header) || !Array.isArray(analysis.coverage?.monthly) ||
+        !Array.isArray(analysis.coverage?.gaps) || !Array.isArray(analysis.suggestions?.hub_clusters) ||
+        !Array.isArray(analysis.suggestions?.thin_headers) || !Array.isArray(analysis.suggestions?.suggestions) ||
+        analysis.suggestions?.human_review_required !== true) throw new Error('Invalid Rust tag analysis');
+    return { generated_at: new Date().toISOString(), statistics, ...analysis };
+  } catch {
+    return buildTagInsights(rows);
+  }
+}
+
+export function prepareTagInsights(rows) {
+  const posts = (Array.isArray(rows) ? rows : [])
+    .filter((r) => {
+      const pub = r ? r.published : 1;
+      return Number(pub == null ? 1 : pub) === 1;
+    })
+    .map((r) => ({
+      id: Number(r.id || 0),
+      title: String(r.title || ''),
+      category: String(r.category || ''),
+      publish_at: r.publish_at || r.created_at || '',
+      created_at: r.created_at || '',
+      views: Number(r.views || 0),
+      header_tokens: splitCommaTokens(r.tag),
+      meta_tokens: splitCommaTokens(r.meta_tags),
+    }));
+
+  return posts;
 }
 
 // ───────────── utilities ─────────────

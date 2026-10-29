@@ -1,3 +1,4 @@
+import { queryRust } from '../../../_shared/rust-server.js';
 /**
  * BP미디어 · Post Cover Image
  *
@@ -7,7 +8,7 @@
  * Used as the og:image source for link preview cards.
  */
 
-export async function onRequestGet({ params, env }) {
+export async function onRequestGet({ params, env, request }) {
   const id = parseInt(params.id, 10);
   if (!Number.isFinite(id) || id < 1) {
     return new Response(null, { status: 404 });
@@ -15,8 +16,9 @@ export async function onRequestGet({ params, env }) {
 
   let post;
   try {
-    post = await env.DB.prepare('SELECT image_url FROM posts WHERE id = ? AND published = 1')
-      .bind(id).first();
+    const response = await queryRust({env,request}, 'post-cover', {id});
+    if (!response.ok) throw new Error('Rust post cover lookup failed');
+    post = (await response.json()).post;
   } catch (err) {
     return new Response(null, { status: 500 });
   }

@@ -14,7 +14,8 @@
  * 기존과 동일하게 원본이 공유되고, 켜는 순간 초점 크롭이 자동 적용된다. 별도 플래그·
  * 재배포 불필요.
  */
-import { normalizeImageFrame } from '../../_shared/image-frame.js';
+import { queryRust } from '../../_shared/rust-server.js';
+import { normalizeImageFrameRust } from '../../_shared/image-frame.js';
 
 const OG_WIDTH = 1200;
 const OG_HEIGHT = 630;
@@ -27,16 +28,16 @@ export async function onRequestGet({ params, env, request }) {
 
   let post;
   try {
-    post = await env.DB.prepare(
-      'SELECT image_url, image_frame, published FROM posts WHERE id = ?'
-    ).bind(id).first();
+    const response = await queryRust({request, env}, 'post-og-cover', {id});
+    if (!response.ok) throw new Error('Rust post cover query failed');
+    ({ post } = await response.json());
   } catch (err) {
     console.error('GET /api/og-image/:id DB error:', err);
     return redirectDefault(origin);
   }
 
   // 비공개 글이나 대표 이미지가 없으면 사이트 기본 공유 이미지로.
-  if (!post || Number(post.published || 0) !== 1 || !post.image_url) {
+  if (!post || !post.image_url) {
     return redirectDefault(origin);
   }
 
@@ -49,7 +50,7 @@ export async function onRequestGet({ params, env, request }) {
     source = `${origin}/api/posts/${id}/image`;
   }
 
-  const frame = normalizeImageFrame(post.image_frame) || { x: 50, y: 50 };
+  const frame = await normalizeImageFrameRust(post.image_frame, env) || { x: 50, y: 50 };
   const gravity = { x: clamp01(frame.x / 100), y: clamp01(frame.y / 100) };
 
   try {

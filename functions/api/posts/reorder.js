@@ -1,3 +1,4 @@
+import { queryRust } from '../../_shared/rust-server.js';
 /**
  * BP미디어 · Post Reorder
  *
@@ -26,11 +27,8 @@ export async function onRequestPut({ request, env }) {
   const ids = order.map(id => parseInt(id, 10)).filter(Number.isFinite);
 
   try {
-    // Batch update sort_order for each post
-    const stmts = ids.map((id, idx) =>
-      env.DB.prepare(`UPDATE posts SET sort_order = ? WHERE id = ?`).bind(idx, id)
-    );
-    await env.DB.batch(stmts);
+    const response = await queryRust({env,request}, 'post-reorder', {ids});
+    if (!response.ok) throw new Error('Rust post reorder failed');
     return json({ success: true, count: ids.length });
   } catch (err) {
     console.error('PUT /api/posts/reorder error:', err);
@@ -46,7 +44,8 @@ export async function onRequestDelete({ request, env }) {
   }
 
   try {
-    await env.DB.prepare(`UPDATE posts SET sort_order = NULL`).run();
+    const response = await queryRust({env,request}, 'post-reorder-reset', {});
+    if (!response.ok) throw new Error('Rust post reorder reset failed');
     return json({ success: true });
   } catch (err) {
     return json({ error: 'Database error' }, 500);

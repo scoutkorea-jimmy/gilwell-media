@@ -12,6 +12,7 @@ import { loadAdminSession } from '../../../_shared/admin-permissions.js';
 import { generateSecret, otpauthUri, verifyTotp, matchBackupCode } from '../../../_shared/totp.js';
 import { readCookie } from '../../../_shared/auth.js';
 import { OTP_COOKIE, readOtpToken } from '../../../_shared/otp-session.js';
+import { queryRust } from '../../../_shared/rust-server.js';
 
 const ISSUER = 'BP미디어 관리자';
 
@@ -33,7 +34,9 @@ async function requireSelf(request, env) {
 export async function onRequestGet({ request, env }) {
   const { session, error } = await requireSelf(request, env);
   if (error) return error;
-  const row = await env.DB.prepare(`SELECT totp_enabled FROM admin_users WHERE id = ?`).bind(session.uid).first();
+  const lookup = await queryRust({request, env}, 'admin-user-read', {operation:'totp-enabled', id:session.uid});
+  if (!lookup.ok) throw new Error('Rust TOTP lookup failed');
+  const {row} = await lookup.json();
   const enrolled = !!(row && Number(row.totp_enabled));
   let otpActive = false;
   if (enrolled) {
@@ -47,14 +50,15 @@ export async function onRequestPost({ request, env }) {
   const { session, error } = await requireSelf(request, env);
   if (error) return error;
   // 이미 활성화된 경우 재시작 금지(해제 후 다시).
-  const row = await env.DB.prepare(`SELECT totp_enabled FROM admin_users WHERE id = ?`).bind(session.uid).first();
+  const lookup = await queryRust({request, env}, 'admin-user-read', {operation:'totp-enabled', id:session.uid});
+  if (!lookup.ok) throw new Error('Rust TOTP lookup failed');
+  const {row} = await lookup.json();
   if (row && Number(row.totp_enabled)) {
     return json({ error: 'already_enabled', reason: '이미 2단계 인증이 켜져 있습니다. 먼저 해제하세요.' }, 409);
   }
   const secret = generateSecret(20);
-  await env.DB.prepare(
-    `UPDATE admin_users SET totp_secret = ?, totp_enabled = 0, totp_backup_codes = NULL, updated_at = datetime('now') WHERE id = ?`
-  ).bind(secret, session.uid).run();
+  const saved = await queryRust({request, env}, 'admin-account-mutation', {operation:'totp-start', id:session.uid, value:secret});
+  if (!saved.ok) throw new Error('Rust TOTP setup failed');
   const otpauth = otpauthUri({ secret, account: session.username || ('user-' + session.uid), issuer: ISSUER });
   return json({ secret, secret_grouped: group4(secret), otpauth, issuer: ISSUER });
 }
@@ -65,9 +69,9 @@ export async function onRequestDelete({ request, env }) {
   let body = {};
   try { body = await request.json(); } catch (_) { body = {}; }
   const code = String(body.code || '').trim();
-  const row = await env.DB.prepare(
-    `SELECT totp_secret, totp_enabled, totp_backup_codes FROM admin_users WHERE id = ?`
-  ).bind(session.uid).first();
+  const lookup = await queryRust({request, env}, 'admin-user-read', {operation:'totp-full', id:session.uid});
+  if (!lookup.ok) throw new Error('Rust TOTP lookup failed');
+  const {row} = await lookup.json();
   if (!row || !Number(row.totp_enabled) || !row.totp_secret) {
     return json({ error: 'not_enrolled', reason: '2단계 인증이 설정되어 있지 않습니다.' }, 400);
   }
@@ -75,8 +79,7 @@ export async function onRequestDelete({ request, env }) {
   let ok = await verifyTotp(row.totp_secret, code, now, { window: 1 });
   if (!ok) ok = await matchBackupCode(row.totp_backup_codes, code) != null;
   if (!ok) return json({ error: 'bad_code', reason: '코드가 올바르지 않습니다.' }, 401);
-  await env.DB.prepare(
-    `UPDATE admin_users SET totp_secret = NULL, totp_enabled = 0, totp_backup_codes = NULL, totp_enrolled_at = NULL, updated_at = datetime('now') WHERE id = ?`
-  ).bind(session.uid).run();
+  const saved = await queryRust({request, env}, 'admin-account-mutation', {operation:'totp-disable', id:session.uid});
+  if (!saved.ok) throw new Error('Rust TOTP disable failed');
   return json({ ok: true });
 }

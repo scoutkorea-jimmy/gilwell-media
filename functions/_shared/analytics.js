@@ -1,3 +1,4 @@
+import { queryRust } from './rust-server.js';
 import { getViewerKey, isLikelyNonHumanRequest } from './engagement.js';
 import { resolveCountryLabelKo } from './country-code-labels.js';
 
@@ -8,44 +9,37 @@ export async function recordSiteVisit(request, env, payload) {
   const viewerKey = await getViewerKey(request, env);
   if (!viewerKey) return { recorded: false };
 
-  const path = sanitizePath(payload && payload.path);
-  if (!path || path.startsWith('/api/') || path === '/admin.html' || path === '/admin') {
-    return { recorded: false };
-  }
-
-  const referrer = sanitizeUrl(payload && payload.referrer);
-  const currentUrl = sanitizeUrl(payload && payload.current_url);
-  const referrerHost = deriveReferrerHost(referrer, request.url);
-  const utm = deriveUtmFields(currentUrl);
-  const geo = deriveRequestGeo(request);
-  await ensureSiteVisitColumns(env);
-
   const visitBucket = String(Math.floor(Date.now() / (VISIT_WINDOW_MINUTES * 60 * 1000)));
-  const insert = await env.DB.prepare(
-    `INSERT OR IGNORE INTO site_visits (
-      viewer_key, path, referrer_host, referrer_url, utm_source, utm_medium, utm_campaign, visited_bucket,
-      country_code, country_name, city_name, region_code, continent_code, latitude, longitude
-    )
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
-  ).bind(
-    viewerKey,
-    path,
-    referrerHost,
-    referrer,
-    utm.source,
-    utm.medium,
-    utm.campaign,
-    visitBucket,
-    geo.country_code,
-    geo.country_name,
-    geo.city_name,
-    geo.region_code,
-    geo.continent_code,
-    geo.latitude,
-    geo.longitude
-  ).run();
-
-  return { recorded: !!insert.meta?.changes, viewer_key: viewerKey };
+  const values = [viewerKey, null, null, null, null, null, null, visitBucket, null, null, null, null, null, null, null];
+  const rawReferrer = typeof payload?.referrer === 'string' ? payload.referrer : null;
+  const rawCurrent = typeof payload?.current_url === 'string' ? payload.current_url : null;
+  const hasUnpaired = value => value && /[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/.test(value);
+  const cf = request && request.cf && typeof request.cf === 'object' ? request.cf : {};
+  const geoRaw = Object.fromEntries(['country','city','regionCode','continent','latitude','longitude'].map(key => [key, cf[key] ?? null]));
+  const safeGeo = Object.values(geoRaw).every(value => value == null || ['string','number','boolean'].includes(typeof value) && !(typeof value === 'string' && hasUnpaired(value)));
+  if (!safeGeo) {
+    const geo = deriveRequestGeo(request);
+    const encode = value => hasUnpaired(value) ? {utf16: Array.from({length:value.length}, (_, i) => value.charCodeAt(i))} : value;
+    values.splice(8, 7, ...[geo.country_code,geo.country_name,geo.city_name,geo.region_code,geo.continent_code,geo.latitude,geo.longitude].map(encode));
+  }
+  const context = { request, env };
+  const rawPath = payload && payload.path || null;
+  const pathUtf16 = typeof rawPath === 'string' && hasUnpaired(rawPath)
+    ? Array.from({length:rawPath.length}, (_, i) => rawPath.charCodeAt(i)) : null;
+  const path = pathUtf16 ? null : rawPath;
+  if (!hasUnpaired(rawReferrer) && !hasUnpaired(rawCurrent)) {
+    const rust = await queryRust(context, 'site-visit-record', {path, path_utf16:pathUtf16, values, geo:safeGeo ? geoRaw : null, urls:{referrer:rawReferrer,current_url:rawCurrent,request_url:request.url}});
+    if (!rust.ok) throw new Error('Rust site visit failed');
+    return rust.json();
+  }
+  const referrer = sanitizeUrl(rawReferrer);
+  const currentUrl = sanitizeUrl(rawCurrent);
+  const utm = deriveUtmFields(currentUrl);
+  const encodeUtm = value => hasUnpaired(value) ? {utf16: Array.from({length:value.length}, (_, i) => value.charCodeAt(i))} : value;
+  values.splice(2, 5, deriveReferrerHost(referrer, request.url), referrer, encodeUtm(utm.source), encodeUtm(utm.medium), encodeUtm(utm.campaign));
+  const rust = await queryRust(context, 'site-visit-record', {path, path_utf16:pathUtf16, values, geo:safeGeo ? geoRaw : null});
+  if (!rust.ok) throw new Error('Rust site visit failed');
+  return rust.json();
 }
 
 export function sanitizePath(path) {
@@ -100,27 +94,8 @@ function sanitizeUtmValue(value) {
 
 export async function ensureSiteVisitColumns(env) {
   if (!env || !env.DB) return true;
-  const pragma = await env.DB.prepare(`PRAGMA table_info(site_visits)`).all().catch(function () {
-    return { results: [] };
-  });
-  const columns = new Set((pragma.results || []).map(function (row) { return row.name; }));
-  const additions = [
-    ['country_code', 'TEXT'],
-    ['country_name', 'TEXT'],
-    ['city_name', 'TEXT'],
-    ['region_code', 'TEXT'],
-    ['continent_code', 'TEXT'],
-    ['latitude', 'REAL'],
-    ['longitude', 'REAL'],
-  ];
-  for (const entry of additions) {
-    const columnName = entry[0];
-    const sqlType = entry[1];
-    if (columns.has(columnName)) continue;
-    await env.DB.prepare(`ALTER TABLE site_visits ADD COLUMN ${columnName} ${sqlType}`).run();
-  }
-  await env.DB.prepare(`CREATE INDEX IF NOT EXISTS idx_site_visits_country_code ON site_visits(country_code)`).run().catch(function () {});
-  await env.DB.prepare(`CREATE INDEX IF NOT EXISTS idx_site_visits_city_name ON site_visits(city_name)`).run().catch(function () {});
+  const response = await queryRust({env, request:{url:'https://internal.invalid/'}}, 'site-visit-ensure', {});
+  if (!response.ok) throw new Error('Rust visit schema setup failed');
   return true;
 }
 

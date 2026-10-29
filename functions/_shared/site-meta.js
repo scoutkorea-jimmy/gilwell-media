@@ -1,5 +1,6 @@
 import { SITE_BRAND_ALIASES, SITE_BRAND_NAME, SITE_DOMAIN_LABEL, DEFAULT_CONTACT_EMAILS, SITE_ORIGIN } from './site-copy.mjs';
 import { SITE_PAGE_KEY_BY_PATH } from './site-structure.mjs';
+import { singleSetting, queryRust } from './rust-server.js';
 
 export const ADSENSE_ACCOUNT = 'ca-pub-9517793409283448';
 export const NAVER_SITE_VERIFICATION = '67d80b07cdf98761a3adbe635c48cd8691a4b598';
@@ -8,11 +9,11 @@ const DEFAULT_SHARE_IMAGE_WIDTH = 1200;
 const DEFAULT_SHARE_IMAGE_HEIGHT = 630;
 const DEFAULT_SHARE_IMAGE_ALT = 'BP미디어 스카우트 뉴스 아카이브 대표 이미지';
 const HOME_SEARCH_DESCRIPTION = 'BP미디어는 스카우트 뉴스와 활동 기록을 전하는 독립 미디어 아카이브입니다. 한국스카우트연맹, APR, WOSM, 스카우트 인물, 용어집까지 bpmedia.net에서 한 번에 확인할 수 있습니다.';
-const LEGACY_HOME_DESCRIPTIONS = [
+export const LEGACY_HOME_DESCRIPTIONS = [
   '스카우트 운동의 소식을 기록하는 독립 미디어입니다.',
   'BP미디어는 한국스카우트연맹 및 세계스카우트연맹의 공식 채널이 아닙니다. 본 미디어는 스카우트 네트워크의 자발적인 봉사로 운영됩니다.',
 ];
-const LEGACY_HOME_TITLES = [
+export const LEGACY_HOME_TITLES = [
   'BP미디어 · bpmedia.net',
 ];
 // 운영·편집 책임자 인물 노드. `@id` 는 /about 의 전체 정의와 **반드시 같아야** 한다 —
@@ -127,11 +128,24 @@ const DEFAULT_SITE_META = {
 
 export async function loadSiteMeta(env) {
   try {
-    const row = await env.DB.prepare(`SELECT value FROM settings WHERE key = 'site_meta'`).first();
-    return normalizeSiteMeta(row ? JSON.parse(row.value) : null);
+    const row = await singleSetting(env, 'site_meta');
+    return await normalizeSiteMetaRust(env, row ? JSON.parse(row.value) : null);
   } catch {
     return normalizeSiteMeta(null);
   }
+}
+
+export async function normalizeSiteMetaRust(env, raw) {
+  const defaults = normalizeSiteMeta(null);
+  const response = await queryRust({env,request:{url:'https://internal.invalid/'}}, 'site-meta-normalize', {
+    raw, defaults, pageKeys:Object.keys(defaults.pages), legacyTitles:LEGACY_HOME_TITLES, legacyDescriptions:LEGACY_HOME_DESCRIPTIONS,
+  });
+  if (!response.ok) throw new Error('Rust site metadata normalization failed');
+  const result = await response.json();
+  const pages = {}, footer = {};
+  for (const page of result.pages) pages[page.key] = {title:page.title,description:page.description};
+  for (const field of result.footer) footer[field.key] = field.value;
+  return {pages,footer,image_url:result.image_url,google_verification:result.google_verification,naver_verification:result.naver_verification};
 }
 
 export function normalizeSiteMeta(raw) {
@@ -197,7 +211,7 @@ export function normalizePagePath(pathname) {
   return normalized === '/' ? '/index.html' : normalized;
 }
 
-export function buildShareMetaBlock({ pageKey, title, description, url, imageUrl, googleVerification, naverVerification, itemListElements }) {
+export function buildShareMetaBlock({ pageKey, title, description, url, imageUrl, googleVerification, naverVerification, itemListElements, descriptor }) {
   const safeTitle = escapeHtml(title || DEFAULT_SITE_META.pages.home.title);
   const safeDesc = escapeHtml(description || DEFAULT_SITE_META.pages.home.description);
   const safeUrl = escapeHtml(url || 'https://bpmedia.net');
@@ -209,7 +223,7 @@ export function buildShareMetaBlock({ pageKey, title, description, url, imageUrl
   const robots = pageKey === 'search'
     ? '<meta name="robots" content="noindex,follow"/>'
     : '<meta name="robots" content="index,follow,max-image-preview:large"/>';
-  const structuredData = buildStructuredDataEntries({ pageKey, title, description, url, imageUrl, itemListElements });
+  const structuredData = buildStructuredDataEntries({ pageKey, title, description, url, imageUrl, itemListElements, descriptor });
 
   return [
     `<meta name="google-adsense-account" content="${ADSENSE_ACCOUNT}"/>`,
@@ -219,7 +233,7 @@ export function buildShareMetaBlock({ pageKey, title, description, url, imageUrl
     `<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_ACCOUNT}" crossorigin="anonymous"></script>`,
     robots,
     `<meta name="description" content="${safeDesc}"/>`,
-    `<meta name="keywords" content="${escapeHtml(getPageKeywords(pageKey))}"/>`,
+    `<meta name="keywords" content="${escapeHtml(descriptor?.keywords ?? getPageKeywords(pageKey))}"/>`,
     // 외부 CDN preconnect — DNS+TCP+TLS handshake 200~500ms 단축 (특히 모바일 첫 방문).
     // DOMPurify(JSDelivr), Kakao SDK + AdFit, Daum AdFit 자산. 광고는 광고대로, 보안 라이브러리는 보안 라이브러리대로.
     `<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin/>`,
@@ -248,6 +262,35 @@ export function buildShareMetaBlock({ pageKey, title, description, url, imageUrl
     `<link rel="canonical" href="${safeUrl}"/>`,
     ...structuredData.map((item) => `<script type="application/ld+json">${safeJsonLd(item)}</script>`),
   ].filter(Boolean).join('\n  ');
+}
+
+export async function buildShareMetaBlockRust(options, context, run = queryRust) {
+  const {pageKey, title, description, url, imageUrl, googleVerification, naverVerification, itemListElements, descriptor} = options;
+  // shortcut: unusual structured-data values use the existing renderer for JS compatibility.
+  if ([pageKey, title, description, url, imageUrl].some(v => v != null && typeof v !== 'string') ||
+      (Array.isArray(itemListElements) && itemListElements.some(item => !item || [item.url, item.title].some(v => v != null && typeof v !== 'string')))) return buildShareMetaBlock(options);
+  const seo = descriptor ?? getPageSeoDescriptor(pageKey);
+  if (['schema', 'topic', 'keywords', 'breadcrumb'].some(key => seo[key] != null && typeof seo[key] !== 'string')) return buildShareMetaBlock(options);
+  const data = {
+    pageKey:String(pageKey || ''), title:String(title || DEFAULT_SITE_META.pages.home.title),
+    description:String(description || DEFAULT_SITE_META.pages.home.description), url:String(url || 'https://bpmedia.net'),
+    imageUrl:String(imageUrl || ''), googleVerification:String(googleVerification || ''), naverVerification:String(naverVerification || ''),
+    keywords:String(descriptor?.keywords ?? getPageKeywords(pageKey)), adsense:ADSENSE_ACCOUNT, imageAlt:DEFAULT_SHARE_IMAGE_ALT,
+    defaultImagePath:DEFAULT_SHARE_IMAGE_PATH, imageWidth:DEFAULT_SHARE_IMAGE_WIDTH, imageHeight:DEFAULT_SHARE_IMAGE_HEIGHT,
+    structuredUrl:url || `${SITE_ORIGIN}/`, siteOrigin:SITE_ORIGIN, homeDescription:HOME_SEARCH_DESCRIPTION,
+    publisher:JSON.stringify(PUBLISHER), person:JSON.stringify(OPERATOR_PERSON),
+    schema:seo.schema ?? getPageSchemaType(pageKey), topic:seo.topic ?? getPageTopic(pageKey), breadcrumb:seo.breadcrumb ?? getBreadcrumbLabel(pageKey),
+    itemListElements:Array.isArray(itemListElements) ? itemListElements.map(item => ({url:item.url, title:item.title})) : [],
+  };
+  // shortcut: isolated UTF-16 surrogates use the existing metadata renderer.
+  if (/\\u[dD][89a-fA-F][0-9a-fA-F]{2}/.test(JSON.stringify(data))) return buildShareMetaBlock(options);
+  try {
+    const response = await run(context, 'share-meta-render', data);
+    if (!response.ok) throw new Error('Rust share metadata rendering failed');
+    const result = await response.json();
+    if (typeof result.html !== 'string') throw new Error('Invalid Rust share metadata');
+    return result.html;
+  } catch (_) { return buildShareMetaBlock(options); }
 }
 
 export function getResolvedShareImage(siteMeta, origin) {
@@ -334,18 +377,18 @@ function escapeHtml(str) {
     .replace(/'/g, '&#39;');
 }
 
-function buildStructuredDataEntries({ pageKey, title, description, url, imageUrl, itemListElements }) {
+function buildStructuredDataEntries({ pageKey, title, description, url, imageUrl, itemListElements, descriptor }) {
   const resolvedUrl = url || `${SITE_ORIGIN}/`;
   const pageName = title || DEFAULT_SITE_META.pages.home.title;
   const pageDescription = description || DEFAULT_SITE_META.pages.home.description;
   const entries = [
     buildOrganizationStructuredData(imageUrl),
     buildWebsiteStructuredData(imageUrl),
-    buildPageStructuredData({ pageKey, title: pageName, description: pageDescription, url: resolvedUrl, imageUrl }),
+    buildPageStructuredData({ pageKey, title: pageName, description: pageDescription, url: resolvedUrl, imageUrl, descriptor }),
   ];
-  const itemList = buildItemListStructuredData({ pageKey, url: resolvedUrl, itemListElements });
+  const itemList = buildItemListStructuredData({ pageKey, url: resolvedUrl, itemListElements, descriptor });
   if (itemList) entries.push(itemList);
-  const breadcrumb = buildBreadcrumbStructuredData(pageKey, resolvedUrl);
+  const breadcrumb = buildBreadcrumbStructuredData(pageKey, resolvedUrl, descriptor);
   if (breadcrumb) entries.push(breadcrumb);
   return entries;
 }
@@ -383,8 +426,8 @@ function buildWebsiteStructuredData(imageUrl) {
   return payload;
 }
 
-function buildPageStructuredData({ pageKey, title, description, url, imageUrl }) {
-  const type = getPageSchemaType(pageKey);
+function buildPageStructuredData({ pageKey, title, description, url, imageUrl, descriptor }) {
+  const type = descriptor?.schema ?? getPageSchemaType(pageKey);
   const payload = {
     '@context': 'https://schema.org',
     '@type': type,
@@ -401,9 +444,9 @@ function buildPageStructuredData({ pageKey, title, description, url, imageUrl })
     },
     about: {
       '@type': 'Thing',
-      name: getPageTopic(pageKey),
+      name: descriptor?.topic ?? getPageTopic(pageKey),
     },
-    keywords: getPageKeywords(pageKey),
+    keywords: descriptor?.keywords ?? getPageKeywords(pageKey),
     inLanguage: 'ko-KR',
     publisher: PUBLISHER,
   };
@@ -431,8 +474,8 @@ function getPageSchemaType(pageKey) {
   return COLLECTION_PAGE_KEYS.includes(pageKey) ? 'CollectionPage' : 'WebPage';
 }
 
-function buildBreadcrumbStructuredData(pageKey, url) {
-  const crumb = getBreadcrumbLabel(pageKey);
+function buildBreadcrumbStructuredData(pageKey, url, descriptor) {
+  const crumb = descriptor?.breadcrumb ?? getBreadcrumbLabel(pageKey);
   if (!crumb || pageKey === 'home') return null;
   return {
     '@context': 'https://schema.org',
@@ -519,14 +562,18 @@ function getPageKeywords(pageKey) {
   return keywords[pageKey] || 'BP미디어';
 }
 
-function buildItemListStructuredData({ pageKey, url, itemListElements }) {
+export function getPageSeoDescriptor(pageKey) {
+  return {schema:getPageSchemaType(pageKey), breadcrumb:getBreadcrumbLabel(pageKey), topic:getPageTopic(pageKey), keywords:getPageKeywords(pageKey)};
+}
+
+function buildItemListStructuredData({ pageKey, url, itemListElements, descriptor }) {
   if (!Array.isArray(itemListElements) || !itemListElements.length) return null;
   if (!['home', 'latest', 'korea', 'apr', 'wosm', 'people', 'glossary'].includes(pageKey)) return null;
   return {
     '@context': 'https://schema.org',
     '@type': 'ItemList',
     '@id': `${url}#itemlist`,
-    name: getPageTopic(pageKey),
+    name: descriptor?.topic ?? getPageTopic(pageKey),
     itemListElement: itemListElements.map((item, index) => ({
       '@type': 'ListItem',
       position: index + 1,

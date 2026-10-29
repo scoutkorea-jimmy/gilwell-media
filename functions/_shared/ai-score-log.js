@@ -1,3 +1,5 @@
+import { queryRust } from './rust-server.js';
+
 /**
  * AI 채점(score-article) 상세 결과 로거.
  *
@@ -18,15 +20,7 @@ export async function logAiScore(env, entry) {
           : JSON.stringify(entry.categories))
       : null;
 
-    await env.DB.prepare(
-      `INSERT INTO ai_score_log (
-        created_at, actor, ip,
-        input_title, input_subtitle, input_body_chars, input_tags,
-        overall_score, overall_grade, overall_summary,
-        improvement, revision_suggestion, categories_json,
-        latency_ms, total_tokens, status, error_code
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
-    ).bind(
+    const response = await queryRust({env, request:{url:'https://internal.invalid/'}}, 'ai-log', {operation:'score', values:[
       Math.floor(Date.now() / 1000),
       entry.actor || null,
       entry.ip || null,
@@ -44,7 +38,8 @@ export async function logAiScore(env, entry) {
       Number.isFinite(Number(entry.totalTokens)) ? Number(entry.totalTokens) : null,
       String(entry.status || 'unknown'),
       entry.errorCode || null
-    ).run();
+    ]});
+    if (!response.ok) throw new Error('Rust AI score log failed');
   } catch (err) {
     try { console.error('[ai-score-log] insert failed:', (err && err.message) || err); } catch (_) {}
   }

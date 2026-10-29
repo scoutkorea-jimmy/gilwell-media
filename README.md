@@ -114,8 +114,9 @@ Homepage AI/documentation rules:
 ## 1. Local Development
 
 ### Prerequisites
-- Node.js 18+
+- Node.js 22.15+ (verified with 26.5.0 for Rust contract tests)
 - Wrangler CLI: `npm install -g wrangler`
+- Rust, the `wasm32-unknown-unknown` target and `worker-build` 0.8.7: see [Rust server setup](server-rust/README.md).
 
 ### Setup
 
@@ -138,7 +139,8 @@ wrangler d1 create gilwell-posts
 ./scripts/bootstrap_local_db.sh gilwell-posts
 
 # Start local dev server (serves static files + runs Functions)
-wrangler pages dev . --d1 DB=gilwell-posts
+npm run build:rust
+wrangler pages dev public --d1 DB=gilwell-posts
 
 # Verify the local D1 schema and seeded settings
 ./scripts/smoke_check.sh gilwell-posts
@@ -175,9 +177,11 @@ git push -u origin main
 3. Connect your GitHub account and select the `gilwell-media` repository
 4. Build settings:
    - **Framework preset:** None
-   - **Build command:** *(leave empty)*
-   - **Build output directory:** `/` (root)
+   - **Build command:** `npm run build:rust` (Rust and pinned `worker-build` must be available in the build environment)
+   - **Build output directory:** `public`
 5. Click **Save and Deploy**
+
+Production currently uses the standard Direct Upload script in `scripts/deploy_production.sh`, which builds Rust before bundling Functions. This migration does not change dashboard settings or enable Git auto-deployment. [Rust migration state and checks](server-rust/README.md) distinguish the first migrated module from the remaining server.
 
 ### Connect D1 database
 

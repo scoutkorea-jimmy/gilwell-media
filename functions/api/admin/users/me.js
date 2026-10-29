@@ -7,6 +7,7 @@
  * render.
  */
 import { extractToken, readToken, verifyToken } from '../../../_shared/auth.js';
+import { queryRust } from '../../../_shared/rust-server.js';
 import {
   ADMIN_MENUS,
   flattenMenuSlugs,
@@ -25,13 +26,9 @@ export async function onRequestGet({ request, env }) {
 
   let userRow = null;
   if (uid) {
-    userRow = await env.DB.prepare(
-      `SELECT id, username, display_name, role, permissions, editor_code,
-              ai_daily_limit, status, must_change_password, created_at,
-              last_login_at
-         FROM admin_users
-        WHERE id = ? AND status != 'deleted'`
-    ).bind(uid).first();
+    const response = await queryRust({request, env}, 'admin-user-read', {operation:'me', id:uid});
+    if (!response.ok) throw new Error('Rust admin profile lookup failed');
+    ({row:userRow} = await response.json());
   }
 
   if (userRow) {

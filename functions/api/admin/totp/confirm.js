@@ -9,6 +9,7 @@ import { loadAdminSession } from '../../../_shared/admin-permissions.js';
 import { verifyTotp, generateBackupCodes, hashBackupCode } from '../../../_shared/totp.js';
 import { enforceRateLimit, getClientIp, rateLimitResponse } from '../../../_shared/rate-limit.js';
 import { issueOtpToken, buildOtpCookie } from '../../../_shared/otp-session.js';
+import { queryRust } from '../../../_shared/rust-server.js';
 
 // 로그인(login.js)과 동일한 Set-Cookie emit 패턴: Headers 인스턴스 + append.
 function json(data, status = 200, extraHeaders) {
@@ -32,9 +33,9 @@ export async function onRequestPost({ request, env }) {
   try { body = await request.json(); } catch (_) { body = {}; }
   const code = String(body.code || '').trim();
 
-  const row = await env.DB.prepare(
-    `SELECT totp_secret, totp_enabled FROM admin_users WHERE id = ?`
-  ).bind(session.uid).first();
+  const lookup = await queryRust({request, env}, 'admin-user-read', {operation:'totp-pending', id:session.uid});
+  if (!lookup.ok) throw new Error('Rust TOTP lookup failed');
+  const {row} = await lookup.json();
   if (!row || !row.totp_secret) return json({ error: 'no_pending', reason: '먼저 등록을 시작하세요.' }, 400);
   if (Number(row.totp_enabled)) return json({ error: 'already_enabled', reason: '이미 활성화되어 있습니다.' }, 409);
 
@@ -45,9 +46,8 @@ export async function onRequestPost({ request, env }) {
   const backupCodes = generateBackupCodes(8);
   const hashes = [];
   for (const c of backupCodes) hashes.push(await hashBackupCode(c));
-  await env.DB.prepare(
-    `UPDATE admin_users SET totp_enabled = 1, totp_backup_codes = ?, totp_enrolled_at = datetime('now'), updated_at = datetime('now') WHERE id = ?`
-  ).bind(JSON.stringify(hashes), session.uid).run();
+  const saved = await queryRust({request, env}, 'admin-account-mutation', {operation:'totp-confirm', id:session.uid, value:JSON.stringify(hashes)});
+  if (!saved.ok) throw new Error('Rust TOTP confirmation failed');
 
   const token = await issueOtpToken(env.ADMIN_SECRET, session.uid);
   return json({ ok: true, backup_codes: backupCodes, otp_token: token }, 200, { 'Set-Cookie': buildOtpCookie(token) });

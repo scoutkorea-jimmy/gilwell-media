@@ -1,5 +1,5 @@
-import { extractToken, verifyTokenRole } from '../../_shared/auth.js';
 import { gateMenuAccess } from '../../_shared/admin-permissions.js';
+import { queryRust } from '../../_shared/rust-server.js';
 
 const json = (data, status = 200, extra = {}) =>
   new Response(JSON.stringify(data), {
@@ -25,22 +25,10 @@ export async function onRequestGet({ request, env }) {
   const limit = Math.min(500, Math.max(10, Number(url.searchParams.get('limit')) || 200));
 
   try {
-    const { results } = await env.DB
-      .prepare('SELECT meta_tags FROM posts WHERE meta_tags IS NOT NULL AND meta_tags <> ""')
-      .all();
-
-    const counts = new Map();
-    (results || []).forEach((row) => {
-      const raw = String(row.meta_tags || '');
-      raw.split(',').forEach((t) => {
-        const name = t.trim();
-        if (!name) return;
-        counts.set(name, (counts.get(name) || 0) + 1);
-      });
-    });
-
-    const tags = Array.from(counts.entries())
-      .map(([name, count]) => ({ name, count }))
+    const response = await queryRust({request, env}, 'meta-tag-pool', {});
+    if (!response.ok) throw new Error('Rust meta tag pool failed');
+    const {tags:counts} = await response.json();
+    const tags = counts
       .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name, 'ko'))
       .slice(0, limit);
 

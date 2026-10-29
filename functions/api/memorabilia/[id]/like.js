@@ -1,3 +1,4 @@
+import { queryRust } from '../../../_shared/rust-server.js';
 /**
  * POST /api/memorabilia/:id/like  — 좋아요 토글
  * GET  /api/memorabilia/:id/like  — 현재 카운트 + 본인 좋아요 여부
@@ -34,29 +35,17 @@ export async function onRequestPost({ params, env, request }) {
   });
   if (!rl.ok) return rateLimitResponse(rl, '좋아요 요청이 너무 많습니다. 잠시 후 다시 시도해주세요.');
 
-  const item = await env.DB.prepare(
-    `SELECT id FROM memorabilia WHERE id = ? AND status = 'public'`
-  ).bind(id).first();
+  const lookup = await queryRust({env,request}, 'memorabilia-public-check', {id});
+  if (!lookup.ok) throw new Error('Rust memorabilia lookup failed');
+  const {row:item} = await lookup.json();
   if (!item) return json({ error: 'not_found' }, 404);
 
   const viewerKey = await getViewerKey(request, env);
   if (!viewerKey) return json({ error: '좋아요 처리에 필요한 정보를 확인할 수 없습니다.' }, 400);
 
   try {
-    const existing = await env.DB.prepare(
-      `SELECT id FROM memorabilia_likes WHERE memorabilia_id = ? AND viewer_key = ? LIMIT 1`
-    ).bind(id, viewerKey).first();
-
-    if (existing) {
-      await env.DB.prepare(
-        `DELETE FROM memorabilia_likes WHERE memorabilia_id = ? AND viewer_key = ?`
-      ).bind(id, viewerKey).run();
-    } else {
-      await env.DB.prepare(
-        `INSERT OR IGNORE INTO memorabilia_likes (memorabilia_id, viewer_key) VALUES (?, ?)`
-      ).bind(id, viewerKey).run();
-    }
-
+    const response = await queryRust({env,request}, 'memorabilia-like-toggle', {id,viewerKey});
+    if (!response.ok) throw new Error('Rust memorabilia like toggle failed');
     const stats = await getMemorabiliaLikeStats(env, id, viewerKey);
     return json(stats);
   } catch (err) {
@@ -66,13 +55,9 @@ export async function onRequestPost({ params, env, request }) {
 }
 
 async function getMemorabiliaLikeStats(env, id, viewerKey) {
-  const [countRow, likedRow] = await Promise.all([
-    env.DB.prepare(`SELECT COUNT(*) AS count FROM memorabilia_likes WHERE memorabilia_id = ?`).bind(id).first(),
-    viewerKey
-      ? env.DB.prepare(`SELECT 1 FROM memorabilia_likes WHERE memorabilia_id = ? AND viewer_key = ? LIMIT 1`).bind(id, viewerKey).first()
-      : Promise.resolve(null),
-  ]);
-  return { likes: countRow?.count || 0, liked: !!likedRow };
+  const response = await queryRust({env,request:{url:'https://internal.invalid/'}}, 'memorabilia-like-stats', {id,viewerKey:viewerKey || null});
+  if (!response.ok) throw new Error('Rust memorabilia like statistics failed');
+  return response.json();
 }
 
 function json(data, status = 200) {

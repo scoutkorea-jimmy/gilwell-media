@@ -1,13 +1,14 @@
+import { settingSnapshot, saveRevisionedSetting, queryRust } from '../../_shared/rust-server.js';
 import { verifyTokenRole, extractToken } from '../../_shared/auth.js';
 import { gateMenuAccess } from '../../_shared/admin-permissions.js';
-import { DEFAULT_BOARD_COPY, normalizeBoardCopy } from '../../_shared/board-copy.js';
+import { DEFAULT_BOARD_COPY } from '../../_shared/board-copy.js';
 import { recordSettingChange } from '../../_shared/settings-audit.js';
 
 export async function onRequestGet({ env, request }) {
   try {
-    const { results } = await env.DB.prepare(`SELECT key, value FROM settings WHERE key IN ('board_copy', 'board_copy_rev')`).all();
+    const { results } = await settingSnapshot(env, 'board_copy');
     const values = Object.fromEntries((results || []).map((row) => [row.key, row.value]));
-    const copy = normalizeBoardCopy(values.board_copy);
+    const copy = await normalizeBoardCopy(env, values.board_copy);
     copy.revision = parseInt(values.board_copy_rev, 10) || 0;
     return json(copy);
   } catch (err) {
@@ -27,11 +28,11 @@ export async function onRequestPut({ request, env }) {
     return json({ error: 'Invalid JSON' }, 400);
   }
 
-  const normalized = normalizeBoardCopy(body || {});
   const ifRevision = body && body.if_revision;
 
   try {
-    const { results } = await env.DB.prepare(`SELECT key, value FROM settings WHERE key IN ('board_copy', 'board_copy_rev')`).all();
+    const normalized = await normalizeBoardCopy(env, body || {});
+    const { results } = await settingSnapshot(env, 'board_copy');
     const rows = Object.fromEntries((results || []).map((row) => [row.key, row]));
     const prevRow = rows.board_copy;
     const currentRev = rows.board_copy_rev ? parseInt(rows.board_copy_rev.value, 10) || 0 : 0;
@@ -40,13 +41,8 @@ export async function onRequestPut({ request, env }) {
     }
     const nextRev = currentRev + 1;
     const payload = JSON.stringify(normalized);
-    const writes = await env.DB.batch([
-      env.DB.prepare(`INSERT INTO settings (key, value) VALUES ('board_copy_rev', ?)
-        ON CONFLICT(key) DO UPDATE SET value = excluded.value WHERE CAST(settings.value AS INTEGER) = ?`).bind(String(nextRev), currentRev),
-      env.DB.prepare(`INSERT INTO settings (key, value) SELECT 'board_copy', ? WHERE changes() = 1
-        ON CONFLICT(key) DO UPDATE SET value = excluded.value`).bind(payload),
-    ]);
-    if (!writes[0] || !writes[0].meta || writes[0].meta.changes !== 1) {
+    const changes = await saveRevisionedSetting(env, 'board_copy', currentRev, nextRev, [payload]);
+    if (changes !== 1) {
       return json({ error: '다른 변경이 감지되었습니다. 입력을 보존하고 최신 설정을 다시 확인해주세요.', revision: currentRev }, 409);
     }
     await recordSettingChange(env, {
@@ -62,6 +58,16 @@ export async function onRequestPut({ request, env }) {
     console.error('PUT /api/settings/board-copy error:', err);
     return json({ error: 'Database error' }, 500);
   }
+}
+
+async function normalizeBoardCopy(env, raw) {
+  const defaults = Object.entries(DEFAULT_BOARD_COPY).map(([key,value]) => ({key,description:value.description}));
+  const response = await queryRust({env,request:{url:'https://internal.invalid/'}}, 'board-copy-normalize', {raw:raw === undefined ? null : raw, defaults});
+  if (!response.ok) throw new Error('Rust board copy normalization failed');
+  const {entries} = await response.json();
+  const result = {};
+  for (const entry of entries) result[entry.key] = {description:entry.description};
+  return result;
 }
 
 function json(data, status = 200) {

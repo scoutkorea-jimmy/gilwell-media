@@ -6,6 +6,19 @@
  * update paths.
  */
 import { flattenMenuSlugs } from './admin-users.js';
+import { queryRust } from './rust-server.js';
+
+export async function validateIdentityRust(env, kind, raw, allowOwner = false) {
+  const response = await queryRust({env,request:{url:'https://internal.invalid/'}}, 'admin-identity-validate', {kind,raw:raw == null ? null : raw,allowOwner});
+  if (!response.ok) throw new Error('Rust identity validation failed');
+  return response.json();
+}
+
+export async function validatePermissionsRust(env, raw) {
+  const response = await queryRust({env,request:{url:'https://internal.invalid/'}}, 'admin-permissions-validate', {raw:raw == null ? null : raw,slugs:flattenMenuSlugs()});
+  if (!response.ok) throw new Error('Rust permission validation failed');
+  return response.json();
+}
 
 export const USERNAME_MIN = 3;
 export const USERNAME_MAX = 32;

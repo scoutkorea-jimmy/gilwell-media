@@ -1,6 +1,5 @@
 import { loadSiteMeta, normalizeSiteMeta } from '../_shared/site-meta.js';
-import { selectHomeRailIds, hydrateByIds } from '../_shared/home-rails.js';
-import { serializePostImage } from '../_shared/images.js';
+import { POPULAR_WEIGHTS } from '../_shared/home-rails.js';
 import { logApiError } from '../_shared/ops-log.js';
 import { ensureDuePostsPublished } from '../_shared/publish-due-posts.js';
 import { loadNavLabels } from '../_shared/nav-labels.js';
@@ -8,17 +7,12 @@ import { loadActiveHomeBanners } from '../_shared/home-banners.js';
 import { PUBLIC_DATE_EXPR } from '../_shared/post-public-date.js';
 import { recordHomepageIssue } from '../_shared/homepage-issues.js';
 import { DEFAULT_TICKER_ITEMS } from '../_shared/site-copy.mjs';
-import { toCardPost } from '../_shared/post-excerpt.js';
-import { readHomeLeadState, selectAutoHomeLeadId } from '../_shared/home-lead-auto.js';
+import { queryRust } from '../_shared/rust-server.js';
 
 // 카드 목록(lead/picks/latest/popular/columns)용 직렬화.
 // 홈 렌더러가 본문에서 실제로 쓰는 건 메인 스토리의 420자 발췌 한 곳뿐인데
 // 이전에는 25건의 content 전문(약 55KB, 응답의 42%)을 매번 내려보냈다.
 // 히어로는 애초에 content 를 SELECT 하지 않으므로 이 경로를 타지 않는다.
-function serializeCardPost(post, origin) {
-  return toCardPost(serializePostImage(post, origin));
-}
-
 const DEFAULT_HOME_LEAD_MEDIA = {
   fit: 'cover',
   desktop: {
@@ -33,30 +27,11 @@ const DEFAULT_HOME_LEAD_MEDIA = {
   },
 };
 
-const DEFAULT_HERO_MEDIA = {
-  fit: 'cover',
-  desktop: {
-    position_x: 50,
-    position_y: 50,
-    zoom: 100,
-  },
-  mobile: {
-    position_x: 50,
-    position_y: 50,
-    zoom: 100,
-  },
-};
-
-const MAX_MANUAL_HERO_POSTS = 2;
-const AUTO_HERO_POST_COUNT = 3;
-const MAX_TOTAL_HERO_POSTS = MAX_MANUAL_HERO_POSTS + AUTO_HERO_POST_COUNT;
-
 // 카드용 게시글 컬럼 단일 정의 — loadHomeLead/loadHomePicks/loadPostList/loadLatestPosts
 // 가 동일한 SELECT 목록을 4곳에 복제하던 것을 통합. 컬럼 추가/변경을 한 곳에서만 한다.
 // (loadPopular 는 CTE 기반 별도 컬럼셋이라 제외)
 const POST_CARD_COLUMNS = `id, category, title, subtitle, content, image_url, image_caption, image_frame, created_at, publish_at, featured, tag, views, author, published, sort_order, youtube_url,
             (SELECT COUNT(*) FROM post_likes WHERE post_id = posts.id) AS likes`;
-const DEFAULT_HERO_MANUAL_POSITION = 'after_auto';
 
 const HOME_SECTION_ISSUE_DEFS = {
   site_meta: { title: '홈 사이트 메타 로드 실패', severity: 'medium', area: 'seo', source_path: '/api/home /api/settings/site-meta' },
@@ -95,6 +70,16 @@ export async function onRequestGet(context) {
     else runDuePublish();
 
     const issues = {};
+    let railsPromise;
+    const getRails = () => (railsPromise ||= loadRails(env, origin));
+    let sectionsPromise;
+    const getSection = async (key) => {
+      sectionsPromise ||= loadHomeSections(context, origin).catch(() => null);
+      const sections = await sectionsPromise;
+      if (!sections) return loadPostList(context, origin, key === 'latest' ? {} : {category: key});
+      if (!Array.isArray(sections[key])) throw new Error('Rust home section query failed: ' + key);
+      return sections[key];
+    };
     const resolveSection = (key, loader, fallback) =>
       Promise.resolve()
         .then(loader)
@@ -129,7 +114,7 @@ export async function onRequestGet(context) {
       resolveSection('nav_labels', () => loadNavLabels(env), {}),
       resolveSection('translations', () => loadTranslations(env), {}),
       resolveSection('ticker', () => loadTicker(env), DEFAULT_TICKER_ITEMS),
-      resolveSection('stats', () => loadStats(env), {
+      resolveSection('stats', () => loadStats(context), {
         korea: 0,
         apr: 0,
         wosm: 0,
@@ -149,38 +134,22 @@ export async function onRequestGet(context) {
       }),
       resolveSection('hero', () => loadHero(env, origin), { posts: [], interval_ms: 3000 }),
       resolveSection('lead', () => loadHomeLead(env, origin), { post: null, media: DEFAULT_HOME_LEAD_MEDIA }),
-      resolveSection('latest', () => loadLatestPosts(env, origin, 4), []),
+      resolveSection('latest', () => getSection('latest'), []),
       // 추천·인기는 서로를 알아야 하므로(인기가 추천과 중복 제거) 함께 계산한다.
-      resolveSection('popular', () => loadRails(env, origin).then((r) => r.popular), []),
-      resolveSection('picks', () => loadRails(env, origin).then((r) => r.picks), []),
+      resolveSection('popular', () => getRails().then((r) => r.popular), []),
+      resolveSection('picks', () => getRails().then((r) => r.picks), []),
       resolveSection('banners', () => loadActiveHomeBanners(env), []),
-      resolveSection('korea', () => loadPostList(env, origin, { category: 'korea', limit: 4 }), []),
-      resolveSection('apr', () => loadPostList(env, origin, { category: 'apr', limit: 4 }), []),
-      resolveSection('wosm', () => loadPostList(env, origin, { category: 'wosm', limit: 4 }), []),
-      resolveSection('people', () => loadPostList(env, origin, { category: 'people', limit: 4 }), []),
+      resolveSection('korea', () => getSection('korea'), []),
+      resolveSection('apr', () => getSection('apr'), []),
+      resolveSection('wosm', () => getSection('wosm'), []),
+      resolveSection('people', () => getSection('people'), []),
     ]);
 
-    return json({
-      site_meta: siteMeta,
-      nav_labels: navLabels,
-      translations: { strings: translations },
-      ticker: { items: ticker },
-      stats,
-      analytics: footerAnalytics,
-      hero,
-      lead,
-      latest: { posts: latest },
-      popular: { posts: popular },
-      picks: { posts: picks },
-      banners,
-      columns: {
-        korea: { posts: korea },
-        apr: { posts: apr },
-        wosm: { posts: wosm },
-        people: { posts: people },
-      },
-      issues,
-    }, 200, { 'Cache-Control': 'no-store' });
+    const body = await assembleHomeResponse(context, {
+      siteMeta, navLabels, translations, ticker, stats, footerAnalytics, hero, lead,
+      latest, popular, picks, banners, korea, apr, wosm, people, issues,
+    });
+    return json(body, 200, { 'Cache-Control': 'no-store' });
   } catch (err) {
     console.error('GET /api/home error:', err);
     await recordHomepageIssue(env, {
@@ -196,10 +165,30 @@ export async function onRequestGet(context) {
       action_items: 'Functions 로그와 D1 응답 상태, 최근 배포 변경사항을 우선 점검합니다.',
       reporter: 'system:auto-home',
       occurred_at: nowUtcText(),
-    });
-    await logApiError(env, request, err, { channel: 'site' });
+    }).catch((diagnosticError) => console.error('GET /api/home issue recording failed:', diagnosticError));
+    await logApiError(env, request, err, { channel: 'site' })
+      .catch((diagnosticError) => console.error('GET /api/home error logging failed:', diagnosticError));
     return json({ error: 'Database error' }, 500);
   }
+}
+
+
+export async function assembleHomeResponse(context, data, run = queryRust) {
+  const fallback = () => ({
+    site_meta:data.siteMeta, nav_labels:data.navLabels, translations:{strings:data.translations},
+    ticker:{items:data.ticker}, stats:data.stats, analytics:data.footerAnalytics, hero:data.hero, lead:data.lead,
+    latest:{posts:data.latest}, popular:{posts:data.popular}, picks:{posts:data.picks}, banners:data.banners,
+    columns:{korea:{posts:data.korea},apr:{posts:data.apr},wosm:{posts:data.wosm},people:{posts:data.people}}, issues:data.issues,
+  });
+  // shortcut: isolated UTF-16 surrogates use the legacy response until Wasm supports them.
+  if (/\\u[dD][89a-fA-F][0-9a-fA-F]{2}/.test(JSON.stringify(data))) return fallback();
+  try {
+    const response = await run(context, 'home-response', data);
+    if (!response.ok) throw new Error('Rust home response failed');
+    const result = await response.json();
+    if (!result || !result.columns || !result.latest || !result.issues) throw new Error('Invalid Rust home response');
+    return result;
+  } catch (_) { return fallback(); }
 }
 
 async function recordHomeSectionIssue(env, key, err) {
@@ -221,8 +210,17 @@ async function recordHomeSectionIssue(env, key, err) {
   });
 }
 
+async function loadHomeSetting(env, key, normalize = false) {
+  const rust = await queryRust({ env, request: { url: 'https://internal.invalid/' } }, 'home-setting', { key, normalize });
+  if (!rust.ok) throw new Error('Rust home setting query failed');
+  const result = await rust.json();
+  return normalize ? result : result.row;
+}
+
 async function loadTranslations(env) {
-  const row = await env.DB.prepare(`SELECT value FROM settings WHERE key = 'translations'`).first();
+  const { row, normalized, error } = await loadHomeSetting(env, 'translations', true);
+  if (error) throw new Error(error);
+  if (normalized !== undefined) return normalized;
   const parsed = row ? JSON.parse(row.value || '{}') : {};
   if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
     return sanitizeTranslationStrings(
@@ -245,146 +243,43 @@ function sanitizeTranslationStrings(strings) {
 }
 
 async function loadTicker(env) {
-  const row = await env.DB.prepare(`SELECT value FROM settings WHERE key = 'ticker'`).first();
+  const { row, normalized, error } = await loadHomeSetting(env, 'ticker', true);
+  if (error) throw new Error(error);
+  if (normalized !== undefined) return normalized;
   if (!row) return DEFAULT_TICKER_ITEMS;
   const parsed = JSON.parse(row.value || '[]');
   if (Array.isArray(parsed)) return parsed;
   throw new Error('Ticker settings must be an array');
 }
 
-async function loadStats(env) {
-  const [koreaRow, aprRow, wosmRow, peopleRow, todayRow] = await Promise.all([
-    env.DB.prepare(`SELECT COUNT(*) AS n FROM posts WHERE category = 'korea' AND published = 1`).first(),
-    env.DB.prepare(`SELECT COUNT(*) AS n FROM posts WHERE category = 'apr' AND published = 1`).first(),
-    env.DB.prepare(`SELECT COUNT(*) AS n FROM posts WHERE category = 'wosm' AND published = 1`).first(),
-    env.DB.prepare(`SELECT COUNT(*) AS n FROM posts WHERE category = 'people' AND published = 1`).first(),
-    env.DB.prepare(`
-      SELECT COUNT(*) AS n
-        FROM posts
-       WHERE published = 1
-         AND date(${PUBLIC_DATE_EXPR}) = date('now', '+9 hours')
-    `).first(),
-  ]);
-  return {
-    korea: koreaRow?.n ?? 0,
-    apr: aprRow?.n ?? 0,
-    wosm: wosmRow?.n ?? 0,
-    people: peopleRow?.n ?? 0,
-    today: todayRow?.n ?? 0,
-  };
+async function loadStats(context) {
+  const rust = await queryRust(context, 'post-stats', { publicDateExpr: PUBLIC_DATE_EXPR, today: null });
+  if (!rust.ok) throw new Error('Rust home stats query failed');
+  return rust.json();
 }
 
 async function loadFooterAnalytics(env) {
-  // 4개의 full-table 스캔(today unique/views + total unique/views)을 동일 WHERE 별로
-  // COUNT(DISTINCT)+COUNT(*) 를 한 SELECT 에 묶어 2 스캔으로 축소. 결과값은 동일.
-  // /api/home 은 no-store 라 매 방문 이 비용을 치르므로 스캔 횟수 절감이 직접 이득 (00.166.x).
-  const PUBLIC_WHERE = `path NOT LIKE '/api/%' AND path NOT IN ('/admin', '/admin.html')`;
-  const [todayRow, totalRow] = await Promise.all([
-    env.DB.prepare(`SELECT COUNT(DISTINCT viewer_key) AS u, COUNT(*) AS v
-                      FROM site_visits
-                     WHERE ${PUBLIC_WHERE}
-                       AND datetime(visited_at, '+9 hours') >= datetime(date('now', '+9 hours'))`)
-      .first().catch(() => null),
-    env.DB.prepare(`SELECT COUNT(DISTINCT viewer_key) AS u, COUNT(*) AS v
-                      FROM site_visits
-                     WHERE ${PUBLIC_WHERE}`)
-      .first().catch(() => null),
-  ]);
-  const todayUnique = todayRow ? (todayRow.u || 0) : 0;
-  const todayViews  = todayRow ? (todayRow.v || 0) : 0;
-  const totalUnique = totalRow ? (totalRow.u || 0) : 0;
-  const totalViews  = totalRow ? (totalRow.v || 0) : 0;
-  return {
-    provider: 'site_visits',
-    provider_label: '공개 페이지 전체 방문 집계',
-    today_unique: todayUnique,
-    today_views: todayViews,
-    total_unique: totalUnique,
-    today_visits: todayUnique,
-    total_visits: totalUnique,
-    total_pageviews: totalViews,
-    measured_basis: 'site_visits',
-  };
+  try {
+    const response = await queryRust({env, request:{url:'https://internal.invalid/'}}, 'home-footer-analytics', {});
+    if (response.ok) return await response.json();
+  } catch (_) {}
+  return {provider:'site_visits',provider_label:'공개 페이지 전체 방문 집계',today_unique:0,today_views:0,total_unique:0,today_visits:0,total_visits:0,total_pageviews:0,measured_basis:'site_visits'};
 }
 
 async function loadHero(env, origin) {
-  const [row, intervalRow, mediaRow] = await Promise.all([
-    env.DB.prepare(`SELECT value FROM settings WHERE key = 'hero'`).first(),
-    env.DB.prepare(`SELECT value FROM settings WHERE key = 'hero_interval'`).first(),
-    env.DB.prepare(`SELECT value FROM settings WHERE key = 'hero_media'`).first(),
-  ]);
-  const interval_ms = getSafeInterval(intervalRow && intervalRow.value);
-  const heroSettings = parseHeroSettings(row && row.value);
-  const postIds = heroSettings.manual_post_ids;
-  const mediaMap = normalizeHeroMediaMap(parseJsonValue(mediaRow && mediaRow.value), postIds);
-  const manualPosts = await loadManualHeroPosts(env, origin, postIds, mediaMap);
-  const autoPosts = await loadAutomaticHeroPosts(env, origin, manualPosts.map((post) => post.id));
-  const posts = heroSettings.manual_position === 'before_auto'
-    ? manualPosts.concat(autoPosts)
-    : autoPosts.concat(manualPosts);
-
-  return {
-    posts: posts.slice(0, MAX_TOTAL_HERO_POSTS),
-    interval_ms,
-  };
-}
-
-async function loadManualHeroPosts(env, origin, postIds, mediaMap) {
-  if (!Array.isArray(postIds) || !postIds.length) return [];
-
-  const posts = [];
-  for (const id of postIds) {
-    const post = await env.DB.prepare(
-      `SELECT id, category, title, subtitle, image_url, created_at, publish_at
-         FROM posts
-        WHERE id = ? AND published = 1`
-    ).bind(id).first();
-    if (!post) continue;
-    const serialized = serializePostImage(post, origin);
-    serialized.media = mediaMap[String(id)] || DEFAULT_HERO_MEDIA;
-    posts.push(serialized);
-  }
-  return posts;
-}
-
-async function loadAutomaticHeroPosts(env, origin, excludedIds) {
-  const exclusions = Array.isArray(excludedIds)
-    ? excludedIds.map((id) => parseInt(id, 10)).filter((id) => Number.isFinite(id) && id > 0)
-    : [];
-  const conditions = ['published = 1'];
-  const bindings = [];
-
-  if (exclusions.length) {
-    conditions.push(`id NOT IN (${exclusions.map(() => '?').join(', ')})`);
-    bindings.push(...exclusions);
-  }
-
-  const { results } = await env.DB.prepare(
-    `SELECT id, category, title, subtitle, image_url, created_at, publish_at
-       FROM posts
-      WHERE ${conditions.join(' AND ')}
-      ORDER BY ${PUBLIC_DATE_EXPR} DESC, id DESC
-      LIMIT ?`
-  ).bind(...bindings, AUTO_HERO_POST_COUNT).all();
-
-  return (results || []).map((post) => {
-    const serialized = serializePostImage(post, origin);
-    serialized.media = DEFAULT_HERO_MEDIA;
-    return serialized;
+  const response = await queryRust({env,request:{url:'https://internal.invalid/'}}, 'home-hero-from-settings', {
+    origin, publicDateExpr:PUBLIC_DATE_EXPR,
   });
+  if (!response.ok) throw new Error('Rust home hero query failed');
+  return response.json();
 }
 
 async function loadHomeLead(env, origin) {
-  const state = await readHomeLeadState(env);
-  const postId = state.postId || (state.mode === 'auto' ? (await selectAutoHomeLeadId(env)).id : 0);
-  const media = normalizeHomeLeadMedia(parseJsonValue(state.mediaValue));
-  if (!postId) return { post: null, media };
-  const post = await env.DB.prepare(
-    `SELECT ${POST_CARD_COLUMNS}
-       FROM posts
-      WHERE id = ? AND published = 1`
-  ).bind(postId).first();
-  return { post: post ? serializeCardPost(post, origin) : null, media };
+  const rust = await queryRust({ env, request: { url: 'https://internal.invalid/' } }, 'home-lead', {
+    columns: POST_CARD_COLUMNS, origin,
+  });
+  if (!rust.ok) throw new Error('Rust home lead query failed');
+  return rust.json();
 }
 
 function safeParsePickOrder(raw) {
@@ -397,195 +292,40 @@ function safeParsePickOrder(raw) {
   } catch (_) { return []; }
 }
 
-async function loadPostList(env, origin, opts = {}) {
-  const conditions = ['published = 1'];
-  const bindings = [];
-  if (opts.category) {
-    conditions.push('category = ?');
-    bindings.push(opts.category);
-  }
-  if (opts.featured) {
-    conditions.push('featured = 1');
-  }
+async function loadPostList(context, origin, opts = {}) {
   const limit = Math.max(1, Math.min(10, parseInt(opts.limit || 4, 10)));
-  const { results } = await env.DB.prepare(
-    `SELECT ${POST_CARD_COLUMNS}
-       FROM posts
-      WHERE ${conditions.join(' AND ')}
-      ORDER BY ${PUBLIC_DATE_EXPR} DESC, id DESC
-      LIMIT ?`
-  ).bind(...bindings, limit).all();
-  return (results || []).map((post) => serializeCardPost(post, origin));
+  const rust = await queryRust(context, 'home-posts', {
+    category: opts.category || null,
+    featured: !!opts.featured,
+    limit,
+    columns: POST_CARD_COLUMNS,
+    card: true,
+    origin,
+    publicDateExpr: PUBLIC_DATE_EXPR,
+  });
+  if (!rust.ok) throw new Error('Rust home posts query failed');
+  const { posts } = await rust.json();
+  return posts || [];
 }
 
-async function loadLatestPosts(env, origin, limit) {
-  const safeLimit = Math.max(1, Math.min(10, parseInt(limit || 4, 10)));
-  const { results } = await env.DB.prepare(
-    `SELECT ${POST_CARD_COLUMNS}
-       FROM posts
-      WHERE published = 1
-      ORDER BY ${PUBLIC_DATE_EXPR} DESC, id DESC
-      LIMIT ?`
-  ).bind(safeLimit).all();
-  return (results || []).map((post) => serializeCardPost(post, origin));
+async function loadHomeSections(context, origin) {
+  const rust = await queryRust(context, 'home-sections', {columns: POST_CARD_COLUMNS, publicDateExpr: PUBLIC_DATE_EXPR, origin});
+  if (!rust.ok) throw new Error('Rust home sections query failed');
+  const sections = await rust.json();
+  if (!sections || typeof sections !== 'object' || !['latest', 'korea', 'apr', 'wosm', 'people'].every(key => sections[key] === null || Array.isArray(sections[key]))) {
+    throw new Error('Invalid Rust home sections response');
+  }
+  return sections;
 }
 
 /**
  * 홈 추천·인기 레일 — 한 번만 계산해 요청 안에서 재사용한다.
  * resolveSection 이 두 번 호출하므로 메모이즈하지 않으면 집계 쿼리가 두 번 나간다.
  */
-function loadRails(env, origin) {
-  if (!env.__homeRailsPromise) {
-    env.__homeRailsPromise = (async () => {
-      const { pickIds, popularIds } = await selectHomeRailIds(env, 4);
-      const ids = [...new Set([...pickIds, ...popularIds])];
-      const cards = await hydrateByIds(env, ids, POST_CARD_COLUMNS, (row) => serializeCardPost(row, origin));
-      const byId = new Map(cards.map((c) => [c.id, c]));
-      return {
-        picks: pickIds.map((id) => byId.get(id)).filter(Boolean),
-        popular: popularIds.map((id) => byId.get(id)).filter(Boolean),
-      };
-    })();
-  }
-  return env.__homeRailsPromise;
-}
-async function scalar(env, sql) {
-  const row = await env.DB.prepare(sql).first();
-  return row?.count || 0;
-}
-
-function getSafeInterval(value) {
-  const parsed = parseInt(value, 10);
-  if (!Number.isFinite(parsed)) return 3000;
-  return Math.min(15000, Math.max(2000, parsed));
-}
-
-function parseHeroSettings(raw) {
-  const fallback = {
-    manual_post_ids: [],
-    manual_position: DEFAULT_HERO_MANUAL_POSITION,
-  };
-  if (!raw) return fallback;
-
-  const value = String(raw).trim();
-  if (!value) return fallback;
-
-  if (value.startsWith('{')) {
-    const parsed = parseJsonValue(value);
-    const manualIds = Array.isArray(parsed && parsed.manual_post_ids)
-      ? parsed.manual_post_ids
-      : Array.isArray(parsed && parsed.post_ids)
-        ? parsed.post_ids
-        : [];
-    return {
-      manual_post_ids: manualIds
-        .map((id) => parseInt(id, 10))
-        .filter((id) => Number.isFinite(id) && id > 0)
-        .slice(0, MAX_MANUAL_HERO_POSTS),
-      manual_position: parsed && parsed.manual_position === 'before_auto'
-        ? 'before_auto'
-        : DEFAULT_HERO_MANUAL_POSITION,
-    };
-  }
-
-  if (value.startsWith('[')) {
-    const parsed = parseJsonValue(value);
-    return {
-      manual_post_ids: Array.isArray(parsed)
-        ? parsed.map((id) => parseInt(id, 10)).filter((id) => Number.isFinite(id) && id > 0).slice(0, MAX_MANUAL_HERO_POSTS)
-        : [],
-      manual_position: DEFAULT_HERO_MANUAL_POSITION,
-    };
-  }
-
-  const single = parseInt(value, 10);
-  return {
-    manual_post_ids: Number.isFinite(single) && single > 0 ? [single] : [],
-    manual_position: DEFAULT_HERO_MANUAL_POSITION,
-  };
-}
-
-function parseJsonValue(raw) {
-  if (!raw) return null;
-  try {
-    return JSON.parse(raw);
-  } catch (_) {
-    return null;
-  }
-}
-
-function normalizeHomeLeadMedia(input) {
-  const raw = input && typeof input === 'object' ? input : {};
-  const fallbackDesktop = {
-    position_x: clampNumber(raw.position_x, 0, 100, DEFAULT_HOME_LEAD_MEDIA.desktop.position_x),
-    position_y: clampNumber(raw.position_y, 0, 100, DEFAULT_HOME_LEAD_MEDIA.desktop.position_y),
-    zoom: clampNumber(raw.zoom, 60, 150, DEFAULT_HOME_LEAD_MEDIA.desktop.zoom),
-  };
-  const fallbackMobile = {
-    position_x: fallbackDesktop.position_x,
-    position_y: fallbackDesktop.position_y,
-    zoom: fallbackDesktop.zoom,
-  };
-  const desktop = raw.desktop && typeof raw.desktop === 'object' ? raw.desktop : raw;
-  const mobile = raw.mobile && typeof raw.mobile === 'object' ? raw.mobile : raw;
-  return {
-    fit: raw.fit === 'contain' ? 'contain' : 'cover',
-    desktop: {
-      position_x: clampNumber(desktop.position_x, 0, 100, fallbackDesktop.position_x),
-      position_y: clampNumber(desktop.position_y, 0, 100, fallbackDesktop.position_y),
-      zoom: clampNumber(desktop.zoom, 60, 150, fallbackDesktop.zoom),
-    },
-    mobile: {
-      position_x: clampNumber(mobile.position_x, 0, 100, fallbackMobile.position_x),
-      position_y: clampNumber(mobile.position_y, 0, 100, fallbackMobile.position_y),
-      zoom: clampNumber(mobile.zoom, 60, 150, fallbackMobile.zoom),
-    },
-  };
-}
-
-function normalizeHeroMediaMap(input, allowedIds) {
-  const map = input && typeof input === 'object' ? input : {};
-  const allowed = Array.isArray(allowedIds) ? allowedIds.map(String) : null;
-  return Object.keys(map).reduce((acc, key) => {
-    if (allowed && allowed.indexOf(String(key)) === -1) return acc;
-    acc[String(key)] = normalizeHeroMedia(map[key]);
-    return acc;
-  }, {});
-}
-
-function normalizeHeroMedia(input) {
-  const raw = input && typeof input === 'object' ? input : {};
-  const fallbackDesktop = {
-    position_x: clampNumber(raw.position_x, 0, 100, DEFAULT_HERO_MEDIA.desktop.position_x),
-    position_y: clampNumber(raw.position_y, 0, 100, DEFAULT_HERO_MEDIA.desktop.position_y),
-    zoom: clampNumber(raw.zoom, 60, 150, DEFAULT_HERO_MEDIA.desktop.zoom),
-  };
-  const fallbackMobile = {
-    position_x: fallbackDesktop.position_x,
-    position_y: fallbackDesktop.position_y,
-    zoom: fallbackDesktop.zoom,
-  };
-  const desktop = raw.desktop && typeof raw.desktop === 'object' ? raw.desktop : raw;
-  const mobile = raw.mobile && typeof raw.mobile === 'object' ? raw.mobile : raw;
-  return {
-    fit: raw.fit === 'contain' ? 'contain' : 'cover',
-    desktop: {
-      position_x: clampNumber(desktop.position_x, 0, 100, fallbackDesktop.position_x),
-      position_y: clampNumber(desktop.position_y, 0, 100, fallbackDesktop.position_y),
-      zoom: clampNumber(desktop.zoom, 60, 150, fallbackDesktop.zoom),
-    },
-    mobile: {
-      position_x: clampNumber(mobile.position_x, 0, 100, fallbackMobile.position_x),
-      position_y: clampNumber(mobile.position_y, 0, 100, fallbackMobile.position_y),
-      zoom: clampNumber(mobile.zoom, 60, 150, fallbackMobile.zoom),
-    },
-  };
-}
-
-function clampNumber(value, min, max, fallback) {
-  const parsed = parseInt(value, 10);
-  if (!Number.isFinite(parsed)) return fallback;
-  return Math.min(max, Math.max(min, parsed));
+async function loadRails(env, origin) {
+  const response = await queryRust({env,request:{url:'https://internal.invalid/'}}, 'home-rails-cards', {limit:4,weights:POPULAR_WEIGHTS,columns:POST_CARD_COLUMNS,origin,card:true});
+  if (!response.ok) throw new Error('Rust home rails query failed');
+  return response.json();
 }
 
 function json(data, status = 200, extraHeaders = {}) {

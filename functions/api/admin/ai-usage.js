@@ -1,37 +1,13 @@
+import { queryRust } from '../../_shared/rust-server.js';
 import { extractToken, verifyTokenRole } from '../../_shared/auth.js';
 import { gateMenuAccess } from '../../_shared/admin-permissions.js';
-import {
-  estimateLlamaTokens,
-  estimateLlamaCostUsd,
-  estimateLlamaCostKrw,
-  LLAMA_PRICING,
-} from '../../_shared/ai-usage.js';
+import { LLAMA_PRICING } from '../../_shared/ai-usage.js';
 
 const json = (data, status = 200) =>
   new Response(JSON.stringify(data), {
     status,
     headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
   });
-
-function annotatePeriod(row) {
-  if (!row) return { calls: 0, success: 0, errors: 0, input_chars: 0, output_chars: 0, total_tokens: 0, est_tokens: 0, est_usd: 0, est_krw: 0, avg_latency_ms: 0 };
-  const recordedTokens = Number(row.total_tokens || 0);
-  const charsTotal = Number(row.input_chars || 0) + Number(row.output_chars || 0);
-  // total_tokens 컬럼이 이미 Llama 추정치로 채워져 있지만, 0인 과거 행(03.086.00 이전 없음)을 위해 fallback 한 번 더
-  const effectiveTokens = recordedTokens > 0 ? recordedTokens : estimateLlamaTokens(charsTotal);
-  return {
-    calls: Number(row.calls || 0),
-    success: Number(row.success || 0),
-    errors: Number(row.errors || 0),
-    input_chars: Number(row.input_chars || 0),
-    output_chars: Number(row.output_chars || 0),
-    total_tokens: recordedTokens,
-    est_tokens: effectiveTokens,
-    est_usd: estimateLlamaCostUsd(effectiveTokens),
-    est_krw: estimateLlamaCostKrw(effectiveTokens),
-    avg_latency_ms: Number(row.avg_latency_ms || 0),
-  };
-}
 
 /**
  * GET /api/admin/ai-usage
@@ -54,12 +30,39 @@ export async function onRequestGet({ request, env }) {
   //   1순위: ?start=YYYY-MM-DD & ?end=YYYY-MM-DD (사용자 지정 범위, KST 자정 경계)
   //   2순위: ?days=N (기본 14, 1–365 클램프)
   const url = new URL(request.url);
-  const rawDays = parseInt(url.searchParams.get('days') || '14', 10);
-  const chartDays = Math.max(1, Math.min(365, Number.isFinite(rawDays) ? rawDays : 14));
-  const customStart = String(url.searchParams.get('start') || '').trim();
-  const customEnd   = String(url.searchParams.get('end')   || '').trim();
+  const {nowSec,dayAgo,weekAgo,monthAgo,chartFrom,chartTo,effectiveDays,rangeMode} = await resolveAiUsageRangeRust(url.searchParams, Math.floor(Date.now()/1000), env);
 
-  const nowSec    = Math.floor(Date.now() / 1000);
+  try {
+    const query = (kind, start, end) => queryRust({request, env}, 'analytics-ai-usage', {kind, start, end, pricing:LLAMA_PRICING})
+      .then(response => { if (!response.ok) throw new Error('Rust AI usage query failed'); return response.json(); });
+    const [today, week, month, byEndpoint, byDay, recent] = await Promise.all([
+      query('period',dayAgo).then(data=>data.row),
+      query('period',weekAgo).then(data=>data.row),
+      query('period',monthAgo).then(data=>data.row),
+      query('endpoints',monthAgo).then(data=>data.rows || []),
+      query('days',chartFrom,chartTo).then(data=>data.rows || []),
+      query('recent').then(data=>data.rows || []),
+    ]);
+
+    const response = await queryRust({request, env}, 'analytics-ai-usage-response', {
+      today, week, month, byEndpoint, byDay, recent, chartDays:effectiveDays, rangeMode,
+      chartFrom, chartTo, pricing:LLAMA_PRICING, nowSec,
+    });
+    if (!response.ok) throw new Error('Rust AI usage response failed');
+    return json(await response.json());
+  } catch (err) {
+    console.error('GET /api/admin/ai-usage error:', err);
+    return json({ error: '처리에 실패했습니다.', code: 'server_error' }, 500);
+  }
+}
+
+export function resolveAiUsageRangeLegacy(params, now) {
+  const rawDays = parseInt(params.get('days') || '14', 10);
+  const chartDays = Math.max(1, Math.min(365, Number.isFinite(rawDays) ? rawDays : 14));
+  const customStart = String(params.get('start') || '').trim();
+  const customEnd   = String(params.get('end')   || '').trim();
+
+  const nowSec    = now;
   const dayAgo    = nowSec -  86400;
   const weekAgo   = nowSec -  86400 * 7;
   const monthAgo  = nowSec -  86400 * 30;
@@ -83,83 +86,17 @@ export async function onRequestGet({ request, env }) {
     }
   }
 
-  try {
-    const aggStmt = `
-      SELECT
-        COUNT(*)                                                AS calls,
-        SUM(CASE WHEN status='success' THEN 1 ELSE 0 END)       AS success,
-        SUM(CASE WHEN status='error'   THEN 1 ELSE 0 END)       AS errors,
-        COALESCE(SUM(input_chars), 0)                            AS input_chars,
-        COALESCE(SUM(output_chars), 0)                           AS output_chars,
-        COALESCE(SUM(prompt_tokens), 0)                          AS prompt_tokens,
-        COALESCE(SUM(completion_tokens), 0)                      AS completion_tokens,
-        COALESCE(SUM(total_tokens), 0)                           AS total_tokens,
-        COALESCE(AVG(latency_ms), 0)                             AS avg_latency_ms
-      FROM ai_usage_log
-      WHERE created_at >= ?
-    `;
-
-    const [today, week, month, byEndpoint, byDay, recent] = await Promise.all([
-      env.DB.prepare(aggStmt).bind(dayAgo).first(),
-      env.DB.prepare(aggStmt).bind(weekAgo).first(),
-      env.DB.prepare(aggStmt).bind(monthAgo).first(),
-      env.DB.prepare(`
-        SELECT endpoint, COUNT(*) AS calls,
-               COALESCE(SUM(total_tokens), 0) AS total_tokens,
-               COALESCE(SUM(input_chars + output_chars), 0) AS chars
-        FROM ai_usage_log
-        WHERE created_at >= ?
-        GROUP BY endpoint
-        ORDER BY calls DESC
-      `).bind(monthAgo).all().then((r) => r.results || []),
-      env.DB.prepare(`
-        SELECT strftime('%Y-%m-%d', datetime(created_at, 'unixepoch', '+9 hours')) AS date,
-               COUNT(*) AS calls,
-               COALESCE(SUM(total_tokens), 0) AS total_tokens
-        FROM ai_usage_log
-        WHERE created_at >= ? AND created_at <= ?
-        GROUP BY date
-        ORDER BY date ASC
-      `).bind(chartFrom, chartTo).all().then((r) => r.results || []),
-      env.DB.prepare(`
-        SELECT id, created_at, endpoint, model, status, error_code,
-               input_chars, output_chars, total_tokens, latency_ms
-        FROM ai_usage_log
-        ORDER BY created_at DESC
-        LIMIT 20
-      `).all().then((r) => r.results || []),
-    ]);
-
-    return json({
-      today: annotatePeriod(today),
-      week:  annotatePeriod(week),
-      month: annotatePeriod(month),
-      byEndpoint,
-      byDay,
-      chart_days: effectiveDays,
-      chart_range: {
-        mode: rangeMode,  // 'days' or 'custom'
-        start_unix: chartFrom,
-        end_unix: chartTo,
-        start_kst: formatKstDate(chartFrom),
-        end_kst: formatKstDate(chartTo),
-      },
-      recent,
-      pricing: Object.assign({}, LLAMA_PRICING, {
-        dashboardUrl: 'https://dash.cloudflare.com/?to=/:account/ai/overview',
-      }),
-      generated_at: nowSec,
-    });
-  } catch (err) {
-    console.error('GET /api/admin/ai-usage error:', err);
-    return json({ error: '처리에 실패했습니다.', code: 'server_error' }, 500);
-  }
+  return {nowSec,dayAgo,weekAgo,monthAgo,chartFrom,chartTo,effectiveDays,rangeMode};
 }
 
-function formatKstDate(unixSec) {
-  const n = Number(unixSec);
-  if (!Number.isFinite(n)) return '';
-  const d = new Date(n * 1000 + 9 * 3600 * 1000);
-  const pad = (x) => String(x).padStart(2, '0');
-  return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}`;
+export async function resolveAiUsageRangeRust(params, now, env = {}, run = queryRust) {
+  const original=resolveAiUsageRangeLegacy(params,now);
+  try {
+    const response=await run({env,request:{url:'https://internal.invalid/'}},'ai-usage-range',{
+      days:params.get('days'), start:String(params.get('start')||'').trim(), end:String(params.get('end')||'').trim(), nowSec:now,
+    });
+    if(!response.ok) return original;
+    const result=await response.json();
+    return result && Object.keys(result).length===Object.keys(original).length && Object.keys(original).every(key=>result[key]===original[key]) ? result : original;
+  } catch {return original;}
 }

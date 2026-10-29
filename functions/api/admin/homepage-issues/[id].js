@@ -1,3 +1,4 @@
+import { queryRust } from '../../../_shared/rust-server.js';
 import { extractToken, verifyTokenRole } from '../../../_shared/auth.js';
 import { gateMenuAccess } from '../../../_shared/admin-permissions.js';
 import { requireOtp } from '../../../_shared/otp-session.js';
@@ -20,7 +21,9 @@ export async function onRequestPatch({ request, env, params }) {
   const nextStatus = normalizeStatus(body && body.status);
   if (!nextStatus) return json({ error: '유효하지 않은 상태값입니다.' }, 400);
 
-  const current = await env.DB.prepare(`SELECT * FROM homepage_issues WHERE id = ?`).bind(id).first();
+  const lookup = await queryRust({ env, request }, 'homepage-issue-get', { id });
+  if (!lookup.ok) throw new Error('Rust homepage issue lookup failed');
+  const { row: current } = await lookup.json();
   if (!current) return json({ error: '이슈를 찾지 못했습니다.' }, 404);
   const prev = normalizeHomepageIssue(current);
   if (prev.status === nextStatus) {
@@ -30,15 +33,9 @@ export async function onRequestPatch({ request, env, params }) {
   const resolvedAt = nextStatus === 'resolved'
     ? (prev.resolved_at || nowUtcText())
     : null;
-  await env.DB.prepare(
-    `UPDATE homepage_issues
-        SET status = ?,
-            resolved_at = ?,
-            updated_at = datetime('now')
-      WHERE id = ?`
-  ).bind(nextStatus, resolvedAt, id).run();
-
-  const updated = await env.DB.prepare(`SELECT * FROM homepage_issues WHERE id = ?`).bind(id).first();
+  const result = await queryRust({ env, request }, 'homepage-issue-status', { id, status: nextStatus, resolvedAt });
+  if (!result.ok) throw new Error('Rust homepage issue status update failed');
+  const { row: updated } = await result.json();
   const item = normalizeHomepageIssue(updated);
   await logOperationalEvent(env, {
     channel: 'admin',

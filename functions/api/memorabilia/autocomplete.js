@@ -4,19 +4,13 @@
  * 관리자 입력 자동완성용. 인증 없이 동작 (도감 항목 자체가 공개되므로 노출 OK).
  */
 
-import { suggestIssuers, suggestTags } from '../../_shared/memorabilia-store.js';
+import { queryRust } from '../../_shared/rust-server.js';
 
 export async function onRequestGet({ request, env }) {
-  const url = new URL(request.url);
-  const type = String(url.searchParams.get('type') || 'issuer').trim();
-  const q = String(url.searchParams.get('q') || '').trim();
-  const limit = Math.min(parseInt(url.searchParams.get('limit') || '8', 10) || 8, 20);
-
   try {
-    let items = [];
-    if (type === 'issuer')   items = await suggestIssuers(env.DB, q, limit);
-    else if (type === 'tag') items = await suggestTags(env.DB, q, limit);
-    return json({ items });
+    const response = await queryRust({request, env}, 'memorabilia-autocomplete', {url:request.url});
+    if (!response.ok) throw new Error('Rust autocomplete failed');
+    return json(await response.json());
   } catch (err) {
     console.error('autocomplete error:', err);
     return json({ items: [] }, 500);

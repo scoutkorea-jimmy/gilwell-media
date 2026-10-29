@@ -1,4 +1,4 @@
-// Run: node --test tests/site-share-login.test.mjs (Chrome, synthetic pages only).
+// Run: node --import ./tests/register-rust-wasm.mjs --test tests/site-share-login.test.mjs (Chrome, synthetic pages only).
 import assert from 'node:assert/strict';
 import { readFileSync, existsSync, mkdirSync } from 'node:fs';
 import { test } from 'node:test';
@@ -8,12 +8,13 @@ import { onRequestGet } from '../functions/post/[id].js';
 mkdirSync('work/gpt-share-login-20261022', { recursive: true });
 const origin = 'https://bpmedia.test';
 const post = { id: 440, published: 1, category: 'korea', title: '합성 기사', content: '합성 본문', created_at: '2026-10-22 00:00:00' };
-const DB = { prepare(sql) { return {
+const DB = Object.assign(new (class D1Database {})(), { prepare(sql) { return {
   bind() { return this; },
   async first() { return sql.includes('SELECT * FROM posts') ? post : sql.includes('COUNT(*)') ? { count: 0 } : { value: '{}' }; },
   async all() { return { results: [] }; },
-}; } };
+}; } });
 const response = await onRequestGet({ params: { id: '440' }, request: new Request(origin + '/post/440', { headers: { 'User-Agent': 'Googlebot' } }), env: { DB } });
+assert.equal(response.status, 200, 'synthetic article SSR must succeed before browser checks');
 const postHtml = (await response.text()).replace(/<script\b[^>]*>[\s\S]*?<\/script>/g, '') + '<script src="/js/main.js"></script><script>GW.bootstrapStandardPage=function(){};GW.loadTurnstile=function(){};</script><script src="/js/post-page.js"></script>';
 
 test('Site: Kakao payload, responsive lead and article account login', {timeout: 45000}, async () => {

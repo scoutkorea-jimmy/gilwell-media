@@ -1,3 +1,4 @@
+import { queryRust } from '../../../_shared/rust-server.js';
 /**
  * GET /api/memorabilia/:id/view — 조회수 기록 + 현재 조회수 반환
  *
@@ -19,7 +20,9 @@ export async function onRequestGet({ env, params, request }) {
     await recordUniqueMemorabiliaView(env, id, viewerKey).catch(() => false);
   }
 
-  const row = await env.DB.prepare(`SELECT view_count FROM memorabilia WHERE id = ?`).bind(id).first();
+  const response = await queryRust({env,request}, 'memorabilia-view-get', {id});
+  if (!response.ok) throw new Error('Rust memorabilia view lookup failed');
+  const {row} = await response.json();
   if (!row) return json({ error: 'not_found' }, 404, { 'Cache-Control': 'no-store' });
 
   return json({ views: row.view_count || 0 }, 200, { 'Cache-Control': 'no-store' });

@@ -10,8 +10,9 @@ import { ensureDuePostsPublished } from '../_shared/publish-due-posts.js';
 import { getNavLabel, loadNavLabels } from '../_shared/nav-labels.js';
 import { getCategoryMeta, listEditablePostCategories } from '../_shared/category-meta.mjs';
 import { SITE_BRAND_NAME, SITE_DOMAIN_LABEL, DEFAULT_CONTACT_EMAILS } from '../_shared/site-copy.mjs';
-import { buildPostMarkdownResponse, buildMarkdownErrorResponse } from '../_shared/post-markdown.js';
-import { normalizeImageFrame } from '../_shared/image-frame.js';
+import { buildRustPostMarkdownResponse, buildMarkdownErrorResponse } from '../_shared/post-markdown.js';
+import { normalizeImageFrameRust } from '../_shared/image-frame.js';
+import { queryRust, singleSetting } from '../_shared/rust-server.js';
 
 /**
  * Gilwell Media · Individual Post Page
@@ -26,14 +27,15 @@ import { normalizeImageFrame } from '../_shared/image-frame.js';
  *  - Full post content rendered from Editor.js JSON
  */
 
-export async function onRequestGet({ params, env, request }) {
+export async function onRequestGet(context) {
+  const { params, env, request } = context;
   // params.id는 숫자만(/post/123) 또는 .md suffix(/post/123.md) 중 하나만 허용.
   // 다른 확장자(.json, .txt 등)는 명시적 404. AI 봇이 plain markdown을 가져갈 수 있도록 .md는 별도 분기.
   // Pages는 [id].md.js 같은 dynamic+literal 패턴을 인식 못 해 같은 함수 안에서 분기 처리.
   const rawId = String(params.id || '');
   const mdMatch = /^(\d+)\.md$/.exec(rawId);
   if (mdMatch) {
-    return serveMarkdown(parseInt(mdMatch[1], 10), env, request);
+    return serveMarkdown(parseInt(mdMatch[1], 10), context);
   }
   if (!/^\d+$/.test(rawId)) {
     return notFound(request);
@@ -50,9 +52,9 @@ export async function onRequestGet({ params, env, request }) {
   let post, disclaimerRow, publicRuntimeRow, navLabels, siteMeta;
   try {
     [post, disclaimerRow, publicRuntimeRow, navLabels, siteMeta] = await Promise.all([
-      env.DB.prepare('SELECT * FROM posts WHERE id = ?').bind(id).first(),
-      env.DB.prepare("SELECT value FROM settings WHERE key = 'ai_disclaimer'").first(),
-      env.DB.prepare("SELECT value FROM settings WHERE key = 'public_runtime'").first(),
+      loadPost(context, id),
+      singleSetting(env, 'ai_disclaimer'),
+      singleSetting(env, 'public_runtime'),
       loadNavLabels(env),
       loadSiteMeta(env),
     ]);
@@ -87,10 +89,11 @@ export async function onRequestGet({ params, env, request }) {
     const counted = await recordUniqueView(env, id, viewerKey).catch(() => false);
     if (counted) post.views = (post.views || 0) + 1;
   }
+  const manualRelatedPromise = findManualRelatedPosts(env, post, 5);
   const [likeStats, relatedPosts, manualRelatedPosts, specialFeaturePosts] = await Promise.all([
     getLikeStats(env, id, viewerKey),
-    findRelatedPosts(env, post, 5),
-    findManualRelatedPosts(env, post, 5),
+    findRelatedPosts(env, post, 5, manualRelatedPromise),
+    manualRelatedPromise,
     findSpecialFeaturePosts(env, post, 50),
   ]);
 
@@ -122,7 +125,7 @@ export async function onRequestGet({ params, env, request }) {
   // ogImage: 운영자가 초점(image_frame)을 지정한 글은 1200×630 초점-크롭 엔드포인트로
   // 보내 카카오/페북 카드가 의도한 부분을 보여주게 한다. 초점 미지정이면 기존처럼 원본/기본 OG.
   // (Cloudflare 변환 미활성 시 엔드포인트가 원본을 그대로 반환 — 자가 복구.)
-  const ogFrame = normalizeImageFrame(post.image_frame);
+  const ogFrame = coverImage ? await normalizeImageFrameRust(post.image_frame, env) : null;
   const ogImage = (coverImage && ogFrame)
     ? `${siteUrl}/api/og-image/${id}`
     : (coverImage || escapeHtml(getResolvedShareImage(siteMeta, siteUrl)));
@@ -239,12 +242,12 @@ export async function onRequestGet({ params, env, request }) {
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png"/>
   <link rel="apple-touch-icon" href="/img/logo.png"/>
   <link rel="shortcut icon" href="/img/favicon-48.png"/>
-  <link rel="stylesheet" href="/css/style.css?v=20261027082848">
-  <link rel="stylesheet" href="/css/post.css?v=20261027082848">
-  <link rel="stylesheet" href="/css/chatbot.css?v=20261027082848">
-  <link rel="stylesheet" href="/css/dark-mode.css?v=20261027082848">
-  <link rel="stylesheet" href="/css/m3-site.css?v=20261027082848">
-  <link rel="stylesheet" href="/css/topics.css?v=20261027082848">
+  <link rel="stylesheet" href="/css/style.css?v=20261029073654">
+  <link rel="stylesheet" href="/css/post.css?v=20261029073654">
+  <link rel="stylesheet" href="/css/chatbot.css?v=20261029073654">
+  <link rel="stylesheet" href="/css/dark-mode.css?v=20261029073654">
+  <link rel="stylesheet" href="/css/m3-site.css?v=20261029073654">
+  <link rel="stylesheet" href="/css/topics.css?v=20261029073654">
 </head>
 <body class="post-page">
   <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
@@ -431,7 +434,7 @@ export async function onRequestGet({ params, env, request }) {
         <h4>관리자</h4>
         <a href="/admin.html">관리자 페이지 →</a>
         <a href="/glossary-raw">용어집 RAW로 보기 →</a>
-        <p class="footer-build">Site <span class="site-build-version">V00.194.03</span> · Admin <span class="admin-build-version">V03.160.04</span></p>
+        <p class="footer-build">Site <span class="site-build-version">V00.195.00</span> · Admin <span class="admin-build-version">V03.161.00</span></p>
       </div>
       <div class="footer-bottom">
         <p data-i18n="footer.copyright">© 2026 ${SITE_BRAND_NAME} · ${SITE_DOMAIN_LABEL}</p>
@@ -661,10 +664,10 @@ export async function onRequestGet({ params, env, request }) {
 
   <script>window.GW_BOOT_RUNTIME=${serializeForScript(publicRuntime)};window.GW_KAKAO_JS_KEY=${serializeForScript(String(publicRuntime.kakao_js_key || ''))};window.GW_POST_BOOT=${serializeForScript({ editPostId: id, sharePostUrl: postUrl, sharePostTitle: titleText, sharePostSubtitle: subtitleText, editSeed: JSON.parse(editSeed), visibleTags })};</script>
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.4/dist/purify.min.js" integrity="sha384-eEu5CTj3qGvu9PdJuS+YlkNi7d2XxQROAFYOr59zgObtlcux1ae1Il3u7jvdCSWu" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-  <script src="/js/main.js?v=20261027082848"></script>
-  <script src="/js/site-chrome.js?v=20261027082848"></script>
-  <script src="/js/chatbot.js?v=20261027082848" defer></script>
-  <script src="/js/post-page.js?v=20261027082848"></script>
+  <script src="/js/main.js?v=20261029073654"></script>
+  <script src="/js/site-chrome.js?v=20261029073654"></script>
+  <script src="/js/chatbot.js?v=20261029073654" defer></script>
+  <script src="/js/post-page.js?v=20261029073654"></script>
   <script async type="text/javascript" charset="utf-8" src="https://t1.kakaocdn.net/kas/static/ba.min.js"></script>
 </body>
 </html>`;
@@ -717,11 +720,18 @@ function notFound(request) {
 
 // /post/:id.md 분기 — Cloudflare Pages가 [id].md.js 같은 dynamic+literal 라우트를
 // 인식 못 해서 같은 함수에서 분기 처리. AI 봇이 HTML 파싱 없이 본문을 인용하도록 markdown 응답.
-async function serveMarkdown(id, env, request) {
+async function loadPost(context, id) {
+  const rust = await queryRust(context, 'post-detail', { id });
+  if (!rust.ok) throw new Error('Rust post detail query failed');
+  return (await rust.json()).post;
+}
+
+async function serveMarkdown(id, context) {
+  const { request } = context;
   if (!Number.isFinite(id) || id < 1) return buildMarkdownErrorResponse(404);
   let post;
   try {
-    post = await env.DB.prepare('SELECT * FROM posts WHERE id = ?').bind(id).first();
+    post = await loadPost(context, id);
   } catch (err) {
     console.error('GET /post/:id.md DB error:', err);
     return buildMarkdownErrorResponse(500, '게시글을 불러오지 못했습니다.');
@@ -729,7 +739,8 @@ async function serveMarkdown(id, env, request) {
   if (!post || post.published === 0) return buildMarkdownErrorResponse(404);
   const origin = new URL(request.url).origin;
   const postUrl = `${origin}/post/${id}`;
-  return buildPostMarkdownResponse({ post, postUrl, origin });
+  try { return await buildRustPostMarkdownResponse({ post, postUrl, origin, request, env:context.env }); }
+  catch (err) { console.error('GET /post/:id.md render error:', err); return buildMarkdownErrorResponse(500, '게시글을 불러오지 못했습니다.'); }
 }
 
 function errorPage(request) {

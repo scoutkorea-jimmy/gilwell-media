@@ -1,3 +1,4 @@
+import { singleSetting, compareAndSetSetting, queryRust } from '../../_shared/rust-server.js';
 /**
  * Gilwell Media · Ticker Settings
  *
@@ -11,9 +12,7 @@ import { recordSettingChange } from '../../_shared/settings-audit.js';
 
 export async function onRequestGet({ env, request }) {
   try {
-    const row = await env.DB.prepare(
-      `SELECT value FROM settings WHERE key = 'ticker'`
-    ).first();
+    const row = await singleSetting(env, 'ticker');
     const items = row ? JSON.parse(row.value) : DEFAULT_TICKER_ITEMS;
     return json({ items }, 200, publicCacheHeaders(300, 1800));
   } catch (err) {
@@ -31,24 +30,15 @@ export async function onRequestPut({ request, env }) {
     return json({ error: 'Invalid JSON' }, 400);
   }
 
-  const { items } = body;
-  if (!Array.isArray(items) || items.length === 0) {
-    return json({ error: '항목 배열을 입력해주세요' }, 400);
-  }
-
-  const safe = items
-    .map(s => String(s).trim())
-    .filter(s => s.length > 0)
-    .slice(0, 20);
-
   try {
-    const prevRow = await env.DB.prepare(`SELECT value FROM settings WHERE key = 'ticker'`).first();
+    const response = await queryRust({request,env}, 'settings-text-normalize', {kind:'ticker',body});
+    if (!response.ok) throw new Error('Rust ticker normalization failed');
+    const {items:safe,error} = await response.json();
+    if (error) return json({error},400);
+    const prevRow = await singleSetting(env, 'ticker');
     if (body.if_current && JSON.stringify(body.if_current.items) !== JSON.stringify(prevRow ? JSON.parse(prevRow.value) : DEFAULT_TICKER_ITEMS)) return json({ error: '티커가 다른 화면에서 변경되었습니다. 입력을 보존하고 최신 값을 확인해주세요.' }, 409);
-    const write = await env.DB.prepare(
-      `INSERT INTO settings (key, value) VALUES ('ticker', ?)
-       ON CONFLICT(key) DO UPDATE SET value = excluded.value WHERE settings.value IS ?`
-    ).bind(JSON.stringify(safe), prevRow ? prevRow.value : null).run();
-    if (write.meta && write.meta.changes !== 1) return json({ error: '동시 티커 변경이 감지되었습니다.' }, 409);
+    const changes = await compareAndSetSetting(env, 'ticker', JSON.stringify(safe), prevRow ? prevRow.value : null);
+    if (changes !== 1) return json({ error: '동시 티커 변경이 감지되었습니다.' }, 409);
     await recordSettingChange(env, {
       key: 'ticker',
       previousValue: prevRow && prevRow.value,

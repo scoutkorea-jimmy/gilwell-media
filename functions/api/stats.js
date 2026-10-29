@@ -1,4 +1,5 @@
 import { PUBLIC_DATE_EXPR } from '../_shared/post-public-date.js';
+import { queryRust } from '../_shared/rust-server.js';
 
 /**
  * Gilwell Media · Article Stats
@@ -19,25 +20,9 @@ export async function onRequestGet(context) {
       });
     if (context.waitUntil) context.waitUntil(runDuePublish());
     else await runDuePublish();
-    // Use KST (UTC+9) for "today" so the count matches Korean local midnight
-    const nowKST = new Date(Date.now() + 9 * 60 * 60 * 1000);
-    const today = nowKST.toISOString().slice(0, 10); // YYYY-MM-DD in KST
-
-    const [koreaRow, aprRow, wosmRow, peopleRow, todayRow] = await Promise.all([
-      env.DB.prepare(`SELECT COUNT(*) AS n FROM posts WHERE category = 'korea' AND published = 1`).first(),
-      env.DB.prepare(`SELECT COUNT(*) AS n FROM posts WHERE category = 'apr'   AND published = 1`).first(),
-      env.DB.prepare(`SELECT COUNT(*) AS n FROM posts WHERE category = 'wosm'  AND published = 1`).first(),
-      env.DB.prepare(`SELECT COUNT(*) AS n FROM posts WHERE category = 'people' AND published = 1`).first(),
-      env.DB.prepare(`SELECT COUNT(*) AS n FROM posts WHERE date(${PUBLIC_DATE_EXPR}) = date(?) AND published = 1`).bind(today).first(),
-    ]);
-
-    return json({
-      korea: koreaRow?.n ?? 0,
-      apr:   aprRow?.n  ?? 0,
-      wosm:  wosmRow?.n ?? 0,
-      people: peopleRow?.n ?? 0,
-      today: todayRow?.n ?? 0,
-    });
+    const rust = await queryRust(context, 'post-stats', { publicDateExpr: PUBLIC_DATE_EXPR, nowMs: Date.now() });
+    if (!rust.ok) throw new Error('Rust stats query failed');
+    return json(await rust.json());
   } catch (err) {
     console.error('GET /api/stats error:', err);
     return json({ error: 'Database error' }, 500);

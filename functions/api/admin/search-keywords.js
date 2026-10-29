@@ -1,5 +1,6 @@
+import { queryRust } from '../../_shared/rust-server.js';
 import { gateMenuAccess } from '../../_shared/admin-permissions.js';
-import { resolveAdminAnalyticsRange, analyticsRangeMeta, shiftAnalyticsDate } from '../../_shared/admin-analytics-range.js';
+import { resolveAdminAnalyticsRangeRust, analyticsRangeMeta, shiftAnalyticsDate } from '../../_shared/admin-analytics-range.js';
 
 const json = (data, status = 200) =>
   new Response(JSON.stringify(data), {
@@ -28,94 +29,13 @@ const json = (data, status = 200) =>
  *       검색어 길이 2자 미만·100자 초과는 노이즈 필터.
  */
 
-// 호스트 suffix 매칭 + 쿼리 파라미터 이름
-const SEARCH_ENGINES = [
-  { match: /(^|\.)google\./i,        engine: 'Google',     params: ['q'] },
-  { match: /(^|\.)search\.naver\./i, engine: 'Naver',      params: ['query'] },
-  { match: /(^|\.)naver\./i,         engine: 'Naver',      params: ['query'] },
-  { match: /(^|\.)search\.daum\./i,  engine: 'Daum',       params: ['q'] },
-  { match: /(^|\.)daum\./i,          engine: 'Daum',       params: ['q'] },
-  { match: /(^|\.)bing\./i,          engine: 'Bing',       params: ['q'] },
-  { match: /(^|\.)search\.yahoo\./i, engine: 'Yahoo',      params: ['p'] },
-  { match: /(^|\.)yahoo\./i,         engine: 'Yahoo',      params: ['p'] },
-  { match: /(^|\.)duckduckgo\./i,    engine: 'DuckDuckGo', params: ['q'] },
-  { match: /(^|\.)baidu\./i,         engine: 'Baidu',      params: ['wd', 'word'] },
-  { match: /(^|\.)yandex\./i,        engine: 'Yandex',     params: ['text'] },
-  { match: /(^|\.)ecosia\./i,        engine: 'Ecosia',     params: ['q'] },
-  { match: /(^|\.)zum\./i,           engine: 'Zum',        params: ['query'] },
-  { match: /(^|\.)nate\./i,          engine: 'Nate',       params: ['q'] },
-];
-
-function detectEngine(host) {
-  if (!host) return null;
-  for (const spec of SEARCH_ENGINES) {
-    if (spec.match.test(host)) return spec;
-  }
-  return null;
-}
-
-function extractKeyword(referrerUrl) {
-  if (!referrerUrl) return null;
-  let parsed;
-  try { parsed = new URL(referrerUrl); }
-  catch (_) { return null; }
-  const engine = detectEngine(parsed.hostname);
-  if (!engine) return null;
-  for (const paramName of engine.params) {
-    const raw = parsed.searchParams.get(paramName);
-    if (raw) {
-      const kw = String(raw).trim();
-      if (kw.length >= 2 && kw.length <= 100) {
-        return { keyword: kw, engine: engine.engine };
-      }
-    }
-  }
-  return null;
-}
-
-export function summarizeSearchRows(rows, limit = 100) {
-  const keywordCounts = new Map();
-  const engineCounts = new Map();
-  let totalVisits = 0;
-  let knownVisits = 0;
-
-  (rows || []).forEach((row) => {
-    const referrerHost = String(row.referrer_host || '').toLowerCase();
-    const info = extractKeyword(row.referrer_url);
-    let engine = detectEngine(referrerHost);
-    if (!engine && row.referrer_url) {
-      try { engine = detectEngine(new URL(row.referrer_url).hostname); }
-      catch (_) { /* 기존의 잘못된 URL은 제외 */ }
-    }
-    if (!engine) return;
-    const visits = Number(row.visits) || 0;
-    totalVisits += visits;
-    engineCounts.set(engine.engine, (engineCounts.get(engine.engine) || 0) + visits);
-    if (!info) return;
-    knownVisits += visits;
-    const normalizedKey = info.keyword.toLowerCase();
-    const existing = keywordCounts.get(normalizedKey);
-    if (existing) existing.visits += visits;
-    else keywordCounts.set(normalizedKey, { keyword: info.keyword, engine: info.engine, visits });
-  });
-
-  return {
-    total_visits: totalVisits,
-    known_visits: knownVisits,
-    hidden_visits: totalVisits - knownVisits,
-    total_unique: keywordCounts.size,
-    by_engine: Array.from(engineCounts.entries()).map(([engine, visits]) => ({ engine, visits })).sort((a, b) => b.visits - a.visits),
-    keywords: Array.from(keywordCounts.values()).sort((a, b) => b.visits - a.visits || a.keyword.localeCompare(b.keyword, 'ko')).slice(0, limit),
-  };
-}
-
 export async function onRequestGet({ request, env }) {
   const __gate = await gateMenuAccess(request, env, 'analytics-visits', 'view'); if (__gate) return __gate
   if (!env.DB) return json({ error: 'DB 바인딩이 없습니다.' }, 503);
 
   const url = new URL(request.url);
   let applied;
-  try { applied = resolveAdminAnalyticsRange(url.searchParams); }
+  try { applied = await resolveAdminAnalyticsRangeRust(url.searchParams, env); }
   catch (err) { return json({ error: err.message }, 400); }
   const custom = !!(url.searchParams.get('start') || url.searchParams.get('end'));
   const range = { ...analyticsRangeMeta(applied), start: custom ? applied.startDate : null, end: custom ? applied.endDate : null,
@@ -123,21 +43,15 @@ export async function onRequestGet({ request, env }) {
   const limit = Math.max(10, Math.min(500, Number(url.searchParams.get('limit')) || 100));
 
   try {
-    const sql = `
-        SELECT referrer_url, referrer_host, COUNT(*) AS visits
-          FROM site_visits
-         WHERE datetime(visited_at) >= datetime(?, '-9 hours')
-           AND datetime(visited_at) < datetime(?, '-9 hours')
-           AND path NOT LIKE '/api/%' AND path NOT IN ('/admin', '/admin.html')
-         GROUP BY referrer_url, referrer_host
-      `;
-    const args = [applied.startDate, shiftAnalyticsDate(applied.endDate, 1)];
-    const { results } = await env.DB.prepare(sql).bind(...args).all();
-
-    return json({
-      range,
-      ...summarizeSearchRows(results, limit),
+    const response = await queryRust({request, env}, 'search-referrers', {
+      start:applied.startDate, end:shiftAnalyticsDate(applied.endDate, 1),
     });
+    if (!response.ok) throw new Error('Rust search referrer query failed');
+    const { rows: results } = await response.json();
+
+    const summary = await queryRust({request, env}, 'search-keywords-summary', {rows:results, limit});
+    if (!summary.ok) throw new Error('Rust search keyword summary failed');
+    return json({range, ...await summary.json()});
   } catch (err) {
     console.error('GET /api/admin/search-keywords error:', err);
     return json({ error: '처리에 실패했습니다.', code: 'server_error' }, 500);

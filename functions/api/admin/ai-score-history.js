@@ -12,6 +12,7 @@
  *
  * 관리자 인증 필수. 등급별·점수 기반 정렬·검색으로 품질 추이 파악용.
  */
+import { queryRust } from '../../_shared/rust-server.js';
 import { extractToken, verifyTokenRole } from '../../_shared/auth.js';
 import { gateMenuAccess } from '../../_shared/admin-permissions.js';
 
@@ -29,112 +30,37 @@ export async function onRequestGet({ request, env }) {
   if (!env.DB) return json({ error: 'DB 바인딩이 없습니다.' }, 503);
 
   const url = new URL(request.url);
-  const limit = clamp(parseInt(url.searchParams.get('limit') || String(DEFAULT_LIMIT), 10) || DEFAULT_LIMIT, 1, MAX_LIMIT);
-  const offset = Math.max(0, parseInt(url.searchParams.get('offset') || '0', 10) || 0);
-  const q = String(url.searchParams.get('q') || '').trim().slice(0, 120);
-  const grade = String(url.searchParams.get('grade') || '').trim().toUpperCase();
-  const minScoreRaw = parseInt(url.searchParams.get('min_score') || '', 10);
-  const minScore = Number.isFinite(minScoreRaw) ? clamp(minScoreRaw, 0, 100) : null;
-
-  const where = [];
-  const args = [];
-  if (q) {
-    where.push("(COALESCE(input_title,'') LIKE ? OR COALESCE(overall_summary,'') LIKE ?)");
-    const pat = `%${q}%`;
-    args.push(pat, pat);
-  }
-  if (grade && ['S', 'A', 'B', 'C', 'D'].includes(grade)) {
-    where.push('overall_grade = ?');
-    args.push(grade);
-  }
-  if (minScore !== null) {
-    where.push('overall_score >= ?');
-    args.push(minScore);
-  }
-  const whereClause = where.length ? 'WHERE ' + where.join(' AND ') : '';
+  const {limit,offset,q,grade,minScore} = await resolveScoreHistoryFiltersRust(url.searchParams, env);
 
   try {
-    const [items, totalRow, stats] = await Promise.all([
-      env.DB.prepare(
-        `SELECT id, created_at, actor, input_title, input_subtitle, input_body_chars,
-                input_tags, overall_score, overall_grade, overall_summary,
-                improvement, revision_suggestion, categories_json,
-                latency_ms, total_tokens, status, error_code
-         FROM ai_score_log
-         ${whereClause}
-         ORDER BY created_at DESC, id DESC
-         LIMIT ? OFFSET ?`
-      ).bind(...args, limit, offset).all().then((r) => r.results || []),
-      env.DB.prepare(
-        `SELECT COUNT(*) AS total FROM ai_score_log ${whereClause}`
-      ).bind(...args).first(),
-      env.DB.prepare(
-        `SELECT
-          COUNT(*) AS total,
-          COALESCE(AVG(overall_score), 0) AS avg_score,
-          SUM(CASE WHEN overall_grade = 'S' THEN 1 ELSE 0 END) AS grade_s,
-          SUM(CASE WHEN overall_grade = 'A' THEN 1 ELSE 0 END) AS grade_a,
-          SUM(CASE WHEN overall_grade = 'B' THEN 1 ELSE 0 END) AS grade_b,
-          SUM(CASE WHEN overall_grade = 'C' THEN 1 ELSE 0 END) AS grade_c,
-          SUM(CASE WHEN overall_grade = 'D' THEN 1 ELSE 0 END) AS grade_d,
-          COALESCE(AVG(latency_ms), 0) AS avg_latency_ms,
-          COALESCE(SUM(total_tokens), 0) AS total_tokens_sum,
-          COALESCE(AVG(total_tokens), 0) AS avg_tokens
-         FROM ai_score_log`
-      ).first(),
+    const query = kind => queryRust({request, env}, 'ai-score-history', {kind, q, grade, min_score:minScore, limit, offset})
+      .then(response => { if (!response.ok) throw new Error('Rust AI score history query failed'); return response.json(); });
+    const [page, stats] = await Promise.all([
+      query('page'),
+      query('stats').then(data=>data.row),
     ]);
+    if (!Array.isArray(page.rows) || !page.row || !Number.isInteger(page.row.total) || page.row.total < 0) throw new Error('Invalid Rust AI score page');
+    const items=page.rows, totalRow=page.row;
 
-    const enriched = (items || []).map((row) => {
-      let categories = [];
-      if (row.categories_json) {
-        try { categories = JSON.parse(row.categories_json); } catch (_) {}
+    const legacyCategories = [];
+    for (const [index, row] of items.entries()) {
+      if (!Object.hasOwn(row, 'categories')) {
+        let categories = [];
+        if (row.categories_json) {
+          try { categories = JSON.parse(row.categories_json); } catch (_) {}
+        }
+        // shortcut: unusual JSON uses the legacy parser, remove after parser compatibility is proven.
+        legacyCategories.push([index, categories]);
       }
-      return {
-        id: row.id,
-        created_at: row.created_at,
-        created_at_kst: formatKst(row.created_at),
-        actor: row.actor,
-        input_title: row.input_title,
-        input_subtitle: row.input_subtitle,
-        input_body_chars: row.input_body_chars,
-        input_tags: row.input_tags,
-        overall_score: row.overall_score,
-        overall_grade: row.overall_grade,
-        overall_summary: row.overall_summary,
-        improvement: row.improvement,
-        revision_suggestion: row.revision_suggestion,
-        categories,
-        latency_ms: row.latency_ms,
-        total_tokens: row.total_tokens,
-        status: row.status,
-        error_code: row.error_code,
-      };
+      delete row.categories_json;
+    }
+    const response = await queryRust({request, env}, 'ai-score-history-response', {
+      items, total_row: totalRow, stats, limit, offset, generated_at: Math.floor(Date.now() / 1000),
     });
-
-    return json({
-      items: enriched,
-      pagination: {
-        total: Number(totalRow?.total || 0),
-        limit,
-        offset,
-        has_more: (offset + enriched.length) < Number(totalRow?.total || 0),
-      },
-      stats: {
-        total: Number(stats?.total || 0),
-        avg_score: Math.round(Number(stats?.avg_score || 0)),
-        grade_distribution: {
-          S: Number(stats?.grade_s || 0),
-          A: Number(stats?.grade_a || 0),
-          B: Number(stats?.grade_b || 0),
-          C: Number(stats?.grade_c || 0),
-          D: Number(stats?.grade_d || 0),
-        },
-        avg_latency_ms: Math.round(Number(stats?.avg_latency_ms || 0)),
-        total_tokens_sum: Number(stats?.total_tokens_sum || 0),
-        avg_tokens: Math.round(Number(stats?.avg_tokens || 0)),
-      },
-      generated_at: Math.floor(Date.now() / 1000),
-    });
+    if (!response.ok) throw new Error('Rust AI score history response failed');
+    const result = await response.json();
+    for (const [index, categories] of legacyCategories) result.items[index].categories = categories;
+    return json(result);
   } catch (err) {
     console.error('GET /api/admin/ai-score-history error:', err);
     return json({ error: '처리에 실패했습니다.', code: 'server_error' }, 500);
@@ -145,11 +71,27 @@ function clamp(n, min, max) {
   return Math.max(min, Math.min(max, n));
 }
 
-function formatKst(unixSec) {
-  const n = Number(unixSec);
-  if (!Number.isFinite(n) || n <= 0) return '';
-  // +9 hours for KST; output YYYY-MM-DD HH:mm:ss
-  const d = new Date(n * 1000 + 9 * 3600 * 1000);
-  const pad = (x) => String(x).padStart(2, '0');
-  return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())} ${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}:${pad(d.getUTCSeconds())}`;
+
+export function resolveScoreHistoryFiltersLegacy(params) {
+  const limit = clamp(parseInt(params.get('limit') || String(DEFAULT_LIMIT), 10) || DEFAULT_LIMIT, 1, MAX_LIMIT);
+  const offset = Math.max(0, parseInt(params.get('offset') || '0', 10) || 0);
+  const q = String(params.get('q') || '').trim().slice(0, 120);
+  const grade = String(params.get('grade') || '').trim().toUpperCase();
+  const minScoreRaw = parseInt(params.get('min_score') || '', 10);
+  const minScore = Number.isFinite(minScoreRaw) ? clamp(minScoreRaw, 0, 100) : null;
+  return {limit,offset,q,grade,minScore};
+}
+
+export async function resolveScoreHistoryFiltersRust(params, env = {}, run = queryRust) {
+  const original=resolveScoreHistoryFiltersLegacy(params);
+  try {
+    const response=await run({env,request:{url:'https://internal.invalid/'}},'score-history-filters',{
+      limit:params.get('limit'),offset:params.get('offset'),q:params.get('q'),grade:params.get('grade'),min_score:params.get('min_score'),
+    });
+    if(!response.ok) return original;
+    const result=await response.json();
+    if(!Array.isArray(result.q_units)||result.q_units.length>120||!result.q_units.every(n=>Number.isInteger(n)&&n>=0&&n<=65535)) return original;
+    const normalized={limit:result.limit,offset:result.offset,q:String.fromCharCode(...result.q_units),grade:result.grade,minScore:result.minScore};
+    return Object.keys(original).every(key=>normalized[key]===original[key])?normalized:original;
+  } catch {return original;}
 }

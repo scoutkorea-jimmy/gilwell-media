@@ -1,3 +1,5 @@
+import { queryRust } from './rust-server.js';
+
 export const HOMEPAGE_ISSUE_TYPE_OPTIONS = ['error', 'issue', 'risk', 'improvement'];
 export const HOMEPAGE_ISSUE_STATUS_OPTIONS = ['open', 'monitoring', 'resolved', 'archived'];
 export const HOMEPAGE_ISSUE_SEVERITY_OPTIONS = ['high', 'medium', 'low'];
@@ -5,43 +7,8 @@ export const HOMEPAGE_ISSUE_AREA_OPTIONS = ['homepage', 'api', 'ui', 'data', 'mo
 
 export async function ensureHomepageIssuesTable(env) {
   if (!env || !env.DB) return;
-  await env.DB.prepare(
-    `CREATE TABLE IF NOT EXISTS homepage_issues (
-      id           INTEGER PRIMARY KEY AUTOINCREMENT,
-      title        TEXT NOT NULL,
-      issue_type   TEXT NOT NULL DEFAULT 'issue',
-      status       TEXT NOT NULL DEFAULT 'open',
-      severity     TEXT NOT NULL DEFAULT 'medium',
-      area         TEXT NOT NULL DEFAULT 'homepage',
-      source_path  TEXT,
-      summary      TEXT,
-      impact       TEXT,
-      cause        TEXT,
-      action_items TEXT,
-      reporter     TEXT,
-      occurred_at  TEXT,
-      last_seen_at TEXT,
-      occurrence_count INTEGER NOT NULL DEFAULT 1,
-      created_at   TEXT NOT NULL DEFAULT (datetime('now')),
-      updated_at   TEXT NOT NULL DEFAULT (datetime('now')),
-      resolved_at  TEXT
-    )`
-  ).run();
-  const columns = await listHomepageIssueColumns(env);
-  if (!columns.has('last_seen_at')) {
-    await runOptionalAlter(env, `ALTER TABLE homepage_issues ADD COLUMN last_seen_at TEXT`);
-  }
-  if (!columns.has('occurrence_count')) {
-    await runOptionalAlter(env, `ALTER TABLE homepage_issues ADD COLUMN occurrence_count INTEGER NOT NULL DEFAULT 1`);
-  }
-  await env.DB.prepare(
-    `CREATE INDEX IF NOT EXISTS idx_homepage_issues_status_updated
-       ON homepage_issues(status, updated_at DESC)`
-  ).run();
-  await env.DB.prepare(
-    `CREATE INDEX IF NOT EXISTS idx_homepage_issues_severity_updated
-      ON homepage_issues(severity, updated_at DESC)`
-  ).run();
+  const response = await queryRust({env, request:{url:'https://internal.invalid/'}}, 'homepage-issue-ensure', {});
+  if (!response.ok) throw new Error('Rust homepage issue schema setup failed');
 }
 
 export function normalizeHomepageIssue(row) {
@@ -106,22 +73,11 @@ export async function recordHomepageIssue(env, input) {
   await ensureHomepageIssuesTable(env);
   const item = safe.value;
   const occurredAt = item.occurred_at || nowUtcText();
-  const existing = await env.DB.prepare(
-    `SELECT *
-       FROM homepage_issues
-      WHERE title = ?
-        AND issue_type = ?
-        AND area = ?
-        AND COALESCE(source_path, '') = ?
-        AND status IN ('open', 'monitoring')
-      ORDER BY datetime(updated_at) DESC, id DESC
-      LIMIT 1`
-  ).bind(
-    item.title,
-    item.issue_type,
-    item.area,
-    item.source_path || ''
-  ).first();
+  const lookup = await queryRust({ env, request: { url: 'https://internal.invalid/' } }, 'homepage-issue-find', {
+    title: item.title, issueType: item.issue_type, area: item.area, sourcePath: item.source_path || '',
+  });
+  if (!lookup.ok) throw new Error('Rust homepage issue lookup failed');
+  const { row: existing } = await lookup.json();
 
   if (existing) {
     const current = normalizeHomepageIssue(existing);
@@ -129,77 +85,25 @@ export async function recordHomepageIssue(env, input) {
     const nextStatus = current.status === 'resolved' || current.status === 'archived'
       ? item.status
       : current.status;
-    await env.DB.prepare(
-      `UPDATE homepage_issues
-          SET status = ?,
-              severity = ?,
-              summary = ?,
-              impact = ?,
-              cause = ?,
-              action_items = ?,
-              reporter = ?,
-              occurred_at = COALESCE(occurred_at, ?),
-              last_seen_at = ?,
-              occurrence_count = COALESCE(occurrence_count, 1) + 1,
-              updated_at = datetime('now')
-        WHERE id = ?`
-    ).bind(
-      nextStatus,
-      nextSeverity,
-      item.summary || current.summary || null,
-      item.impact || current.impact || null,
-      item.cause || current.cause || null,
-      item.action_items || current.action_items || null,
-      item.reporter || current.reporter || null,
-      occurredAt,
-      occurredAt,
-      current.id
-    ).run();
-    const updated = await env.DB.prepare(`SELECT * FROM homepage_issues WHERE id = ?`).bind(current.id).first();
+    const response = await queryRust({ env, request: { url: 'https://internal.invalid/' } }, 'homepage-issue-write', {
+      action: 'update', bindings: [nextStatus, nextSeverity,
+        item.summary || current.summary || null, item.impact || current.impact || null,
+        item.cause || current.cause || null, item.action_items || current.action_items || null,
+        item.reporter || current.reporter || null, occurredAt, occurredAt, current.id],
+    });
+    if (!response.ok) throw new Error('Rust homepage issue update failed');
+    const { row: updated } = await response.json();
     return normalizeHomepageIssue(updated);
   }
 
-  const created = await env.DB.prepare(
-    `INSERT INTO homepage_issues (
-      title, issue_type, status, severity, area, source_path, summary, impact, cause, action_items, reporter, occurred_at, last_seen_at, occurrence_count, resolved_at, updated_at
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, datetime('now'))`
-  ).bind(
-    item.title,
-    item.issue_type,
-    item.status,
-    item.severity,
-    item.area,
-    item.source_path || null,
-    item.summary || null,
-    item.impact || null,
-    item.cause || null,
-    item.action_items || null,
-    item.reporter || null,
-    occurredAt,
-    occurredAt,
-    item.resolved_at || null
-  ).run();
-  const row = await env.DB.prepare(`SELECT * FROM homepage_issues WHERE id = ?`).bind(created.meta.last_row_id).first();
+  const response = await queryRust({ env, request: { url: 'https://internal.invalid/' } }, 'homepage-issue-write', {
+    action: 'create', bindings: [item.title, item.issue_type, item.status, item.severity, item.area,
+      item.source_path || null, item.summary || null, item.impact || null, item.cause || null,
+      item.action_items || null, item.reporter || null, occurredAt, occurredAt, item.resolved_at || null],
+  });
+  if (!response.ok) throw new Error('Rust homepage issue creation failed');
+  const { row } = await response.json();
   return normalizeHomepageIssue(row);
-}
-
-async function listHomepageIssueColumns(env) {
-  try {
-    const { results } = await env.DB.prepare(`PRAGMA table_info(homepage_issues)`).all();
-    return new Set((results || []).map((row) => String(row && row.name || '').trim()).filter(Boolean));
-  } catch (_) {
-    return new Set();
-  }
-}
-
-async function runOptionalAlter(env, sql) {
-  try {
-    await env.DB.prepare(sql).run();
-  } catch (error) {
-    const message = String(error && error.message || '');
-    if (message.indexOf('duplicate column name') >= 0) return;
-    throw error;
-  }
 }
 
 function normalizeEnum(value, allowed, fallback) {

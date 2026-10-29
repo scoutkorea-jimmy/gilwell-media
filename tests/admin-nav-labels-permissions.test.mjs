@@ -15,19 +15,20 @@ function fixture({ role = 'member', accessAdmin = true, permissions = [] } = {})
   const state = { settings: PREVIOUS_LABELS, writes: [], history: [], events: [], unexpected: [] };
   const env = {
     ADMIN_SECRET: TEST_ONLY_SECRET,
-    DB: {
+    DB: Object.assign(new (class D1Database {})(), {
       prepare(query) {
         const sql = query.replace(/\s+/g, ' ').trim();
         let args = [];
         return {
           bind(...values) { args = values; return this; },
           async first() {
+            if (sql.startsWith('INSERT INTO api_rate_limit ')) { state.writes.push({sql,args}); return {count:1,window_start_at:args[1]}; }
             if (sql.includes("key = 'admin_token_min_iat'")) return null;
             if (sql.includes('FROM admin_users')) {
               assert.equal(args[0], user.id);
               return { ...user };
             }
-            if (sql.includes("key = 'nav_labels'")) return { value: state.settings };
+            if (sql.includes("key = 'nav_labels'") || (sql.includes("key = ?") && args[0] === 'nav_labels')) return { value: state.settings };
             if (sql.includes('FROM api_rate_limit')) return null;
             state.unexpected.push(sql);
             assert.fail(`Unexpected fake D1 read: ${sql}`);
@@ -38,18 +39,18 @@ function fixture({ role = 'member', accessAdmin = true, permissions = [] } = {})
               return { success: true };
             }
             if (sql.startsWith('INSERT INTO api_rate_limit ')) return { success: true };
-            if (sql.startsWith('INSERT INTO settings (')) state.settings = args[0];
+            if (sql.startsWith('INSERT INTO settings (')) state.settings = args[1];
             else if (sql.startsWith('INSERT INTO settings_history ')) state.history.push(args);
             else if (sql.startsWith('INSERT INTO operational_events ')) state.events.push(args);
             else {
               state.unexpected.push(sql);
               assert.fail(`Unexpected fake D1 write: ${sql}`);
             }
-            return { success: true };
+            return { success: true, meta: { changes: 1 } };
           },
         };
       },
-    },
+    }),
   };
   return { env, state, user };
 }

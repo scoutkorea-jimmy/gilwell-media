@@ -1,3 +1,5 @@
+import { queryRust } from './rust-server.js';
+
 export function parseNaverSearchPerformance(input) {
   if (!input || typeof input.text !== 'string' || (!input.text.trim() && input.row_count !== 0) || input.text.length > 100000 ||
       !Number.isInteger(input.row_count) || input.row_count < 0 || input.row_count > 30 || input.complete !== true) {
@@ -23,4 +25,14 @@ export function parseNaverSearchPerformance(input) {
   }
   if (rows.length !== input.row_count) throw new Error('붙여넣은 검색어 수와 표의 마지막 순위가 다릅니다. 모든 페이지를 확인해주세요.');
   return { engine: 'naver', site: 'bpmedia.net', period_days: 30, data_through: input.data_through, total_clicks: input.total_clicks, row_count: rows.length, rows };
+}
+
+export async function parseNaverSearchPerformanceRust(input) {
+  // shortcut: isolated UTF-16 surrogates use the legacy parser until Wasm supports them.
+  if (/\\u[dD][89a-fA-F][0-9a-fA-F]{2}/.test(JSON.stringify(input) || '')) return parseNaverSearchPerformance(input);
+  const response = await queryRust({env:{},request:{url:'https://internal.invalid/'}}, 'naver-report-parse', {input:input ?? null});
+  if (!response.ok) throw new Error('검색어 표를 읽지 못했습니다.');
+  const result = await response.json();
+  if (result.error) throw new Error(result.error);
+  return result.report;
 }

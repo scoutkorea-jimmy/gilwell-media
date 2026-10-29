@@ -1,4 +1,5 @@
 import { recordHomepageIssue } from '../../_shared/homepage-issues.js';
+import { queryRust } from '../../_shared/rust-server.js';
 import { deriveIp, logOperationalEvent } from '../../_shared/ops-log.js';
 import { enforceRateLimit, getClientIp, rateLimitResponse } from '../../_shared/rate-limit.js';
 
@@ -218,15 +219,9 @@ async function resolveSeverity(env, code, template, sourcePath) {
   if (!TRANSIENT_DOWNGRADE_CODES.has(code)) return baseSeverity;
   if (baseSeverity !== 'high') return baseSeverity;
   try {
-    const row = await env.DB.prepare(
-      `SELECT occurrence_count
-         FROM homepage_issues
-        WHERE status IN ('open','monitoring')
-          AND source_path = ?
-          AND datetime(last_seen_at) > datetime('now', '-10 minutes')
-        ORDER BY datetime(updated_at) DESC
-        LIMIT 1`
-    ).bind(sourcePath).first();
+    const response = await queryRust({env, request:{url:'https://internal.invalid/'}}, 'homepage-issue-recent', {sourcePath});
+    if (!response.ok) throw new Error('Rust recent issue query failed');
+    const {row} = await response.json();
     const recentCount = (row && Number(row.occurrence_count)) || 0;
     // recentCount 는 다음 dedup 이전 직전까지의 카운트. +1 = 이번 보고 포함.
     return (recentCount + 1) >= 3 ? 'high' : 'medium';

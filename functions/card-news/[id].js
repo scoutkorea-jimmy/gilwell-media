@@ -15,6 +15,7 @@
 import { WEEKLY_TEMPLATE } from '../_shared/card-news-weekly.js';
 import { weeklyStudioHtml } from '../_shared/card-news-weekly-view.js';
 import { gateMenuAccess } from '../_shared/admin-permissions.js';
+import { queryRust } from '../_shared/rust-server.js';
 import { ASSET_VERSION } from '../_shared/build-version.js';
 
 const CSP = [
@@ -45,7 +46,7 @@ function escapeHtml(s) {
     .replace(/"/g, '&quot;');
 }
 
-function renderShell({ id, title, data, v, edit }) {
+export function renderShell({ id, title, data, v, edit }) {
   const a = (p) => `/card-news-app/${p}?v=${v}`;
   return `<!DOCTYPE html>
 <html lang="ko">
@@ -96,6 +97,20 @@ ${edit ? `  <script>
 </html>`;
 }
 
+export async function renderShellRust(options, context, run = queryRust) {
+  const { id, title, data, v, edit } = options;
+  const input = { id:String(Number(id)), title:String(title || '카드뉴스'), data:serializeForScript(data), version:String(v), edit:!!edit };
+  // shortcut: isolated UTF-16 surrogates in titles use the existing renderer.
+  if (/\\u[dD][89a-fA-F][0-9a-fA-F]{2}/.test(JSON.stringify(input.title))) return renderShell(options);
+  try {
+    const response = await run(context, 'card-news-shell', input);
+    if (!response.ok) throw new Error('Rust card news rendering failed');
+    const result = await response.json();
+    if (typeof result.html !== 'string') throw new Error('Invalid card news HTML');
+    return result.html;
+  } catch (_) { return renderShell(options); }
+}
+
 export async function onRequestGet({ request, env, params }) {
   const gate = await gateMenuAccess(request, env, 'card-news', 'view');
   if (gate) return gate;
@@ -109,7 +124,9 @@ export async function onRequestGet({ request, env, params }) {
 
   let row;
   try {
-    row = await env.DB.prepare(`SELECT title, data FROM card_news WHERE id = ?`).bind(id).first();
+    const response = await queryRust({request, env}, 'card-news-admin', {operation:'clone-source', id});
+    if (!response.ok) throw new Error('Rust card news source failed');
+    ({ row } = await response.json());
   } catch (err) {
     console.error('card-news serve D1 error:', err);
     return new Response('데이터베이스 오류', { status: 500 });
@@ -124,7 +141,7 @@ export async function onRequestGet({ request, env, params }) {
 
   const html = data.template === WEEKLY_TEMPLATE
     ? weeklyStudioHtml(id, edit && !embed && !(await gateMenuAccess(request, env, 'card-news', 'write')))
-    : renderShell({ id, title: row.title, data, v: ASSET_VERSION, edit: edit && !embed });
+    : await renderShellRust({ id, title: row.title, data, v: ASSET_VERSION, edit: edit && !embed }, {request, env});
   return new Response(html, {
     status: 200,
     headers: {

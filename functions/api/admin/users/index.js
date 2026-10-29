@@ -25,14 +25,11 @@ import {
 } from '../../../_shared/admin-users.js';
 import { requireOwner } from '../../../_shared/admin-permissions.js';
 import {
-  validateAiDailyLimit,
-  validateDisplayName,
-  validateEditorCode,
-  validatePassword,
-  validatePermissions,
-  validateUsername,
+  validateIdentityRust,
+  validatePermissionsRust,
 } from '../../../_shared/admin-user-validation.js';
 import { logOperationalEvent } from '../../../_shared/ops-log.js';
+import { queryRust } from '../../../_shared/rust-server.js';
 
 export async function onRequestGet({ request, env }) {
   const token = extractToken(request);
@@ -40,16 +37,9 @@ export async function onRequestGet({ request, env }) {
     return json({ error: '오너 권한이 필요합니다.' }, 403);
   }
 
-  const { results } = await env.DB.prepare(
-    `SELECT id, username, display_name, role, permissions, editor_code,
-            ai_daily_limit, status, must_change_password,
-            member_self_rename_used, created_at, last_login_at, deleted_at
-       FROM admin_users
-      ORDER BY
-        CASE role WHEN 'owner' THEN 0 ELSE 1 END,
-        status = 'deleted',
-        created_at DESC`
-  ).all();
+  const response = await queryRust({request, env}, 'admin-user-read', {operation:'list'});
+  if (!response.ok) throw new Error('Rust admin users list failed');
+  const {items:results} = await response.json();
 
   const users = (results || []).map((row) => serializeAdminUser(row));
   const bootstrapRequired = users.length === 0;
@@ -72,29 +62,29 @@ export async function onRequestPost({ request, env }) {
     return json({ error: 'Invalid JSON body' }, 400);
   }
 
-  const usernameV = validateUsername(body.username);
+  const usernameV = await validateIdentityRust(env, 'username', body.username);
   if (!usernameV.ok) return json({ error: usernameV.error }, 400);
-  const displayV = validateDisplayName(body.display_name);
+  const displayV = await validateIdentityRust(env, 'display', body.display_name);
   if (!displayV.ok) return json({ error: displayV.error }, 400);
-  const passwordV = validatePassword(body.password);
+  const passwordV = await validateIdentityRust(env, 'password', body.password);
   if (!passwordV.ok) return json({ error: passwordV.error }, 400);
-  const editorCodeV = validateEditorCode(body.editor_code);
+  const editorCodeV = await validateIdentityRust(env, 'editor', body.editor_code);
   if (!editorCodeV.ok) return json({ error: editorCodeV.error }, 400);
-  const aiLimitV = validateAiDailyLimit(body.ai_daily_limit);
+  const aiLimitV = await validateIdentityRust(env, 'ai-limit', body.ai_daily_limit);
   if (!aiLimitV.ok) return json({ error: aiLimitV.error }, 400);
 
   // Permissions default to access_admin=true + empty list (owner must explicitly
   // grant view/write on menus via the permission modal). Safer default than
   // inheriting the current operator's permissions.
   const permSource = body.permissions || { access_admin: true, permissions: [] };
-  const permV = validatePermissions(permSource);
+  const permV = await validatePermissionsRust(env, permSource);
   if (!permV.ok) return json({ error: permV.error }, 400);
 
   // Reject duplicate username regardless of soft-delete state — we want the
   // owner to intentionally restore rather than accidentally mask a deleted row.
-  const existing = await env.DB.prepare(
-    `SELECT id, status FROM admin_users WHERE username = ?`
-  ).bind(usernameV.value).first();
+  const existingResponse = await queryRust({request, env}, 'admin-user-read', {operation:'username-any', username:usernameV.value});
+  if (!existingResponse.ok) throw new Error('Rust admin username check failed');
+  const {row:existing} = await existingResponse.json();
   if (existing) {
     return json({
       error: existing.status === 'deleted'
@@ -106,9 +96,9 @@ export async function onRequestPost({ request, env }) {
   // editor_code uniqueness — uq index also catches this, but surface a clean
   // message before we hit the DB error path.
   if (editorCodeV.value) {
-    const codeExists = await env.DB.prepare(
-      `SELECT id FROM admin_users WHERE editor_code = ? AND status != 'deleted'`
-    ).bind(editorCodeV.value).first();
+    const codeResponse = await queryRust({request, env}, 'admin-user-read', {operation:'editor-code', editor_code:editorCodeV.value});
+    if (!codeResponse.ok) throw new Error('Rust editor code check failed');
+    const {row:codeExists} = await codeResponse.json();
     if (codeExists) {
       return json({ error: `편집자 코드 "${editorCodeV.value}"가 이미 다른 사용자에게 할당되어 있습니다.` }, 409);
     }
@@ -118,22 +108,12 @@ export async function onRequestPost({ request, env }) {
   const hash = await hashAdminPassword(passwordV.value);
 
   try {
-    const insert = await env.DB.prepare(
-      `INSERT INTO admin_users
-         (username, display_name, password_hash, role, permissions, editor_code,
-          ai_daily_limit, status, must_change_password, created_by)
-       VALUES (?, ?, ?, 'member', ?, ?, ?, 'active', ?, ?)`
-    ).bind(
-      usernameV.value,
-      displayV.value,
-      JSON.stringify(hash),
-      JSON.stringify(permV.value),
-      editorCodeV.value,
-      aiLimitV.value,
-      mustChange,
-      session.uid || null,
-    ).run();
-    const newId = insert && insert.meta && insert.meta.last_row_id;
+    const create = await queryRust({request, env}, 'admin-user-create', {values:[
+      usernameV.value, displayV.value, JSON.stringify(hash), JSON.stringify(permV.value),
+      editorCodeV.value, aiLimitV.value, mustChange, session.uid || null,
+    ]});
+    if (!create.ok) throw new Error('Rust admin user create failed');
+    const {id:newId} = await create.json();
 
     await logOperationalEvent(env, {
       channel: 'admin', type: 'admin_user_created', level: 'info',
@@ -141,11 +121,9 @@ export async function onRequestPost({ request, env }) {
       message: `사용자 생성 — ${usernameV.value} (${displayV.value})`,
     });
 
-    const row = await env.DB.prepare(
-      `SELECT id, username, display_name, role, permissions, editor_code,
-              ai_daily_limit, status, must_change_password, created_at, last_login_at
-         FROM admin_users WHERE id = ?`
-    ).bind(newId).first();
+    const rowResponse = await queryRust({request, env}, 'admin-user-read', {operation:'created-row', id:newId});
+    if (!rowResponse.ok) throw new Error('Rust created user lookup failed');
+    const {row} = await rowResponse.json();
 
     return json({ user: serializeAdminUser(row) }, 201);
   } catch (err) {

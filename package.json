@@ -2,13 +2,20 @@
   "name": "gilwell-media",
   "version": "1.0.0",
   "private": true,
-  "description": "Gilwell Media static site (Cloudflare Pages + Workers). Tests only — no build step.",
+  "description": "Gilwell Media (Cloudflare Pages + Functions with Rust/Wasm server components).",
   "scripts": {
+    "build:rust": "bash scripts/build_rust_server.sh",
+    "test:rust": "node --import ./tests/register-rust-wasm.mjs --test tests/rust-glossary.test.mjs tests/rust-posts.test.mjs tests/rust-ssr.test.mjs tests/content-api-contracts.test.mjs tests/post-chips.test.mjs tests/settings-write-permissions.test.mjs tests/admin-settings-handlers.test.mjs",
+    "test:rust:pages": "node --test tests/rust-pages.test.mjs tests/featured-worker.test.mjs tests/memo-upload-worker.test.mjs",
     "test": "playwright test",
     "test:headed": "playwright test --headed",
     "test:ui": "playwright test --ui",
     "test:install": "playwright install chromium",
-    "audit:exposure": "node scripts/audit_public_exposure.mjs"
+    "audit:exposure": "node scripts/audit_public_exposure.mjs",
+    "test:admin:memorabilia": "node --test tests/admin-memo-bulk-browser.test.mjs",
+    "test:card-news": "node --import ./tests/register-rust-wasm.mjs tests/card-news-weekly.test.mjs",
+    "test:analytics": "node --import ./tests/register-rust-wasm.mjs --test tests/analytics-internals-api.test.mjs tests/search-keywords.test.mjs tests/analytics-tag-aggregate.test.mjs tests/analytics-referrers.test.mjs tests/analytics-response.test.mjs tests/geo-response.test.mjs",
+    "test:search-performance": "node --import ./tests/register-rust-wasm.mjs --test scripts/search-performance/search-performance.test.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.49.0"

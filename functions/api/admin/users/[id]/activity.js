@@ -12,6 +12,7 @@
  */
 import { loadAdminSession } from '../../../../_shared/admin-permissions.js';
 import { loadAdminUserById } from '../../../../_shared/admin-users.js';
+import { queryRust } from '../../../../_shared/rust-server.js';
 
 function parseId(raw) {
   const n = parseInt(raw, 10);
@@ -37,20 +38,12 @@ export async function onRequestGet({ params, request, env }) {
   const limit = Math.min(500, Math.max(1, parseInt(url.searchParams.get('limit'), 10) || 100));
   const before = parseInt(url.searchParams.get('before'), 10);
 
-  let sql = `SELECT id, channel, type, level, ip, path, message, details, created_at
-               FROM operational_events
-              WHERE actor = ?`;
-  const bindings = [target.username];
-  if (Number.isFinite(before) && before > 0) {
-    sql += ` AND id < ?`;
-    bindings.push(before);
-  }
-  sql += ` ORDER BY id DESC LIMIT ?`;
-  bindings.push(limit);
-
   try {
-    const { results } = await env.DB.prepare(sql).bind(...bindings).all();
-    const entries = results || [];
+    const response = await queryRust({request, env}, 'admin-user-activity', {
+      username:target.username, before:Number.isFinite(before) && before > 0 ? before : null, limit,
+    });
+    if (!response.ok) throw new Error('Rust admin activity query failed');
+    const {entries} = await response.json();
     const nextCursor = entries.length === limit ? entries[entries.length - 1].id : null;
     return json({
       username: target.username,

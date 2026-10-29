@@ -1,3 +1,5 @@
+import { queryRust, singleSetting } from './rust-server.js';
+
 export const DEFAULT_CALENDAR_COPY = {
   page_title: '일정 캘린더',
   page_description: '등록된 일정과 행사 정보를 월별로 확인할 수 있습니다.',
@@ -28,15 +30,24 @@ function normalizeCalendarCopy(input) {
 }
 
 export async function loadCalendarCopy(env) {
-  const row = await env.DB.prepare(`SELECT value FROM settings WHERE key = 'calendar_copy'`).first();
+  const row = await singleSetting(env, 'calendar_copy');
   if (!row || !row.value) return { ...DEFAULT_CALENDAR_COPY };
   try {
-    return normalizeCalendarCopy(JSON.parse(row.value));
+    return await sanitizeCalendarCopy(JSON.parse(row.value), env);
   } catch (_) {
     return { ...DEFAULT_CALENDAR_COPY };
   }
 }
 
-export function sanitizeCalendarCopy(input) {
-  return normalizeCalendarCopy(input);
+export async function sanitizeCalendarCopy(input, env = {}) {
+  // shortcut: non-string or isolated UTF-16 values retain the legacy conversion.
+  if ((input && typeof input === 'object' && Object.values(input).some(value => value != null && typeof value !== 'string')) ||
+      /\\u[dD][89a-fA-F][0-9a-fA-F]{2}/.test(JSON.stringify(input) || '')) return normalizeCalendarCopy(input);
+  try {
+    const response = await queryRust({env,request:{url:'https://internal.invalid/'}}, 'calendar-copy-normalize', {raw:input ?? null, defaults:Object.entries(DEFAULT_CALENDAR_COPY)});
+    if (!response.ok) throw new Error('Rust calendar copy normalization failed');
+    return Object.fromEntries((await response.json()).entries);
+  } catch (_) {
+    return normalizeCalendarCopy(input);
+  }
 }

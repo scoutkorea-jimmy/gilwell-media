@@ -1,3 +1,4 @@
+import './register-rust-wasm.mjs';
 import { expect, test, type Page } from '@playwright/test';
 import { openSyntheticAdmin, assertRenderedBounds, SYNTHETIC_POST } from './admin-reorganization-fixture';
 import { readFileSync } from 'node:fs';
@@ -91,7 +92,7 @@ test('real embedded React card-news editor reports dirty, pending, failed and sa
   const apiSource=readFileSync(new URL('../functions/api/admin/card-news/index.js',import.meta.url),'utf8');
   const defaults=vm.runInNewContext('('+apiSource.match(/const DEFAULT_DATA = ([\s\S]+?);\n\nfunction json/)![1]+')');
   const secret='synthetic-card-shell-only-never-production';const token=await createToken(secret,{role:'owner',uid:1,username:'synthetic'});
-  const env={ADMIN_SECRET:secret,DB:{prepare(sql:string){return{bind(){return this;},async first(){if(sql.includes('FROM admin_users'))return{id:1,role:'owner',status:'active',token_min_iat:0,permissions:'{"access_admin":true,"permissions":[]}'};if(sql.includes('FROM card_news'))return{title:'합성 카드뉴스',data:JSON.stringify(defaults)};return null;}};}}};
+  const env={ADMIN_SECRET:secret,DB:Object.assign(new (class D1Database {})(),{prepare(sql:string){return{bind(){return this;},async first(){if(sql.includes('FROM admin_users'))return{id:1,role:'owner',status:'active',token_min_iat:0,permissions:'{"access_admin":true,"permissions":[]}'};if(sql.includes('FROM card_news'))return{title:'합성 카드뉴스',data:JSON.stringify(defaults)};return null;}};}})};
   await page.route(ORIGIN+'/card-news/1**',async route=>{const response=await renderCardnews({env,params:{id:'1'},request:new Request(route.request().url(),{headers:{Cookie:'admin_token='+token}})});expect(response.status).toBe(200);await route.fulfill({status:response.status,headers:Object.fromEntries(response.headers),body:await response.text()});});
   await enter(page,'card-news');await page.locator('[data-cn-edit="1"]').click();const frame=page.frameLocator('#cardnews-editor-frame');
   await expect(frame.getByRole('button',{name:/서버에 저장|서버 저장/})).toBeVisible();const input=frame.locator('input.twk-field[type="text"]:visible').first();await input.fill('서버에 보낼 합성 주차');await expect(page.locator('#cardnews-editor-status')).toContainText('저장하지 않은 변경');

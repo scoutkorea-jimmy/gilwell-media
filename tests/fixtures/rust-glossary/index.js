@@ -1,0 +1,135 @@
+// Compatibility reference from origin/main 835a326a; test-only.
+import { gateMenuAccess } from '../../../functions/_shared/admin-permissions.js';
+import {
+  MISC_BUCKET, UNMATCHED_BUCKET, BUCKETS,
+  normalizeTermValue, isMiscTerm, isUnmatchedTerm, inferBucket, storageBucket,
+} from '../../../functions/_shared/glossary-buckets.mjs';
+
+export async function onRequestGet({ request, env }) {
+  const url = new URL(request.url);
+  const adminScope = url.searchParams.get('scope') === 'admin';
+  const bucketFilter = String(url.searchParams.get('bucket') || '').trim();
+  const query = String(url.searchParams.get('q') || '').trim().toLowerCase();
+  const view = String(url.searchParams.get('view') || 'flat').trim().toLowerCase();
+  try {
+    const { results } = await env.DB.prepare(`
+      SELECT id, bucket, term_ko, term_en, term_fr, description_ko, sort_order, created_at, updated_at
+      FROM glossary_terms
+    `).all();
+    var items = normalizeGlossaryRows(results || []);
+    if (bucketFilter && bucketFilter !== 'all') {
+      items = items.filter(function (item) { return item.bucket === bucketFilter; });
+    }
+    if (query) {
+      items = items.filter(function (item) {
+        return [
+          item.term_ko,
+          item.term_en,
+          item.term_fr,
+          item.description_ko,
+          item.bucket,
+        ].some(function (value) {
+          return String(value || '').toLowerCase().includes(query);
+        });
+      });
+    }
+    var payload = {
+      source: 'BP미디어 스카우트 용어집',
+      audience: 'public-external-app',
+      generated_at: new Date().toISOString(),
+      buckets: BUCKETS,
+      count: items.length,
+      items: items,
+    };
+    if (view === 'grouped' || view === 'buckets') {
+      payload.groups = BUCKETS.reduce(function (acc, bucket) {
+        var groupedItems = items.filter(function (item) { return item.bucket === bucket; });
+        if (groupedItems.length) acc.push({ bucket: bucket, items: groupedItems });
+        return acc;
+      }, []);
+    }
+    return json(payload, 200, {
+      'Cache-Control': adminScope ? 'no-store' : 'public, max-age=300, s-maxage=300, stale-while-revalidate=1800',
+    });
+  } catch (err) {
+    console.error('GET /api/glossary error:', err);
+    return json({ buckets: BUCKETS, items: [] }, 500);
+  }
+}
+
+export async function onRequestPost({ request, env }) {
+  const __gate = await gateMenuAccess(request, env, 'glossary', 'write'); if (__gate) return __gate
+
+  let body;
+  try { body = await request.json(); } catch { return json({ error: 'Invalid JSON' }, 400); }
+  const normalized = normalizeGlossaryInput(body);
+  if (normalized.error) return json({ error: normalized.error }, 400);
+
+  try {
+    const row = await env.DB.prepare(`
+      INSERT INTO glossary_terms (bucket, term_ko, term_en, term_fr, description_ko, sort_order)
+      VALUES (?, ?, ?, ?, ?, ?)
+      RETURNING id, bucket, term_ko, term_en, term_fr, description_ko, sort_order, created_at, updated_at
+    `).bind(
+      storageBucket(normalized.bucket),
+      normalized.term_ko,
+      normalized.term_en,
+      normalized.term_fr,
+      normalized.description_ko,
+      normalized.sort_order
+    ).first();
+    return json({ item: { ...row, bucket: normalized.bucket } }, 201);
+  } catch (err) {
+    console.error('POST /api/glossary error:', err);
+    return json({ error: 'Database error' }, 500);
+  }
+}
+
+function normalizeGlossaryInput(body) {
+  const requestedBucket = String(body.bucket || '').trim();
+  const term_ko = normalizeTermValue(body.term_ko, 120);
+  const term_en = normalizeTermValue(body.term_en, 160);
+  const term_fr = normalizeTermValue(body.term_fr, 160);
+  const description_ko = String(body.description_ko || '').trim().slice(0, 800);
+  const sort_order = Number.isFinite(Number(body.sort_order)) ? Math.max(0, Math.min(9999, parseInt(body.sort_order, 10))) : 0;
+  const bucket = isMiscTerm(term_ko, term_en, term_fr)
+    ? MISC_BUCKET
+    : (isUnmatchedTerm(term_ko, term_en, term_fr) ? UNMATCHED_BUCKET : (inferBucket(term_ko) || requestedBucket));
+  if (!BUCKETS.includes(bucket)) return { error: '올바른 분류를 선택해주세요' };
+  if (!term_ko && !term_en && !term_fr) return { error: '한국어, 영어, 프랑스어 중 하나 이상 입력해주세요' };
+  return { bucket, term_ko, term_en, term_fr, description_ko, sort_order };
+}
+
+function normalizeGlossaryRows(rows) {
+  return rows
+    .map(function (row) {
+      return Object.assign({}, row, {
+        bucket: isMiscTerm(row.term_ko, row.term_en, row.term_fr)
+          ? MISC_BUCKET
+          : (isUnmatchedTerm(row.term_ko, row.term_en, row.term_fr)
+            ? UNMATCHED_BUCKET
+            : (inferBucket(row.term_ko) || row.bucket || '가')),
+      });
+    })
+    .sort(function (a, b) {
+      var bucketDiff = BUCKETS.indexOf(a.bucket) - BUCKETS.indexOf(b.bucket);
+      if (bucketDiff !== 0) return bucketDiff;
+      var sortDiff = (a.sort_order || 0) - (b.sort_order || 0);
+      if (sortDiff !== 0) return sortDiff;
+      var aTerm = String(a.term_ko || a.term_en || a.term_fr || '');
+      var bTerm = String(b.term_ko || b.term_en || b.term_fr || '');
+      var termDiff = aTerm.localeCompare(bTerm, 'ko');
+      if (termDiff !== 0) return termDiff;
+      return (a.id || 0) - (b.id || 0);
+    });
+}
+
+function json(data, status = 200, extraHeaders = {}) {
+  // CORS headers are applied globally by functions/api/_middleware.js.
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: Object.assign({
+      'Content-Type': 'application/json; charset=utf-8',
+    }, extraHeaders),
+  });
+}

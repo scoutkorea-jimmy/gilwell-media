@@ -9,6 +9,7 @@
  * 카드 편집은 이 data 만 갱신하며 원본 게시글(posts)은 절대 건드리지 않는다.
  * (legacy: 업로드 방식으로 만든 행은 r2_key 를 가질 수 있고, 삭제 시 R2 객체도 정리)
  */
+import { queryRust } from '../../../_shared/rust-server.js';
 import { gateMenuAccess } from '../../../_shared/admin-permissions.js';
 import { WEEKLY_TEMPLATE, withSelection, cleanPhotoViews, cleanWeeklyDesign } from '../../../_shared/card-news-weekly.js';
 import { recordSettingChange } from '../../../_shared/settings-audit.js';
@@ -28,9 +29,7 @@ export async function onRequestGet({ request, env, params }) {
   const id = parseInt(params && params.id, 10);
   if (!id || id < 1) return json({ error: 'invalid_id', reason: '잘못된 카드뉴스 ID 입니다.' }, 400);
   try {
-    const row = await env.DB.prepare(
-      `SELECT id, title, slug, data, published, created_at, updated_at FROM card_news WHERE id = ?`
-    ).bind(id).first();
+    const { row } = await cardOperation(request, env, {operation:'detail', id});
     if (!row) return json({ error: 'not_found', reason: '카드뉴스를 찾을 수 없습니다.' }, 404);
     let data = {};
     try { data = JSON.parse(row.data || '{}'); } catch (_) { data = {}; }
@@ -52,7 +51,7 @@ export async function onRequestPut({ request, env, params }) {
 
   let body;
   try { body = await request.json(); } catch (_) { return json({ error: 'invalid_json', reason: '요청 본문이 JSON 형식이 아닙니다.' }, 400); }
-  const row = await env.DB.prepare('SELECT data FROM card_news WHERE id=?').bind(id).first();
+  const { row } = await cardOperation(request, env, {operation:'edit-source', id});
   if (!row) return json({ error: 'not_found', reason: '카드뉴스를 찾을 수 없습니다.' }, 404);
   let previous = {};
   try { previous = JSON.parse(row.data || '{}'); } catch {}
@@ -68,9 +67,8 @@ export async function onRequestPut({ request, env, params }) {
       next.auto_publish = false;
     } catch (error) { return json({ error: 'invalid_weekly', reason: error.message }, 400); }
     const serialized = JSON.stringify(next);
-    const changed = await env.DB.prepare("UPDATE card_news SET data=?,size_bytes=?,updated_at=datetime('now') WHERE id=? AND data=?")
-      .bind(serialized, serialized.length, id, row.data).run();
-    if (!changed.meta?.changes) return json({ error: 'version_mismatch', reason: '저장 중 새 변경이 확인됐습니다. 내용을 다시 불러와 주세요.' }, 409);
+    const changed = await cardOperation(request, env, {operation:'weekly-update', id, data:serialized, size:serialized.length, expected:row.data});
+    if (!changed.changes) return json({ error: 'version_mismatch', reason: '저장 중 새 변경이 확인됐습니다. 내용을 다시 불러와 주세요.' }, 409);
     await recordSettingChange(env, { key: 'card_news', path: '/api/admin/card-news/' + id, previousValue: row.data, message: '주간 카드뉴스의 기사와 디자인을 저장했습니다.', details: { id } }).catch(() => {});
     return json({ ok: true, id, revision: next.revision });
   }
@@ -94,15 +92,8 @@ export async function onRequestPut({ request, env, params }) {
       : (typeof data.issueNo === 'string' && data.issueNo.trim() ? data.issueNo.trim() : null));
 
   try {
-    const exists = await env.DB.prepare(`SELECT id FROM card_news WHERE id = ?`).bind(id).first();
-    if (!exists) return json({ error: 'not_found', reason: '카드뉴스를 찾을 수 없습니다.' }, 404);
-    if (titleFromData) {
-      await env.DB.prepare(`UPDATE card_news SET data = ?, title = ?, updated_at = datetime('now') WHERE id = ?`)
-        .bind(serialized, titleFromData, id).run();
-    } else {
-      await env.DB.prepare(`UPDATE card_news SET data = ?, updated_at = datetime('now') WHERE id = ?`)
-        .bind(serialized, id).run();
-    }
+    const result = await cardOperation(request, env, {operation:'update', id, data:serialized, title:titleFromData});
+    if (!result.changes) return json({ error: 'not_found', reason: '카드뉴스를 찾을 수 없습니다.' }, 404);
     await recordSettingChange(env, {
       key: 'card_news',
       path: `/api/admin/card-news/${id}`,
@@ -124,9 +115,7 @@ export async function onRequestDelete({ request, env, params }) {
   if (!id || id < 1) return json({ error: 'invalid_id', reason: '잘못된 카드뉴스 ID 입니다.' }, 400);
 
   try {
-    const row = await env.DB.prepare(
-      `SELECT id, title, r2_key FROM card_news WHERE id = ?`
-    ).bind(id).first();
+    const { row } = await cardOperation(request, env, {operation:'delete-source', id});
     if (!row) return json({ error: 'not_found', reason: '카드뉴스를 찾을 수 없습니다.' }, 404);
 
     if (row.r2_key && env.POST_IMAGES && typeof env.POST_IMAGES.delete === 'function') {
@@ -136,7 +125,7 @@ export async function onRequestDelete({ request, env, params }) {
       }
     }
 
-    await env.DB.prepare(`DELETE FROM card_news WHERE id = ?`).bind(id).run();
+    await cardOperation(request, env, {operation:'delete', id});
     await recordSettingChange(env, {
       key: 'card_news',
       path: `/api/admin/card-news/${id}`,
@@ -148,4 +137,10 @@ export async function onRequestDelete({ request, env, params }) {
     console.error('DELETE /api/admin/card-news/:id error:', err);
     return json({ error: 'db_error', reason: '데이터베이스 오류가 발생했습니다.' }, 500);
   }
+}
+
+async function cardOperation(request, env, options) {
+  const response = await queryRust({request, env}, 'card-news-admin', options);
+  if (!response.ok) throw new Error('Rust card news operation failed');
+  return response.json();
 }

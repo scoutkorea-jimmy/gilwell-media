@@ -1,19 +1,10 @@
+import { queryRust } from './rust-server.js';
 import { logOperationalEvent } from './ops-log.js';
 
 export async function ensureSettingsHistoryTable(env) {
   if (!env || !env.DB) return;
-  await env.DB.prepare(
-    `CREATE TABLE IF NOT EXISTS settings_history (
-      id       INTEGER PRIMARY KEY AUTOINCREMENT,
-      key      TEXT NOT NULL,
-      value    TEXT NOT NULL,
-      saved_at TEXT NOT NULL DEFAULT (datetime('now'))
-    )`
-  ).run();
-  await env.DB.prepare(
-    `CREATE INDEX IF NOT EXISTS idx_settings_history_time
-       ON settings_history(saved_at DESC, id DESC)`
-  ).run();
+  const response = await queryRust({env, request:{url:'https://internal.invalid/'}}, 'settings-history-write', {operation:'ensure'});
+  if (!response.ok) throw new Error('Rust settings history setup failed');
 }
 
 export async function recordSettingChange(env, input) {
@@ -25,9 +16,8 @@ export async function recordSettingChange(env, input) {
   try {
     await ensureSettingsHistoryTable(env);
     if (payload.previousValue !== undefined && payload.previousValue !== null) {
-      await env.DB.prepare(
-        `INSERT INTO settings_history (key, value) VALUES (?, ?)`
-      ).bind(key, String(payload.previousValue)).run();
+      const response = await queryRust({env, request:{url:'https://internal.invalid/'}}, 'settings-history-write', {operation:'insert', key, value:String(payload.previousValue)});
+      if (!response.ok) throw new Error('Rust settings history insert failed');
     }
     await logOperationalEvent(env, {
       channel: 'admin',

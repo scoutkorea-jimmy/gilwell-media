@@ -1,3 +1,5 @@
+import { queryRust } from './rust-server.js';
+
 /**
  * 홈 팝업 배너 — 공용 조회 로직
  *
@@ -21,15 +23,9 @@ const SELECT_COLUMNS = 'id, image_url, link_url, title, sort_order, active, star
 export async function loadActiveHomeBanners(env) {
   if (!env || !env.DB) return [];
   try {
-    const { results } = await env.DB.prepare(
-      `SELECT ${SELECT_COLUMNS}
-         FROM home_banners
-        WHERE active = 1
-          AND (starts_at IS NULL OR trim(starts_at) = '' OR datetime(starts_at) <= datetime('now'))
-          AND (ends_at   IS NULL OR trim(ends_at)   = '' OR datetime(ends_at)   >= datetime('now'))
-        ORDER BY sort_order ASC, id ASC
-        LIMIT ?`
-    ).bind(MAX_HOME_BANNERS).all();
+    const response = await queryRust({env, request:{url:'https://internal.invalid/'}}, 'banner-list', {active:true});
+    if (!response.ok) throw new Error('Rust active banners query failed');
+    const {rows: results} = await response.json();
     return (results || []).map(serializeBanner);
   } catch (err) {
     // 테이블이 아직 없는 환경(로컬 D1 등)에서도 홈이 죽지 않게 한다.
@@ -39,11 +35,9 @@ export async function loadActiveHomeBanners(env) {
 
 /** 관리자용 — 기간·활성 무관 전체 목록 */
 export async function loadAllHomeBanners(env) {
-  const { results } = await env.DB.prepare(
-    `SELECT ${SELECT_COLUMNS}, created_at, updated_at
-       FROM home_banners
-      ORDER BY sort_order ASC, id ASC`
-  ).all();
+  const response = await queryRust({env, request:{url:'https://internal.invalid/'}}, 'banner-list', {active:false});
+  if (!response.ok) throw new Error('Rust banners query failed');
+  const {rows: results} = await response.json();
   return (results || []).map((row) => ({ ...serializeBanner(row), created_at: row.created_at, updated_at: row.updated_at }));
 }
 

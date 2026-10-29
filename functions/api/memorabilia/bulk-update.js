@@ -1,3 +1,4 @@
+import { queryRust } from '../../_shared/rust-server.js';
 /**
  * POST /api/memorabilia/bulk-update
  *
@@ -34,6 +35,7 @@
  */
 import { gateMenuAccess } from '../../_shared/admin-permissions.js';
 import { syncFtsForId } from '../../_shared/memorabilia-store.js';
+import { buildMemorabiliaFtsValues } from '../../_shared/memorabilia-search.js';
 
 export async function onRequestPost({ request, env }) {
   const gate = await gateMenuAccess(request, env, 'memorabilia', 'write');
@@ -54,21 +56,18 @@ export async function onRequestPost({ request, env }) {
 
   const result = { updated: 0, skipped: 0, errors: [], affected_event_ids: new Set() };
 
+  let ftsSynced = 0;
+  const ftsFailed = [];
   for (const id of ids) {
     try {
       const changed = await applyUpdatesToRow(env.DB, id, u, result.affected_event_ids);
       if (changed) result.updated += 1;
-      else         result.skipped += 1;
+      else result.skipped += 1;
+      ftsSynced += 1;
     } catch (err) {
       result.errors.push({ id, error: String(err && err.message || err) });
-    }
-  }
-
-  // FTS 재구축 — 업데이트 성공한 ids 만 (변경 없는 항목 sync 는 낭비)
-  let ftsSynced = 0;
-  for (const id of ids) {
-    try { await syncFtsForId(env.DB, id); ftsSynced += 1; } catch (err) {
-      console.error('FTS sync failed for memorabilia id', id, err);
+      try { await syncFtsForId(env.DB,id); ftsSynced += 1; }
+      catch (syncError) { ftsFailed.push(id); console.error('FTS sync failed for memorabilia id',id,syncError); }
     }
   }
 
@@ -78,6 +77,7 @@ export async function onRequestPost({ request, env }) {
     skipped: result.skipped,
     errors:  result.errors,
     fts_synced: ftsSynced,
+    ...(ftsFailed.length ? { fts_failed: ftsFailed } : {}),
     affected_event_ids: Array.from(result.affected_event_ids),
   });
 }
@@ -188,124 +188,47 @@ function cleanCodes(arr) {
 
 // ── 행 단위 적용 ────────────────────────────────────────────────────────────
 async function applyUpdatesToRow(db, id, u, affectedEventIds) {
-  // 1) 기존 행 — event_id 변경 추적용
-  const existing = await db.prepare(`SELECT id, event_id FROM memorabilia WHERE id = ?`).bind(id).first();
-  if (!existing) throw new Error('not_found');
-
-  // 2) memorabilia 메인 컬럼 UPDATE — 변경된 필드만
-  const setParts = [];
-  const setBinds = [];
-
-  if (u.status !== undefined)      { setParts.push('status = ?');      setBinds.push(u.status); }
-  if (u.category_id !== undefined) { setParts.push('category_id = ?'); setBinds.push(u.category_id); }
-  if (u.has_event !== undefined)   { setParts.push('has_event = ?');   setBinds.push(u.has_event); }
-  if (u.event_id !== undefined) {
-    setParts.push('event_id = ?');
-    setBinds.push(u.event_id);
-    // 카탈로그 참조가 변하면 denormalized 이름 캐시도 갱신
-    if (u.event_id) {
-      const ev = await db.prepare(`SELECT name_en, name_ko FROM memorabilia_events WHERE id = ?`).bind(u.event_id).first();
-      if (ev) {
-        setParts.push('event_name_en = ?'); setBinds.push(ev.name_en || '');
-        setParts.push('event_name_ko = ?'); setBinds.push(ev.name_ko || '');
-      }
-    }
+  const snapshotResponse = await queryRust({env:{DB:db},request:{url:'https://internal.invalid/'}}, 'memorabilia-bulk-snapshot', {
+    id, labels:[...new Set([...(u.set_tags || []),...(u.add_tags || [])])], hasCategory:u.category_id !== undefined,
+    categoryId:u.category_id ?? null, eventId:u.event_id ?? null,
+  });
+  if (!snapshotResponse.ok) throw new Error('Rust bulk update snapshot failed');
+  const {row,countries:countryRows,tags,tagSnapshots,category,event} = await snapshotResponse.json();
+  if (!row) throw new Error('not_found');
+  const countries=countryRows.map(r=>r.country_code);
+  const nextCountries=new Set(u.set_country_codes !== undefined ? u.set_country_codes : countries);
+  if (u.set_country_codes === undefined) {
+    for (const code of u.add_country_codes || []) nextCountries.add(code);
+    for (const code of u.remove_country_codes || []) nextCountries.delete(code);
   }
-  if (u.year !== undefined)       { setParts.push('year = ?');         setBinds.push(u.year); }
-  if (u.issuer_en !== undefined)  { setParts.push('issuer_en = ?');    setBinds.push(u.issuer_en); }
-  if (u.issuer_ko !== undefined)  { setParts.push('issuer_ko = ?');    setBinds.push(u.issuer_ko); }
-  if (u.material_en !== undefined){ setParts.push('material_en = ?');  setBinds.push(u.material_en); }
-  if (u.material_ko !== undefined){ setParts.push('material_ko = ?');  setBinds.push(u.material_ko); }
-  if (u.size_text !== undefined)  { setParts.push('size_text = ?');    setBinds.push(u.size_text); }
-
-  let mainChanged = false;
-  if (setParts.length) {
-    setParts.push("updated_at = datetime('now')");
-    setBinds.push(id);
-    await db.prepare(`UPDATE memorabilia SET ${setParts.join(', ')} WHERE id = ?`).bind(...setBinds).run();
-    mainChanged = true;
+  const nextTags=new Set(u.set_tags !== undefined ? u.set_tags : tags.map(t=>t.label));
+  if (u.set_tags === undefined) {
+    for (const label of u.add_tags || []) nextTags.add(label);
+    for (const label of u.remove_tags || []) nextTags.delete(label);
   }
-
-  // 3) event_id 변경 시 usage_count 조정
-  if (u.event_id !== undefined && existing.event_id !== u.event_id) {
-    if (existing.event_id) {
-      await db.prepare(`UPDATE memorabilia_events SET usage_count = MAX(usage_count - 1, 0) WHERE id = ?`).bind(existing.event_id).run();
-      affectedEventIds.add(existing.event_id);
-    }
-    if (u.event_id) {
-      await db.prepare(`UPDATE memorabilia_events SET usage_count = usage_count + 1 WHERE id = ?`).bind(u.event_id).run();
-      affectedEventIds.add(u.event_id);
-    }
-  }
-
-  // 4) 태그 변경
-  let tagsChanged = false;
-  if (u.set_tags !== undefined) {
-    await db.prepare(`DELETE FROM memorabilia_tags WHERE memorabilia_id = ?`).bind(id).run();
-    for (const label of u.set_tags) await attachTag(db, id, label);
-    tagsChanged = true;
-  } else {
-    if (u.add_tags && u.add_tags.length) {
-      for (const label of u.add_tags) await attachTag(db, id, label);
-      tagsChanged = true;
-    }
-    if (u.remove_tags && u.remove_tags.length) {
-      for (const label of u.remove_tags) await detachTag(db, id, label);
-      tagsChanged = true;
-    }
-  }
-  if (tagsChanged) {
-    await db.prepare(`
-      UPDATE memorabilia_tag_pool
-         SET usage_count = (SELECT COUNT(*) FROM memorabilia_tags WHERE tag_id = memorabilia_tag_pool.id),
-             updated_at = datetime('now')
-    `).run();
-  }
-
-  // 5) 국가 변경
-  let countriesChanged = false;
-  if (u.set_country_codes !== undefined) {
-    await db.prepare(`DELETE FROM memorabilia_countries WHERE memorabilia_id = ?`).bind(id).run();
-    for (const code of u.set_country_codes) {
-      await db.prepare(`INSERT OR IGNORE INTO memorabilia_countries (memorabilia_id, country_code) VALUES (?, ?)`).bind(id, code).run();
-    }
-    countriesChanged = true;
-  } else {
-    if (u.add_country_codes && u.add_country_codes.length) {
-      for (const code of u.add_country_codes) {
-        await db.prepare(`INSERT OR IGNORE INTO memorabilia_countries (memorabilia_id, country_code) VALUES (?, ?)`).bind(id, code).run();
-      }
-      countriesChanged = true;
-    }
-    if (u.remove_country_codes && u.remove_country_codes.length) {
-      for (const code of u.remove_country_codes) {
-        await db.prepare(`DELETE FROM memorabilia_countries WHERE memorabilia_id = ? AND country_code = ?`).bind(id, code).run();
-      }
-      countriesChanged = true;
-    }
-  }
-
-  if (mainChanged || tagsChanged || countriesChanged) {
-    // updated_at 보장 — main 미변경 + 관계만 변경 케이스
-    if (!mainChanged) {
-      await db.prepare(`UPDATE memorabilia SET updated_at = datetime('now') WHERE id = ?`).bind(id).run();
-    }
-    return true;
-  }
-  return false;
-}
-
-async function attachTag(db, memoId, label) {
-  let row = await db.prepare(`SELECT id FROM memorabilia_tag_pool WHERE label = ?`).bind(label).first();
-  if (!row) {
-    row = await db.prepare(`INSERT INTO memorabilia_tag_pool (label) VALUES (?) RETURNING id`).bind(label).first();
-  }
-  await db.prepare(`INSERT OR IGNORE INTO memorabilia_tags (memorabilia_id, tag_id) VALUES (?, ?)`).bind(memoId, row.id).run();
-}
-async function detachTag(db, memoId, label) {
-  const row = await db.prepare(`SELECT id FROM memorabilia_tag_pool WHERE label = ?`).bind(label).first();
-  if (!row) return;
-  await db.prepare(`DELETE FROM memorabilia_tags WHERE memorabilia_id = ? AND tag_id = ?`).bind(memoId, row.id).run();
+  const idsByLabel=new Map(tags.map(t=>[t.label,Number(t.id)]));
+  for (const tag of tagSnapshots) if (tag.id !== null) idsByLabel.set(tag.label,Number(tag.id));
+  const orderedTags=[...nextTags].sort((a,b)=>(idsByLabel.get(a) ?? Number.MAX_SAFE_INTEGER)-(idsByLabel.get(b) ?? Number.MAX_SAFE_INTEGER));
+  const categoryId=u.category_id !== undefined ? u.category_id : row.category_id;
+  const categorySnapshot=categoryId ? {id:categoryId,exists:!!category,en:category?.label_en ?? null,ko:category?.label_ko ?? null} : null;
+  const eventId=u.event_id;
+  const eventSnapshot=eventId ? {id:eventId,exists:!!event,en:event?.name_en ?? null,ko:event?.name_ko ?? null} : null;
+  const finalRow={...row,...u, event_name_en:event ? (event.name_en || '') : row.event_name_en,
+    event_name_ko:event ? (event.name_ko || '') : row.event_name_ko,
+    category_label_en:category?.label_en || '',category_label_ko:category?.label_ko || '',
+    country_codes:[...nextCountries].sort(),tags:orderedTags};
+  const snapshot={values:[row.id,row.updated_at ?? null,row.title_en ?? null,row.title_ko ?? null,
+    row.event_name_en ?? null,row.event_name_ko ?? null,row.issuer_en ?? null,row.issuer_ko ?? null,
+    row.material_en ?? null,row.material_ko ?? null,row.description_plain_en ?? null,row.description_plain_ko ?? null,
+    row.category_id ?? null,row.category_label_en ?? null,row.category_label_ko ?? null],countries,tags};
+  const response = await queryRust({env:{DB:db},request:{url:'https://internal.invalid/'}}, 'memorabilia-bulk-row', {
+    id,updates:u,fts:buildMemorabiliaFtsValues(finalRow),snapshot,tagSnapshots,categorySnapshot,eventSnapshot,
+  });
+  if (!response.ok) throw new Error('Rust bulk update failed');
+  const result = await response.json();
+  if (result.error) throw new Error(result.error);
+  for (const eventId of result.affectedEventIds || []) affectedEventIds.add(eventId);
+  return result.changed;
 }
 
 function json(data, status = 200) {

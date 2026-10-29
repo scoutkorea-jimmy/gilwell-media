@@ -603,7 +603,7 @@
     if (catSel) {
       const opts = ['<option value="">(분류 없음)</option>'];
       for (const c of state.categories) {
-        if (c.archived && String(c.id) !== cur) continue;
+        if (c.archived) continue;
         opts.push(`<option value="${c.id}">${escapeHtml(c.label_ko)} / ${escapeHtml(c.label_en)}</option>`);
       }
       catSel.innerHTML = opts.join('');
@@ -728,7 +728,8 @@
       const updated = data.updated || 0;
       const skipped = data.skipped || 0;
       const errCount = (data.errors || []).length;
-      toast(`적용 완료 — 변경 ${updated}건 · 변경 없음 ${skipped}건${errCount ? ` · 오류 ${errCount}건` : ''}`, 'success');
+      const ftsFailed = Array.isArray(data.fts_failed) ? data.fts_failed.length : 0;
+      toast(`적용 완료 — 변경 ${updated}건 · 변경 없음 ${skipped}건${errCount ? ` · 오류 ${errCount}건` : ''}${ftsFailed ? ` · 검색 반영 실패 ${ftsFailed}건` : ''}`, ftsFailed || errCount ? 'error' : 'success');
       if (dialogSnapshot('memo-bulkedit-modal') === snapshot) closeBulkEdit(true);
       else { dialogs.set('memo-bulkedit-modal', snapshot); toast('추가로 바꾼 일괄 편집 조건은 유지했습니다. 아직 적용되지 않았습니다.', 'info'); }
       state.selectedIds.clear();
@@ -895,6 +896,7 @@
     const totalMatched = (data.results || []).reduce((s, r) => s + (r.matched || r.changed || 0), 0);
     const totalChanged = data.total_changed || 0;
     const fts = data.fts_synced || 0;
+    const ftsFailed = Array.isArray(data.fts_failed) ? data.fts_failed.length : 0;
 
     summary.innerHTML = `
       <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:6px;">
@@ -903,9 +905,10 @@
           : `<span class="v3-badge v3-badge-success">변경 ${totalChanged}건</span>`
         }
         ${!isDry && fts ? `<span class="v3-badge v3-badge-muted">검색 인덱스 ${fts}건 재구성</span>` : ''}
+        ${!isDry && ftsFailed ? `<span class="v3-badge">검색 반영 실패 ${ftsFailed}건</span>` : ''}
       </div>
       <div style="font-size: 11.5px; color: var(--gray-700,#3f3f3f);">
-        ${isDry ? '실제 변경은 일어나지 않았습니다. 적용하려면 다시 "적용" 버튼을 클릭하세요.' : '변경이 즉시 반영되었습니다.'}
+        ${isDry ? '실제 변경은 일어나지 않았습니다. 적용하려면 다시 "적용" 버튼을 클릭하세요.' : ftsFailed ? '일부 검색 결과는 최신 변경을 반영하지 못했습니다.' : '변경이 즉시 반영되었습니다.'}
       </div>
     `;
 
@@ -2103,6 +2106,8 @@
   // 행사 카탈로그 (panel-memorabilia-events)
   // ══════════════════════════════════════════════════════════════════════════
   let _editingEvent = null;   // 모달에 hydrated 된 행사 row | null (신규)
+  let _eventEditSnapshot = null;
+  const EVENT_SNAPSHOT_FIELDS = ['name_en','name_ko','category_id','start_year','start_month','start_day','end_year','end_month','end_day','description_en','description_ko','archived'];
   let _eventsWiredOnce = false;
 
   async function bootEvents() {
@@ -2807,6 +2812,7 @@
     if (!ev && !canWrite('memorabilia-events')) return;
     if (!canCloseDialog("memo-ev-edit-modal")) return;
     _editingEvent = ev;
+    _eventEditSnapshot = ev ? EVENT_SNAPSHOT_FIELDS.map(key => ev[key] ?? null) : null;
     $('#memo-ev-edit-title').textContent = ev ? '행사 편집' : '새 행사';
     $('#memo-ev-edit-delete').hidden = !ev;
     $('#memo-ev-name-en').value = ev?.name_en || '';
@@ -2831,6 +2837,7 @@
   function closeEventEditor(force) {
     if (!hideDialog("memo-ev-edit-modal", force)) return;
     _editingEvent = null;
+    _eventEditSnapshot = null;
   }
 
   async function saveEvent() {
@@ -2853,6 +2860,7 @@
       description_ko: $('#memo-ev-desc-ko').value || '',
       archived: $('#memo-ev-archived').checked,
     };
+    if (target && _eventEditSnapshot) body.expected_snapshot = _eventEditSnapshot;
     if (!startMutation('memo-ev-edit-modal')) return;
     const saveBtn = $('#memo-ev-edit-save');
     saveBtn.disabled = true; const orig = saveBtn.textContent; saveBtn.textContent = '저장 중…';

@@ -1,16 +1,17 @@
+import { settingSnapshot, saveRevisionedSetting, singleSetting } from '../../_shared/rust-server.js';
 import { verifyTokenRole, extractToken } from '../../_shared/auth.js';
 import { gateMenuAccess } from '../../_shared/admin-permissions.js';
-import { normalizeSiteMeta } from '../../_shared/site-meta.js';
+import { normalizeSiteMetaRust } from '../../_shared/site-meta.js';
 import { deleteStoredImageByUrl, storeDataImage } from '../../_shared/image-storage.js';
 import { recordSettingChange } from '../../_shared/settings-audit.js';
 
 export async function onRequestGet({ env, request }) {
   try {
-  const { results } = await env.DB.prepare(`SELECT key, value FROM settings WHERE key IN ('site_meta', 'site_meta_rev')`).all();
+  const { results } = await settingSnapshot(env, 'site_meta');
   const values = Object.fromEntries((results || []).map((row) => [row.key, row.value]));
   let raw = null;
   try { raw = values.site_meta ? JSON.parse(values.site_meta) : null; } catch (error) { if (request && new URL(request.url).searchParams.get('scope') === 'admin') throw error; }
-  const meta = normalizeSiteMeta(raw);
+  const meta = await normalizeSiteMetaRust(env, raw);
   meta.revision = parseInt(values.site_meta_rev, 10) || 0;
   return json(meta);
   } catch { return json({ error: '메타 설정을 불러오지 못했습니다.' }, 500); }
@@ -28,15 +29,17 @@ export async function onRequestPut({ request, env }) {
   const { if_revision: ifRevision } = body || {};
   let rows;
   try {
-    const { results } = await env.DB.prepare(`SELECT key, value FROM settings WHERE key IN ('site_meta', 'site_meta_rev')`).all();
+    const { results } = await settingSnapshot(env, 'site_meta');
     rows = Object.fromEntries((results || []).map((row) => [row.key, row]));
   } catch { return json({ error: '기존 메타 설정을 확인하지 못했습니다.' }, 500); }
   const previousRow = rows.site_meta;
   let previousRaw = null; try { previousRaw = previousRow ? JSON.parse(previousRow.value) : null; } catch (_) {}
-  const previous = normalizeSiteMeta(previousRaw);
+  let previous;
+  try { previous = await normalizeSiteMetaRust(env, previousRaw); } catch { return json({ error: '기존 메타 설정을 확인하지 못했습니다.' }, 500); }
   const currentRev = rows.site_meta_rev ? parseInt(rows.site_meta_rev.value, 10) || 0 : 0;
   if (Number.isFinite(ifRevision) && parseInt(ifRevision, 10) !== currentRev) return json({ error: '다른 변경이 감지되었습니다', revision: currentRev }, 409);
-  const safe = normalizeSiteMeta(body || {});
+  let safe;
+  try { safe = await normalizeSiteMetaRust(env, body || {}); } catch { return json({ error: 'Database error' }, 500); }
   let storedImage;
   try {
     storedImage = await storeDataImage(env, safe.image_url, origin, 'site-meta');
@@ -49,13 +52,8 @@ export async function onRequestPut({ request, env }) {
 
   try {
     const nextRev = currentRev + 1;
-    const writes = await env.DB.batch([
-      env.DB.prepare(`INSERT INTO settings (key, value) VALUES ('site_meta_rev', ?)
-        ON CONFLICT(key) DO UPDATE SET value = excluded.value WHERE CAST(settings.value AS INTEGER) = ?`).bind(String(nextRev), currentRev),
-      env.DB.prepare(`INSERT INTO settings (key, value) SELECT 'site_meta', ? WHERE changes() = 1
-        ON CONFLICT(key) DO UPDATE SET value = excluded.value`).bind(JSON.stringify(safe)),
-    ]);
-    if (!writes[0] || !writes[0].meta || writes[0].meta.changes !== 1) {
+    const changes = await saveRevisionedSetting(env, 'site_meta', currentRev, nextRev, [JSON.stringify(safe)]);
+    if (changes !== 1) {
       if (storedImage.key) await deleteStoredImageByUrl(env, safe.image_url, origin).catch(() => {});
       return json({ error: '다른 변경이 감지되었습니다. 입력을 보존하고 최신 설정을 다시 확인해주세요.', revision: currentRev }, 409);
     }
@@ -77,7 +75,7 @@ export async function onRequestPut({ request, env }) {
       // On an uncertain database failure, delete only this request's new object
       // after confirming that no committed setting references it.
       try {
-        const current = await env.DB.prepare(`SELECT value FROM settings WHERE key = 'site_meta'`).first();
+        const current = await singleSetting(env, 'site_meta');
         if (!current || !String(current.value).includes(safe.image_url)) await deleteStoredImageByUrl(env, safe.image_url, origin);
       } catch (_) { /* Keep the new object when the database outcome is unknown. */ }
     }

@@ -12,8 +12,9 @@
 import { bumpAdminUserTokenEpoch, hashAdminPassword } from '../../../../_shared/auth.js';
 import { loadAdminUserById } from '../../../../_shared/admin-users.js';
 import { requireOwner } from '../../../../_shared/admin-permissions.js';
-import { generateTempPassword, validatePassword } from '../../../../_shared/admin-user-validation.js';
+import { generateTempPassword, validateIdentityRust } from '../../../../_shared/admin-user-validation.js';
 import { logOperationalEvent } from '../../../../_shared/ops-log.js';
+import { queryRust } from '../../../../_shared/rust-server.js';
 
 function parseId(raw) {
   const n = parseInt(raw, 10);
@@ -44,7 +45,7 @@ export async function onRequestPost({ params, request, env }) {
   try { body = await request.json(); } catch { /* no body OK */ }
   let tempPassword;
   if (body && typeof body.password === 'string' && body.password.length > 0) {
-    const v = validatePassword(body.password);
+    const v = await validateIdentityRust(env, 'password', body.password);
     if (!v.ok) return json({ error: v.error }, 400);
     tempPassword = v.value;
   } else {
@@ -53,13 +54,8 @@ export async function onRequestPost({ params, request, env }) {
 
   try {
     const hash = await hashAdminPassword(tempPassword);
-    await env.DB.prepare(
-      `UPDATE admin_users
-          SET password_hash = ?,
-              must_change_password = 1,
-              updated_at = datetime('now')
-        WHERE id = ?`
-    ).bind(JSON.stringify(hash), id).run();
+    const reset = await queryRust({request, env}, 'admin-account-mutation', {operation:'password-reset', id, value:JSON.stringify(hash)});
+    if (!reset.ok) throw new Error('Rust password reset failed');
     await bumpAdminUserTokenEpoch(env, id);
 
     await logOperationalEvent(env, {

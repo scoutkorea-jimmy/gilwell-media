@@ -1,3 +1,4 @@
+import './register-rust-wasm.mjs';
 import assert from 'node:assert/strict';
 import { escapeText, pageNumber, pageHref, renderPagination, loadPublicPage, applyPublicParts } from '../functions/_shared/public-page-ssr.js';
 assert.equal(escapeText('<img onerror="x">'), '&lt;img onerror=&quot;x&quot;&gt;');
@@ -8,7 +9,7 @@ assert.equal(pageHref(url,1), '/korea?sort=popular&period=7d');
 assert.match(renderPagination(url,2,10), /href="\/korea\?page=3&amp;sort=popular&amp;period=7d"/);
 assert.match(renderPagination(url,2,10), /aria-current="page"/);
 const queries=[];
-const env={DB:{prepare(sql){queries.push(sql);return {async all(){return {results:[{id:1,term_ko:'<script>x</script>',description_ko:'A&B'}]};}};}}};
+const env={DB:Object.assign(new (class D1Database {})(),{prepare(sql){queries.push(sql);return {async all(){return {results:[{id:1,term_ko:'<script>x</script>',description_ko:'A&B'}]};}};}})};
 const glossary=await loadPublicPage(env, new URL('https://bpmedia.net/glossary'), 'glossary');
 assert.match(glossary.parts.glossary,/&lt;script&gt;/);
 assert.doesNotMatch(glossary.parts.glossary,/<script>/);

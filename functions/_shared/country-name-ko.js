@@ -1,4 +1,4 @@
-const COUNTRY_NAME_KO_MAP = {
+export const COUNTRY_NAME_KO_MAP = {
   'afghanistan': '아프가니스탄',
   'albania': '알바니아',
   'algeria': '알제리',
@@ -177,7 +177,7 @@ const COUNTRY_NAME_KO_MAP = {
   'zimbabwe': '짐바브웨',
 };
 
-const COUNTRY_NAME_ALIAS_MAP = {
+export const COUNTRY_NAME_ALIAS_MAP = {
   republicofkorea: ['한국', '대한민국', 'south korea', 'korea', 'kr'],
   scoutsofchina: ['대만', '타이완', '중화민국', 'taiwan', 'republic of china', 'tw'],
   unitedstatesofamerica: ['미국', 'usa', 'us', 'united states'],

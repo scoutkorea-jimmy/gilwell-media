@@ -1,16 +1,24 @@
 import { DEFAULT_NAV_LABELS } from './site-structure.mjs';
+import { queryRust } from './rust-server.js';
 
 export { DEFAULT_NAV_LABELS };
 
 export async function loadNavLabels(env) {
   try {
-    const row = await env.DB.prepare(
-      `SELECT value FROM settings WHERE key = 'nav_labels'`
-    ).first();
-    return normalizeNavLabels(row ? JSON.parse(row.value || '{}') : {});
+    return await normalizeNavLabelsRust(env, null, true);
   } catch {
     return normalizeNavLabels({});
   }
+}
+
+export async function normalizeNavLabelsRust(env, raw, loadPublic = false) {
+  const defaults = Object.entries(DEFAULT_NAV_LABELS).map(([key,value])=>({key,ko:value.ko,en:value.en}));
+  const response = await queryRust({env,request:{url:'https://internal.invalid/'}}, loadPublic ? 'public-nav-labels' : 'nav-labels-normalize', {raw:raw == null ? null : raw,defaults});
+  if (!response.ok) throw new Error('Rust navigation labels normalization failed');
+  const {entries} = await response.json();
+  const labels = {};
+  for (const entry of entries) labels[entry.key] = {ko:entry.ko,en:entry.en};
+  return labels;
 }
 
 export function normalizeNavLabels(input) {

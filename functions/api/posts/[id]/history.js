@@ -1,3 +1,4 @@
+import { queryRust } from '../../../_shared/rust-server.js';
 import { verifyTokenRole, extractToken } from '../../../_shared/auth.js';
 import { summarizeHistoryDiff } from '../../../_shared/post-history.js';
 
@@ -18,20 +19,10 @@ export async function onRequestGet({ params, request, env }) {
   const wantFullDetail = url.searchParams.get('detail') === 'full';
 
   try {
-    const post = await env.DB.prepare(
-      `SELECT id, title, created_at, publish_at, updated_at
-         FROM posts
-        WHERE id = ?`
-    ).bind(id).first();
+    const response = await queryRust({env,request}, 'post-history', {id});
+    if (!response.ok) throw new Error('Rust post history failed');
+    const {post,items:results} = await response.json();
     if (!post) return json({ error: '게시글을 찾을 수 없습니다' }, 404);
-
-    const { results } = await env.DB.prepare(
-      `SELECT id, action, summary, snapshot, before_snapshot, after_snapshot, created_at
-         FROM post_history
-        WHERE post_id = ?
-        ORDER BY created_at DESC, id DESC
-        LIMIT 50`
-    ).bind(id).all();
 
     return json({
       post,

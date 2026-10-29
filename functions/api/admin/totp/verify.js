@@ -9,6 +9,7 @@ import { loadAdminSession } from '../../../_shared/admin-permissions.js';
 import { verifyTotp, matchBackupCode } from '../../../_shared/totp.js';
 import { enforceRateLimit, rateLimitResponse } from '../../../_shared/rate-limit.js';
 import { issueOtpToken, buildOtpCookie } from '../../../_shared/otp-session.js';
+import { queryRust } from '../../../_shared/rust-server.js';
 
 // 로그인(login.js)과 동일한 Set-Cookie emit 패턴: Headers 인스턴스 + append.
 // (plain-object headers 로 넣은 Set-Cookie 가 일부 환경에서 누락되던 회귀 방지)
@@ -33,9 +34,9 @@ export async function onRequestPost({ request, env }) {
   try { body = await request.json(); } catch (_) { body = {}; }
   const code = String(body.code || '').trim();
 
-  const row = await env.DB.prepare(
-    `SELECT totp_secret, totp_enabled, totp_backup_codes FROM admin_users WHERE id = ?`
-  ).bind(session.uid).first();
+  const lookup = await queryRust({request, env}, 'admin-user-read', {operation:'totp-full', id:session.uid});
+  if (!lookup.ok) throw new Error('Rust TOTP lookup failed');
+  const {row} = await lookup.json();
   if (!row || !Number(row.totp_enabled) || !row.totp_secret) {
     return json({ error: 'not_enrolled', reason: '2단계 인증이 설정되어 있지 않습니다.' }, 400);
   }
@@ -51,8 +52,9 @@ export async function onRequestPost({ request, env }) {
       let list = [];
       try { list = JSON.parse(row.totp_backup_codes) || []; } catch (_) { list = []; }
       list = list.filter((h) => h !== matched);
-      await env.DB.prepare(`UPDATE admin_users SET totp_backup_codes = ? WHERE id = ?`)
-        .bind(JSON.stringify(list), session.uid).run();
+      const consumed = await queryRust({request, env}, 'admin-account-mutation', {operation:'totp-consume', id:session.uid, value:JSON.stringify(list), previous:row.totp_backup_codes});
+      if (!consumed.ok) throw new Error('Rust TOTP backup consumption failed');
+      if ((await consumed.json()).changes !== 1) return json({ error: 'bad_code', reason: '코드가 올바르지 않습니다.' }, 401);
     }
   }
   if (!ok) return json({ error: 'bad_code', reason: '코드가 올바르지 않습니다.' }, 401);

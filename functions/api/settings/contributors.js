@@ -1,3 +1,4 @@
+import { settingSnapshot, saveRevisionedSetting } from '../../_shared/rust-server.js';
 /**
  * BP미디어 · Contributors Settings
  *
@@ -10,7 +11,7 @@ import { recordSettingChange } from '../../_shared/settings-audit.js';
 
 export async function onRequestGet({ env, request }) {
   try {
-    const { results } = await env.DB.prepare(`SELECT key, value FROM settings WHERE key IN ('contributors', 'contributors_rev')`).all();
+    const { results } = await settingSnapshot(env, 'contributors');
     const values = Object.fromEntries((results || []).map((row) => [row.key, row.value]));
     const items = values.contributors ? JSON.parse(values.contributors) : [];
     const revision = parseInt(values.contributors_rev, 10) || 0;
@@ -47,7 +48,7 @@ export async function onRequestPut({ request, env }) {
     .filter(function (item) { return item.name.length > 0; });
 
   try {
-    const { results } = await env.DB.prepare(`SELECT key, value FROM settings WHERE key IN ('contributors', 'contributors_rev')`).all();
+    const { results } = await settingSnapshot(env, 'contributors');
     const rows = Object.fromEntries((results || []).map((row) => [row.key, row]));
     const currentRev = rows.contributors_rev ? parseInt(rows.contributors_rev.value, 10) || 0 : 0;
     if (Number.isFinite(if_revision) && parseInt(if_revision, 10) !== currentRev) {
@@ -56,13 +57,8 @@ export async function onRequestPut({ request, env }) {
     const prev = rows.contributors;
     const nextRev = currentRev + 1;
 
-    const writes = await env.DB.batch([
-      env.DB.prepare(`INSERT INTO settings (key, value) VALUES ('contributors_rev', ?)
-        ON CONFLICT(key) DO UPDATE SET value = excluded.value WHERE CAST(settings.value AS INTEGER) = ?`).bind(String(nextRev), currentRev),
-      env.DB.prepare(`INSERT INTO settings (key, value) SELECT 'contributors', ? WHERE changes() = 1
-        ON CONFLICT(key) DO UPDATE SET value = excluded.value`).bind(JSON.stringify(safe)),
-    ]);
-    if (!writes[0] || !writes[0].meta || writes[0].meta.changes !== 1) return json({ error: '동시 변경이 감지되었습니다. 입력을 보존하고 최신 명단을 확인해주세요.' }, 409);
+    const changes = await saveRevisionedSetting(env, 'contributors', currentRev, nextRev, [JSON.stringify(safe)]);
+    if (changes !== 1) return json({ error: '동시 변경이 감지되었습니다. 입력을 보존하고 최신 명단을 확인해주세요.' }, 409);
     await recordSettingChange(env, {
       key: 'contributors',
       previousValue: prev && prev.value,

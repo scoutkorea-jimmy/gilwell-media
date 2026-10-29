@@ -5,8 +5,9 @@
  *            Built-in slugs are immutable; their names and permissions are editable.
  *   DELETE — delete a custom preset (owner only). Built-ins cannot be removed.
  */
+import { queryRust } from '../../../_shared/rust-server.js';
 import { requireOwner } from '../../../_shared/admin-permissions.js';
-import { validatePermissions } from '../../../_shared/admin-user-validation.js';
+import { validatePermissionsRust } from '../../../_shared/admin-user-validation.js';
 import { logOperationalEvent } from '../../../_shared/ops-log.js';
 
 function parseId(raw) {
@@ -21,9 +22,7 @@ export async function onRequestPut({ params, request, env }) {
   const id = parseId(params.id);
   if (!id) return json({ error: '유효하지 않은 프리셋 ID입니다.' }, 400);
 
-  const row = await env.DB.prepare(
-    `SELECT id, slug, name, description, is_builtin, permissions, updated_at FROM admin_user_presets WHERE id = ?`
-  ).bind(id).first();
+  const { row } = await presetMutation(request, env, {operation:'get', id});
   if (!row) return json({ error: '프리셋을 찾을 수 없습니다.' }, 404);
   // NOTE: owner may edit built-in presets (rebalancing permission defaults is
   // a legitimate operator task). Only slug is protected — changing it would
@@ -33,26 +32,29 @@ export async function onRequestPut({ params, request, env }) {
   try { body = await request.json(); } catch {
     return json({ error: 'Invalid JSON body' }, 400);
   }
-  if (body.if_permissions !== undefined && canonicalizePerms(body.if_permissions) !== canonicalizePerms(parsePermBlob(row.permissions))) {
-    return json({ error: '프리셋 권한이 다른 화면에서 변경되었습니다. 최신 값을 다시 확인해주세요.' }, 409);
+  if (body.if_permissions !== undefined) {
+    const comparison = await queryRust({request,env}, 'preset-permissions-compare', {expected:body.if_permissions,stored:row.permissions});
+    if (!comparison.ok) throw new Error('Rust preset permission comparison failed');
+    if (!(await comparison.json()).matches) return json({ error: '프리셋 권한이 다른 화면에서 변경되었습니다. 최신 값을 다시 확인해주세요.' }, 409);
   }
 
   const fields = [];
   const values = [];
   const changes = [];
   let validatedNewPerms = null;
+  const normalized = await queryRust({request,env}, 'preset-normalize', {operation:'update',body});
+  if (!normalized.ok) throw new Error('Rust preset input validation failed');
+  const input = await normalized.json();
+  if (input.error) return json({error:input.error},input.status);
 
   if (body.name !== undefined) {
-    const name = String(body.name || '').trim();
-    if (!name) return json({ error: '프리셋 이름은 비워둘 수 없습니다.' }, 400);
-    fields.push('name = ?'); values.push(name); changes.push('name');
+    fields.push('name = ?'); values.push(input.name); changes.push('name');
   }
   if (body.description !== undefined) {
-    const desc = String(body.description || '').trim().slice(0, 500);
-    fields.push('description = ?'); values.push(desc); changes.push('description');
+    fields.push('description = ?'); values.push(input.description); changes.push('description');
   }
   if (body.permissions !== undefined) {
-    const v = validatePermissions(body.permissions);
+    const v = await validatePermissionsRust(env, body.permissions);
     if (!v.ok) return json({ error: v.error }, 400);
     validatedNewPerms = v.value;
     fields.push('permissions = ?'); values.push(JSON.stringify(v.value));
@@ -60,7 +62,6 @@ export async function onRequestPut({ params, request, env }) {
   }
 
   if (!fields.length) return json({ error: '변경할 내용이 없습니다.' }, 400);
-  fields.push("updated_at = datetime('now')");
 
   try {
     // Preset-to-user auto propagation. When permissions change, find every
@@ -73,32 +74,15 @@ export async function onRequestPut({ params, request, env }) {
     //   - Each matched member keeps their existing access_admin state.
     //   - A conditional update preserves independently changed member data.
     let propagatedCount = 0;
-    const statements = [];
+    let membersToUpdate = [];
     if (validatedNewPerms) {
-      const oldCanonical = canonicalizePerms(parsePermBlob(row.permissions));
-      const members = await env.DB.prepare(
-        `SELECT id, username, permissions FROM admin_users
-           WHERE status = 'active' AND role = 'member'`
-      ).all();
-      for (const m of (members.results || [])) {
-        const parsed = parsePermBlob(m.permissions);
-        if (canonicalizePerms(parsed) === oldCanonical) {
-          const newSerialized = JSON.stringify({ access_admin: !!parsed.access_admin, permissions: validatedNewPerms.permissions });
-          statements.push(env.DB.prepare(
-            `UPDATE admin_users SET permissions = ?, updated_at = datetime('now') WHERE id = ? AND role = 'member' AND status = 'active' AND permissions = ?
-             AND EXISTS (SELECT 1 FROM admin_user_presets WHERE id = ? AND permissions = ? AND updated_at = ? AND name = ? AND COALESCE(description, '') = ?)`
-          ).bind(newSerialized, m.id, m.permissions, id, row.permissions, row.updated_at, row.name, row.description || ''));
-        }
-      }
+      const { members } = await presetMutation(request, env, {operation:'matching-members', id, old_permissions:row.permissions, next_permissions:validatedNewPerms.permissions});
+      membersToUpdate = members || [];
     }
 
-    // D1 batch is transactional: no partially updated preset/member cohort.
-    statements.push(env.DB.prepare(
-      `UPDATE admin_user_presets SET ${fields.join(', ')} WHERE id = ? AND permissions = ? AND updated_at = ? AND name = ? AND COALESCE(description, '') = ?`
-    ).bind(...values, id, row.permissions, row.updated_at, row.name, row.description || ''));
-    const results = await env.DB.batch(statements);
-    if (!results[results.length - 1].meta || results[results.length - 1].meta.changes !== 1) return json({ error: '동시 프리셋 변경이 감지되었습니다. 입력을 보존하고 최신 값을 다시 확인해주세요.' }, 409);
-    propagatedCount = results.slice(0, -1).reduce((sum, result) => sum + ((result.meta && result.meta.changes) || 0), 0);
+    const result = await presetMutation(request, env, {operation:'update', id, snapshot:row, fields:changes, values, members:membersToUpdate});
+    if (result.changed !== 1) return json({ error: '동시 프리셋 변경이 감지되었습니다. 입력을 보존하고 최신 값을 다시 확인해주세요.' }, 409);
+    propagatedCount = result.propagated;
 
     await logOperationalEvent(env, {
       channel: 'admin', type: 'admin_preset_updated', level: 'info',
@@ -114,20 +98,6 @@ export async function onRequestPut({ params, request, env }) {
   }
 }
 
-function parsePermBlob(raw) {
-  if (raw && typeof raw === 'object') return raw;
-  if (typeof raw !== 'string' || !raw.trim()) return { access_admin: false, permissions: [] };
-  try { return JSON.parse(raw); } catch { return { access_admin: false, permissions: [] }; }
-}
-
-// Stable JSON shape for exact-match comparison. Sorting the permissions array
-// makes the string representation deterministic regardless of insertion order.
-function canonicalizePerms(perms) {
-  const list = Array.isArray(perms && perms.permissions) ? perms.permissions : [];
-  const sorted = [...list].filter((x) => typeof x === 'string').sort();
-  return JSON.stringify({ access_admin: !!(perms && perms.access_admin), permissions: sorted });
-}
-
 export async function onRequestDelete({ params, request, env }) {
   const { session, error } = await requireOwner(request, env);
   if (error) return error;
@@ -135,16 +105,15 @@ export async function onRequestDelete({ params, request, env }) {
   const id = parseId(params.id);
   if (!id) return json({ error: '유효하지 않은 프리셋 ID입니다.' }, 400);
 
-  const row = await env.DB.prepare(
-    `SELECT id, slug, is_builtin FROM admin_user_presets WHERE id = ?`
-  ).bind(id).first();
+  const { row } = await presetMutation(request, env, {operation:'get', id});
   if (!row) return json({ error: '프리셋을 찾을 수 없습니다.' }, 404);
   if (row.is_builtin) {
     return json({ error: '빌트인 프리셋은 삭제할 수 없습니다.' }, 409);
   }
 
   try {
-    await env.DB.prepare(`DELETE FROM admin_user_presets WHERE id = ?`).bind(id).run();
+    const result = await presetMutation(request, env, {operation:'delete', id});
+    if (!result.changes) return json({ error: '프리셋을 찾을 수 없거나 삭제할 수 없습니다.' }, 409);
     await logOperationalEvent(env, {
       channel: 'admin', type: 'admin_preset_deleted', level: 'info',
       actor: session.username || 'owner', path: `/api/admin/presets/${id}`,
@@ -162,4 +131,10 @@ function json(data, status = 200) {
     status,
     headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
   });
+}
+
+async function presetMutation(request, env, options) {
+  const response = await queryRust({request, env}, 'preset-mutation', options);
+  if (!response.ok) throw new Error('Rust preset mutation failed');
+  return response.json();
 }

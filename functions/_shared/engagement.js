@@ -1,3 +1,5 @@
+import { queryRust } from './rust-server.js';
+
 export async function getViewerKey(request, env) {
   const ip = request.headers.get('CF-Connecting-IP')
     || request.headers.get('x-forwarded-for')
@@ -15,44 +17,28 @@ export async function getViewerKey(request, env) {
 export async function recordUniqueView(env, postId, viewerKey) {
   if (!viewerKey) return false;
   const viewBucket = String(Math.floor(Date.now() / (12 * 60 * 60 * 1000)));
-  const insert = await env.DB.prepare(
-    `INSERT OR IGNORE INTO post_views (post_id, viewer_key, viewed_bucket)
-     VALUES (?, ?, ?)`
-  ).bind(postId, viewerKey, viewBucket).run();
-
-  if (!insert.meta?.changes) return false;
-
-  await env.DB.prepare(`UPDATE posts SET views = views + 1 WHERE id = ?`).bind(postId).run();
-  return true;
+  const rust = await queryRust({ env, request: { url: 'https://internal.invalid/' } }, 'post-views', {
+    postId, viewerKey, viewBucket,
+  });
+  if (!rust.ok) throw new Error('Rust post view write failed');
+  return (await rust.json()).counted;
 }
 
 // 기념품(memorabilia) 조회수 — posts.views 패턴 동일. 같은 뷰어는 12시간 버킷당 1회만.
 export async function recordUniqueMemorabiliaView(env, memorabiliaId, viewerKey) {
   if (!viewerKey) return false;
   const viewBucket = String(Math.floor(Date.now() / (12 * 60 * 60 * 1000)));
-  const insert = await env.DB.prepare(
-    `INSERT OR IGNORE INTO memorabilia_views (memorabilia_id, viewer_key, viewed_bucket)
-     VALUES (?, ?, ?)`
-  ).bind(memorabiliaId, viewerKey, viewBucket).run();
-
-  if (!insert.meta?.changes) return false;
-
-  await env.DB.prepare(`UPDATE memorabilia SET view_count = view_count + 1 WHERE id = ?`).bind(memorabiliaId).run();
-  return true;
+  const response = await queryRust({env,request:{url:'https://internal.invalid/'}}, 'memorabilia-view-record', {id:memorabiliaId,viewerKey,viewBucket});
+  if (!response.ok) throw new Error('Rust memorabilia view record failed');
+  return (await response.json()).counted;
 }
 
 export async function getLikeStats(env, postId, viewerKey) {
-  const [countRow, likedRow] = await Promise.all([
-    env.DB.prepare(`SELECT COUNT(*) AS count FROM post_likes WHERE post_id = ?`).bind(postId).first(),
-    viewerKey
-      ? env.DB.prepare(`SELECT 1 FROM post_likes WHERE post_id = ? AND viewer_key = ? LIMIT 1`).bind(postId, viewerKey).first()
-      : Promise.resolve(null),
-  ]);
-
-  return {
-    likes: countRow?.count || 0,
-    liked: !!likedRow,
-  };
+  const rust = await queryRust({ env, request: { url: 'https://internal.invalid/' } }, 'post-likes', {
+    postId, viewerKey: viewerKey || null,
+  });
+  if (!rust.ok) throw new Error('Rust post likes query failed');
+  return rust.json();
 }
 
 export function isLikelyNonHumanRequest(request) {

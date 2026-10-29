@@ -1,4 +1,4 @@
-// Run: node tests/scout-topics.test.mjs (SQL executes against Python's SQLite).
+// Run: node --import ./tests/register-rust-wasm.mjs tests/scout-topics.test.mjs (SQL executes against synthetic SQLite).
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
@@ -16,7 +16,7 @@ const rows = [
 ].map(row => ({ ...row, created_at: '2026-09-01 01:00:00', publish_at: row.id === 6 ? '2026-10-01 10:00:00' : null }));
 
 function database(data = rows) {
-  return { prepare(sql) {
+  return Object.assign(new (class D1Database {})(), { prepare(sql) {
     let params = [];
     return {
       bind(...values) { params = values; return this; },
@@ -35,7 +35,7 @@ print(json.dumps([dict(row) for row in db.execute(data['sql'],data['params'])]))
         return { results: JSON.parse(result.stdout) };
       },
     };
-  } };
+  } });
 }
 function context(slug, db = database()) {
   return { params: { slug }, request: new Request(`https://bpmedia.net/topics/${slug}`), env: { DB: db } };

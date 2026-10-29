@@ -1,4 +1,5 @@
 import { PUBLIC_DATE_EXPR } from './post-public-date.js';
+import { queryRust } from './rust-server.js';
 
 export function sanitizeSpecialFeature(value) {
   if (value === undefined) return undefined;
@@ -20,34 +21,17 @@ export function slugifySpecialFeature(value) {
 }
 
 export async function findSpecialFeaturePosts(env, basePost, limit = 50) {
-  const feature = sanitizeSpecialFeature(basePost && basePost.special_feature);
-  const category = String(basePost && basePost.category || '').trim();
+  const rawFeature = String(basePost && basePost.special_feature || '');
+  const category = String(basePost && basePost.category || '');
   const postId = Number(basePost && basePost.id || 0);
-  if (!feature || !category) return [];
-
-  const { results } = await env.DB.prepare(
-    `SELECT id, category, title, subtitle, tag, image_url, image_caption, created_at, publish_at, special_feature
-       FROM posts
-      WHERE published = 1
-        AND category = ?
-        AND COALESCE(special_feature, '') = ?
-        AND id != ?
-      ORDER BY ${PUBLIC_DATE_EXPR} DESC, id DESC
-      LIMIT ?`
-  ).bind(category, feature, postId, Math.max(1, limit)).all();
-
-  return (results || []).map((row) => ({
-    id: row.id,
-    category: row.category,
-    title: row.title || '',
-    subtitle: row.subtitle || '',
-    tag: row.tag || '',
-    image_url: row.image_url || '',
-    image_caption: row.image_caption || '',
-    created_at: row.created_at || '',
-    publish_at: row.publish_at || '',
-    special_feature: row.special_feature || '',
-  }));
+  if (!rawFeature || !category) return [];
+  const hasUnpaired = /[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/.test(rawFeature);
+  const featureUnits = hasUnpaired ? Array.from({length:rawFeature.length}, (_, i) => rawFeature.charCodeAt(i)) : null;
+  const rust = await queryRust({ env, request: { url: 'https://internal.invalid/' } }, 'related-feature', {
+    postId, category, feature:featureUnits ? null : rawFeature, featureUnits, limit: Math.max(1, limit), publicDateExpr: PUBLIC_DATE_EXPR,
+  });
+  if (!rust.ok) throw new Error('Rust special feature posts query failed');
+  return (await rust.json()).items || [];
 }
 
 export async function getSpecialFeatureCollection(env, category, slug, opts = {}) {
@@ -55,24 +39,11 @@ export async function getSpecialFeatureCollection(env, category, slug, opts = {}
   const safeSlug = String(slug || '').trim();
   if (!safeCategory || !safeSlug) return null;
 
-  const { results } = await env.DB.prepare(
-    `SELECT id, category, title, subtitle, tag, image_url, image_caption, created_at, publish_at, special_feature, content, author
-       FROM posts
-      WHERE published = 1
-        AND category = ?
-        AND special_feature IS NOT NULL
-        AND special_feature != ''
-      ORDER BY ${PUBLIC_DATE_EXPR} DESC, id DESC`
-  ).bind(safeCategory).all();
-
-  const items = (results || []).filter((row) => slugifySpecialFeature(row.special_feature) === safeSlug);
-  if (!items.length) return null;
-
-  const collection = {
-    category: safeCategory,
-    special_feature: items[0].special_feature || '',
-    slug: safeSlug,
-    items: items.slice(0, opts.limit ? Math.max(1, opts.limit) : items.length),
-  };
-  return collection;
+  const requestedLimit = opts.limit ? Math.max(1, opts.limit) : null;
+  const limit = Number.isNaN(requestedLimit) ? 0 : requestedLimit;
+  const rust = await queryRust({env, request:{url:'https://internal.invalid/'}}, 'feature-collection', {
+    category:safeCategory, slug:safeSlug, limit, publicDateExpr:PUBLIC_DATE_EXPR,
+  });
+  if (!rust.ok) throw new Error('Rust feature collection query failed');
+  return (await rust.json()).collection;
 }

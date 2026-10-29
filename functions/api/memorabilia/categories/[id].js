@@ -1,3 +1,4 @@
+import { queryRust } from '../../../_shared/rust-server.js';
 /**
  * PATCH  /api/memorabilia/categories/:id   — 분류 수정 (관리자)
  * DELETE /api/memorabilia/categories/:id   — 분류 삭제 (사용 중이면 archive)
@@ -30,11 +31,10 @@ export async function onRequestPatch({ request, env, params }) {
   sets.push(`updated_at = datetime('now')`);
 
   try {
-    const row = await env.DB.prepare(`
-      UPDATE memorabilia_categories SET ${sets.join(', ')}
-       WHERE id = ?
-       RETURNING id, slug, label_en, label_ko, sort_order, archived
-    `).bind(...bindings, id).first();
+    if (bindings.some(value => typeof value === 'number' && !Number.isFinite(value))) throw new Error('Invalid sort order');
+    const response = await queryRust({env,request}, 'memorabilia-category-update', {id,label_en:label_en || null,label_ko:label_ko || null,sort_order,archived});
+    if (!response.ok) throw new Error('Rust category update failed');
+    const {row} = await response.json();
     if (!row) return json({ error: 'not_found' }, 404);
     return json({ item: row });
   } catch (err) {
@@ -51,17 +51,10 @@ export async function onRequestDelete({ request, env, params }) {
   if (!Number.isFinite(id)) return json({ error: 'invalid_id' }, 400);
 
   try {
-    const usage = await env.DB.prepare(
-      `SELECT COUNT(*) AS n FROM memorabilia WHERE category_id = ?`
-    ).bind(id).first();
-    if (usage && usage.n > 0) {
-      // 사용 중 → 아카이브로 변경 (실제 삭제 금지)
-      await env.DB.prepare(
-        `UPDATE memorabilia_categories SET archived = 1, updated_at = datetime('now') WHERE id = ?`
-      ).bind(id).run();
-      return json({ ok: true, archived: true, in_use: usage.n });
-    }
-    await env.DB.prepare(`DELETE FROM memorabilia_categories WHERE id = ?`).bind(id).run();
+    const response = await queryRust({env,request}, 'memorabilia-category-delete', {id});
+    if (!response.ok) throw new Error('Rust category delete failed');
+    const {in_use} = await response.json();
+    if (in_use > 0) return json({ ok: true, archived: true, in_use });
     return json({ ok: true, deleted: true });
   } catch (err) {
     console.error('DELETE category error:', err);

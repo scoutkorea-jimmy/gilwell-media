@@ -39,6 +39,6 @@ Google API는 내부 데이터 제한 때문에 모든 검색어 행 반환을 �
 
 ## 검증
 
-`node --test scripts/search-performance/search-performance.test.mjs`: 네이버 표 파싱·누락/중복·숫자/날짜·Google 읽기 전용 JWT 서명·API 페이지 이동·PT 날짜·API 권한·저장 이력/실패 보존·화면 출력 검증. 실제 Google 서비스 계정 권한·Cloudflare secret·운영 배포·D1 저장·다른 실제 기기 조회는 별도로 검증해야 한다.
+`npm run test:search-performance`: 네이버 표 파싱·누락/중복·숫자/날짜·Google 읽기 전용 JWT 서명·API 페이지 이동·PT 날짜·API 권한·저장 이력/실패 보존·화면 출력 검증. 테스트 전 `npm run build:rust`로 Wasm을 준비한다. 실제 Google 서비스 계정 권한·Cloudflare secret·운영 배포·D1 저장·다른 실제 기기 조회는 별도로 검증해야 한다.
 
 근거: [Google Search Analytics API](https://developers.google.com/webmaster-tools/v1/searchanalytics/query), [Google 서버 간 인증](https://developers.google.com/identity/protocols/oauth2/service-account), [네이버 콘텐츠 노출/클릭 및 TOP 30](https://searchadvisor.naver.com/guide/report-expose-ctr).

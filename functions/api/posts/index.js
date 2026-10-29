@@ -1,4 +1,4 @@
-import { isPlaceholderAuthor, publicAuthor } from '../../_shared/post-author.js';
+import { isPlaceholderAuthor } from '../../_shared/post-author.js';
 /**
  * Gilwell Media · Posts Collection
  *
@@ -10,58 +10,46 @@ import { loadAdminSession, requirePublishAllowed, requireMenu } from '../../_sha
 import { hasMenuPermission } from '../../_shared/admin-users.js';
 import { verifyTurnstile } from '../../_shared/turnstile.js';
 import { enforceRateLimit, getClientIp, rateLimitResponse } from '../../_shared/rate-limit.js';
-import { sanitizeYouTubeUrl } from '../../_shared/youtube.js';
-import { serializePostImage } from '../../_shared/images.js';
-import { serializeImageFrameForStore } from '../../_shared/image-frame.js';
+import { serializeImageFrameForStoreRust } from '../../_shared/image-frame.js';
 import { storeDataImage, upgradeEditorContentImages } from '../../_shared/image-storage.js';
-import { recordPostHistory } from '../../_shared/post-history.js';
-import { normalizePublishAtInput, optionalBooleanFlag, optionalTrimmedString, requireNonEmptyString } from '../../_shared/post-input.js';
+import { normalizePublishAtInput, validatePostText, encodePostBindings } from '../../_shared/post-input.js';
 import { PUBLIC_DATE_EXPR } from '../../_shared/post-public-date.js';
-import { sanitizeSpecialFeature } from '../../_shared/special-features.js';
 import { purgeContentCache } from '../../_shared/cache-purge.js';
 import { ensureDuePostsPublished } from '../../_shared/publish-due-posts.js';
 import { VALID_POST_CATEGORIES } from '../../_shared/site-structure.mjs';
 import { logOperationalEvent } from '../../_shared/ops-log.js';
-
-const PAGE_SIZE = 16;
+import { queryRust, singleSetting, postAdminRead } from '../../_shared/rust-server.js';
 
 // ── GET /api/posts ────────────────────────────────────────────
 // Returns a paginated list of posts (no full content body — just
 // id, category, title, image_url, created_at for card display).
-export async function onRequestGet({ request, env }) {
+export async function onRequestGet(context) {
+  const { request, env } = context;
   const url          = new URL(request.url);
   const origin       = url.origin;
   await ensureDuePostsPublished(env, origin).catch((err) => {
     console.error('GET /api/posts auto publish error:', err);
   });
   const category     = normalizeCategory(url.searchParams.get('category') || null);
-  // parseInt 가 NaN 이면 Math.max(1, NaN)=NaN → offset NaN 으로 쿼리가 깨지므로 isFinite 가드.
-  // 상한(100000)으로 비정상 ?page=999999999 의 거대한 OFFSET 성능 저하도 차단. (안정성 검토 00.170.07)
-  const rawPage      = parseInt(url.searchParams.get('page') || '1', 10);
-  const page         = Math.min(100000, Math.max(1, Number.isFinite(rawPage) ? rawPage : 1));
-  const requestedLimit = parseInt(url.searchParams.get('limit') || String(PAGE_SIZE), 10);
-  const pageSize     = Math.min(100, Math.max(1, Number.isFinite(requestedLimit) ? requestedLimit : PAGE_SIZE));
-  const offset       = (page - 1) * pageSize;
+  const page = url.searchParams.get('page');
+  const pageSize = url.searchParams.get('limit');
   const q            = url.searchParams.get('q') || null;
   const tagFilter    = url.searchParams.get('tag') || null;
-  const startDate    = normalizeDateInput(url.searchParams.get('start_date'));
-  const endDate      = normalizeDateInput(url.searchParams.get('end_date'));
-  const featuredOnly = url.searchParams.get('featured') === '1';
-  const specialFeature = sanitizeSpecialFeature(url.searchParams.get('special_feature'));
-  const allRequested = url.searchParams.get('all') === '1';
-  const daysFilter   = Math.max(0, parseInt(url.searchParams.get('days') || '0', 10));
-  const sort         = normalizeSort(url.searchParams.get('sort'), !!q);
-  // period: window for "popular" sort (관심 활동 윈도우). Independent from days/start_date/end_date
-  // which filter publish time. null = 누적(all-time) fallback using posts.views + likes.
-  const popularPeriodHours = sort === 'popular' ? normalizePopularPeriodHours(url.searchParams.get('period')) : null;
-  const requestedOrderBy = String(url.searchParams.get('order_by') || '').trim().toLowerCase();
-  const requestedOrderDir = String(url.searchParams.get('order_dir') || '').trim().toLowerCase();
-  const publishedParam = normalizePublishedFilter(url.searchParams.get('published'));
+  const startDate    = url.searchParams.get('start_date');
+  const endDate      = url.searchParams.get('end_date');
+  const featuredOnly = url.searchParams.get('featured');
+  const rawFeature = url.searchParams.get('special_feature');
+  const specialFeature = rawFeature;
+  const allRequested = url.searchParams.get('all');
+  const days = url.searchParams.get('days');
+  const sort = url.searchParams.get('sort');
+  const popularPeriod = url.searchParams.get('period');
+  const requestedOrderBy = url.searchParams.get('order_by');
+  const requestedOrderDir = url.searchParams.get('order_dir');
+  const publishedParam = url.searchParams.get('published');
   const adminScopeRequested = String(url.searchParams.get('scope') || '').trim().toLowerCase() === 'admin';
   // Limit query length to prevent abuse
   const safeQ = q ? q.slice(0, 200) : null;
-  const compactQuery = safeQ ? safeQ.replace(/\s+/g, '') : '';
-  const fuzzyQuery = safeQ ? '%' + safeQ.trim().split(/\s*/).filter(Boolean).join('%') + '%' : '';
 
   if (category && !VALID_POST_CATEGORIES.includes(category)) {
     return json({ error: 'Invalid category. Must be korea, apr, wosm, or people.' }, 400);
@@ -92,131 +80,16 @@ export async function onRequestGet({ request, env }) {
     if (!rl.ok) return rateLimitResponse(rl, '검색 요청이 너무 많습니다. 잠시 후 다시 시도해주세요.');
   }
 
-  const ORDER_LATEST = `ORDER BY ${PUBLIC_DATE_EXPR} DESC, id DESC`;
-  const ORDER_OLDEST = `ORDER BY ${PUBLIC_DATE_EXPR} ASC, id ASC`;
-  const ORDER_VIEWS = `ORDER BY views DESC, ${PUBLIC_DATE_EXPR} DESC, id DESC`;
-  const ORDER_MANUAL = `ORDER BY sort_order IS NULL ASC, sort_order ASC, ${PUBLIC_DATE_EXPR} DESC, id DESC`;
-  const ORDER_POPULAR = `ORDER BY popularity_score DESC, ${PUBLIC_DATE_EXPR} DESC, id DESC`;
-  const searchScoreExpr = q
-    ? `(
-        CASE WHEN title LIKE ? THEN 60 ELSE 0 END +
-        CASE WHEN replace(title, ' ', '') LIKE ? THEN 42 ELSE 0 END +
-        CASE WHEN COALESCE(subtitle, '') LIKE ? THEN 35 ELSE 0 END +
-        CASE WHEN COALESCE(tag, '') LIKE ? THEN 30 ELSE 0 END +
-        CASE WHEN COALESCE(meta_tags, '') LIKE ? THEN 24 ELSE 0 END +
-        CASE WHEN COALESCE(content, '') LIKE ? THEN 10 ELSE 0 END +
-        CASE WHEN replace(COALESCE(title, ''), ' ', '') LIKE ? THEN 18 ELSE 0 END
-      )`
-    : '0';
-  // popularity score: window-based (period set) → recent views + likes*3; otherwise cumulative
-  // views + likes*3. Likes are weighted heavier because they are far rarer than views.
-  const popularityArgs = [];
-  let popularityScoreExpr = '0';
-  if (sort === 'popular') {
-    if (popularPeriodHours == null) {
-      popularityScoreExpr = `(
-        COALESCE(posts.views, 0)
-        + (SELECT COUNT(*) FROM post_likes WHERE post_id = posts.id) * 3
-      )`;
-    } else {
-      // Mirror home loadPopular's path-match pattern (`/post/%` + CAST id) so we
-      // still count visits whose path carries a query-string or trailing slash.
-      popularityScoreExpr = `(
-        (SELECT COUNT(*) FROM site_visits
-            WHERE path LIKE '/post/%'
-              AND CAST(SUBSTR(path, 7) AS INTEGER) = posts.id
-              AND datetime(visited_at) >= datetime('now', ?))
-        + (SELECT COUNT(*) FROM post_likes
-            WHERE post_id = posts.id
-              AND datetime(liked_at) >= datetime('now', ?)) * 3
-      )`;
-      const windowArg = '-' + popularPeriodHours + ' hours';
-      popularityArgs.push(windowArg, windowArg);
-    }
-  }
-  const ORDER_RELEVANCE = `ORDER BY search_score DESC, ${PUBLIC_DATE_EXPR} DESC, id DESC`;
-  const adminOrder = isAdmin ? buildAdminOrder(requestedOrderBy, requestedOrderDir, PUBLIC_DATE_EXPR) : '';
-  const useManualOrder = !adminOrder && ((allRequested && isAdmin) || (sort === 'manual' && !!category && !q && !tagFilter));
-  const ORDER = useManualOrder
-    ? ORDER_MANUAL
-    : (adminOrder
-        || (sort === 'popular' ? ORDER_POPULAR
-        : (sort === 'oldest' ? ORDER_OLDEST
-        : (sort === 'views' ? ORDER_VIEWS
-        : ((sort === 'relevance' && q) ? ORDER_RELEVANCE : ORDER_LATEST)))));
-  const COLS  = `id, category, title, subtitle, image_url, image_caption, image_frame, created_at, publish_at, updated_at, featured, tag, meta_tags, special_feature, views, author, published, sort_order,
-    youtube_url,
-    ${searchScoreExpr} AS search_score,
-    ${popularityScoreExpr} AS popularity_score,
-    (SELECT COUNT(*) FROM post_likes WHERE post_id = posts.id) AS likes${includeDwell ? ',\n    (SELECT ROUND(AVG(engaged_seconds), 1) FROM post_engagement WHERE post_id = posts.id) AS avg_dwell_seconds' : ''}`;
-
   try {
-    // Build WHERE conditions dynamically
-    const conditions = [];
-    const baseArgs   = [];
-    const scoreArgs  = [];
-
-    if (featuredOnly) {
-      conditions.push('featured = 1', 'published = 1');
-    } else {
-      if (category)  { conditions.push('category = ?'); baseArgs.push(category); }
-      if (!isAdmin)  {
-        conditions.push('published = 1');
-      } else if (publishedParam !== null) {
-        conditions.push('published = ?');
-        baseArgs.push(publishedParam);
-      }
-      if (daysFilter > 0) {
-        conditions.push(`${PUBLIC_DATE_EXPR} >= datetime('now', '+9 hours', ?)`);
-        baseArgs.push('-' + daysFilter + ' days');
-      }
-      if (startDate) {
-        conditions.push(`date(${PUBLIC_DATE_EXPR}) >= date(?)`);
-        baseArgs.push(startDate);
-      }
-      if (endDate) {
-        conditions.push(`date(${PUBLIC_DATE_EXPR}) <= date(?)`);
-        baseArgs.push(endDate);
-      }
-      if (q) {
-        conditions.push('(title LIKE ? OR replace(title, \' \', \'\') LIKE ? OR COALESCE(subtitle, \'\') LIKE ? OR COALESCE(tag, \'\') LIKE ? OR COALESCE(meta_tags, \'\') LIKE ? OR COALESCE(content, \'\') LIKE ? OR replace(COALESCE(title, \'\'), \' \', \'\') LIKE ?)');
-        const qp = `%${q}%`;
-        const cp = `%${compactQuery || q}%`;
-        const fp = fuzzyQuery || qp;
-        baseArgs.push(qp, cp, qp, qp, qp, qp, fp);
-        scoreArgs.push(qp, cp, qp, qp, qp, qp, fp);
-      }
-      if (specialFeature) {
-        conditions.push('COALESCE(special_feature, \'\') = ?');
-        baseArgs.push(specialFeature);
-      }
-      if (tagFilter) {
-        const tp = `%${tagFilter}%`;
-        conditions.push("(COALESCE(tag, '') LIKE ? OR COALESCE(meta_tags, '') LIKE ?)");
-        baseArgs.push(tp, tp);
-      }
-    }
-
-    const WHERE      = conditions.length ? 'WHERE ' + conditions.join(' AND ') : '';
-    const postsQuery = allRequested && isAdmin
-      ? `SELECT ${COLS} FROM posts ${WHERE} ${ORDER}`
-      : `SELECT ${COLS} FROM posts ${WHERE} ${ORDER} LIMIT ? OFFSET ?`;
-    const countQuery = `SELECT COUNT(*) AS total FROM posts ${WHERE}`;
-
-    const postsStmt = allRequested && isAdmin
-      ? env.DB.prepare(postsQuery).bind(...scoreArgs, ...popularityArgs, ...baseArgs)
-      : env.DB.prepare(postsQuery).bind(...scoreArgs, ...popularityArgs, ...baseArgs, pageSize, offset);
-    const { results: posts }     = await postsStmt.all();
-    const { results: countRows } = await env.DB.prepare(countQuery).bind(...baseArgs).all();
-    const total = countRows[0]?.total ?? 0;
-    const effectivePageSize = allRequested && isAdmin ? total : pageSize;
-
-    const hydrated = (posts || []).map((post) => serializePostImage(isAdmin ? post : {...post, author: publicAuthor(post.author)}, origin));
-    return json(
-      { posts: hydrated, total, page, pageSize: effectivePageSize },
-      200,
-      { 'Cache-Control': 'no-store' }
-    );
+    const rust = await queryRust(context, 'posts', {
+      category, page, pageSize, q, tagFilter,
+      startDate, endDate, featuredOnly, specialFeature, allRequested, days,
+      sort, popularPeriod, requestedOrderBy, requestedOrderDir,
+      publishedParam, isAdmin, includeDwell, publicDateExpr: PUBLIC_DATE_EXPR, origin,
+    });
+    if (!rust.ok) return json({ error: 'Database error' }, 500);
+    const result = await rust.json();
+    return json(result, 200, { 'Cache-Control': 'no-store' });
   } catch (err) {
     console.error('GET /api/posts error:', err);
     return json({ error: 'Database error' }, 500);
@@ -233,6 +106,7 @@ export async function onRequestPost({ request, env }) {
   if (!session) {
     return json({ error: '인증이 필요합니다. 다시 로그인해주세요.' }, 401);
   }
+  if (!session.isOwner && !session.permissions.access_admin) return json({ error: '관리자 접근 권한이 없습니다.' }, 403);
   if (!session.isOwner && !hasMenuPermission(session.permissions, 'write', 'write')) {
     return json({ error: '글 작성 권한이 없습니다. 오너에게 권한을 요청하세요.' }, 403);
   }
@@ -271,24 +145,23 @@ export async function onRequestPost({ request, env }) {
   if (!VALID_POST_CATEGORIES.includes(category)) {
     return json({ error: '유효하지 않은 카테고리입니다 (korea / apr / wosm / people)' }, 400);
   }
-  const safeTitleInput = requireNonEmptyString(title, '제목', 200);
+  const textInputs = await validatePostText(env, body, true);
+  const safeTitleInput = textInputs.title;
   if (!safeTitleInput.ok) return json({ error: safeTitleInput.error }, 400);
-  const safeContentInput = requireNonEmptyString(content, '내용');
+  const safeContentInput = textInputs.content;
   if (!safeContentInput.ok) return json({ error: safeContentInput.error }, 400);
-  const safeSubtitleInput = optionalTrimmedString(subtitle, '부제', 300);
+  const safeSubtitleInput = textInputs.subtitle;
   if (!safeSubtitleInput.ok) return json({ error: safeSubtitleInput.error }, 400);
-  const safeTagInput = optionalTrimmedString(tag, '태그', 200);
+  const safeTagInput = textInputs.tag;
   if (!safeTagInput.ok) return json({ error: safeTagInput.error }, 400);
-  const safeMetaTagsInput = optionalTrimmedString(meta_tags, '메타 태그', 500);
+  const safeMetaTagsInput = textInputs.meta_tags;
   if (!safeMetaTagsInput.ok) return json({ error: safeMetaTagsInput.error }, 400);
-  const safeAuthorInput = body.author === undefined
-    ? { ok: true, provided: false, value: null }
-    : optionalTrimmedString(body.author, '작성자', 60);
+  const safeAuthorInput = textInputs.author;
   if (!safeAuthorInput.ok) return json({ error: safeAuthorInput.error }, 400);
   if (isPlaceholderAuthor(safeAuthorInput.value)) return json({ error: '작성자 불러오기가 끝난 뒤 다시 저장해주세요.' }, 400);
-  const safePublishedInput = optionalBooleanFlag(body.published);
+  const safePublishedInput = textInputs.published;
   if (!safePublishedInput.ok) return json({ error: safePublishedInput.error }, 400);
-  const safeFeaturedInput = optionalBooleanFlag(body.featured);
+  const safeFeaturedInput = textInputs.featured;
   if (!safeFeaturedInput.ok) return json({ error: safeFeaturedInput.error }, 400);
 
   const upgradedContent = await safelyUpgradeEditorContentImages(safeContentInput.value, env, origin, 'inline');
@@ -296,18 +169,18 @@ export async function onRequestPost({ request, env }) {
   const storedCover = await safelyStoreDataImage(env, resolvedCoverSource, origin, 'cover');
   const storedGalleryImages = await storeGalleryImages(env, gallery_images, origin);
   const safeImageUrl  = storedCover.url;
-  const safeImageCaption = sanitizeCaption(image_caption);
-  const safeImageFrame = serializeImageFrameForStore(image_frame);
-  const safeYoutubeUrl = sanitizeYouTubeUrl(youtube_url);
+  const safeImageCaption = textInputs.image_caption;
+  const safeImageFrame = await serializeImageFrameForStoreRust(image_frame, env);
+  const safeYoutubeUrl = textInputs.youtube_url;
   const safeSubtitle  = safeSubtitleInput.value;
   const safeTag       = safeTagInput.value;
-  const safeLocationName = sanitizeShortText(location_name, 120);
-  const safeLocationAddress = sanitizeShortText(location_address, 300);
-  const safeSpecialFeature = sanitizeSpecialFeature(special_feature);
+  const safeLocationName = textInputs.location_name;
+  const safeLocationAddress = textInputs.location_address;
+  const safeSpecialFeature = textInputs.special_feature;
   const safeMetaTags  = safeMetaTagsInput.value;
   const safeManualRelatedPosts = normalizeManualRelatedPosts(manual_related_posts || body.related_posts_json);
 
-  const publishAtValue = normalizePublishAtInput(publish_at, publish_date);
+  const publishAtValue = textInputs.publish_at === null ? normalizePublishAtInput(publish_at, publish_date) : textInputs.publish_at;
   const safePublished = safePublishedInput.provided ? safePublishedInput.value : true;
   const safeFeatured = safePublished && safeFeaturedInput.provided ? safeFeaturedInput.value : false;
   const effectivePublishAt = resolveStoredPublishAt({
@@ -317,7 +190,8 @@ export async function onRequestPost({ request, env }) {
   });
 
   // Phase 4 publish kill switch — block member publishes when global switch is on.
-  if (safePublished && !session.isOwner) {
+  const publishGuard = !session.isOwner && (!!safePublished || isFuturePublishAt(effectivePublishAt));
+  if (publishGuard) {
     const gate = await requirePublishAllowed(env, session);
     if (gate.error) return gate.error;
   }
@@ -329,7 +203,7 @@ export async function onRequestPost({ request, env }) {
     const editorMatch = safeAuthorInput.value.match(/^Editor\.([A-Z])$/);
     if (editorMatch) {
       try {
-        const editorsRow = await env.DB.prepare(`SELECT value FROM settings WHERE key = 'editors'`).first();
+        const editorsRow = await singleSetting(env, 'editors');
         const editors = editorsRow ? JSON.parse(editorsRow.value) : {};
         const letter = editorMatch[1];
         const REQUIRED = { A: true, B: true, C: true };
@@ -342,7 +216,7 @@ export async function onRequestPost({ request, env }) {
 
   if (!safeAuthor) {
     try {
-      const authorRow = await env.DB.prepare(`SELECT value FROM settings WHERE key = 'author_name'`).first();
+      const authorRow = await singleSetting(env, 'author_name');
       safeAuthor = authorRow?.value || 'Editor.A';
     } catch { safeAuthor = 'Editor.A'; }
   }
@@ -351,23 +225,26 @@ export async function onRequestPost({ request, env }) {
 
   try {
     if (safeFeatured) {
-      const featuredCountRow = await env.DB.prepare(`SELECT COUNT(*) AS n FROM posts WHERE featured = 1 AND published = 1`).first();
+      const featuredCountRow = await postAdminRead(env, 'featured-count');
       const featuredCount = Number(featuredCountRow && featuredCountRow.n || 0);
       if (featuredCount >= 4) {
         return json({ error: '에디터 추천은 최대 4개까지만 선택할 수 있습니다.' }, 409);
       }
     }
-    const sql = `INSERT INTO posts (category, title, subtitle, content, image_url, image_caption, image_frame, gallery_images, youtube_url, location_name, location_address, tag, special_feature, meta_tags, manual_related_posts, author, author_user_id, ai_assisted, published, featured, created_at, publish_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), ?, datetime('now'))`;
     const bindings = [category, safeTitleInput.value, safeSubtitle, upgradedContent, safeImageUrl, safeImageCaption, safeImageFrame, serializeGalleryImages(storedGalleryImages), safeYoutubeUrl, safeLocationName, safeLocationAddress, safeTag, safeSpecialFeature, safeMetaTags, safeManualRelatedPosts, safeAuthor, authorUserId, safeAiAssisted, safePublished ? 1 : 0, safeFeatured ? 1 : 0, effectivePublishAt];
-    const result = await env.DB.prepare(sql).bind(...bindings).run();
-    const insertedId = result && result.meta ? Number(result.meta.last_row_id || result.meta.lastRowId || 0) : 0;
+    if (bindings.some(value => value === undefined)) throw new Error('D1_TYPE_ERROR: undefined post binding');
+    const rust = await queryRust({ request, env }, 'post-create', { bindings:encodePostBindings(bindings), publishGuard, memberGuardUid:session.isOwner ? null : Number(session.uid), tokenGuard:{uid:session.uid ? Number(session.uid) : null,iat:Number(session.payload.iat) || 0,exp:Number.isFinite(Number(session.payload.exp)) ? Number(session.payload.exp) : null} });
+    if (!rust.ok) throw new Error('Rust post creation failed');
+    const { id: insertedId, featuredLimit, publishBlocked, accessRevoked, sessionRevoked } = await rust.json();
+    if (sessionRevoked) return json({ error: '인증이 필요합니다. 다시 로그인해주세요.' }, 401);
+    if (accessRevoked) return json({ error: '글 작성 권한이 없습니다. 오너에게 권한을 요청하세요.' }, 403);
+    if (publishBlocked) return json({ error: '현재 공개 전환이 차단되어 있습니다. 오너 승인 후 다시 시도해주세요.' }, 403);
+    if (featuredLimit) return json({ error: '에디터 추천은 최대 4개까지만 선택할 수 있습니다.' }, 409);
     const insertedPost = insertedId
-      ? await env.DB.prepare(`SELECT * FROM posts WHERE id = ?`).bind(insertedId).first()
+      ? await postAdminRead(env, 'post', insertedId)
       : null;
 
     if (insertedPost) {
-      await recordPostHistory(env, insertedPost.id, 'create', null, insertedPost, '게시글 생성');
       await logOperationalEvent(env, {
         channel: 'admin',
         type: 'post_created',
@@ -495,49 +372,6 @@ function normalizeCategory(value) {
   return value;
 }
 
-function normalizeDateInput(value) {
-  var trimmed = String(value || '').trim();
-  return /^\d{4}-\d{2}-\d{2}$/.test(trimmed) ? trimmed : null;
-}
-
-function normalizeSort(value, hasSearch) {
-  var normalized = String(value || '').trim().toLowerCase();
-  if (normalized === 'oldest') return 'oldest';
-  if (normalized === 'views') return 'views';
-  if (normalized === 'manual') return 'manual';
-  if (normalized === 'popular') return 'popular';
-  if (normalized === 'relevance' && hasSearch) return 'relevance';
-  return 'latest';
-}
-
-// Accepts: 24h | 7d | 30d | all (or '' / null). Returns hours or null (= cumulative).
-function normalizePopularPeriodHours(value) {
-  var v = String(value || '').trim().toLowerCase();
-  if (v === '' || v === 'all') return null;
-  if (v === '24h' || v === '1d') return 24;
-  if (v === '7d') return 24 * 7;
-  if (v === '30d') return 24 * 30;
-  return 24 * 7;
-}
-
-function normalizePublishedFilter(value) {
-  if (value === '1' || value === 1 || value === true || value === 'true' || value === 'published') return 1;
-  if (value === '0' || value === 0 || value === false || value === 'false' || value === 'draft') return 0;
-  return null;
-}
-
-function buildAdminOrder(orderBy, orderDir, publicDateExpr) {
-  const key = String(orderBy || '').trim().toLowerCase();
-  if (!key) return '';
-  const dir = String(orderDir || '').trim().toLowerCase() === 'asc' ? 'ASC' : 'DESC';
-  if (key === 'upload') return `ORDER BY datetime(replace(created_at, 'T', ' ')) ${dir}, id ${dir}`;
-  if (key === 'date') return `ORDER BY ${publicDateExpr} ${dir}, id ${dir}`;
-  if (key === 'views') return `ORDER BY views ${dir}, ${publicDateExpr} DESC, id DESC`;
-  if (key === 'title') return `ORDER BY LOWER(COALESCE(title, '')) ${dir}, ${publicDateExpr} DESC, id DESC`;
-  if (key === 'category') return `ORDER BY LOWER(COALESCE(category, '')) ${dir}, ${publicDateExpr} DESC, id DESC`;
-  return '';
-}
-
 function normalizeManualRelatedPosts(raw) {
   if (typeof raw === 'string') {
     try {
@@ -558,12 +392,6 @@ function normalizeManualRelatedPosts(raw) {
     return true;
   }).slice(0, 5);
   return ids.length ? JSON.stringify(ids) : null;
-}
-
-function sanitizeShortText(value, maxLength) {
-  if (typeof value !== 'string') return null;
-  const trimmed = value.trim();
-  return trimmed ? trimmed.slice(0, maxLength) : null;
 }
 
 function resolveStoredPublishAt(options) {

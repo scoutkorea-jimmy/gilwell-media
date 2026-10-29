@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.160.04
+ * Version: 03.161.00
  *
  * Versioning:
  *   V3.aaa.bb
@@ -5685,6 +5685,22 @@
   function _fitAnalyticsTrendChart(card, visits, views, granularity, label) {
     if (!card || !window.ResizeObserver) return;
     var lastWidth = 0;
+    function renderAt(width) {
+      if (!card.isConnected || width < 1) return;
+      var holder = document.createElement('div');
+      holder.innerHTML = _renderAnalyticsTrendChart(visits, views, granularity, label, width);
+      var plot = holder.querySelector('.v3-chart-wrap');
+      var current = card.querySelector('.v3-chart-wrap');
+      if (!plot || !current) return;
+      var active = current.contains(document.activeElement) ? document.activeElement.getAttribute('data-idx') : null;
+      current.replaceWith(plot);
+      card._chartHoverWired = false;
+      _wireAnalyticsChartHover(card);
+      if (active !== null) {
+        var point = plot.querySelector('.v3-chart-hover-zone[data-idx="' + active + '"]');
+        if (point) point.focus({ preventScroll: true });
+      }
+    }
     var observer = new ResizeObserver(function (entries) {
       if (!card.isConnected) { observer.disconnect(); return; }
       var width = Math.round(entries[0].contentRect.width);
@@ -5695,23 +5711,14 @@
       card._chartResizeFrame = requestAnimationFrame(function () {
         card._chartResizeFrame = 0;
         if (!card.isConnected || card._chartResizeObserver !== observer) return;
-        var holder = document.createElement('div');
-        holder.innerHTML = _renderAnalyticsTrendChart(visits, views, granularity, label, width);
-        var plot = holder.querySelector('.v3-chart-wrap');
-        var current = card.querySelector('.v3-chart-wrap');
-        if (!plot || !current) return;
-        var active = current.contains(document.activeElement) ? document.activeElement.getAttribute('data-idx') : null;
-        current.replaceWith(plot);
-        card._chartHoverWired = false;
-        _wireAnalyticsChartHover(card);
-        if (active !== null) {
-          var point = plot.querySelector('.v3-chart-hover-zone[data-idx="' + active + '"]');
-          if (point) point.focus({ preventScroll: true });
-        }
+        renderAt(width);
       });
     });
-    observer.observe(card);
     card._chartResizeObserver = observer;
+    var style = getComputedStyle(card);
+    var initialWidth = Math.round(card.clientWidth - parseFloat(style.paddingLeft || '0') - parseFloat(style.paddingRight || '0'));
+    if (initialWidth > 0) { lastWidth = initialWidth; renderAt(initialWidth); }
+    observer.observe(card);
   }
 
   // 차트 호버 시 HTML 툴팁 + 세로 가이드 라인 표시

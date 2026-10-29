@@ -1,3 +1,4 @@
+import { queryRust } from '../../../_shared/rust-server.js';
 /**
  * GET  /api/memorabilia/:id/comments  — 승인된 댓글 목록 (공개)
  * POST /api/memorabilia/:id/comments  — 댓글 제출 (승인 대기 상태로 저장)
@@ -8,8 +9,7 @@
 
 import {
   hashCommentPassword,
-  validateCommentSubmission,
-  serializeCommentPublic,
+  validateCommentSubmissionRust,
 } from '../../../_shared/memorabilia-comments.js';
 import { enforceRateLimit, getClientIp, rateLimitResponse } from '../../../_shared/rate-limit.js';
 import { isLikelyNonHumanRequest } from '../../../_shared/engagement.js';
@@ -24,22 +24,14 @@ export async function onRequestGet({ params, env, request }) {
   const rawLimit = parseInt(url.searchParams.get('limit') || '20', 10);
   const limit = Math.min(Math.max(rawLimit, 1), MAX_PAGE_SIZE);
 
-  const rows = await env.DB.prepare(
-    `SELECT id, memorabilia_id, author_name, affiliation, content, created_at
-     FROM memorabilia_comments
-     WHERE memorabilia_id = ? AND status = 'approved'
-     ORDER BY created_at DESC
-     LIMIT ?`
-  ).bind(id, limit).all();
-
-  const countRow = await env.DB.prepare(
-    `SELECT COUNT(*) AS count FROM memorabilia_comments
-     WHERE memorabilia_id = ? AND status = 'approved'`
-  ).bind(id).first();
+  if (!Number.isFinite(limit)) throw new Error('Invalid comment limit');
+  const response = await queryRust({env,request}, 'memorabilia-comments-list', {id,limit});
+  if (!response.ok) throw new Error('Rust comment list failed');
+  const {items:rows,total} = await response.json();
 
   return json({
-    items: (rows.results || []).map(serializeCommentPublic),
-    total: countRow?.count || 0,
+    items: rows || [],
+    total,
   });
 }
 
@@ -62,15 +54,15 @@ export async function onRequestPost({ params, env, request }) {
     return rateLimitResponse(rl, '댓글 작성 요청이 너무 많습니다. 1시간 후 다시 시도해주세요.');
   }
 
-  const item = await env.DB.prepare(
-    `SELECT id FROM memorabilia WHERE id = ? AND status = 'public'`
-  ).bind(id).first();
+  const lookup = await queryRust({env,request}, 'memorabilia-public-check', {id});
+  if (!lookup.ok) throw new Error('Rust memorabilia lookup failed');
+  const {row:item} = await lookup.json();
   if (!item) return json({ error: 'not_found' }, 404);
 
   let body;
   try { body = await request.json(); } catch { return json({ error: 'invalid_json' }, 400); }
 
-  const validation = validateCommentSubmission(body);
+  const validation = await validateCommentSubmissionRust(body, env);
   if (validation.errors.length) {
     return json({ error: 'validation', messages: validation.errors }, 400);
   }
@@ -81,20 +73,17 @@ export async function onRequestPost({ params, env, request }) {
   const ua = String(request.headers.get('user-agent') || '').slice(0, 500);
 
   try {
-    const result = await env.DB.prepare(
-      `INSERT INTO memorabilia_comments
-        (memorabilia_id, author_name, affiliation, password_hash, password_salt,
-         content, ip_address, user_agent, status)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending')`
-    ).bind(
-      id, data.author_name, data.affiliation, hash, salt,
-      data.content, ip, ua || null
-    ).run();
+    const response = await queryRust({env,request}, 'memorabilia-comment-create', {
+      bindings:[id,data.author_name,data.affiliation,hash,salt,data.content,ip,ua || null],
+    });
+    if (!response.ok) throw new Error('Rust comment creation failed');
+    const {id:commentId,created} = await response.json();
+    if (!created) return json({ error: 'not_found' }, 404);
 
     return json({
       ok: true,
       status: 'pending',
-      id: result.meta?.last_row_id || null,
+      id: commentId || null,
       message: '관리자 승인 후 게시됩니다. 감사합니다.',
     }, 201);
   } catch (err) {

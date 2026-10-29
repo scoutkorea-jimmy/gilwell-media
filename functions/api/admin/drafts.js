@@ -16,10 +16,34 @@
  */
 
 import { gateMenuAccess, loadAdminSession } from '../../_shared/admin-permissions.js';
+import { queryRust } from '../../_shared/rust-server.js';
 import { storeDataImage, upgradeEditorContentImages, hasPostImageBucket } from '../../_shared/image-storage.js';
 
 const MAX_DRAFTS_PER_OWNER = 10;
 const TTL_DAYS = 14;
+const DRAFT_TEXT_LIMITS = {title:400,subtitle:400,category:40,tag:1000,meta_tags:2000,author:100,publish_at:32,youtube_url:500,image_caption:500,location_name:200,location_address:400,special_feature:200};
+
+export function normalizeDraftText(raw) {
+  return Object.fromEntries(Object.entries(DRAFT_TEXT_LIMITS).map(([key,limit])=>[key,String(raw[key] || (key==='category' ? 'korea' : '')).slice(0,limit)]));
+}
+
+function draftTextUnits(raw) {
+  return Object.fromEntries(Object.entries(DRAFT_TEXT_LIMITS).map(([key,limit])=>{
+    const text=String(raw[key] || (key==='category' ? 'korea' : '')).slice(0,limit+1);
+    return [key,Array.from({length:text.length},(_,i)=>text.charCodeAt(i))];
+  }));
+}
+
+export async function normalizeDraftTextRust(raw,env,run=queryRust) {
+  const units=draftTextUnits(raw);
+  try {
+    const response=await run({env,request:{url:'https://internal.invalid/'}},'draft-text-normalize',{units});
+    if (!response.ok) throw new Error('Rust draft normalization failed');
+    const result=await response.json();
+    if (!result.units || Object.keys(DRAFT_TEXT_LIMITS).some(key=>!Array.isArray(result.units[key]) || result.units[key].length>DRAFT_TEXT_LIMITS[key] || result.units[key].some(unit=>!Number.isInteger(unit) || unit<0 || unit>65535))) throw new Error('Invalid draft normalization');
+    return Object.fromEntries(Object.keys(DRAFT_TEXT_LIMITS).map(key=>[key,String.fromCharCode(...result.units[key])]));
+  } catch (_) { return normalizeDraftText(raw); }
+}
 
 // normalizeDraftFields 에서 R2 업로드 실패 시 던져 POST/PUT 핸들러가 400 으로 변환.
 export class DraftImageUploadError extends Error {
@@ -38,20 +62,12 @@ export async function onRequestGet({ request, env }) {
   if (!ownerCode) return json({ drafts: [] });
 
   try {
-    // 14일 이전 row lazy 정리 — 운영자 전체 대상.
-    await env.DB.prepare(
-      `DELETE FROM drafts WHERE datetime(updated_at) < datetime('now', '-${TTL_DAYS} days')`
-    ).run();
-
-    const { results } = await env.DB.prepare(
-      `SELECT * FROM drafts
-        WHERE owner_editor_code = ?
-        ORDER BY datetime(updated_at) DESC, id DESC
-        LIMIT ?`
-    ).bind(ownerCode, MAX_DRAFTS_PER_OWNER).all();
+    const response = await queryRust({request, env}, 'draft-operation', {operation:'list', owner:ownerCode});
+    if (!response.ok) throw new Error('Rust draft list failed');
+    const { drafts: results } = await response.json();
 
     return json({
-      drafts: (results || []).map(serializeDraft),
+      drafts: results || [],
       max_drafts: MAX_DRAFTS_PER_OWNER,
       ttl_days: TTL_DAYS,
     });
@@ -74,7 +90,7 @@ export async function onRequestPost({ request, env }) {
   const origin = new URL(request.url).origin;
   let fields;
   try {
-    fields = await normalizeDraftFields(body, env, origin);
+    fields = await normalizeDraftFields(body, env, origin, {deferText:true});
   } catch (err) {
     if (err instanceof DraftImageUploadError) {
       return json({ error: err.message, slot: err.slot, code: 'IMAGE_UPLOAD_FAILED' }, 400);
@@ -83,29 +99,17 @@ export async function onRequestPost({ request, env }) {
   }
 
   try {
-    // 11번째 슬롯 진입 시 가장 오래된 1건 삭제 (LRU).
-    await pruneToCapacity(env, ownerCode);
-
-    const insert = await env.DB.prepare(
-      `INSERT INTO drafts (
-         owner_editor_code, editing_post_id,
-         title, subtitle, category, tag, meta_tags, author, publish_at, youtube_url,
-         image_url, image_caption, gallery_images, location_name, location_address,
-         special_feature, manual_related_posts, published_flag, featured_flag, ai_assisted, content
-       ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
-    ).bind(
-      ownerCode, fields.editing_post_id,
-      fields.title, fields.subtitle, fields.category, fields.tag, fields.meta_tags,
-      fields.author, fields.publish_at, fields.youtube_url,
-      fields.image_url, fields.image_caption, fields.gallery_images,
-      fields.location_name, fields.location_address,
-      fields.special_feature, fields.manual_related_posts,
-      fields.published_flag, fields.featured_flag, fields.ai_assisted, fields.content
-    ).run();
-
-    const id = insert.meta && insert.meta.last_row_id ? Number(insert.meta.last_row_id) : 0;
-    const row = await env.DB.prepare(`SELECT * FROM drafts WHERE id = ?`).bind(id).first();
-    return json({ draft: row ? serializeDraft(row) : null });
+    const response = await queryRust({request, env}, 'draft-create', {
+      owner: ownerCode,
+      fields: [fields.editing_post_id, fields.title, fields.subtitle, fields.category, fields.tag, fields.meta_tags,
+        fields.author, fields.publish_at, fields.youtube_url, fields.image_url, fields.image_caption, fields.gallery_images,
+        fields.location_name, fields.location_address, fields.special_feature, fields.manual_related_posts,
+        fields.published_flag, fields.featured_flag, fields.ai_assisted, fields.content],
+      text_units:fields.text_units,
+    });
+    if (!response.ok) throw new Error('Rust draft creation failed');
+    const { draft: row } = await response.json();
+    return json({ draft: row });
   } catch (err) {
     console.error('POST /api/admin/drafts error:', err);
     return json({ error: '드래프트 저장에 실패했습니다.' }, 500);
@@ -122,22 +126,8 @@ async function getOwnerCode(request, env) {
   return String(session.user.editor_code || `user:${session.user.id}` || '');
 }
 
-async function pruneToCapacity(env, ownerCode) {
-  const { results } = await env.DB.prepare(
-    `SELECT id FROM drafts WHERE owner_editor_code = ?
-      ORDER BY datetime(updated_at) DESC, id DESC`
-  ).bind(ownerCode).all();
-  const rows = results || [];
-  // 이미 10개면 새 1개 진입 시 11번째가 됨 → 가장 오래된 1건 삭제해서 자리 확보.
-  if (rows.length < MAX_DRAFTS_PER_OWNER) return;
-  const toDelete = rows.slice(MAX_DRAFTS_PER_OWNER - 1).map((r) => r.id);
-  if (!toDelete.length) return;
-  const placeholders = toDelete.map(() => '?').join(',');
-  await env.DB.prepare(`DELETE FROM drafts WHERE id IN (${placeholders})`).bind(...toDelete).run();
-}
-
 // 클라이언트에서 받은 payload를 D1 컬럼 형태로 정규화 + 이미지 R2 업로드.
-export async function normalizeDraftFields(body, env, origin) {
+export async function normalizeDraftFields(body, env, origin, {deferText=false}={}) {
   const raw = body && typeof body === 'object' ? body : {};
 
   // Cover image: base64 data URL이면 R2 업로드 후 URL로 치환.
@@ -198,22 +188,14 @@ export async function normalizeDraftFields(body, env, origin) {
     } catch (_) { /* 그대로 유지 */ }
   }
 
+  const text=deferText ? Object.fromEntries(Object.keys(DRAFT_TEXT_LIMITS).map(key=>[key,''])) : await normalizeDraftTextRust(raw,env);
+
   return {
     editing_post_id: Number.isFinite(Number(raw.editing_post_id)) ? Number(raw.editing_post_id) : null,
-    title:            String(raw.title || '').slice(0, 400),
-    subtitle:         String(raw.subtitle || '').slice(0, 400),
-    category:         String(raw.category || 'korea').slice(0, 40),
-    tag:              String(raw.tag || '').slice(0, 1000),
-    meta_tags:        String(raw.meta_tags || '').slice(0, 2000),
-    author:           String(raw.author || '').slice(0, 100),
-    publish_at:       String(raw.publish_at || '').slice(0, 32),
-    youtube_url:      String(raw.youtube_url || '').slice(0, 500),
+    ...text,
+    ...(deferText ? {text_units:draftTextUnits(raw)} : {}),
     image_url:        imageUrl,
-    image_caption:    String(raw.image_caption || '').slice(0, 500),
     gallery_images:   galleryJson,
-    location_name:    String(raw.location_name || '').slice(0, 200),
-    location_address: String(raw.location_address || '').slice(0, 400),
-    special_feature:  String(raw.special_feature || '').slice(0, 200),
     manual_related_posts: typeof raw.manual_related_posts === 'string'
       ? raw.manual_related_posts.slice(0, 4000)
       : (Array.isArray(raw.manual_related_posts) ? JSON.stringify(raw.manual_related_posts.slice(0, 20)) : ''),
@@ -221,35 +203,6 @@ export async function normalizeDraftFields(body, env, origin) {
     featured_flag:    raw.featured_flag ? 1 : 0,
     ai_assisted:      raw.ai_assisted ? 1 : 0,
     content,
-  };
-}
-
-export function serializeDraft(row) {
-  if (!row) return null;
-  return {
-    id: row.id,
-    editing_post_id: row.editing_post_id,
-    title: row.title || '',
-    subtitle: row.subtitle || '',
-    category: row.category || '',
-    tag: row.tag || '',
-    meta_tags: row.meta_tags || '',
-    author: row.author || '',
-    publish_at: row.publish_at || '',
-    youtube_url: row.youtube_url || '',
-    image_url: row.image_url || '',
-    image_caption: row.image_caption || '',
-    gallery_images: row.gallery_images || '',
-    location_name: row.location_name || '',
-    location_address: row.location_address || '',
-    special_feature: row.special_feature || '',
-    manual_related_posts: row.manual_related_posts || '',
-    published_flag: !!row.published_flag,
-    featured_flag: !!row.featured_flag,
-    ai_assisted: !!row.ai_assisted,
-    content: row.content || '',
-    created_at: row.created_at || '',
-    updated_at: row.updated_at || '',
   };
 }
 

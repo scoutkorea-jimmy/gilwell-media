@@ -1,3 +1,4 @@
+import { queryRust } from '../../_shared/rust-server.js';
 /**
  * GET  /api/memorabilia          — 목록 (공개=공개 항목만, 관리자=드래프트 포함)
  * POST /api/memorabilia          — 신규 생성 (관리자 전용)
@@ -28,57 +29,16 @@ export async function onRequestGet({ request, env }) {
   const page = Math.max(parseInt(url.searchParams.get('page') || '1', 10) || 1, 1);
   const offset = (page - 1) * pageSize;
 
-  const whereParts = [];
-  const bindings = [];
   const query = isAdmin && url.searchParams.get('scope') === 'admin' ? String(url.searchParams.get('q') || '').trim().slice(0, 200) : '';
-  if (query) {
-    whereParts.push(`(LOWER(m.title_en) LIKE ? ESCAPE '\\' OR LOWER(m.title_ko) LIKE ? ESCAPE '\\')`);
-    const pattern = '%' + query.toLowerCase().replace(/[\\%_]/g, '\\$&') + '%';
-    bindings.push(pattern, pattern);
-  }
-  if (!includeDrafts) {
-    whereParts.push(`m.status = 'public'`);
-  }
-  const eventIdParam = url.searchParams.get('event_id');
-  if (eventIdParam) {
-    const eid = parseInt(eventIdParam, 10);
-    if (Number.isFinite(eid)) {
-      whereParts.push(`m.event_id = ?`);
-      bindings.push(eid);
-    }
-  }
-
-  const where = whereParts.length ? `WHERE ${whereParts.join(' AND ')}` : '';
-  // random=1 → 홈 도감 레일 등 무작위 노출용. ORDER BY 를 RANDOM() 으로 교체.
-  // (OFFSET 은 의미 없어지지만 LIMIT 만 적용)
-  const isRandom = url.searchParams.get('random') === '1';
-  const orderClause = isRandom
-    ? 'ORDER BY RANDOM()'
-    : 'ORDER BY COALESCE(m.published_at, m.updated_at) DESC, m.id DESC';
-
-  const sql = `
-    SELECT m.id, m.slug, m.title_en, m.title_ko,
-           m.has_event, m.event_id, m.event_name_en, m.event_name_ko,
-           m.year, m.status, m.category_id, m.published_at, m.updated_at,
-           c.slug AS category_slug, c.label_en AS category_label_en, c.label_ko AS category_label_ko,
-           (SELECT url FROM memorabilia_images
-             WHERE memorabilia_id = m.id ORDER BY is_primary DESC, sort_order ASC, id ASC LIMIT 1) AS primary_image_url,
-           (SELECT json_group_array(p.label)
-              FROM memorabilia_tags mt
-              JOIN memorabilia_tag_pool p ON p.id = mt.tag_id
-             WHERE mt.memorabilia_id = m.id) AS tags_json
-      FROM memorabilia m
-      LEFT JOIN memorabilia_categories c ON c.id = m.category_id
-      ${where}
-     ${orderClause}
-     LIMIT ? OFFSET ?
-  `;
-  // WHERE 절 binding (event_id 등) 은 LIMIT/OFFSET 보다 앞에 와야 한다.
-  const whereBindings = bindings.slice();
-  bindings.push(pageSize, offset);
+  const pattern = query ? '%' + query.toLowerCase().replace(/[\\%_]/g, '\\$&') + '%' : null;
+  const parsedEvent = parseInt(url.searchParams.get('event_id') || '', 10);
+  const eventId = Number.isFinite(parsedEvent) ? parsedEvent : null;
+  const random = url.searchParams.get('random') === '1';
 
   try {
-    const { results } = await env.DB.prepare(sql).bind(...bindings).all();
+    const rust = await queryRust({request, env}, 'memorabilia-list', {includeDrafts, pattern, eventId, random, pageSize, offset});
+    if (!rust.ok) throw new Error('Rust memorabilia list failed');
+    const {rows:results, total:totalRow} = await rust.json();
     // tags_json (SQLite json array) → string[] 배열로 정규화
     const items = (results || []).map((row) => {
       let tags = [];
@@ -88,9 +48,7 @@ export async function onRequestGet({ request, env }) {
       const { tags_json, ...rest } = row;
       return { ...rest, tags };
     });
-    const totalRow = await env.DB.prepare(
-      `SELECT COUNT(*) AS n FROM memorabilia m ${where}`
-    ).bind(...whereBindings).first();
+
     return json({
       items,
       page,

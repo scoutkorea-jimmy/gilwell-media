@@ -1,3 +1,5 @@
+import { queryRust } from '../../_shared/rust-server.js';
+
 /**
  * Gilwell Media · /api/jobs/cleanup-drafts
  *
@@ -22,14 +24,11 @@ export async function onRequestPost({ env }) {
 
 async function handleCleanup(env) {
   try {
-    const result = await env.DB.prepare(
-      `DELETE FROM drafts WHERE datetime(updated_at) < datetime('now', '-${TTL_DAYS} days')`
-    ).run();
-    const deleted = (result && result.meta && result.meta.changes) || 0;
+    const response = await queryRust({env, request:{url:'https://internal.invalid/'}}, 'draft-operation', {operation:'cleanup'});
+    if (!response.ok) throw new Error('Rust draft cleanup failed');
+    const { deleted } = await response.json();
 
-    env.DB.prepare(
-      "INSERT INTO settings (key, value) VALUES ('drafts_cleanup_last_run', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value"
-    ).bind(new Date().toISOString()).run().catch(() => {});
+    await queryRust({env, request:{url:'https://internal.invalid/'}}, 'job-heartbeat', {job:'drafts', timestamp:new Date().toISOString()}).catch(() => {});
 
     return json({ success: true, deleted_count: deleted, ttl_days: TTL_DAYS });
   } catch (err) {

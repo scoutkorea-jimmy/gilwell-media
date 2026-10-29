@@ -1,3 +1,4 @@
+import { singleSetting, compareAndSetSetting, queryRust } from '../../_shared/rust-server.js';
 /**
  * Gilwell Media · UI Translations
  *
@@ -9,27 +10,14 @@ import { gateMenuAccess } from '../../_shared/admin-permissions.js';
 import { loadNavLabels } from '../../_shared/nav-labels.js';
 import { recordSettingChange } from '../../_shared/settings-audit.js';
 
-const LOCKED_TRANSLATION_KEYS = {
-  'nav.contributors': true,
-  'nav.home': true,
-  'nav.latest': true,
-  'nav.korea': true,
-  'nav.apr': true,
-  'nav.wosm': true,
-  'nav.wosm_members': true,
-  'nav.people': true,
-  'nav.calendar': true,
-  'nav.glossary': true,
-};
-
 // ── GET /api/settings/translations ───────────────────────────
 export async function onRequestGet({ env }) {
   try {
     const [row, navLabels] = await Promise.all([
-      env.DB.prepare(`SELECT value FROM settings WHERE key = 'translations'`).first(),
+      singleSetting(env, 'translations'),
       loadNavLabels(env),
     ]);
-    const custom = sanitizeTranslationStrings(row ? JSON.parse(row.value || '{}') : {});
+    const custom = await sanitizeTranslationStrings(env, row ? JSON.parse(row.value || '{}') : {});
     return json({ strings: custom, nav_labels: navLabels }, 200, publicCacheHeaders(300, 1800));
   } catch (err) {
     console.error('GET /api/settings/translations error:', err);
@@ -46,16 +34,12 @@ export async function onRequestPut({ request, env }) {
     return json({ error: 'Invalid JSON body' }, 400);
   }
 
-  const strings = sanitizeTranslationStrings(body.strings || {});
-
   try {
-    const prevRow = await env.DB.prepare(`SELECT value FROM settings WHERE key = 'translations'`).first();
-    if (body.if_current && JSON.stringify(sanitizeTranslationStrings(body.if_current.strings || {})) !== JSON.stringify(sanitizeTranslationStrings(prevRow ? JSON.parse(prevRow.value) : {}))) return json({ error: 'UI 번역이 다른 화면에서 변경되었습니다. 입력을 보존하고 최신 값을 확인해주세요.' }, 409);
-    const write = await env.DB.prepare(
-      `INSERT INTO settings (key, value) VALUES ('translations', ?)
-       ON CONFLICT(key) DO UPDATE SET value = excluded.value WHERE settings.value IS ?`
-    ).bind(JSON.stringify(strings), prevRow ? prevRow.value : null).run();
-    if (write.meta && write.meta.changes !== 1) return json({ error: '동시 번역 변경이 감지되었습니다.' }, 409);
+    const strings = await sanitizeTranslationStrings(env, body.strings || {});
+    const prevRow = await singleSetting(env, 'translations');
+    if (body.if_current && JSON.stringify(await sanitizeTranslationStrings(env, body.if_current.strings || {})) !== JSON.stringify(await sanitizeTranslationStrings(env, prevRow ? JSON.parse(prevRow.value) : {}))) return json({ error: 'UI 번역이 다른 화면에서 변경되었습니다. 입력을 보존하고 최신 값을 확인해주세요.' }, 409);
+    const changes = await compareAndSetSetting(env, 'translations', JSON.stringify(strings), prevRow ? prevRow.value : null);
+    if (changes !== 1) return json({ error: '동시 번역 변경이 감지되었습니다.' }, 409);
     await recordSettingChange(env, {
       key: 'translations',
       previousValue: prevRow && prevRow.value,
@@ -84,12 +68,13 @@ function publicCacheHeaders(maxAge, swr) {
   };
 }
 
-function sanitizeTranslationStrings(strings) {
+async function sanitizeTranslationStrings(env, strings) {
   if (!strings || typeof strings !== 'object') return {};
+  const input = Object.keys(strings).map(key=>({key,value:JSON.stringify(strings[key])}));
+  const response = await queryRust({env,request:{url:'https://internal.invalid/'}}, 'translations-normalize', input);
+  if (!response.ok) throw new Error('Rust translation normalization failed');
+  const {entries} = await response.json();
   const sanitized = {};
-  Object.keys(strings).forEach((key) => {
-    if (LOCKED_TRANSLATION_KEYS[key]) return;
-    sanitized[key] = strings[key];
-  });
+  for (const entry of entries) sanitized[entry.key] = JSON.parse(entry.value);
   return sanitized;
 }

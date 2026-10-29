@@ -1,3 +1,4 @@
+import { queryRust } from '../../_shared/rust-server.js';
 import { extractToken, verifyTokenRole } from '../../_shared/auth.js';
 import { loadAdminSession } from '../../_shared/admin-permissions.js';
 import { logAiUsage } from '../../_shared/ai-usage.js';
@@ -13,82 +14,23 @@ const json = (data, status = 200) =>
     headers: { 'Content-Type': 'application/json' },
   });
 
-export async function onRequestPost({ request, env, waitUntil }) {
-  const ip = request.headers.get('CF-Connecting-IP') || '';
-
-  // Phase 4 auth: owner unrestricted. Member needs write:article-scorer AND
-  // must stay within their daily call limit (default 10, per-user override).
-  const session = await loadAdminSession(request, env);
-  if (!session) {
-    return json({ error: '인증이 필요합니다.' }, 401);
-  }
-  if (!session.isOwner && !hasMenuPermission(session.permissions, 'article-scorer', 'write')) {
-    return json({ error: 'AI 채점 권한이 없습니다.' }, 403);
-  }
-
-  const actor = session.username || 'unknown';
-
-  if (!env.AI) {
-    return json({ error: 'Workers AI 바인딩이 설정되지 않았습니다. Cloudflare Pages 대시보드에서 AI 바인딩을 추가해주세요.' }, 503);
-  }
-
-  // Daily limit enforcement for non-owner. ai_usage_log.created_at is a unix
-  // second timestamp; count today's (KST) window.
-  if (!session.isOwner) {
-    const limit = (session.user && session.user.ai_daily_limit != null)
-      ? Number(session.user.ai_daily_limit)
-      : MEMBER_DEFAULT_AI_DAILY_LIMIT;
-    if (limit === 0) {
-      return json({ error: 'AI 채점 일일 한도가 0으로 설정되어 있습니다. 오너에게 한도 상향을 요청하세요.' }, 429);
-    }
-    try {
-      // Compute today's KST window in unix seconds.
-      const now = new Date();
-      const kstOffsetMin = 9 * 60;
-      const nowKstMs = now.getTime() + kstOffsetMin * 60_000;
-      const kstStart = new Date(nowKstMs);
-      kstStart.setUTCHours(0, 0, 0, 0);
-      const startSec = Math.floor((kstStart.getTime() - kstOffsetMin * 60_000) / 1000);
-      const countRow = await env.DB.prepare(
-        `SELECT COUNT(*) AS n FROM ai_usage_log
-          WHERE endpoint = 'score-article' AND actor = ? AND created_at >= ? AND status = 'ok'`
-      ).bind(actor, startSec).first();
-      const used = Number(countRow && countRow.n) || 0;
-      if (used >= limit) {
-        return json({
-          error: `AI 채점 일일 한도(${limit}회)를 초과했습니다. 내일 KST 자정에 초기화됩니다. 한도 상향은 오너에게 요청하세요.`,
-          limit, used, remaining: 0,
-        }, 429);
-      }
-    } catch (err) {
-      // DB error — fail open rather than block the operator. Log for audit.
-      console.error('[score-article] daily-limit check failed:', err);
-    }
-  }
-
-  // 로깅은 fire-and-forget. waitUntil이 없으면 promise만 발사하고 catch만 처리.
-  const logAsync = (entry) => {
-    const p = logAiUsage(env, entry);
-    if (typeof waitUntil === 'function') waitUntil(p.catch(() => {}));
-    else p.catch(() => {});
+export async function extractScoreJson(raw, env, run=queryRust) {
+  const fallback = () => {
+    const match = raw.match(/```json\s*([\s\S]*?)```/) || raw.match(/```\s*([\s\S]*?)```/) || raw.match(/(\{[\s\S]*\})/);
+    return match ? match[1] : null;
   };
+  if (raw.length > 131072 || /[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/.test(raw)) return fallback();
+  try {
+    const response = await run({env,request:{url:'https://internal.invalid/'}},'ai-score-extract',{raw});
+    if (!response.ok) throw new Error('Rust score extraction failed');
+    const result = await response.json();
+    if (result.extracted !== null && typeof result.extracted !== 'string') throw new Error('Invalid score extraction');
+    return result.extracted;
+  } catch (_) { return fallback(); }
+}
 
-  let body;
-  try { body = await request.json(); }
-  catch (_) { return json({ error: '요청 형식 오류' }, 400); }
-
-  const { title = '', subtitle = '', content = '', tags = '' } = body;
-  const inputChars = (String(title) + String(subtitle) + String(content) + String(tags)).length;
-  if (!title && !content) {
-    logAsync({
-      endpoint: 'score-article', model: MODEL_ID, ip, actor,
-      inputChars, status: 'invalid', errorCode: 'empty_input',
-    });
-    return json({ error: '제목과 본문 중 하나 이상을 입력해주세요.' }, 400);
-  }
-
-  const rubric = await loadScoreRubric(env);
-  const prompt = `당신은 BP미디어 기사 편집장입니다. 아래 기사를 운영자가 지정한 평가 기준에 따라 평가해주세요.
+export async function buildScorePrompt(rubric, title, subtitle, content, tags, env, run=queryRust) {
+  const fallback = () => `당신은 BP미디어 기사 편집장입니다. 아래 기사를 운영자가 지정한 평가 기준에 따라 평가해주세요.
 
 ${rubric}
 
@@ -158,6 +100,92 @@ Tags: ${tags || '(없음)'}
   "improvement": "<가장 중요한 개선 방향 2~3줄>",
   "revision_suggestion": "<약 300자 분량의 구체적인 수정 제안(한국어)>"
 }`;
+  try {
+    const values = [String(rubric),String(title || '(없음)'),String(subtitle || '(없음)'),String(content || '(없음)'),String(tags || '(없음)')];
+    if (values.some(value => value.length > 131072 || /[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/.test(value))) return fallback();
+    const response=await run({env,request:{url:'https://internal.invalid/'}},'ai-score-prompt',{values});
+    if (!response.ok) throw new Error('Rust score prompt failed');
+    const result=await response.json();
+    if (typeof result.prompt !== 'string') throw new Error('Invalid score prompt');
+    return result.prompt;
+  } catch (_) { return fallback(); }
+}
+
+export async function onRequestPost({ request, env, waitUntil }) {
+  const ip = request.headers.get('CF-Connecting-IP') || '';
+
+  // Phase 4 auth: owner unrestricted. Member needs write:article-scorer AND
+  // must stay within their daily call limit (default 10, per-user override).
+  const session = await loadAdminSession(request, env);
+  if (!session) {
+    return json({ error: '인증이 필요합니다.' }, 401);
+  }
+  if (!session.isOwner && !hasMenuPermission(session.permissions, 'article-scorer', 'write')) {
+    return json({ error: 'AI 채점 권한이 없습니다.' }, 403);
+  }
+
+  const actor = session.username || 'unknown';
+
+  if (!env.AI) {
+    return json({ error: 'Workers AI 바인딩이 설정되지 않았습니다. Cloudflare Pages 대시보드에서 AI 바인딩을 추가해주세요.' }, 503);
+  }
+
+  // Daily limit enforcement for non-owner. ai_usage_log.created_at is a unix
+  // second timestamp; count today's (KST) window.
+  if (!session.isOwner) {
+    const limit = (session.user && session.user.ai_daily_limit != null)
+      ? Number(session.user.ai_daily_limit)
+      : MEMBER_DEFAULT_AI_DAILY_LIMIT;
+    if (limit === 0) {
+      return json({ error: 'AI 채점 일일 한도가 0으로 설정되어 있습니다. 오너에게 한도 상향을 요청하세요.' }, 429);
+    }
+    try {
+      // Compute today's KST window in unix seconds.
+      const now = new Date();
+      const kstOffsetMin = 9 * 60;
+      const nowKstMs = now.getTime() + kstOffsetMin * 60_000;
+      const kstStart = new Date(nowKstMs);
+      kstStart.setUTCHours(0, 0, 0, 0);
+      const startSec = Math.floor((kstStart.getTime() - kstOffsetMin * 60_000) / 1000);
+      const response = await queryRust({request, env}, 'ai-log', {operation:'limit', values:[actor, startSec]});
+      if (!response.ok) throw new Error('Rust daily AI limit query failed');
+      const { row: countRow } = await response.json();
+      const used = Number(countRow && countRow.n) || 0;
+      if (used >= limit) {
+        return json({
+          error: `AI 채점 일일 한도(${limit}회)를 초과했습니다. 내일 KST 자정에 초기화됩니다. 한도 상향은 오너에게 요청하세요.`,
+          limit, used, remaining: 0,
+        }, 429);
+      }
+    } catch (err) {
+      // DB error — fail open rather than block the operator. Log for audit.
+      console.error('[score-article] daily-limit check failed:', err);
+    }
+  }
+
+  // 로깅은 fire-and-forget. waitUntil이 없으면 promise만 발사하고 catch만 처리.
+  const logAsync = (entry) => {
+    const p = logAiUsage(env, entry);
+    if (typeof waitUntil === 'function') waitUntil(p.catch(() => {}));
+    else p.catch(() => {});
+  };
+
+  let body;
+  try { body = await request.json(); }
+  catch (_) { return json({ error: '요청 형식 오류' }, 400); }
+
+  const { title = '', subtitle = '', content = '', tags = '' } = body;
+  const inputChars = (String(title) + String(subtitle) + String(content) + String(tags)).length;
+  if (!title && !content) {
+    logAsync({
+      endpoint: 'score-article', model: MODEL_ID, ip, actor,
+      inputChars, status: 'invalid', errorCode: 'empty_input',
+    });
+    return json({ error: '제목과 본문 중 하나 이상을 입력해주세요.' }, 400);
+  }
+
+  const rubric = await loadScoreRubric(env);
+  const prompt = await buildScorePrompt(rubric,title,subtitle,content,tags,env);
 
   const startTs = Date.now();
   const aiInput = {
@@ -210,11 +238,9 @@ Tags: ${tags || '(없음)'}
   const completionTokens = usage ? Number(usage.completion_tokens || usage.output_tokens || 0) || null : null;
   const totalTokens      = usage ? Number(usage.total_tokens || ((promptTokens || 0) + (completionTokens || 0))) || null : null;
 
-  const jsonMatch = raw.match(/```json\s*([\s\S]*?)```/) ||
-                    raw.match(/```\s*([\s\S]*?)```/) ||
-                    raw.match(/(\{[\s\S]*\})/);
+  const jsonText = await extractScoreJson(raw, env);
 
-  if (!jsonMatch) {
+  if (jsonText === null) {
     logAsync({
       endpoint: 'score-article', model: MODEL_ID, ip, actor,
       inputChars, outputChars, promptTokens, completionTokens, totalTokens,
@@ -224,7 +250,7 @@ Tags: ${tags || '(없음)'}
   }
 
   let result;
-  try { result = JSON.parse(jsonMatch[1]); }
+  try { result = JSON.parse(jsonText); }
   catch (_) {
     logAsync({
       endpoint: 'score-article', model: MODEL_ID, ip, actor,

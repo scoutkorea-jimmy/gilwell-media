@@ -11,6 +11,8 @@
  * via isOwnerRole() before consulting the JSON blob.
  */
 
+import { queryRust } from './rust-server.js';
+
 export const ROLES = Object.freeze({ OWNER: 'owner', MEMBER: 'member' });
 export const STATUSES = Object.freeze({ ACTIVE: 'active', DISABLED: 'disabled', DELETED: 'deleted' });
 
@@ -114,33 +116,25 @@ export function hasMenuPermission(permissions, menuSlug, action) {
  */
 export async function loadAdminUserById(env, id) {
   if (!env || !env.DB || !Number.isFinite(Number(id))) return null;
-  const row = await env.DB.prepare(
-    `SELECT id, username, display_name, role, permissions, editor_code,
-            ai_daily_limit, status, must_change_password, token_min_iat,
-            member_self_rename_used, created_at, last_login_at
-       FROM admin_users
-      WHERE id = ? AND status != 'deleted'`
-  ).bind(Number(id)).first();
+  const response = await queryRust({env, request:{url:'https://internal.invalid/'}}, 'admin-user-read', {operation:'id', id:Number(id)});
+  if (!response.ok) throw new Error('Rust admin user lookup failed');
+  const {row} = await response.json();
   return row || null;
 }
 
 export async function loadAdminUserByUsername(env, username) {
   if (!env || !env.DB || !username) return null;
-  const row = await env.DB.prepare(
-    `SELECT id, username, display_name, password_hash, role, permissions,
-            editor_code, ai_daily_limit, status, must_change_password,
-            token_min_iat, member_self_rename_used, created_at, last_login_at
-       FROM admin_users
-      WHERE username = ? AND status != 'deleted'`
-  ).bind(String(username).trim().toLowerCase()).first();
+  const response = await queryRust({env, request:{url:'https://internal.invalid/'}}, 'admin-user-read', {operation:'username', username:String(username).trim().toLowerCase()});
+  if (!response.ok) throw new Error('Rust admin username lookup failed');
+  const {row} = await response.json();
   return row || null;
 }
 
 export async function countActiveOwners(env) {
   if (!env || !env.DB) return 0;
-  const row = await env.DB.prepare(
-    `SELECT COUNT(*) AS n FROM admin_users WHERE role = 'owner' AND status = 'active'`
-  ).first();
+  const response = await queryRust({env, request:{url:'https://internal.invalid/'}}, 'admin-user-read', {operation:'owner-count'});
+  if (!response.ok) throw new Error('Rust admin owner count failed');
+  const {row} = await response.json();
   return Number(row && row.n) || 0;
 }
 

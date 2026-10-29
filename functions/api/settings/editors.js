@@ -1,3 +1,4 @@
+import { singleSetting, compareAndSetSetting, queryRust } from '../../_shared/rust-server.js';
 /**
  * Gilwell Media · Editors Setting
  *
@@ -32,16 +33,32 @@ function normalizeEditors(stored) {
   return out;
 }
 
+export async function normalizeEditorsRust(stored, env = {}, run = queryRust) {
+  const fallback = () => normalizeEditors(stored);
+  try {
+    const entries = stored && typeof stored === 'object' ? Object.entries(stored) : [];
+    if (/\\u[dD][89a-fA-F][0-9a-fA-F]{2}/.test(JSON.stringify(entries))) return fallback();
+    const response = await run({env,request:{url:'https://internal.invalid/'}}, 'editors-normalize', {entries});
+    if (!response.ok) return fallback();
+    const result = await response.json();
+    if (!Array.isArray(result.entries)) return fallback();
+    const normalized = {A:'',B:'',C:''};
+    for (const entry of result.entries) {
+      if (!Array.isArray(entry) || typeof entry[0] !== 'string' || !LETTER_RE.test(entry[0]) || !Array.isArray(entry[1]) || entry[1].length > MAX_NAME_LEN || !entry[1].every(n=>Number.isInteger(n) && n>=0 && n<=65535)) return fallback();
+      normalized[entry[0]] = String.fromCharCode(...entry[1]);
+    }
+    return normalized;
+  } catch { return fallback(); }
+}
+
 export async function onRequestGet({ request, env }) {
   // Require auth — editor real names are private
   const __gate = await gateMenuAccess(request, env, 'editors', 'view'); if (__gate) return __gate
 
   try {
-    const row = await env.DB.prepare(
-      `SELECT value FROM settings WHERE key = 'editors'`
-    ).first();
+    const row = await singleSetting(env, 'editors');
     const stored = row ? JSON.parse(row.value) : {};
-    return json({ editors: normalizeEditors(stored) });
+    return json({ editors: await normalizeEditorsRust(stored, env) });
   } catch (err) {
     if (request && new URL(request.url).searchParams.get('scope') === 'admin') return json({ error: '설정을 불러오지 못했습니다. 다시 시도해주세요.' }, 500);
     console.error('GET /api/settings/editors error:', err);
@@ -62,16 +79,13 @@ export async function onRequestPut({ request, env }) {
     return json({ error: 'editors 객체를 입력해주세요' }, 400);
   }
 
-  const safe = normalizeEditors(editors);
+  const safe = await normalizeEditorsRust(editors, env);
 
   try {
-    const prevRow = await env.DB.prepare(`SELECT value FROM settings WHERE key = 'editors'`).first();
-    if (body.if_current && JSON.stringify(normalizeEditors(body.if_current.editors)) !== JSON.stringify(normalizeEditors(prevRow ? JSON.parse(prevRow.value) : {}))) return json({ error: '저자명이 다른 화면에서 변경되었습니다. 입력을 보존하고 최신 값을 확인해주세요.' }, 409);
-    const write = await env.DB.prepare(
-      `INSERT INTO settings (key, value) VALUES ('editors', ?)
-       ON CONFLICT(key) DO UPDATE SET value = excluded.value WHERE settings.value IS ?`
-    ).bind(JSON.stringify(safe), prevRow ? prevRow.value : null).run();
-    if (write.meta && write.meta.changes !== 1) return json({ error: '동시 저자명 변경이 감지되었습니다.' }, 409);
+    const prevRow = await singleSetting(env, 'editors');
+    if (body.if_current && JSON.stringify(await normalizeEditorsRust(body.if_current.editors, env)) !== JSON.stringify(await normalizeEditorsRust(prevRow ? JSON.parse(prevRow.value) : {}, env))) return json({ error: '저자명이 다른 화면에서 변경되었습니다. 입력을 보존하고 최신 값을 확인해주세요.' }, 409);
+    const changes = await compareAndSetSetting(env, 'editors', JSON.stringify(safe), prevRow ? prevRow.value : null);
+    if (changes !== 1) return json({ error: '동시 저자명 변경이 감지되었습니다.' }, 409);
     await recordSettingChange(env, {
       key: 'editors',
       previousValue: prevRow && prevRow.value,

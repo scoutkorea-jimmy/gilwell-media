@@ -1,3 +1,5 @@
+import { privacySnapshot } from './rust-server.js';
+
 /**
  * Gilwell Media · Privacy Policy storage + default content
  *
@@ -125,10 +127,10 @@ export const PRIVACY_POLICY_MAX_CHARS = 100_000;
 export async function loadPrivacyPolicy(env) {
   if (!env || !env.DB) return { html: DEFAULT_PRIVACY_POLICY_HTML, updated_at: null, is_default: true };
   try {
-    const [bodyRow, tsRow] = await Promise.all([
-      env.DB.prepare(`SELECT value FROM settings WHERE key = ?`).bind(PRIVACY_SETTINGS_KEY).first(),
-      env.DB.prepare(`SELECT value FROM settings WHERE key = ?`).bind(PRIVACY_SETTINGS_UPDATED_KEY).first(),
-    ]);
+    const { results } = await privacySnapshot(env);
+    const rows = Object.fromEntries((results || []).map(row => [row.key, row]));
+    const bodyRow = rows[PRIVACY_SETTINGS_KEY];
+    const tsRow = rows[PRIVACY_SETTINGS_UPDATED_KEY];
     const stored = bodyRow && typeof bodyRow.value === 'string' ? bodyRow.value.trim() : '';
     if (stored) {
       return {

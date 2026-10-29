@@ -1,3 +1,5 @@
+import { singleSetting, queryRust } from './rust-server.js';
+
 /**
  * AI 기사 채점 평가 기준(rubric) 관리
  *
@@ -270,12 +272,23 @@ export function normalizeScoreRubric(raw) {
   return text;
 }
 
+export async function normalizeScoreRubricRust(raw, env = {}) {
+  const original = normalizeScoreRubric(raw);
+  try {
+    const response = await queryRust({env,request:{url:'https://internal.invalid/'}}, 'score-rubric-normalize', {text:raw == null ? '' : String(raw)});
+    if (!response.ok) return original;
+    const {units} = await response.json();
+    if (!Array.isArray(units) || units.length > RUBRIC_MAX_CHARS || !units.every(n => Number.isInteger(n) && n >= 0 && n <= 65535)) return original;
+    let result = '';
+    for (let i=0; i<units.length; i+=4096) result += String.fromCharCode(...units.slice(i,i+4096));
+    return result === original ? result : original;
+  } catch { return original; }
+}
+
 export async function loadScoreRubric(env) {
   if (!env || !env.DB) return DEFAULT_SCORE_RUBRIC;
   try {
-    const row = await env.DB
-      .prepare(`SELECT value FROM settings WHERE key = 'score_rubric'`)
-      .first();
+    const row = await singleSetting(env, 'score_rubric');
     const stored = row && typeof row.value === 'string' ? row.value.trim() : '';
     if (stored) return stored;
   } catch (_) { /* fall through */ }

@@ -1,3 +1,4 @@
+import './register-rust-wasm.mjs';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { DatabaseSync } from 'node:sqlite';
@@ -17,15 +18,15 @@ function fixture(permissions) {
   db.exec('CREATE TABLE api_rate_limit(bucket_key TEXT PRIMARY KEY,count INTEGER NOT NULL,window_start_at INTEGER NOT NULL)');
   const user = { id: 77, role: 'member', status: 'active', username: 'synthetic_settings', token_min_iat: 0, permissions: JSON.stringify({ access_admin: true, permissions }) };
   const writes = [];
-  const env = { ADMIN_SECRET: SECRET, DB: { prepare(sql) {
+  const env = { ADMIN_SECRET: SECRET, DB: Object.assign(new (class D1Database {})(), { prepare(sql) {
     let args = [];
     return {
       bind(...values) { args = values; return this; },
-      async first() { if (sql.includes('FROM admin_users')) return user; return db.prepare(sql).get(...args) || null; },
+      async first() { if (/^INSERT INTO api_rate_limit/.test(sql.trim())) writes.push(sql); if (sql.includes('FROM admin_users')) return user; return db.prepare(sql).get(...args) || null; },
       async all() { return { results: db.prepare(sql).all(...args) }; },
       async run() { writes.push(sql); const result = db.prepare(sql).run(...args); return { meta: { changes: Number(result.changes), last_row_id: Number(result.lastInsertRowid) } }; },
     };
-  } } };
+  } }) };
   return { db, writes, env };
 }
 

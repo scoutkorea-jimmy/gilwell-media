@@ -1,3 +1,4 @@
+import { queryRust } from './rust-server.js';
 import { getCountryNameAliases, isCountryNameFallbackValue, translateCountryNameToKorean } from './country-name-ko.js';
 
 const BASE_ITEM_KEYS = new Set([
@@ -69,6 +70,38 @@ export function sanitizeWosmMemberItem(item, index) {
   };
 }
 
+export async function sanitizeWosmMembersItemsRust(raw, env = {}, run = queryRust, withAliases = false) {
+  const fallback = () => withAliases ? null : sanitizeWosmMembersItems(raw);
+  try {
+    const items = (Array.isArray(raw)?raw:[]).map(item=>{
+      const source=item && typeof item==='object' ? item : {};
+      const extraSource=source.extra_fields && typeof source.extra_fields==='object' ? source.extra_fields : {};
+      const unknown={}; Object.keys(source).forEach(key=>{if (!BASE_ITEM_KEYS.has(key)) unknown[key]=source[key];});
+      const en=String(source.country_en || '');
+      const extras=Object.entries(Object.assign({},unknown,extraSource)).map(([key,value])=>[key,String(value || '')]);
+      const order=Number(source.sort_order);
+      return {ko:String(source.country_ko||''),en,fr:String(source.country_fr||''),membership:String(source.membership_category||''),status:String(source.status_description||''),extras,order:Number.isFinite(order)?order:null};
+    });
+    if (/\\u[dD][89a-fA-F][0-9a-fA-F]{2}/.test(JSON.stringify(items))) return fallback();
+    const response=await run({env,request:{url:'https://internal.invalid/'}},withAliases ? 'wosm-members-response' : 'wosm-members-normalize',{items});
+    if (!response.ok) return fallback();
+    const result=await response.json(); if (!Array.isArray(result.items) || result.items.length > items.length) return fallback();
+    const decode=units=>{if (!Array.isArray(units) || units.length>260 || !units.every(n=>Number.isInteger(n)&&n>=0&&n<=65535)) throw new Error('invalid member text'); return String.fromCharCode(...units);};
+    const output=result.items.map(item=>{
+      if (!Array.isArray(item.extras) || typeof item.order!=='number' || !Number.isFinite(item.order)) throw new Error('invalid member');
+      const extras={}; for(const [key,units] of item.extras) {if(typeof key!=='string') throw new Error('invalid key'); extras[key]=decode(units);}
+      return {country_ko:decode(item.ko),country_en:decode(item.en),country_fr:decode(item.fr),membership_category:decode(item.membership),status_description:decode(item.status),extra_fields:extras,sort_order:item.order};
+    });
+    if (withAliases) {
+      if (!Array.isArray(result.aliases) || result.aliases.length !== output.length || !result.aliases.every(list =>
+        Array.isArray(list) && new Set(list).size === list.length && list.every(value => typeof value === 'string' && value.length > 0 && value === value.trim())
+      )) return fallback();
+      return {items:output, aliases:result.aliases};
+    }
+    return output;
+  } catch {return fallback();}
+}
+
 export function parseWosmMembersPayload(rawValue) {
   try {
     const parsed = rawValue ? JSON.parse(rawValue) : [];
@@ -131,6 +164,36 @@ export function normalizeWosmMembersColumns(raw) {
   return prioritizeWosmColumns(result);
 }
 
+export async function normalizeWosmMembersColumnsRust(raw, env = {}, run = queryRust) {
+  const fallback = () => normalizeWosmMembersColumns(raw);
+  try {
+    const columns = (Array.isArray(raw)?raw:[]).map(column=>{
+      const source=column && typeof column === 'object' ? column : {};
+      return [String(source.key || ''),String(source.label || ''),String(source.default_header || '')];
+    });
+    const defaults=DEFAULT_COLUMNS.map(c=>[c.key,c.label,c.type,c.default_header]);
+    if (/\\u[dD][89a-fA-F][0-9a-fA-F]{2}/.test(JSON.stringify(columns))) return fallback();
+    const response=await run({env,request:{url:'https://internal.invalid/'}},'wosm-columns-normalize',{columns,defaults});
+    if (!response.ok) return fallback();
+    const result=await response.json();
+    if (!Array.isArray(result.columns)) return fallback();
+    const validUnits=units=>Array.isArray(units) && units.length<=160 && units.every(n=>Number.isInteger(n)&&n>=0&&n<=65535);
+    const output=[];
+    for (const c of result.columns) {
+      if (!c || typeof c.key!=='string' || typeof c.type!=='string' || typeof c.system!=='boolean' || !validUnits(c.label) || !validUnits(c.header)) return fallback();
+      output.push({key:c.key,label:String.fromCharCode(...c.label),type:c.type,system:c.system,default_header:String.fromCharCode(...c.header)});
+    }
+    const keys = output.map(c => c.key);
+    if (new Set(keys).size !== keys.length || !keys.includes('country_names') || !output.every(c => {
+      const system = ['country_names','membership_category','status_description'].includes(c.key);
+      return /^[a-z0-9_]{1,40}$/.test(c.key) && c.label.length > 0 && c.label.length <= 40 &&
+        c.default_header.length <= 160 && c.system === system && c.type === (c.key === 'country_names' ? 'country_names' : 'field') &&
+        (c.key !== 'country_names' || c.default_header === '');
+    })) return fallback();
+    return output;
+  } catch {return fallback();}
+}
+
 export function parseWosmMembersColumns(rawValue) {
   try {
     const parsed = rawValue ? JSON.parse(rawValue) : [];
@@ -164,6 +227,23 @@ export function normalizeWosmMembersResponse(items, columns, importMapping, regi
   };
 }
 
+export async function normalizeWosmMembersResponseRust(items, columns, importMapping, registeredCount, revision, publicCopy, env = {}, run = queryRust) {
+  const fallback = () => normalizeWosmMembersResponse(items, columns, importMapping, registeredCount, revision, publicCopy);
+  try {
+    const combined = await sanitizeWosmMembersItemsRust(items, env, run, true);
+    if (!combined) return fallback();
+    const normalizedItems = combined.items;
+    return {
+      items: normalizedItems.map((item,index) => ({...item, country_aliases:combined.aliases[index]})),
+      columns: normalizeWosmMembersColumns(columns),
+      import_mapping: normalizeWosmImportMapping(importMapping),
+      registered_count: normalizeWosmRegisteredCount(registeredCount),
+      public_copy: normalizeWosmPublicCopy(publicCopy),
+      revision: Number.isFinite(Number(revision)) ? Number(revision) : 0,
+    };
+  } catch { return fallback(); }
+}
+
 function buildWosmCountryAliases(item) {
   const aliases = new Set();
   const addAlias = (value) => {
@@ -194,6 +274,33 @@ export function normalizeWosmPublicCopy(raw) {
     section_region_label: sanitizeText(source.section_region_label, 30) || defaults.section_region_label,
     section_language_label: sanitizeText(source.section_language_label, 30) || defaults.section_language_label,
   };
+}
+
+export async function normalizeWosmFieldsRust(mappingRaw, copyRaw, countRaw, env = {}, run = queryRust) {
+  const fallback = () => ({mapping:normalizeWosmImportMapping(mappingRaw),copy:normalizeWosmPublicCopy(copyRaw),count:normalizeWosmRegisteredCount(countRaw)});
+  try {
+    const mapping = mappingRaw && typeof mappingRaw === 'object' ? mappingRaw : {};
+    const copy = copyRaw && typeof copyRaw === 'object' ? copyRaw : {};
+    const specs = [
+      ...Object.keys(DEFAULT_WOSM_MEMBERS.import_mapping).map(key=>['m:'+key,mapping[key],DEFAULT_WOSM_MEMBERS.import_mapping[key],160]),
+      ...[['overview_template',320],['search_template',240],['section_meta_template',120],['helper_text',360],['child_label',40],['section_region_label',30],['section_language_label',30]].map(([key,max])=>['c:'+key,copy[key],DEFAULT_WOSM_MEMBERS.public_copy[key],max]),
+    ];
+    const fields = specs.map(([key,value,fallback,max])=>[key,String(value || ''),fallback,max]);
+    const countEmpty = countRaw == null || String(countRaw).trim() === '';
+    const count = countEmpty ? null : Number(countRaw);
+    if (/\\u[dD][89a-fA-F][0-9a-fA-F]{2}/.test(JSON.stringify(fields))) return fallback();
+    const response = await run({env,request:{url:'https://internal.invalid/'}},'wosm-fields-normalize',{fields,count:Number.isFinite(count)?count:null,count_empty:countEmpty});
+    if (!response.ok) return fallback();
+    const output = await response.json();
+    if (!Array.isArray(output.fields) || output.fields.length !== specs.length || typeof output.registered_count !== 'number' || !Number.isFinite(output.registered_count) || output.registered_count < 0 || !Number.isInteger(output.registered_count)) return fallback();
+    const result = {mapping:{},copy:{},count:output.registered_count};
+    for (let i=0;i<specs.length;i++) {
+      const [key,units] = output.fields[i] || [];
+      if (key !== specs[i][0] || !Array.isArray(units) || units.length>specs[i][3] && units.length>specs[i][2].length || !units.every(n=>Number.isInteger(n)&&n>=0&&n<=65535)) return fallback();
+      result[key.startsWith('m:')?'mapping':'copy'][key.slice(2)] = String.fromCharCode(...units);
+    }
+    return result;
+  } catch { return fallback(); }
 }
 
 export function parseWosmPublicCopy(rawValue) {

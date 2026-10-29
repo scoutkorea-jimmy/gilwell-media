@@ -3,24 +3,50 @@ import assert from 'node:assert/strict';
 import { DatabaseSync } from 'node:sqlite';
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
-import { parseNaverSearchPerformance } from '../../functions/_shared/naver-search-performance.js';
+import { parseNaverSearchPerformance, parseNaverSearchPerformanceRust } from '../../functions/_shared/naver-search-performance.js';
 import { googleReportPeriod, fetchGoogleSearchPerformance } from '../../functions/_shared/google-search-performance.js';
 import { validateReport, onRequestGet, onRequestPost } from '../../functions/api/admin/search-performance.js';
 import { createToken } from '../../functions/_shared/auth.js';
+import { validateReportLegacy } from '../../tests/fixtures/search-report-validation.js';
 
 const pasted = {action:'import-naver',data_through:'2026-10-09',total_clicks:8,row_count:2,complete:true,text:'No\t검색 키워드\t클릭\t노출\tCTR(%)\n1\t\n예시 검색어\n\t3\t3\t100\n2\t예시 검색어 2\t1\t2\t50'};
 const report = () => parseNaverSearchPerformance(pasted);
 
-test('Naver paste parser preserves spaces and zero clicks, handles repeated headers and checks completeness', () => {
-  assert.equal(validateReport(report()).row_count,2);
+test('Naver paste parser preserves spaces and zero clicks, handles repeated headers and checks completeness', async () => {
+  assert.equal((await validateReport(report())).row_count,2);
   assert.equal(report().rows[0].keyword,'예시 검색어');
   const text='No\t검색 키워드\t클릭\t노출\tCTR(%)\n1\t123\t0\t1,200\t0%\nNo\t검색 키워드\t클릭\t노출\tCTR(%)\n2\t두 번째 검색어\t0\t1\t0.0';
   assert.equal(parseNaverSearchPerformance({...pasted,text}).rows[0].impressions,1200);
   assert.equal(parseNaverSearchPerformance({...pasted,row_count:0,text:''}).rows.length,0);
   for(const change of [{row_count:3},{complete:false},{complete:'true'},{text:text.replace('2\t두','3\t두')},{text:text.replace('1,200','1.2천')},{text:text.replace('0%','101%')}]) assert.throws(()=>parseNaverSearchPerformance({...pasted,...change}));
 });
-test('report boundary rejects duplicates, invalid counts/site/date, future dates and partial rows', () => {
-  for (const change of [{site:'other.net'},{row_count:3},{data_through:'2026-02-30'},{data_through:'2999-01-01'},{total_clicks:1},{period_days:3},{rows:[{keyword:'a',clicks:2,impressions:1},{keyword:'b',clicks:0,impressions:1}]},{rows:[{keyword:'a',clicks:0,impressions:1},{keyword:'a',clicks:0,impressions:1}]}]) assert.throws(()=>validateReport({...report(),...change}));
+test('Rust Naver parser matches existing rows and exact error behavior', async () => {
+  const text='검색 키워드 TOP 30\nNo\t검색 키워드\t클릭\t노출\tCTR(%)\n1\t가나다\t0\t1,200\t0%\nNo\t검색 키워드\t클릭\t노출\tCTR(%)\n2\t😀 용어\t1\t3\t33.3%';
+  const cases=[undefined,null,pasted,{...pasted,text,row_count:2},{...pasted,text:'',row_count:0},{...pasted,text:'1\t\ud800\t0\t1\t0',row_count:1},
+    {...pasted,text:text.replace('1,200','1.2천')},{...pasted,text:text.replace('33.3%','101%')},
+    {...pasted,text:text.replace('2\t😀','3\t😀')},{...pasted,text,row_count:3},{...pasted,complete:false},
+    {...pasted,text:'1\t가\t9007199254740992\t9007199254740992\t0',row_count:1}];
+  for(const input of cases){let original,oldError;try{original=parseNaverSearchPerformance(input);}catch(error){oldError=error.message;}
+    if(oldError) await assert.rejects(parseNaverSearchPerformanceRust(input),error=>error.message===oldError);
+    else assert.deepEqual(await parseNaverSearchPerformanceRust(input),original);
+  }
+});
+test('report boundary rejects duplicates, invalid counts/site/date, future dates and partial rows', async () => {
+  for (const change of [{site:'other.net'},{row_count:3},{data_through:'2026-02-30'},{data_through:'2999-01-01'},{total_clicks:1},{period_days:3},{rows:[{keyword:'a',clicks:2,impressions:1},{keyword:'b',clicks:0,impressions:1}]},{rows:[{keyword:'a',clicks:0,impressions:1},{keyword:'a',clicks:0,impressions:1}]}]) await assert.rejects(validateReport({...report(),...change}));
+});
+test('Rust report validation preserves legacy results, errors, sorting and UTF-16 bounds', async () => {
+  const base=report();
+  const cases=[base,{...base,rows:[{keyword:' 가나다 ',clicks:2,impressions:3},{keyword:'가나다라',clicks:2,impressions:4}],total_clicks:5},
+    {...base,rows:[{keyword:'😀'.repeat(150),clicks:0,impressions:1}],row_count:1,total_clicks:0},
+    {...base,rows:[{keyword:'😀'.repeat(151),clicks:0,impressions:1}],row_count:1,total_clicks:0},
+    {...base,rows:[{keyword:'\ud800',clicks:0,impressions:1}],row_count:1,total_clicks:0},
+    {...base,data_through:'2026-02-30'},{...base,total_clicks:0},{...base,rows:[],row_count:0,total_clicks:0},
+    {...base,rows:[{keyword:'a',clicks:9007199254740992,impressions:9007199254740992}],row_count:1,total_clicks:0}];
+  for(const input of cases){
+    let oldResult,oldError;try{oldResult=validateReportLegacy(input);}catch(error){oldError=error.message;}
+    if(oldError) await assert.rejects(validateReport(input),error=>error.message===oldError);
+    else {const actual=await validateReport(input);delete actual.synced_at;delete oldResult.synced_at;assert.deepEqual(actual,oldResult);}
+  }
 });
 test('Google date range uses Pacific calendar days across KST day and DST boundaries',()=>{
   assert.deepEqual(googleReportPeriod(new Date('2026-10-10T01:00:00Z')),{startDate:'2026-09-09',endDate:'2026-10-06'});
@@ -55,7 +81,7 @@ test('Google server signs read-only JWT and fetches every API page without expos
   try{
     const rows=Array.from({length:5001},(_,i)=>({keys:['sample '+i],clicks:0,impressions:1}));
     globalThis.fetch=mockGoogleFetch([rows.slice(0,5000),rows.slice(5000)]);
-    const result=validateReport(await fetchGoogleSearchPerformance(apiEnv));
+    const result=await validateReport(await fetchGoogleSearchPerformance(apiEnv));
     assert.equal(result.row_count,5001);assert.equal(result.total_clicks,13);assert.equal(result.source,'google_api');
     assert.equal(JSON.stringify(result).includes('PRIVATE KEY'),false);
     globalThis.fetch=mockGoogleFetch([[],],0);
@@ -72,7 +98,7 @@ test('Google server signs read-only JWT and fetches every API page without expos
 const sql = new DatabaseSync(':memory:');
 sql.exec('CREATE TABLE settings(key TEXT PRIMARY KEY,value TEXT); CREATE TABLE api_rate_limit(bucket_key TEXT PRIMARY KEY,count INTEGER,window_start_at INTEGER)');
 let failBatch=false;
-const DB={prepare(query){return{args:[],bind(...args){this.args=args;return this;},async first(){return sql.prepare(query).get(...this.args)||null;},async all(){return{results:sql.prepare(query).all(...this.args)};},async run(){return{meta:sql.prepare(query).run(...this.args)};}};},async batch(statements){if(failBatch)throw new Error('isolated DB failure');sql.exec('BEGIN');try{const results=[];for(const s of statements)results.push(await s.run());sql.exec('COMMIT');return results;}catch(error){sql.exec('ROLLBACK');throw error;}}};
+const DB=Object.assign(new (class D1Database {})(), {prepare(query){return{args:[],bind(...args){this.args=args;return this;},async first(){return sql.prepare(query).get(...this.args)||null;},async all(){return{results:sql.prepare(query).all(...this.args)};},async run(){return{meta:sql.prepare(query).run(...this.args)};}};},async batch(statements){if(failBatch)throw new Error('isolated DB failure');sql.exec('BEGIN');try{const results=[];for(const s of statements)results.push(await s.run());sql.exec('COMMIT');return results;}catch(error){sql.exec('ROLLBACK');throw error;}}});
 const env={DB,ADMIN_SECRET:'isolated-test-only-secret'};
 const owner=await createToken(env.ADMIN_SECRET,'full');const member=await createToken(env.ADMIN_SECRET,'member');
 const request=(token,body,type='application/json')=>new Request('https://bpmedia.net/api/admin/search-performance',{method:body===undefined?'GET':'POST',headers:{...(token?{Cookie:`admin_token=${token}`} : {}),'Content-Type':type},...(body===undefined?{}:{body:typeof body==='string'?body:JSON.stringify(body)})});

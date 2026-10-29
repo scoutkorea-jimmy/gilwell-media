@@ -1,19 +1,21 @@
+import { settingSnapshot, saveRevisionedSetting, queryRust } from '../../_shared/rust-server.js';
 import { extractToken, verifyTokenRole } from '../../_shared/auth.js';
 import { gateMenuAccess } from '../../_shared/admin-permissions.js';
-import { DEFAULT_FEATURE_DEFINITION, normalizeFeatureDefinitionContent, isLegacyFeatureDefinition } from '../../_shared/feature-definition.js';
+import { DEFAULT_FEATURE_DEFINITION, analyzeFeatureDefinitionRust } from '../../_shared/feature-definition.js';
 import { recordSettingChange } from '../../_shared/settings-audit.js';
 
 export async function onRequestGet({ env }) {
   try {
     const [snapshot, updatedRow] = await Promise.all([
-      env.DB.prepare(`SELECT key, value FROM settings WHERE key IN ('feature_definition', 'feature_definition_rev')`).all(),
-      env.DB.prepare(
-        `SELECT saved_at FROM settings_history WHERE key = 'feature_definition' ORDER BY saved_at DESC LIMIT 1`
-      ).first().catch(() => null),
+      settingSnapshot(env, 'feature_definition'),
+      queryRust({env, request:{url:'https://internal.invalid/'}}, 'feature-history', {}).then(async response => {
+        if (!response.ok) throw new Error('Rust feature history query failed');
+        return (await response.json()).row;
+      }).catch(() => null),
     ]);
     const values = Object.fromEntries((snapshot.results || []).map((row) => [row.key, row.value]));
-    const stored = normalizeFeatureDefinitionContent(values.feature_definition || '');
-    const content = isLegacyFeatureDefinition(stored) ? DEFAULT_FEATURE_DEFINITION : stored;
+    const {text:stored,legacy} = await analyzeFeatureDefinitionRust(values.feature_definition || '', env);
+    const content = legacy ? DEFAULT_FEATURE_DEFINITION : stored;
     const updated_at = updatedRow && updatedRow.saved_at ? String(updatedRow.saved_at) : null;
     return json({ content, updated_at, revision: parseInt(values.feature_definition_rev, 10) || 0 }, 200);
   } catch (err) {
@@ -28,23 +30,19 @@ export async function onRequestPut({ request, env }) {
   const __gate = await gateMenuAccess(request, env, 'kms', 'write'); if (__gate) return __gate
   let body;
   try { body = await request.json(); } catch (_) { return json({ error: 'Invalid JSON' }, 400); }
-  const content = normalizeFeatureDefinitionContent(body && body.content || '').trim();
+  const {text} = await analyzeFeatureDefinitionRust(body && body.content || '', env);
+  const content = text.trim();
   if (!content) return json({ error: '기능 정의서 내용이 비어 있습니다.' }, 400);
   try {
-    const { results } = await env.DB.prepare(`SELECT key, value FROM settings WHERE key IN ('feature_definition', 'feature_definition_rev')`).all();
+    const { results } = await settingSnapshot(env, 'feature_definition');
     const rows = Object.fromEntries((results || []).map((row) => [row.key, row]));
     const prevRow = rows.feature_definition;
     const revision = rows.feature_definition_rev ? parseInt(rows.feature_definition_rev.value, 10) || 0 : 0;
     if (!Number.isInteger(body.if_revision) || body.if_revision !== revision) {
       return json({ error: '다른 변경이 감지되었습니다. 입력을 보존하고 최신 운영 기준을 다시 확인해주세요.', revision }, 409);
     }
-    const writes = await env.DB.batch([
-      env.DB.prepare(`INSERT INTO settings (key, value) VALUES ('feature_definition_rev', ?)
-        ON CONFLICT(key) DO UPDATE SET value = excluded.value WHERE CAST(settings.value AS INTEGER) = ?`).bind(String(revision + 1), revision),
-      env.DB.prepare(`INSERT INTO settings (key, value) SELECT 'feature_definition', ? WHERE changes() = 1
-        ON CONFLICT(key) DO UPDATE SET value = excluded.value`).bind(content),
-    ]);
-    if (!writes[0] || !writes[0].meta || writes[0].meta.changes !== 1) {
+    const changes = await saveRevisionedSetting(env, 'feature_definition', revision, revision + 1, [content]);
+    if (changes !== 1) {
       return json({ error: '동시 수정이 감지되었습니다. 입력을 보존하고 최신 운영 기준을 다시 확인해주세요.', revision }, 409);
     }
     await recordSettingChange(env, {

@@ -11,6 +11,7 @@
 import { extractToken, verifyToken } from '../../_shared/auth.js';
 import { requireOwner, isPublishKillSwitchOn } from '../../_shared/admin-permissions.js';
 import { logOperationalEvent } from '../../_shared/ops-log.js';
+import { queryRust } from '../../_shared/rust-server.js';
 
 export async function onRequestGet({ request, env }) {
   const token = extractToken(request);
@@ -33,10 +34,8 @@ export async function onRequestPut({ request, env }) {
   const nextValue = nextOn ? 'on' : 'off';
 
   try {
-    await env.DB.prepare(
-      `INSERT INTO settings (key, value) VALUES ('publish_kill_switch', ?)
-       ON CONFLICT(key) DO UPDATE SET value = excluded.value`
-    ).bind(nextValue).run();
+    const response = await queryRust({request, env}, 'publish-switch-set', {value:nextValue});
+    if (!response.ok) throw new Error('Rust publish switch save failed');
 
     await logOperationalEvent(env, {
       channel: 'admin', type: 'admin_publish_kill_switch', level: nextOn ? 'warn' : 'info',

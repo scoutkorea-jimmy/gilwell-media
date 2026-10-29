@@ -1,3 +1,4 @@
+import { queryRust } from '../../_shared/rust-server.js';
 import { extractToken, verifyTokenRole } from '../../_shared/auth.js';
 import { gateMenuAccess } from '../../_shared/admin-permissions.js';
 import { requireOtp } from '../../_shared/otp-session.js';
@@ -14,40 +15,9 @@ export async function onRequestGet({ request, env }) {
     const q = String(url.searchParams.get('q') || '').trim();
     const status = String(url.searchParams.get('status') || 'all').trim().toLowerCase();
     const limit = Math.max(1, Math.min(200, parseInt(url.searchParams.get('limit') || '100', 10) || 100));
-    const conditions = [];
-    const bindings = [];
-    if (q) {
-      conditions.push(`(
-        title LIKE ? OR summary LIKE ? OR impact LIKE ? OR cause LIKE ? OR action_items LIKE ? OR source_path LIKE ? OR reporter LIKE ?
-      )`);
-      const like = '%' + q + '%';
-      bindings.push(like, like, like, like, like, like, like);
-    }
-    if (status && status !== 'all') {
-      conditions.push('status = ?');
-      bindings.push(status);
-    }
-    const where = conditions.length ? 'WHERE ' + conditions.join(' AND ') : '';
-    const { results } = await env.DB.prepare(
-      `SELECT *
-         FROM homepage_issues
-         ${where}
-        ORDER BY
-          CASE status
-            WHEN 'open' THEN 0
-            WHEN 'monitoring' THEN 1
-            WHEN 'resolved' THEN 2
-            ELSE 3
-          END ASC,
-          CASE severity
-            WHEN 'high' THEN 0
-            WHEN 'medium' THEN 1
-            ELSE 2
-          END ASC,
-          datetime(updated_at) DESC,
-          id DESC
-        LIMIT ?`
-    ).bind(...bindings, limit).all();
+    const rust = await queryRust({ env, request }, 'homepage-issue-list', { q, status, limit });
+    if (!rust.ok) throw new Error('Rust homepage issue list failed');
+    const { items: results } = await rust.json();
     return json({ items: (results || []).map(normalizeHomepageIssue) });
   } catch (err) {
     console.error('GET /api/admin/homepage-issues error:', err);

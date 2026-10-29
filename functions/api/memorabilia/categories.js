@@ -1,3 +1,4 @@
+import { queryRust } from '../../_shared/rust-server.js';
 /**
  * GET  /api/memorabilia/categories  — 분류 enum 목록 (공개·관리자 공용)
  * POST /api/memorabilia/categories  — 새 분류 추가 (관리자 전용)
@@ -7,11 +8,9 @@ import { gateMenuAccess } from '../../_shared/admin-permissions.js';
 
 export async function onRequestGet({ env }) {
   try {
-    const { results } = await env.DB.prepare(`
-      SELECT id, slug, label_en, label_ko, sort_order, archived
-        FROM memorabilia_categories
-       ORDER BY archived ASC, sort_order ASC, id ASC
-    `).all();
+    const response = await queryRust({env,request:{url:'https://internal.invalid/'}}, 'memorabilia-categories-list', {});
+    if (!response.ok) throw new Error('Rust category list failed');
+    const { items: results } = await response.json();
     return json({ items: results || [] });
   } catch (err) {
     console.error('GET /api/memorabilia/categories error:', err);
@@ -35,11 +34,11 @@ export async function onRequestPost({ request, env }) {
   if (!label_en && !label_ko) return json({ error: 'label_required' }, 400);
 
   try {
-    const row = await env.DB.prepare(`
-      INSERT INTO memorabilia_categories (slug, label_en, label_ko, sort_order)
-      VALUES (?, ?, ?, ?)
-      RETURNING id, slug, label_en, label_ko, sort_order, archived
-    `).bind(slug, label_en, label_ko, sort_order).first();
+    if (!Number.isFinite(sort_order)) throw new Error('Invalid sort order');
+    const response = await queryRust({env,request}, 'memorabilia-category-create', {slug,label_en,label_ko,sort_order});
+    if (!response.ok) throw new Error('Rust category create failed');
+    const {row, conflict} = await response.json();
+    if (conflict) return json({ error: 'slug_exists' }, 409);
     return json({ item: row }, 201);
   } catch (err) {
     if (String(err?.message || '').includes('UNIQUE')) {

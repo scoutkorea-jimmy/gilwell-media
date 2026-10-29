@@ -1,4 +1,5 @@
 import { PUBLIC_DATE_EXPR } from './post-public-date.js';
+import { queryRust } from './rust-server.js';
 
 export const WEEKLY_TEMPLATE = 'bpmedia-weekly-v1';
 export const COVER_VARIANTS = ['classic', 'editorial', 'panorama', 'mosaic', 'diagonal', 'poster', 'stacked', 'focus'];
@@ -153,13 +154,11 @@ async function imageAvailable(origin, id, fetcher) {
 export async function loadWeeklyCandidates(env, period, origin, fetcher = fetch) {
   const utcStart = new Date(period.start.replace(' ', 'T') + '+09:00').toISOString().slice(0, 19).replace('T', ' ');
   const utcEnd = new Date(period.end.replace(' ', 'T') + '+09:00').toISOString().slice(0, 19).replace('T', ' ');
-  const rs = await env.DB.prepare(`SELECT id, category, title, subtitle, content, image_url, image_caption, tag, updated_at,
-    ${PUBLIC_DATE_EXPR} AS public_date,
-    ((SELECT COUNT(*) FROM site_visits WHERE path LIKE '/post/%' AND CAST(SUBSTR(path,7) AS INTEGER)=posts.id AND datetime(visited_at)>=datetime(?) AND datetime(visited_at)<=datetime(?))
-    +3*(SELECT COUNT(*) FROM post_likes WHERE post_id=posts.id AND datetime(liked_at)>=datetime(?) AND datetime(liked_at)<=datetime(?))) AS attention_score
-    FROM posts WHERE published=1 AND ${PUBLIC_DATE_EXPR}>=? AND ${PUBLIC_DATE_EXPR}<=? AND image_url IS NOT NULL AND trim(image_url)<>''
-    AND category IN ('korea','apr','wosm','people') ORDER BY attention_score DESC, public_date DESC, id DESC LIMIT 60`)
-    .bind(utcStart, utcEnd, utcStart, utcEnd, period.start, period.end).all();
+  const response = await queryRust({env, request:{url:'https://internal.invalid/'}}, 'card-news-weekly', {
+    operation:'candidates', utcStart, utcEnd, start:period.start, end:period.end, publicDateExpr:PUBLIC_DATE_EXPR,
+  });
+  if (!response.ok) throw new Error('Rust weekly candidate query failed');
+  const rs = await response.json();
   const rows = (rs.results || []).filter(row => !/\/img\/logo\.(png|svg)(?:\?|$)/i.test(row.image_url)).slice(0, 20);
   const result = [];
   // Small batches bound scheduled subrequests and avoid a single failed image stopping the issue.
@@ -177,7 +176,9 @@ export async function loadWeeklyCandidates(env, period, origin, fetcher = fetch)
 export async function createWeeklyIssue(env, { now = new Date(), rolling = false, origin = 'https://bpmedia.net', fetcher = fetch } = {}) {
   const period = weeklyPeriod(now, rolling);
   const slug = `weekly-${period.key}${rolling ? '-manual' : ''}`;
-  const existing = await env.DB.prepare('SELECT id,title FROM card_news WHERE slug=?').bind(slug).first();
+  const existingResponse = await queryRust({env, request:{url:'https://internal.invalid/'}}, 'card-news-weekly', {operation:'find', slug});
+  if (!existingResponse.ok) throw new Error('Rust weekly lookup failed');
+  const {row:existing} = await existingResponse.json();
   if (existing) return { ok: true, ...existing, existing: true };
   const candidates = await loadWeeklyCandidates(env, period, origin, fetcher);
   if (!candidates.length) return { ok: true, status: 'no_articles', reason: '이번 기간에 이미지와 본문을 확인한 기사가 아직 없습니다.', period };
@@ -188,9 +189,12 @@ export async function createWeeklyIssue(env, { now = new Date(), rolling = false
     candidates, photo_views: {}, auto_publish: false,
     design: cleanWeeklyDesign({ cover_variant: COVER_VARIANTS[crypto.getRandomValues(new Uint8Array(1))[0] % COVER_VARIANTS.length] }, candidates),
   });
-  await env.DB.prepare('INSERT OR IGNORE INTO card_news(title,slug,r2_key,size_bytes,published,data) VALUES(?,?,\'\',?,0,?)')
-    .bind(title, slug, JSON.stringify(data).length, JSON.stringify(data)).run();
-  const saved = await env.DB.prepare('SELECT id,title FROM card_news WHERE slug=?').bind(slug).first();
+  const serialized = JSON.stringify(data);
+  const savedResponse = await queryRust({env, request:{url:'https://internal.invalid/'}}, 'card-news-weekly', {
+    operation:'insert', title, slug, size:serialized.length, data:serialized,
+  });
+  if (!savedResponse.ok) throw new Error('Rust weekly save failed');
+  const {row:saved} = await savedResponse.json();
   if (!saved) throw new Error('카드뉴스 저장을 확인하지 못했습니다.');
   return { ok: true, ...saved, period, status: 'ready' };
 }

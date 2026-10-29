@@ -25,19 +25,16 @@
  *     expires. Old entries are harmless (window_start_at check gates them).
  */
 
-let _schemaReady = false;
+import { queryRust } from './rust-server.js';
+
+const schemaReady = new WeakSet();
 
 async function ensureSchema(env) {
-  if (_schemaReady) return;
+  if (schemaReady.has(env.DB)) return;
   try {
-    await env.DB.prepare(
-      `CREATE TABLE IF NOT EXISTS api_rate_limit (
-        bucket_key TEXT PRIMARY KEY,
-        count INTEGER NOT NULL,
-        window_start_at INTEGER NOT NULL
-      )`
-    ).run();
-    _schemaReady = true;
+    const response = await queryRust({env, request:{url:'https://internal.invalid/'}}, 'rate-ensure', {});
+    if (!response.ok) throw new Error('Rust rate schema setup failed');
+    schemaReady.add(env.DB);
   } catch (err) {
     console.error('[rate-limit] schema init failed:', err);
   }
@@ -64,41 +61,11 @@ export async function enforceRateLimit(env, { route, identity, limit, windowSeco
   await ensureSchema(env);
 
   try {
-    const row = await env.DB.prepare(
-      `SELECT count, window_start_at FROM api_rate_limit WHERE bucket_key = ?`
-    ).bind(bucketKey).first();
-
-    if (!row) {
-      await env.DB.prepare(
-        `INSERT INTO api_rate_limit (bucket_key, count, window_start_at) VALUES (?, 1, ?)
-         ON CONFLICT(bucket_key) DO UPDATE SET count = 1, window_start_at = excluded.window_start_at`
-      ).bind(bucketKey, now).run();
-      return { ok: true, remaining: safeLimit - 1, windowSeconds: safeWindow };
-    }
-
-    const windowAge = now - Number(row.window_start_at || 0);
-    if (windowAge >= safeWindow) {
-      // Previous window expired — reset to 1.
-      await env.DB.prepare(
-        `UPDATE api_rate_limit SET count = 1, window_start_at = ? WHERE bucket_key = ?`
-      ).bind(now, bucketKey).run();
-      return { ok: true, remaining: safeLimit - 1, windowSeconds: safeWindow };
-    }
-
-    const currentCount = Number(row.count || 0);
-    if (currentCount >= safeLimit) {
-      return {
-        ok: false,
-        retryAfter: Math.max(1, safeWindow - windowAge),
-        windowSeconds: safeWindow,
-        limit: safeLimit,
-      };
-    }
-
-    await env.DB.prepare(
-      `UPDATE api_rate_limit SET count = count + 1 WHERE bucket_key = ?`
-    ).bind(bucketKey).run();
-    return { ok: true, remaining: safeLimit - currentCount - 1, windowSeconds: safeWindow };
+    const response = await queryRust({env, request:{url:'https://internal.invalid/'}}, 'rate-enforce', {
+      key:bucketKey, now, limit:safeLimit, window:safeWindow,
+    });
+    if (!response.ok) throw new Error('Rust rate limit failed');
+    return await response.json();
   } catch (err) {
     // D1 hiccup — fail OPEN so real users aren't locked out during a transient
     // database issue. An attacker would still face application-layer validation.

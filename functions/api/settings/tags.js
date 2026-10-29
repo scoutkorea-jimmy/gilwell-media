@@ -1,3 +1,4 @@
+import { singleSetting, queryRust } from '../../_shared/rust-server.js';
 /**
  * Gilwell Media · Tag (글머리) Settings
  *
@@ -36,13 +37,11 @@ export async function onRequestGet({ env, request }) {
   }
 
   try {
-    const row = await env.DB.prepare(
-      `SELECT value FROM settings WHERE key = 'tags'`
-    ).first();
+    const row = await singleSetting(env, 'tags');
     const parsed = row ? JSON.parse(row.value) : DEFAULT_TAGS;
-    const tags = normalizeTagSettings(parsed);
+    const tags = await normalizeTagSettingsRust(parsed, env);
     const category = url.searchParams.get('category');
-    const items = getTagsForCategory(tags, category);
+    const {items} = await tagSettingsPlanRust(tags, tags, category, env);
     return json({
       items,
       common: tags.common,
@@ -69,37 +68,33 @@ export async function onRequestPut({ request, env }) {
 
   let safe;
   if (Array.isArray(body.items)) {
-    safe = normalizeTagSettings(body.items);
+    safe = await normalizeTagSettingsRust(body.items, env);
   } else if (body && typeof body === 'object') {
-    safe = normalizeTagSettings({
+    safe = await normalizeTagSettingsRust({
       common: body.common,
       categories: body.categories,
-    });
+    }, env);
   } else {
     return json({ error: '태그 구조를 입력해주세요' }, 400);
   }
 
   try {
-    const previousRow = await env.DB.prepare(`SELECT value FROM settings WHERE key = 'tags'`).first();
-    const current = normalizeTagSettings(previousRow ? JSON.parse(previousRow.value) : DEFAULT_TAGS);
-    if (body.if_current && JSON.stringify(normalizeTagSettings(body.if_current)) !== JSON.stringify(current)) return json({ error: '태그 설정이 다른 화면에서 변경되었습니다. 입력을 보존하고 최신 값을 확인해주세요.' }, 409);
-    const removedTags = collectRemovedTags(current, safe);
-    for (const removedTag of removedTags) {
-      const usage = await getTagUsage(env, removedTag);
-      if (usage.in_use) {
-        return json({
-          error: `"${removedTag}" 태그가 적용된 글이 있어 삭제할 수 없습니다. 먼저 해당 글의 태그에서 제외해주세요.`,
-          tag_in_use: removedTag,
-          count: usage.count,
-          posts: usage.posts,
-        }, 409);
-      }
+    const previousRow = await singleSetting(env, 'tags');
+    const current = await normalizeTagSettingsRust(previousRow ? JSON.parse(previousRow.value) : DEFAULT_TAGS, env);
+    if (body.if_current && JSON.stringify(await normalizeTagSettingsRust(body.if_current, env)) !== JSON.stringify(current)) return json({ error: '태그 설정이 다른 화면에서 변경되었습니다. 입력을 보존하고 최신 값을 확인해주세요.' }, 409);
+    const {items,removed:removedTags} = await tagSettingsPlanRust(current, safe, null, env);
+    const used = await findUsedRemovedTag(env, removedTags);
+    if (used) return used;
+    const commit = await queryRust({env, request}, 'tag-commit', {
+      value: JSON.stringify(safe), expected: previousRow ? previousRow.value : null, removed: removedTags,
+    });
+    if (!commit.ok) throw new Error('Rust tag commit failed');
+    const {changes} = await commit.json();
+    if (changes !== 1) {
+      const raced = await findUsedRemovedTag(env, removedTags);
+      if (raced) return raced;
+      return json({ error: '동시 태그 변경이 감지되었습니다.' }, 409);
     }
-    const write = await env.DB.prepare(
-      `INSERT INTO settings (key, value) VALUES ('tags', ?)
-       ON CONFLICT(key) DO UPDATE SET value = excluded.value WHERE settings.value IS ?`
-    ).bind(JSON.stringify(safe), previousRow ? previousRow.value : null).run();
-    if (write.meta && write.meta.changes !== 1) return json({ error: '동시 태그 변경이 감지되었습니다.' }, 409);
     await recordSettingChange(env, {
       key: 'tags',
       previousValue: current ? JSON.stringify(current) : null,
@@ -108,7 +103,7 @@ export async function onRequestPut({ request, env }) {
       details: { common_count: safe.common.length },
     });
     return json({
-      items: getTagsForCategory(safe, null),
+      items,
       common: safe.common,
       categories: safe.categories,
     });
@@ -120,16 +115,14 @@ export async function onRequestPut({ request, env }) {
 
 async function loadTagSettings(env) {
   try {
-    const row = await env.DB.prepare(
-      `SELECT value FROM settings WHERE key = 'tags'`
-    ).first();
+    const row = await singleSetting(env, 'tags');
     return normalizeTagSettings(row ? JSON.parse(row.value) : DEFAULT_TAGS);
   } catch (_) {
     return normalizeTagSettings(DEFAULT_TAGS);
   }
 }
 
-function normalizeTagSettings(raw) {
+export function normalizeTagSettings(raw) {
   const normalized = {
     common: [],
     categories: {
@@ -155,6 +148,25 @@ function normalizeTagSettings(raw) {
   return normalized;
 }
 
+export async function normalizeTagSettingsRust(raw, env = {}, run = queryRust) {
+  const fallback = () => normalizeTagSettings(raw);
+  try {
+    const source = Array.isArray(raw) ? {common:raw} : (raw && typeof raw === 'object' ? raw : {});
+    const categories = source.categories;
+    const groups = [source.common, categories?.korea, categories?.apr, categories?.wosm || categories?.worm, categories?.people]
+      .map(values => (Array.isArray(values) ? values : []).map(value => String(value || '')));
+    if (groups.some(group => group.some(value => /[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/.test(value)))) return fallback();
+    const response = await run({env, request:{url:'https://internal.invalid/'}}, 'tag-settings-normalize', {groups});
+    if (!response.ok) return fallback();
+    const {groups: result} = await response.json();
+    if (!Array.isArray(result) || result.length !== 5 || !result.every(group =>
+      Array.isArray(group) && group.length <= 100 && new Set(group).size === group.length &&
+      group.every(value => typeof value === 'string' && value.length > 0 && value === value.trim())
+    )) return fallback();
+    return {common:result[0], categories:{korea:result[1], apr:result[2], wosm:result[3], people:result[4]}};
+  } catch { return fallback(); }
+}
+
 function sanitize(items) {
   const seen = new Set();
   return (Array.isArray(items) ? items : [])
@@ -177,6 +189,18 @@ function getTagsForCategory(tags, category) {
   });
 }
 
+export async function tagSettingsPlanRust(current, next, category, env = {}) {
+  const original={items:getTagsForCategory(next,category),removed:collectRemovedTags(current,next)};
+  try {
+    const groups=tags=>[tags.common,tags.categories.korea,tags.categories.apr,tags.categories.wosm,tags.categories.people];
+    const response=await queryRust({env,request:{url:'https://internal.invalid/'}},'tag-settings-plan',{current:groups(current),next:groups(next),category:category || null});
+    if (!response.ok) return original;
+    const result=await response.json();
+    if (!Array.isArray(result.items)||!Array.isArray(result.removed)) return original;
+    return JSON.stringify(result.items)===JSON.stringify(original.items) && JSON.stringify(result.removed)===JSON.stringify(original.removed)?result:original;
+  } catch {return original;}
+}
+
 function collectRemovedTags(current, next) {
   const currentTags = flattenTags(current);
   const nextTags = new Set(flattenTags(next));
@@ -197,46 +221,31 @@ function flattenTags(tags) {
   return collected;
 }
 
+async function findUsedRemovedTag(env, removedTags) {
+  if (!removedTags.length) return null;
+  const response=await queryRust({env,request:{url:'https://internal.invalid/'}},'removed-tag-usage',{removed:removedTags});
+  if(!response.ok) throw new Error('Rust removed tag usage query failed');
+  const result=await response.json();
+  if (!result || !Object.hasOwn(result,'usage')) throw new Error('Invalid removed tag usage response');
+  const usage=result.usage;
+  if (usage === null) return null;
+  if (!usage || !removedTags.includes(usage.tag) || usage.in_use !== true || !Number.isInteger(usage.count) || usage.count<1 || !Array.isArray(usage.posts) || usage.posts.length<1 || usage.posts.length>5) throw new Error('Invalid removed tag usage response');
+  return json({
+    error: `"${usage.tag}" 태그가 적용된 글이 있어 삭제할 수 없습니다. 먼저 해당 글의 태그에서 제외해주세요.`,
+    tag_in_use: usage.tag, count: usage.count, posts: usage.posts,
+  }, 409);
+}
+
 async function getTagUsage(env, tag) {
   const safeTag = String(tag || '').trim();
   if (!safeTag) {
     return { tag: safeTag, in_use: false, count: 0, posts: [] };
   }
-  const [countRow, rows] = await Promise.all([
-    env.DB.prepare(
-      `SELECT COUNT(*) AS count
-         FROM posts
-        WHERE tag IS NOT NULL
-          AND instr(
-            ',' || replace(replace(COALESCE(tag, ''), ', ', ','), ' ,', ',') || ',',
-            ',' || replace(replace(?, ', ', ','), ' ,', ',') || ','
-          ) > 0`
-    ).bind(safeTag).first(),
-    env.DB.prepare(
-      `SELECT id, title, category, tag
-       FROM posts
-      WHERE tag IS NOT NULL
-        AND instr(
-          ',' || replace(replace(COALESCE(tag, ''), ', ', ','), ' ,', ',') || ',',
-          ',' || replace(replace(?, ', ', ','), ' ,', ',') || ','
-        ) > 0
-      ORDER BY updated_at DESC, id DESC
-      LIMIT 5`
-    ).bind(safeTag).all(),
-  ]);
-  const items = (rows.results || []).map((row) => ({
-    id: row.id,
-    title: row.title || '',
-    category: row.category || '',
-    tag: row.tag || '',
-  }));
-  const count = Number(countRow && countRow.count || 0);
-  return {
-    tag: safeTag,
-    in_use: count > 0,
-    count: count,
-    posts: items,
-  };
+  const response = await queryRust({env, request:{url:'https://internal.invalid/'}}, 'tag-usage', {tag:safeTag});
+  if (!response.ok) throw new Error('Rust tag usage query failed');
+  const usage = await response.json();
+  if (usage.tag !== safeTag || typeof usage.in_use !== 'boolean' || !Number.isInteger(usage.count) || usage.count < 0 || usage.in_use !== (usage.count > 0) || !Array.isArray(usage.posts)) throw new Error('Invalid Rust tag usage response');
+  return usage;
 }
 
 function json(data, status = 200) {

@@ -1,3 +1,4 @@
+import { queryRust } from './rust-server.js';
 /**
  * Gilwell Media · Memorabilia 검색 인덱스 헬퍼
  *
@@ -140,10 +141,7 @@ function stripHtml(s) {
  *     category_label_en, category_label_ko,
  *   }
  */
-export async function upsertMemorabiliaFtsRow(db, item) {
-  // 1) 기존 row 삭제 (UNINDEXED 컬럼이라 ON CONFLICT REPLACE 불가, 명시적 delete)
-  await db.prepare(`DELETE FROM memorabilia_fts WHERE memorabilia_id = ?`).bind(item.id).run();
-
+export function buildMemorabiliaFtsValues(item) {
   // 2) tags / country_names / category_label 텍스트 평탄화
   const tagsText = Array.isArray(item.tags) ? item.tags.join(' ') : '';
   const countryNamesText = (item.country_codes || [])
@@ -160,22 +158,7 @@ export async function upsertMemorabiliaFtsRow(db, item) {
   const jamoBlob     = decomposeJamo(koreanBlob);
   const choseongBlob = extractChoseong(koreanBlob);
 
-  // 4) FTS row insert
-  await db.prepare(`
-    INSERT INTO memorabilia_fts(
-      title_en, title_ko,
-      event_name_en, event_name_ko,
-      issuer_en, issuer_ko,
-      material_en, material_ko,
-      description_plain_en, description_plain_ko,
-      tags_text,
-      country_names_text,
-      category_label_text,
-      jamo_blob,
-      choseong_blob,
-      memorabilia_id
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `).bind(
+  return [
     item.title_en || '', item.title_ko || '',
     item.event_name_en || '', item.event_name_ko || '',
     item.issuer_en || '', item.issuer_ko || '',
@@ -187,11 +170,17 @@ export async function upsertMemorabiliaFtsRow(db, item) {
     jamoBlob,
     choseongBlob,
     item.id,
-  ).run();
+  ];
+}
+
+export async function upsertMemorabiliaFtsRow(db, item, snapshot = null) {
+  const response = await queryRust({env:{DB:db},request:{url:'https://internal.invalid/'}}, 'memorabilia-fts-upsert', {values:buildMemorabiliaFtsValues(item),snapshot});
+  if (!response.ok) throw new Error('Rust memorabilia search index update failed');
 }
 
 export async function deleteMemorabiliaFtsRow(db, memorabiliaId) {
-  await db.prepare(`DELETE FROM memorabilia_fts WHERE memorabilia_id = ?`).bind(memorabiliaId).run();
+  const response = await queryRust({env:{DB:db},request:{url:'https://internal.invalid/'}}, 'memorabilia-maintenance', {kind:'delete_fts',id:memorabiliaId});
+  if (!response.ok) throw new Error('Rust memorabilia search index delete failed');
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -266,12 +255,9 @@ export async function findGlossaryAliases(db, tokens) {
   for (const tok of tokens) {
     if (!tok || tok.length < 2) continue;
     try {
-      const rows = await db.prepare(`
-        SELECT term_ko, term_en, term_fr FROM glossary_terms
-         WHERE term_ko = ? OR term_en = ? COLLATE NOCASE OR term_fr = ? COLLATE NOCASE
-         LIMIT 1
-      `).bind(tok, tok, tok).all();
-      const row = rows?.results?.[0];
+      const response = await queryRust({env:{DB:db},request:{url:'https://internal.invalid/'}}, 'memorabilia-search-alias', {token:tok});
+      if (!response.ok) throw new Error('Rust glossary alias lookup failed');
+      const {row} = await response.json();
       if (row) {
         const aliases = [row.term_ko, row.term_en, row.term_fr]
           .filter((v) => v && v !== '-' && v.toLowerCase() !== tok.toLowerCase());

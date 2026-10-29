@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="ko"><head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>@@TITLE@@</title>@@META@@
+  <script type="application/ld+json">@@ARTICLE_LIST@@</script>
+  <link rel="icon" href="/img/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/css/style.css?v=@@ASSET_VERSION@@">
+  <link rel="stylesheet" href="/css/topics.css?v=@@ASSET_VERSION@@">
+  <link rel="stylesheet" href="/css/chatbot.css?v=@@ASSET_VERSION@@">
+  <link rel="stylesheet" href="/css/dark-mode.css?v=@@ASSET_VERSION@@">
+  <link rel="stylesheet" href="/css/m3-site.css?v=@@ASSET_VERSION@@">
+  <style>.nav[data-managed-nav]{visibility:hidden;opacity:0}</style>
+  <noscript><style>.nav[data-managed-nav]{visibility:visible!important;opacity:1!important}.nav[data-managed-nav] a{font-size:0!important}.nav[data-managed-nav] a::before{content:attr(data-fallback-label);font-size:12px}</style></noscript>
+</head><body class="topic-page">
+  <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
+    <header class="masthead">
+    <div class="masthead-top">
+      <div class="masthead-date" id="today-date"></div>
+      <div class="masthead-logo">
+        <a href="/">
+          <div class="masthead-logo-row">
+            <img src="/img/logo.svg" alt="" class="masthead-logo-img" aria-hidden="true">
+            <p class="masthead-wordmark">BP미디어</p>
+          </div>
+          <div class="sub">bpmedia.net</div>
+        </a>
+      </div>
+      <div class="masthead-right">
+        <div class="masthead-stats" id="masthead-stats"></div>
+        <div class="lang-toggle" role="group" aria-label="언어 선택">
+          <button class="lang-btn active" id="lang-btn-ko" data-lang-toggle="ko" aria-pressed="true" aria-label="한국어">KOR</button>
+          <button class="lang-btn" id="lang-btn-en" data-lang-toggle="en" aria-pressed="false" aria-label="English">ENG</button>
+        </div>
+        <div class="masthead-search">
+          <input type="text" id="mh-search-input" class="mh-search-input" placeholder="검색…" autocomplete="off" aria-label="사이트 검색어 입력" />
+          <button class="mh-search-btn" id="mh-search-btn" aria-label="검색"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg></button>
+        </div>
+      </div>
+    </div>
+    <nav class="nav" data-managed-nav>
+      <a href="/contributors" data-i18n="nav.contributors" data-fallback-label="도움을 주신 분들"></a>
+      <a href="/" data-i18n="nav.home" data-fallback-label="홈"></a>
+      <a href="/latest" data-i18n="nav.latest" data-fallback-label="최신 소식"></a>
+      <a href="/jamboree16" data-i18n="nav.jamboree16" data-fallback-label="제16회 한국잼버리"></a>
+      <a href="/korea" data-i18n="nav.korea" data-fallback-label="Korea"></a>
+      <a href="/apr" data-i18n="nav.apr" data-fallback-label="APR"></a>
+      <a href="/wosm" data-i18n="nav.wosm" data-fallback-label="World"></a>
+      <a href="/wosm-members" data-i18n="nav.wosm_members" data-fallback-label="세계연맹 회원국 현황"></a>
+      <a href="/people" data-i18n="nav.people" data-fallback-label="스카우트 인물"></a>
+      <a href="/calendar" data-i18n="nav.calendar" data-fallback-label="캘린더"></a>
+      <a href="/glossary" data-i18n="nav.glossary" data-fallback-label="용어집"></a>
+      <a href="/memorabilia" data-i18n="nav.memorabilia" data-fallback-label="스카우트 기념품 도감"></a>
+    </nav>
+  </header>
+  <main id="main-content" class="topic-wrap">
+    <nav aria-label="스카우트 활동 단계" class="topic-stage-grid">@@STAGES@@</nav>
+    <section class="topic-intro" aria-labelledby="topic-title">
+      <div class="topic-intro-copy"><p class="topic-eyebrow">스카우트 활동 안내 · @@ENGLISH@@</p>
+      <h1 id="topic-title">@@NAME@@</h1><p class="topic-lead">@@LEAD@@</p>
+      <p class="topic-intro-summary">@@INTRO@@</p>
+      <div class="topic-links"><a href="#topic-activities">활동 살펴보기 ↓</a><a href="#topic-news">관련 소식 읽기 ↓</a></div></div>
+      <figure class="topic-hero-art"><img src="/img/topics/@@SLUG@@.webp?v=@@ASSET_VERSION@@" width="1536" height="1024" alt="@@TAGLINE@@을 표현한 일러스트" fetchpriority="high" decoding="async"><figcaption>활동의 분위기를 담은 AI 일러스트</figcaption></figure>
+    </section>
+    <div class="topic-guide">
+      <section id="topic-activities" aria-labelledby="activities-heading"><p class="topic-eyebrow">활동으로 배우고, 경험으로 성장해요</p><h2 id="activities-heading">@@NAME@@의 활동과 성장</h2><p class="topic-section-copy">@@FOCUS@@</p>
+        <div class="topic-activity-grid">@@ACTIVITIES@@</div>
+      </section>
+      <div class="topic-practical-grid"><section class="topic-question"><p class="topic-eyebrow">궁금한 이야기</p><h2>@@QUESTION@@</h2><p>@@ANSWER@@</p><a href="/glossary">스카우트 용어집에서 더 알아보기 →</a></section>
+      <section class="topic-join"><p class="topic-eyebrow">첫 활동을 준비한다면</p><h2>참여 전, 이렇게 확인하세요</h2>
+        <ol><li><strong>나에게 맞는 부문 찾기</strong><span>이 페이지에서 연령 안내와 활동의 특징을 살펴보세요.</span></li><li><strong>지역의 단위대와 일정 확인하기</strong><span>한국스카우트연맹 가입 상담으로 거주 지역의 활동과 신청 절차를 확인하세요.</span></li><li><strong>행사별 참가 조건 확인하기</strong><span>국내외 행사는 주최 측의 연령·일정·준비물 안내를 따르세요.</span></li></ol>
+        <a href="https://www.scout.or.kr/login">한국스카우트연맹 가입 상담 안내 ↗</a>
+      </section></div>
+      <aside class="topic-source"><strong>안내 기준과 참고 자료</strong><p><a href="https://scout.or.kr/intro/scouts">한국스카우트연맹 부문별 공식 소개 ↗</a>@@ROVER_LINK@@</p><p class="topic-note">확인일 2026년 10월 8일. 연령은 부문별 소개의 안내 기준이며, 등록과 행사 참가 조건은 해당 공고를 따릅니다.@@ROVER_NOTE@@ BP미디어는 독립 미디어이며 연맹의 공식 가입 접수처가 아닙니다.</p></aside>
+    </div>
+    <section id="topic-news" aria-labelledby="news-heading"><h2 id="news-heading">@@NAME@@ 관련 최신 소식</h2>
+      <p>국내외 기사에서 이 주제를 언급한 소식을 최신순으로 모았습니다. 행사 일정과 참가 대상은 기사 원문에서 확인하세요.</p>
+      <div class="topic-news-grid">@@NEWS@@</div>
+      <p><a href="/search?q=@@ENCODED_NAME@@">@@NAME@@ 기사 더 찾아보기 →</a></p>
+    </section>
+  </main>
+    <footer>
+    <div class="footer-inner">
+      <div class="footer-brand">
+        <h4 data-footer-role="title">BP미디어</h4>
+        <p data-footer-role="description">BP미디어는 스카우트 네트워크의 자발적인 봉사로 운영됩니다.</p>
+        <p data-footer-role="domain" style="margin-top:6px;">bpmedia.net</p>
+        <p>기사제보: <!--email_off--><a data-footer-role="tip-email" href="mailto:story@bpmedia.net">story@bpmedia.net</a><!--/email_off--></p>
+        <p>문의: <!--email_off--><a data-footer-role="contact-email" href="mailto:info@bpmedia.net">info@bpmedia.net</a><!--/email_off--></p>
+        <p class="footer-about-link"><a href="/about">About us</a></p>
+        <p class="footer-privacy-link"><a href="/privacy" data-footer-role="privacy-link">개인정보 처리방침</a></p>
+      </div>
+      <div class="footer-admin">
+        <h4>관리자</h4>
+        <a href="/admin.html">관리자 페이지 →</a>
+        <a href="/glossary-raw">용어집 RAW로 보기 →</a>
+        <p class="footer-build">Site <span class="site-build-version">V@@SITE_VERSION@@</span> · Admin <span class="admin-build-version">V@@ADMIN_VERSION@@</span></p>
+      </div>
+      <div class="footer-bottom">
+        <p data-i18n="footer.copyright">© 2026 BP미디어 · bpmedia.net</p>
+        <p class="footer-credit">기록·편집 <a href="/about">박지민 (Jimmy Park)</a></p>
+        <p data-i18n="footer.disclaimer">BP미디어는 전 세계 스카우트 소식과 활동을 기록하고 공유하는 독립 미디어 아카이브입니다. 한국스카우트연맹과 세계스카우트연맹 공식 채널이 아닌 자발적 스카우트 네트워크로 운영됩니다.</p>
+      </div>
+    </div>
+  </footer>
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.4/dist/purify.min.js" integrity="sha384-eEu5CTj3qGvu9PdJuS+YlkNi7d2XxQROAFYOr59zgObtlcux1ae1Il3u7jvdCSWu" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <script src="/js/main.js?v=@@ASSET_VERSION@@"></script>
+  <script src="/js/site-chrome.js?v=@@ASSET_VERSION@@"></script>
+  <script src="/js/chatbot.js?v=@@ASSET_VERSION@@" defer></script>
+  <script>GW.bootstrapStandardPage();</script>
+</body></html>

@@ -15,14 +15,11 @@ import { bumpAdminUserTokenEpoch } from '../../../_shared/auth.js';
 import { countActiveOwners, loadAdminUserById, serializeAdminUser, parsePermissions } from '../../../_shared/admin-users.js';
 import { requireOwner } from '../../../_shared/admin-permissions.js';
 import {
-  validateAiDailyLimit,
-  validateDisplayName,
-  validateEditorCode,
-  validatePermissions,
-  validateStatus,
-  validateUsername,
+  validateIdentityRust,
+  validatePermissionsRust,
 } from '../../../_shared/admin-user-validation.js';
 import { logOperationalEvent } from '../../../_shared/ops-log.js';
+import { queryRust } from '../../../_shared/rust-server.js';
 
 function parseId(raw) {
   const n = parseInt(raw, 10);
@@ -36,12 +33,9 @@ export async function onRequestGet({ params, request, env }) {
   const id = parseId(params.id);
   if (!id) return json({ error: '유효하지 않은 사용자 ID입니다.' }, 400);
 
-  const row = await env.DB.prepare(
-    `SELECT id, username, display_name, role, permissions, editor_code,
-            ai_daily_limit, status, must_change_password,
-            member_self_rename_used, created_at, last_login_at, deleted_at
-       FROM admin_users WHERE id = ?`
-  ).bind(id).first();
+  const result = await queryRust({request, env}, 'admin-user-read', {operation:'detail', id});
+  if (!result.ok) throw new Error('Rust admin detail failed');
+  const {row} = await result.json();
   if (!row) return json({ error: '사용자를 찾을 수 없습니다.' }, 404);
 
   return json({ user: serializeAdminUser(row) });
@@ -62,7 +56,7 @@ export async function onRequestPut({ params, request, env }) {
     return json({ error: 'Invalid JSON body' }, 400);
   }
   if (body.permissions !== undefined && body.if_permissions !== undefined) {
-    const previous = validatePermissions(body.if_permissions);
+    const previous = await validatePermissionsRust(env, body.if_permissions);
     const parsed = parsePermissions(target.permissions);
     const current = { ok: true, value: { access_admin: parsed.access_admin, permissions: Array.from(parsed.permissions) } };
     const canonical = (value) => JSON.stringify({ access_admin: value.access_admin, permissions: [...value.permissions].sort() });
@@ -76,12 +70,12 @@ export async function onRequestPut({ params, request, env }) {
   const changes = [];
 
   if (body.username !== undefined) {
-    const v = validateUsername(body.username, { allowOwner: target.role === 'owner' });
+    const v = await validateIdentityRust(env, 'username', body.username, target.role === 'owner');
     if (!v.ok) return json({ error: v.error }, 400);
     if (v.value !== target.username) {
-      const clash = await env.DB.prepare(
-        `SELECT id FROM admin_users WHERE username = ? AND id != ?`
-      ).bind(v.value, id).first();
+      const response = await queryRust({request, env}, 'admin-user-read', {operation:'username-clash', username:v.value, id});
+      if (!response.ok) throw new Error('Rust admin username check failed');
+      const {row:clash} = await response.json();
       if (clash) return json({ error: '이미 존재하는 아이디입니다.' }, 409);
       fields.push('username = ?'); values.push(v.value);
       changes.push('username(' + target.username + '→' + v.value + ')');
@@ -93,18 +87,18 @@ export async function onRequestPut({ params, request, env }) {
     changes.push('reset_self_rename_quota');
   }
   if (body.display_name !== undefined) {
-    const v = validateDisplayName(body.display_name);
+    const v = await validateIdentityRust(env, 'display', body.display_name);
     if (!v.ok) return json({ error: v.error }, 400);
     fields.push('display_name = ?'); values.push(v.value);
     changes.push('display_name');
   }
   if (body.editor_code !== undefined) {
-    const v = validateEditorCode(body.editor_code);
+    const v = await validateIdentityRust(env, 'editor', body.editor_code);
     if (!v.ok) return json({ error: v.error }, 400);
     if (v.value) {
-      const codeClash = await env.DB.prepare(
-        `SELECT id FROM admin_users WHERE editor_code = ? AND status != 'deleted' AND id != ?`
-      ).bind(v.value, id).first();
+      const response = await queryRust({request, env}, 'admin-user-read', {operation:'editor-clash', editor_code:v.value, id});
+      if (!response.ok) throw new Error('Rust admin editor code check failed');
+      const {row:codeClash} = await response.json();
       if (codeClash) {
         return json({ error: `편집자 코드 "${v.value}"가 이미 다른 사용자에게 할당되어 있습니다.` }, 409);
       }
@@ -113,13 +107,13 @@ export async function onRequestPut({ params, request, env }) {
     changes.push('editor_code');
   }
   if (body.ai_daily_limit !== undefined) {
-    const v = validateAiDailyLimit(body.ai_daily_limit);
+    const v = await validateIdentityRust(env, 'ai-limit', body.ai_daily_limit);
     if (!v.ok) return json({ error: v.error }, 400);
     fields.push('ai_daily_limit = ?'); values.push(v.value);
     changes.push('ai_daily_limit');
   }
   if (body.permissions !== undefined) {
-    const v = validatePermissions(body.permissions);
+    const v = await validatePermissionsRust(env, body.permissions);
     if (!v.ok) return json({ error: v.error }, 400);
     fields.push('permissions = ?'); values.push(JSON.stringify(v.value));
     changes.push('permissions');
@@ -133,7 +127,7 @@ export async function onRequestPut({ params, request, env }) {
   let statusChanged = false;
   let newStatus = null;
   if (body.status !== undefined) {
-    const v = validateStatus(body.status);
+    const v = await validateIdentityRust(env, 'status', body.status);
     if (!v.ok) return json({ error: v.error }, 400);
     newStatus = v.value;
 
@@ -159,10 +153,10 @@ export async function onRequestPut({ params, request, env }) {
 
   try {
     const guarded = body.permissions !== undefined && body.if_permissions !== undefined;
-    const result = await env.DB.prepare(
-      `UPDATE admin_users SET ${fields.join(', ')} WHERE id = ?${guarded ? ' AND permissions = ?' : ''}`
-    ).bind(...values, id, ...(guarded ? [target.permissions] : [])).run();
-    if (guarded && (!result.meta || result.meta.changes !== 1)) return json({ error: '동시 권한 변경이 감지되었습니다. 입력을 보존하고 최신 권한을 다시 확인해주세요.' }, 409);
+    const result = await queryRust({request, env}, 'admin-user-update', {fields, values, id, guarded, previous:target.permissions});
+    if (!result.ok) throw new Error('Rust admin user update failed');
+    const {changes:updated} = await result.json();
+    if (guarded && updated !== 1) return json({ error: '동시 권한 변경이 감지되었습니다. 입력을 보존하고 최신 권한을 다시 확인해주세요.' }, 409);
 
     // status → disabled should invalidate every outstanding session for that user.
     if (statusChanged && newStatus === 'disabled') {
@@ -175,11 +169,9 @@ export async function onRequestPut({ params, request, env }) {
       message: `사용자 수정 — ${target.username} (필드: ${changes.join(', ')})`,
     });
 
-    const row = await env.DB.prepare(
-      `SELECT id, username, display_name, role, permissions, editor_code,
-              ai_daily_limit, status, must_change_password, created_at, last_login_at, deleted_at
-         FROM admin_users WHERE id = ?`
-    ).bind(id).first();
+    const rowResponse = await queryRust({request, env}, 'admin-user-read', {operation:'updated-row', id});
+    if (!rowResponse.ok) throw new Error('Rust updated user lookup failed');
+    const {row} = await rowResponse.json();
     return json({ user: serializeAdminUser(row) });
   } catch (err) {
     console.error(`PUT /api/admin/users/${id} error:`, err);
@@ -194,9 +186,9 @@ export async function onRequestDelete({ params, request, env }) {
   const id = parseId(params.id);
   if (!id) return json({ error: '유효하지 않은 사용자 ID입니다.' }, 400);
 
-  const target = await env.DB.prepare(
-    `SELECT id, username, role, status FROM admin_users WHERE id = ?`
-  ).bind(id).first();
+  const targetResponse = await queryRust({request, env}, 'admin-user-read', {operation:'delete-target', id});
+  if (!targetResponse.ok) throw new Error('Rust admin delete lookup failed');
+  const {row:target} = await targetResponse.json();
   if (!target) return json({ error: '사용자를 찾을 수 없습니다.' }, 404);
 
   if (session.uid && Number(session.uid) === Number(id)) {
@@ -221,15 +213,8 @@ export async function onRequestDelete({ params, request, env }) {
       //      the personally identifying key (*who did it*). The replacement
       //      token is '[deleted:<uid>]' so the log stays internally consistent.
       const anonToken = `[deleted:${id}]`;
-      const oldUsername = target.username;
-      // Ordered: delete row last so if any anonymization fails, the row still
-      // provides a target for retry.
-      await env.DB.batch([
-        env.DB.prepare(`UPDATE operational_events SET actor = ? WHERE actor = ?`).bind(anonToken, oldUsername),
-        env.DB.prepare(`UPDATE ai_usage_log SET actor = ? WHERE actor = ?`).bind(anonToken, oldUsername),
-        env.DB.prepare(`UPDATE settings_history SET actor = ? WHERE actor = ?`).bind(anonToken, oldUsername),
-        env.DB.prepare(`DELETE FROM admin_users WHERE id = ?`).bind(id),
-      ]);
+      const deleted = await queryRust({request, env}, 'admin-user-delete', {id, hard, username:target.username, anonymized:anonToken});
+      if (!deleted.ok) throw new Error('Rust admin hard delete failed');
       await logOperationalEvent(env, {
         channel: 'admin', type: 'admin_user_hard_deleted', level: 'warn',
         actor: session.username || 'owner', path: `/api/admin/users/${id}`,
@@ -238,13 +223,8 @@ export async function onRequestDelete({ params, request, env }) {
       return json({ success: true, hard: true, anonymized_as: anonToken });
     }
 
-    await env.DB.prepare(
-      `UPDATE admin_users
-          SET status = 'deleted',
-              deleted_at = datetime('now'),
-              updated_at = datetime('now')
-        WHERE id = ?`
-    ).bind(id).run();
+    const deleted = await queryRust({request, env}, 'admin-user-delete', {id, hard, username:target.username, anonymized:''});
+    if (!deleted.ok) throw new Error('Rust admin soft delete failed');
     await bumpAdminUserTokenEpoch(env, id);
 
     await logOperationalEvent(env, {

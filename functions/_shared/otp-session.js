@@ -10,6 +10,7 @@
  */
 import { readCookie } from './auth.js';
 import { loadAdminSession } from './admin-permissions.js';
+import { queryRust } from './rust-server.js';
 
 export const OTP_COOKIE = 'admin_otp';
 export const OTP_TTL_SEC = 600; // 10분
@@ -72,13 +73,16 @@ export function clearOtpCookie() {
  */
 export async function requireOtp(request, env) {
   let session = null;
-  try { session = await loadAdminSession(request, env); } catch { session = null; }
+  try { session = await loadAdminSession(request, env); } catch { return otpUnavailable(); }
   // 세션 없음/레거시 오너(uid 없음) → 퍼-유저 TOTP 적용 불가(여기선 게이트 통과; 인증 자체는 endpoint 게이트가 담당)
   if (!session || !session.uid) return null;
   let row = null;
   try {
-    row = await env.DB.prepare(`SELECT totp_enabled FROM admin_users WHERE id = ?`).bind(session.uid).first();
-  } catch { return null; }
+    const response = await queryRust({request, env}, 'admin-user-read', {operation:'totp-enabled', id:session.uid});
+    if (!response.ok) return otpUnavailable();
+    ({row} = await response.json());
+  } catch { return otpUnavailable(); }
+  if (!row) return otpUnavailable();
   if (!row || !Number(row.totp_enabled)) return null; // 미등록 → 게이트 미적용(점진 도입)
   // 토큰 전송: 헤더(X-Admin-Otp) 우선 + 쿠키(admin_otp) 백업. 둘 중 하나라도 유효하면 통과.
   // 헤더 경로는 프론트가 sessionStorage 토큰을 직접 실어 보내므로 쿠키 저장/전송 이슈를 우회한다.
@@ -96,4 +100,10 @@ export async function requireOtp(request, env) {
     }),
     { status: 401, headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' } }
   );
+}
+
+function otpUnavailable() {
+  return new Response(JSON.stringify({error:'server_unavailable',reason:'2단계 인증 상태를 확인할 수 없습니다. 잠시 후 다시 시도하세요.'}), {
+    status:503, headers:{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store'},
+  });
 }

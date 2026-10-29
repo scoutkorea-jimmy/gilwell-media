@@ -1,0 +1,453 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>.nav[data-managed-nav]{visibility:hidden;opacity:0}</style>
+  <noscript><style>.nav[data-managed-nav]{visibility:visible!important;opacity:1!important}.nav[data-managed-nav] a{font-size:0!important}.nav[data-managed-nav] a::before{content:attr(data-fallback-label);font-size:12px}</style></noscript>
+  <title>@@0@@</title>
+  @@1@@
+  <link rel="alternate" type="application/rss+xml" title="BP미디어 RSS" href="/rss.xml">
+  <link rel="icon" type="image/svg+xml" href="/img/favicon.svg">
+  <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png">
+  <link rel="apple-touch-icon" href="/img/logo.png">
+  <link rel="shortcut icon" href="/img/favicon-48.png">
+  <link rel="stylesheet" href="/css/style.css?v=20261027082848">
+  <link rel="stylesheet" href="/css/post.css?v=20261027082848">
+  <link rel="stylesheet" href="/css/chatbot.css?v=20261027082848">
+  <link rel="stylesheet" href="/css/dark-mode.css?v=20261027082848">
+  <link rel="stylesheet" href="/css/m3-site.css?v=20261027082848">
+  <style>
+    .feature-page {
+      background:
+        radial-gradient(circle at top left, rgba(255,255,255,0.9), rgba(255,255,255,0) 34%),
+        linear-gradient(180deg, #f7f3ef 0%, #f3eee8 42%, #f7f3ef 100%);
+    }
+    .feature-page-shell {
+      max-width: 1366px;
+      margin: 0 auto;
+      padding: 0 48px 72px;
+    }
+    .feature-page-intro {
+      display: grid;
+      grid-template-columns: minmax(0, 1.7fr) minmax(320px, 0.9fr);
+      gap: 18px;
+      align-items: stretch;
+      margin-top: 20px;
+    }
+    .feature-page-hero-card,
+    .feature-page-summary-card,
+    .feature-page-lead,
+    .feature-page-rail {
+      background: rgba(255,255,255,0.92);
+      border: 1px solid rgba(31,31,31,0.08);
+      box-shadow: 0 14px 36px rgba(31,31,31,0.06);
+      backdrop-filter: blur(4px);
+    }
+    .feature-page-hero-card {
+      padding: 32px;
+      position: relative;
+      overflow: hidden;
+    }
+    .feature-page-hero-card::after {
+      content: '';
+      position: absolute;
+      inset: auto -12% -28% auto;
+      width: 240px;
+      height: 240px;
+      border-radius: 999px;
+      background: @@2@@;
+      pointer-events: none;
+    }
+    .feature-page-breadcrumb {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 16px;
+      font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .feature-page-breadcrumb a {
+      color: inherit;
+      text-decoration: none;
+      border-bottom: 1px solid rgba(31,31,31,0.16);
+    }
+    .feature-page-kicker-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+    .feature-page-hero-card h1 {
+      margin: 0 0 14px;
+      font-size: clamp(32px, 4vw, 54px);
+      line-height: 1.05;
+      letter-spacing: -0.04em;
+      max-width: 11ch;
+    }
+    .feature-page-hero-card p {
+      max-width: 62ch;
+      margin: 0;
+      font-size: 17px;
+      line-height: 1.75;
+      color: rgba(31,31,31,0.78);
+    }
+    .feature-page-summary-card {
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+    .feature-page-summary-head strong,
+    .feature-page-rail-head strong {
+      display: block;
+      font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+    .feature-page-summary-head h2 {
+      margin: 0;
+      font-size: 28px;
+      line-height: 1.12;
+      letter-spacing: -0.03em;
+    }
+    .feature-page-summary-stats {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+    .feature-page-stat {
+      padding: 12px 14px;
+      border: 1px solid rgba(31,31,31,0.08);
+      background: #f7f5f0;
+    }
+    .feature-page-stat span {
+      display: block;
+      font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
+      font-size: 10px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+    .feature-page-stat strong {
+      display: block;
+      font-size: 22px;
+      line-height: 1.1;
+      letter-spacing: -0.02em;
+      color: var(--black);
+    }
+    .feature-page-summary-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .feature-page-summary-links a {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 38px;
+      padding: 0 14px;
+      border: 1px solid rgba(31,31,31,0.12);
+      background: #fff;
+      color: var(--black);
+      text-decoration: none;
+      font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .feature-page-content {
+      display: grid;
+      grid-template-columns: minmax(0, 1.7fr) minmax(320px, 0.9fr);
+      gap: 18px;
+      margin-top: 18px;
+      align-items: start;
+    }
+    .feature-page-lead {
+      overflow: hidden;
+    }
+    .feature-page-lead-media {
+      aspect-ratio: 16 / 9;
+      background: linear-gradient(135deg, @@3@@, rgba(31,31,31,0.04));
+      border-bottom: 1px solid rgba(31,31,31,0.08);
+    }
+    .feature-page-lead-media img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    .feature-page-lead-copy {
+      padding: 26px 28px 30px;
+    }
+    .feature-page-lead-copy h2 {
+      margin: 0 0 12px;
+      font-size: clamp(28px, 3vw, 42px);
+      line-height: 1.08;
+      letter-spacing: -0.04em;
+    }
+    .feature-page-lead-copy h2 a {
+      color: inherit;
+      text-decoration: none;
+    }
+    .feature-page-lead-copy p {
+      margin: 0 0 16px;
+      font-size: 16px;
+      line-height: 1.75;
+      color: rgba(31,31,31,0.82);
+    }
+    .feature-page-meta-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 14px;
+      font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      text-transform: uppercase;
+    }
+    .feature-page-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+      margin-top: 14px;
+    }
+    .feature-page-grid .post-card {
+      min-height: 100%;
+    }
+    .feature-page-grid .post-card-thumb.placeholder,
+    .feature-page-lead-media.placeholder {
+      display: flex;
+      align-items: flex-end;
+      justify-content: flex-start;
+      padding: 20px;
+      color: rgba(31,31,31,0.72);
+      font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
+      font-size: 12px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .feature-page-rail {
+      padding: 24px;
+      position: sticky;
+      top: 18px;
+    }
+    .feature-page-rail-list {
+      display: grid;
+      gap: 10px;
+      margin-top: 14px;
+    }
+    .feature-page-rail-item {
+      padding: 14px 0;
+      border-top: 1px solid rgba(31,31,31,0.08);
+    }
+    .feature-page-rail-item:first-child {
+      border-top: none;
+      padding-top: 0;
+    }
+    .feature-page-rail-item a {
+      display: block;
+      text-decoration: none;
+      color: inherit;
+    }
+    .feature-page-rail-item strong {
+      display: block;
+      font-size: 16px;
+      line-height: 1.45;
+      margin-bottom: 6px;
+      color: var(--black);
+    }
+    .feature-page-rail-item span {
+      display: block;
+      font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
+      font-size: 10px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    @media (max-width: 960px) {
+      .feature-page-shell {
+        padding: 0 18px 56px;
+      }
+      .feature-page-intro,
+      .feature-page-content {
+        grid-template-columns: 1fr;
+      }
+      .feature-page-rail {
+        position: static;
+      }
+    }
+    @media (max-width: 720px) {
+      .feature-page-hero-card,
+      .feature-page-summary-card,
+      .feature-page-lead-copy,
+      .feature-page-rail {
+        padding: 20px;
+      }
+      .feature-page-grid {
+        grid-template-columns: 1fr;
+      }
+      .feature-page-summary-stats {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+  </style>
+</head>
+<body class="feature-page">
+  <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
+  <header class="masthead">
+    <div class="masthead-top">
+      <div class="masthead-date" id="today-date"></div>
+      <div class="masthead-logo">
+        <a href="/">
+          <div class="masthead-logo-row">
+            <img src="/img/logo.svg" alt="" class="masthead-logo-img" aria-hidden="true">
+            <p class="masthead-wordmark">BP미디어</p>
+          </div>
+          <div class="sub">The BP Media · @@4@@</div>
+        </a>
+      </div>
+      <div class="masthead-right">
+        <div class="masthead-stats" id="masthead-stats"></div>
+        <div class="lang-toggle">
+          <button class="lang-btn active" id="lang-btn-ko" data-lang-toggle="ko" type="button" aria-pressed="true" aria-label="한국어">KOR</button>
+          <button class="lang-btn" id="lang-btn-en" data-lang-toggle="en" type="button" aria-pressed="false" aria-label="English">ENG</button>
+        </div>
+        <div class="masthead-search">
+          <input type="text" id="mh-search-input" class="mh-search-input" placeholder="검색…" autocomplete="off" aria-label="사이트 검색어 입력" />
+          <button class="mh-search-btn" id="mh-search-btn" aria-label="검색"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg></button>
+        </div>
+      </div>
+    </div>
+    <!-- site-chrome.js 가 NAV_STRUCTURE 기반으로 그룹화된 메뉴(스카우트 소식/리소스)로
+         교체. data-fallback-label 은 JS 미실행 시(noscript) 노출용. -->
+    <nav class="nav" data-managed-nav>
+      <a href="/contributors" data-i18n="nav.contributors" data-fallback-label="@@5@@" aria-label="@@5@@"></a>
+      <a href="/" data-i18n="nav.home" data-fallback-label="@@6@@" aria-label="@@6@@"></a>
+      <a href="/latest" data-i18n="nav.latest" data-fallback-label="@@7@@" aria-label="@@7@@"></a>
+      <a href="/jamboree16" data-i18n="nav.jamboree16" data-fallback-label="@@8@@" aria-label="@@8@@"></a>
+      <a href="/korea" data-i18n="nav.korea" data-fallback-label="@@9@@" aria-label="Korea"></a>
+      <a href="/apr" data-i18n="nav.apr" data-fallback-label="@@10@@" aria-label="APR"></a>
+      <a href="/wosm" data-i18n="nav.wosm" data-fallback-label="@@11@@" aria-label="World"></a>
+      <a href="/wosm-members" data-i18n="nav.wosm_members" data-fallback-label="@@12@@" aria-label="@@12@@"></a>
+      <a href="/people" data-i18n="nav.people" data-fallback-label="@@13@@" aria-label="@@13@@"></a>
+      <a href="/calendar" data-i18n="nav.calendar" data-fallback-label="@@14@@" aria-label="@@14@@"></a>
+      <a href="/glossary" data-i18n="nav.glossary" data-fallback-label="@@15@@" aria-label="@@15@@"></a>
+      <a href="/memorabilia" data-i18n="nav.memorabilia" data-fallback-label="@@16@@"></a>
+    </nav>
+  </header>
+
+  <div class="ticker">
+    <div class="ticker-inner" id="ticker-inner">
+      길웰 미디어는 스카우트 운동의 소식을 기록하는 미디어입니다
+      &nbsp;&nbsp;&nbsp;<span class="ticker-diamond">◆</span>&nbsp;&nbsp;&nbsp;
+      한국스카우트연맹 및 세계스카우트연맹 소식을 전합니다
+      &nbsp;&nbsp;&nbsp;<span class="ticker-diamond">◆</span>&nbsp;&nbsp;&nbsp;
+      The BP Media · @@4@@
+    </div>
+  </div>
+
+  <main id="main-content" class="feature-page-shell">
+    <section class="feature-page-intro">
+      <article class="feature-page-hero-card">
+        <div class="feature-page-breadcrumb">
+          <a href="/@@17@@">@@18@@</a>
+          <span>•</span>
+          <a href="/post/@@19@@">최신 기사 바로가기</a>
+        </div>
+        <div class="feature-page-kicker-row">
+          <span class="category-tag" style="background:@@20@@;">@@18@@</span>
+          <span class="post-page-tag">특집 기사 컬렉션</span>
+        </div>
+        <h1>@@21@@</h1>
+        <p>@@22@@</p>
+      </article>
+      <aside class="feature-page-summary-card">
+        <div class="feature-page-summary-head">
+          <strong>Collection Brief</strong>
+          <h2>@@18@@ 큐레이션</h2>
+        </div>
+        <div class="feature-page-summary-stats">
+          <div class="feature-page-stat">
+            <span>총 기사 수</span>
+            <strong>@@23@@건</strong>
+          </div>
+          <div class="feature-page-stat">
+            <span>최신 발행</span>
+            <strong>@@24@@</strong>
+          </div>
+        </div>
+        <div class="feature-page-summary-links">
+          <a href="/@@17@@">@@18@@ 전체 보기</a>
+          <a href="/post/@@19@@">리드 기사 읽기</a>
+        </div>
+      </aside>
+    </section>
+
+    <section class="feature-page-content">
+      <div>
+        @@25@@
+        @@26@@
+      </div>
+      <aside class="feature-page-rail">
+        <div class="feature-page-rail-head">
+          <strong>Story Lineup</strong>
+          <p class="post-card-excerpt" style="margin-bottom:0;">이 특집에 묶인 기사 흐름을 최신순으로 빠르게 훑어볼 수 있습니다.</p>
+        </div>
+        <div class="feature-page-rail-list">
+          @@27@@
+        </div>
+      </aside>
+    </section>
+
+    <!-- Kakao AdFit horizontal — 푸터 위 (PC 728x90 / 모바일 320x50) -->
+    <aside class="kakao-adfit kakao-adfit-horizontal" aria-label="광고">
+      <div class="kakao-adfit-pc">
+        <ins class="kakao_ad_area" style="display:none;width:100%;" data-ad-unit="DAN-Hcz89LyJbpNeh8B0" data-ad-width="728" data-ad-height="90"></ins>
+      </div>
+      <div class="kakao-adfit-mobile">
+        <ins class="kakao_ad_area" style="display:none;width:100%;" data-ad-unit="DAN-R2YAuLwc7UVkfzQb" data-ad-width="320" data-ad-height="50"></ins>
+      </div>
+    </aside>
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+      <div class="footer-brand">
+        <h4 data-footer-role="title">@@28@@</h4>
+        <p data-footer-role="description">@@29@@</p>
+        <p data-footer-role="domain" style="margin-top:6px;">@@4@@</p>
+        <p>기사제보: <!--email_off--><a data-footer-role="tip-email" href="mailto:@@30@@">@@30@@</a><!--/email_off--></p>
+        <p>문의: <!--email_off--><a data-footer-role="contact-email" href="mailto:@@31@@">@@31@@</a><!--/email_off--></p>
+      </div>
+      <div class="footer-admin">
+        <h4>바로가기</h4>
+        <a href="/@@17@@">@@18@@ 목록 →</a>
+        <a href="/latest">최신 기사 보기 →</a>
+        <p class="footer-build">Site <span class="site-build-version">V00.194.03</span> · Admin <span class="admin-build-version">V03.160.04</span></p>
+      </div>
+      <div class="footer-bottom">
+        <p>© 2026 @@28@@ · @@4@@</p>
+        <p>BP미디어는 전 세계 스카우트 소식과 활동을 기록하고 공유하는 독립 미디어 아카이브입니다.</p>
+      </div>
+    </div>
+  </footer>
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.4/dist/purify.min.js" integrity="sha384-eEu5CTj3qGvu9PdJuS+YlkNi7d2XxQROAFYOr59zgObtlcux1ae1Il3u7jvdCSWu" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <script src="/js/main.js?v=20261027082848"></script>
+  <script src="/js/site-chrome.js?v=20261027082848"></script>
+  <script src="/js/chatbot.js?v=20261027082848" defer></script>
+  <script>GW.bootstrapStandardPage();</script>
+  <script async type="text/javascript" charset="utf-8" src="https://t1.kakaocdn.net/kas/static/ba.min.js"></script>
+</body>
+</html>

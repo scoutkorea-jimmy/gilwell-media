@@ -1,3 +1,5 @@
+import { queryRust } from './rust-server.js';
+
 /**
  * AI 호출 로깅 헬퍼 + Llama 토큰/비용 추정
  *
@@ -69,13 +71,7 @@ export async function logAiUsage(env, entry) {
       totalTokens = estIn + estOut;
     }
 
-    await env.DB.prepare(`
-      INSERT INTO ai_usage_log
-        (created_at, endpoint, model, ip, actor,
-         input_chars, output_chars, prompt_tokens, completion_tokens, total_tokens,
-         latency_ms, status, error_code)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).bind(
+    const response = await queryRust({env, request:{url:'https://internal.invalid/'}}, 'ai-log', {operation:'usage', values:[
       Math.floor(Date.now() / 1000),
       String(entry.endpoint || 'unknown'),
       String(entry.model || 'unknown'),
@@ -89,7 +85,8 @@ export async function logAiUsage(env, entry) {
       entry.latencyMs != null ? Number(entry.latencyMs) : null,
       String(entry.status || 'unknown'),
       entry.errorCode || null
-    ).run();
+    ]});
+    if (!response.ok) throw new Error('Rust AI usage log failed');
     try { console.log('[ai-usage] logged', entry.endpoint, entry.status, 'tokens≈' + totalTokens); } catch (_) {}
   } catch (err) {
     try { console.error('[ai-usage] log failed:', (err && err.message) || err); } catch (_) {}

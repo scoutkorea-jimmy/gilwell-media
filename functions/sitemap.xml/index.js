@@ -1,3 +1,4 @@
+import { queryRust } from '../_shared/rust-server.js';
 import { postLastmod } from '../_shared/seo-dates.js';
 import { slugifySpecialFeature } from '../_shared/special-features.js';
 import { SCOUT_TOPICS } from '../topics/[slug].js';
@@ -37,36 +38,19 @@ async function buildSitemapResponse({ request, env }, headOnly) {
     { path: '/privacy', priority: '0.3', category: null },
   ];
 
+  try {
+    const rendered = await queryRust({ request, env }, 'sitemap', { origin, pages: staticPages });
+    if (rendered.ok) {
+      const xml = await rendered.text();
+      return new Response(headOnly ? null : xml, { headers: { 'Content-Type': 'application/xml; charset=UTF-8', 'Cache-Control': 'public, max-age=3600' } });
+    }
+  } catch (error) {
+    console.error('GET /sitemap.xml Rust render error:', error);
+  }
+
   let posts = [];
   let staticLastmods = {};
-  try {
-    const [postResult, lastmodResult, glossaryLastmodResult] = await Promise.all([
-      env.DB.prepare(
-        `SELECT id, category, special_feature, updated_at, publish_at, created_at
-           FROM posts
-          WHERE published = 1
-          ORDER BY datetime(COALESCE(publish_at, created_at)) DESC, id DESC`
-      ).all(),
-      env.DB.prepare(
-        `SELECT category, MAX(updated_at) AS updated_at
-           FROM posts
-          WHERE published = 1
-          GROUP BY category`
-      ).all(),
-      env.DB.prepare(
-        `SELECT MAX(COALESCE(updated_at, created_at)) AS updated_at
-           FROM glossary_terms`
-      ).all(),
-    ]);
-    posts = postResult.results || [];
-    (lastmodResult.results || []).forEach((row) => {
-      if (row.category) staticLastmods[row.category] = row.updated_at || null;
-    });
-    staticLastmods.glossary = (glossaryLastmodResult.results && glossaryLastmodResult.results[0] && glossaryLastmodResult.results[0].updated_at) || null;
-    staticLastmods.home = posts.length ? (posts[0].updated_at || posts[0].publish_at || posts[0].created_at || null) : null;
-  } catch (err) {
-    console.error('GET /sitemap.xml error:', err);
-  }
+
 
   const urls = staticPages.map((page) => {
     const lastmod = page.category === 'glossary' ? staticLastmods.glossary : page.category ? posts.filter(post => post.category === page.category).map(postLastmod).sort().at(-1) : null;

@@ -1,3 +1,4 @@
+import { queryRust } from '../../_shared/rust-server.js';
 import { extractToken, verifyTokenRole } from '../../_shared/auth.js';
 import { gateMenuAccess } from '../../_shared/admin-permissions.js';
 import { fetchReleaseDeployments, fetchReleaseSnapshots } from '../../_shared/release-history.js';
@@ -11,64 +12,38 @@ export async function onRequestGet({ request, env }) {
 
   try {
     await ensureOperationalEventsTable(env);
+    const query = kind => queryRust({request, env}, 'admin-operations', {kind})
+      .then(response => { if (!response.ok) throw new Error('Rust operations query failed'); return response.json(); });
 
-    const [
-      scheduledRows,
-      draftRows,
-      errorRows,
-      loginRows,
-      settingsRows,
-      deployments,
-      snapshots,
-      schedulerHeartbeatRow,
-    ] = await Promise.all([
-      env.DB.prepare(
-        `SELECT id, title, category, publish_at
-           FROM posts
-          WHERE published = 1
-            AND datetime(COALESCE(publish_at, created_at)) > datetime('now')
-          ORDER BY datetime(COALESCE(publish_at, created_at)) ASC
-          LIMIT 6`
-      ).all(),
-      env.DB.prepare(
-        `SELECT id, title, category, updated_at
-           FROM posts
-          WHERE published = 0
-          ORDER BY datetime(updated_at) DESC, id DESC
-          LIMIT 6`
-      ).all(),
-      env.DB.prepare(
-        `SELECT id, channel, type, level, actor, path, message, created_at
-           FROM operational_events
-          WHERE level = 'error'
-          ORDER BY datetime(created_at) DESC, id DESC
-          LIMIT 8`
-      ).all(),
-      env.DB.prepare(
-        `SELECT id, channel, type, actor, message, created_at
-           FROM operational_events
-          WHERE type IN ('admin_login_failed', 'dreampath_login_failed', 'admin_login_success', 'dreampath_login_success')
-          ORDER BY datetime(created_at) DESC, id DESC
-          LIMIT 10`
-      ).all(),
-      env.DB.prepare(
-        `SELECT key, saved_at
-           FROM settings_history
-          ORDER BY datetime(saved_at) DESC, id DESC
-          LIMIT 10`
-      ).all().catch(function () { return { results: [] }; }),
+    const coreQuery = queryRust({request, env}, 'admin-operations-core', {}).then(async response => {
+      if (!response.ok) throw new Error('Rust operations core query failed');
+      const data = await response.json();
+      if (!['scheduled','drafts','errors','logins'].every(key => Array.isArray(data[key]))) throw new Error('Invalid operations core response');
+      return data;
+    });
+    const [core, settingsRows, deployments, snapshots, schedulerHeartbeatRow] = await Promise.all([
+      coreQuery,
+      query('settings').then(data => ({results:data.rows})).catch(() => ({results:[]})),
       fetchReleaseDeployments().catch(function () { return []; }),
       fetchReleaseSnapshots().catch(function () { return []; }),
-      env.DB.prepare("SELECT value FROM settings WHERE key = 'scheduler_last_run'").first().catch(function () { return null; }),
+      query('heartbeat').then(data => data.row).catch(() => null),
     ]);
 
-    const deploymentItems = normalizeDeployments(deployments, snapshots);
-    const deployAlerts = deploymentItems.filter(function (item) {
+    return json(await assembleOperationsRust({scheduled:core.scheduled,drafts:core.drafts,errors:core.errors,logins:core.logins,settings:settingsRows.results || [],deployments,snapshots,heartbeat:schedulerHeartbeatRow}, env));
+  } catch (err) {
+    console.error('GET /api/admin/operations error:', err);
+    return json({ error: 'Database error' }, 500);
+  }
+}
+
+export function assembleOperationsLegacy(input) {
+  const deploymentItems = normalizeDeployments(input.deployments, input.snapshots);
+  const deployAlerts = deploymentItems.filter(function (item) {
       return item.status && item.status !== 'success';
     }).slice(0, 6);
 
-    return json({
-      scheduled_posts: (scheduledRows.results || []).map(function (item) {
+  return {
+      scheduled_posts: (input.scheduled || []).map(function (item) {
         return {
           id: item.id,
           title: item.title || '',
@@ -76,7 +51,7 @@ export async function onRequestGet({ request, env }) {
           publish_at: item.publish_at || '',
         };
       }),
-      draft_posts: (draftRows.results || []).map(function (item) {
+      draft_posts: (input.drafts || []).map(function (item) {
         return {
           id: item.id,
           title: item.title || '',
@@ -84,9 +59,9 @@ export async function onRequestGet({ request, env }) {
           updated_at: item.updated_at || '',
         };
       }),
-      recent_errors: (errorRows.results || []).map(normalizeEvent),
-      recent_logins: (loginRows.results || []).map(normalizeEvent),
-      recent_settings: (settingsRows.results || []).map(function (item) {
+      recent_errors: (input.errors || []).map(normalizeEvent),
+      recent_logins: (input.logins || []).map(normalizeEvent),
+      recent_settings: (input.settings || []).map(function (item) {
         return {
           key: item.key || '',
           saved_at: item.saved_at || '',
@@ -94,12 +69,34 @@ export async function onRequestGet({ request, env }) {
       }),
       deployments: deploymentItems.slice(0, 8),
       deploy_alerts: deployAlerts,
-      scheduler_last_run: (schedulerHeartbeatRow && schedulerHeartbeatRow.value) || null,
-    });
-  } catch (err) {
-    console.error('GET /api/admin/operations error:', err);
-    return json({ error: 'Database error' }, 500);
-  }
+      scheduler_last_run: (input.heartbeat && input.heartbeat.value) || null,
+    };
+}
+
+export async function assembleOperationsRust(input, env = {}, run = queryRust) {
+  const fallback = () => assembleOperationsLegacy(input);
+  try {
+    const scalar = value => value == null || typeof value === 'string' || (typeof value === 'number' && Number.isFinite(value));
+    const groups = {
+      scheduled:['id','title','category','publish_at'], drafts:['id','title','category','updated_at'],
+      errors:['id','channel','type','level','actor','path','message','created_at'],
+      logins:['id','channel','type','level','actor','path','message','created_at'],
+      settings:['key','saved_at'], deployments:['id','environment','branch','source','url','created_on','latest_stage','version','site_version','admin_version','commit_message'],
+      snapshots:['id','version','site_version','admin_version'],
+    };
+    if (!input || !Object.entries(groups).every(([name,keys]) => Array.isArray(input[name]) && input[name].every(row =>
+      row && typeof row === 'object' && !Array.isArray(row) && keys.every(key => scalar(row[key]))
+    )) || (input.heartbeat != null && (typeof input.heartbeat !== 'object' || Array.isArray(input.heartbeat) || !scalar(input.heartbeat.value))) ||
+      /\\u[dD][89a-fA-F][0-9a-fA-F]{2}/.test(JSON.stringify(input))) return fallback();
+    const response = await run({env,request:{url:'https://internal.invalid/'}}, 'operations-assemble', input);
+    if (!response.ok) return fallback();
+    const result = await response.json();
+    if (!result || !['scheduled_posts','draft_posts','recent_errors','recent_logins','recent_settings','deployments','deploy_alerts'].every(key => Array.isArray(result[key])) ||
+      result.scheduled_posts.length !== input.scheduled.length || result.draft_posts.length !== input.drafts.length ||
+      result.recent_errors.length !== input.errors.length || result.recent_logins.length !== input.logins.length || result.recent_settings.length !== input.settings.length ||
+      result.deployments.length !== Math.min(input.deployments.length,8) || result.deploy_alerts.length > 6 || !Object.hasOwn(result,'scheduler_last_run')) return fallback();
+    return result;
+  } catch { return fallback(); }
 }
 
 function normalizeEvent(item) {
