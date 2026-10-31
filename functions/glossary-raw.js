@@ -62,10 +62,10 @@ export function renderGlossaryRawShell({title, metaBlock, count, cards, links, d
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${escapeHtml(title)}</title>
   ${metaBlock}
-  <link rel="stylesheet" href="/css/style.css?v=20261029073654">
-  <link rel="stylesheet" href="/css/glossary.css?v=20261029073654">
-  <link rel="stylesheet" href="/css/m3-site.css?v=20261029073654">
-  <link rel="stylesheet" href="/css/topics.css?v=20261029073654">
+  <link rel="stylesheet" href="/css/style.css?v=20261031231035">
+  <link rel="stylesheet" href="/css/glossary.css?v=20261031231035">
+  <link rel="stylesheet" href="/css/m3-site.css?v=20261031231035">
+  <link rel="stylesheet" href="/css/topics.css?v=20261031231035">
   <style>
     body.glossary-raw-page {
       margin: 0;

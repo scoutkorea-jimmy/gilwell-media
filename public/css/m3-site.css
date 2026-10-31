@@ -2343,6 +2343,19 @@ html body .mobile-nav-sublink.active {
     scroll-snap-type: x proximity;
   }
 
+  /* 가로로 스크롤되는 .nav 는 아래로 펼쳐지는 하위 메뉴까지 잘라 '눌러도 메뉴가 안 보이는' 상태를 만들었다.
+     패널의 기준 박스를 .nav 밖의 .masthead(이 폭에서 position: relative)로 옮겨 잘리지 않게 하고,
+     좌표는 site-chrome.js 가 누른 메뉴 바로 아래로 계산해 넣는다. */
+  .nav.nav-grouped .nav-group {
+    position: static;
+  }
+
+  .nav.nav-grouped .nav-group-panel {
+    top: var(--nav-panel-top, 100%);
+    left: var(--nav-panel-left, 12px);
+    transform: none;
+  }
+
   .nav a,
   .nav button {
     flex: 0 0 auto;
@@ -2502,15 +2515,17 @@ html body .mobile-nav-sublink.active {
     text-decoration: none;
   }
 
+}
+
+/* 간이 헤더·메뉴 서랍의 모양은 태블릿(600–900px)에서도 같은 것을 쓴다. 599px 이하에만 두었을 때
+   태블릿에서는 옛 style.css 서랍이 나와 닫기·검색 아이콘이 빈 네모로 보였다. 항상 노출 여부만 아래 599px 블록이 정한다. */
+@media (max-width: 900px) {
   .mobile-compact-header {
     height: 64px;
     padding: 10px 16px !important;
     border: 0 !important;
     background: color-mix(in srgb, var(--md-sys-color-surface) 94%, transparent) !important;
     box-shadow: var(--md-sys-elevation-1);
-    transform: translateY(0) !important;
-    opacity: 1 !important;
-    pointer-events: auto !important;
   }
 
   .mobile-compact-toggle,
@@ -2673,6 +2688,15 @@ html body .mobile-nav-sublink.active {
   .mobile-nav-sublink.active {
     background: var(--md-sys-color-primary-container) !important;
     color: var(--md-sys-color-on-primary-container) !important;
+  }
+}
+
+@media (max-width: 599px) {
+  /* 큰 masthead 를 숨기는 폭이므로 간이 헤더를 스크롤과 관계없이 항상 보인다. */
+  .mobile-compact-header {
+    transform: translateY(0) !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
   }
 
   .ticker {

@@ -789,6 +789,9 @@
       GW.showToast('CAPTCHA를 완료해주세요', 'error');
       return;
     }
+    // 버튼 disabled 와 별개로, 진행 중인 게재가 끝나기 전에는 어떤 경로로도 다시 보내지 않는다.
+    if (this._submitting) return;
+    this._submitting = true;
 
     submitBtn.disabled = true;
     submitBtn.textContent = '게재 중…';
@@ -798,6 +801,7 @@
         var validation = GW.validatePostEditorOutput(outputData);
         if (!validation.ok) {
           GW.showToast(validation.error, 'error');
+          self._submitting = false;
           submitBtn.disabled = false;
           submitBtn.textContent = '게재하기';
           return;
@@ -805,6 +809,9 @@
 
         GW.apiFetch('/api/posts', {
           method: 'POST',
+          // 표지·슬라이드 이미지가 본문과 함께 올라가므로 휴대폰 회선에서는 기본 12초를 넘길 수 있다.
+          // 중간에 끊으면 서버는 글을 만들었는데 화면은 실패로 보여 재시도가 중복 게재로 이어진다.
+          timeoutMs: 120000,
           body: JSON.stringify({
             category: self.category,
             title: title,
@@ -825,8 +832,9 @@
             cf_turnstile_response: self._turnstileToken || undefined,
           }),
         })
-          .then(function () {
-            GW.showToast('게재됐습니다', 'success');
+          .then(function (data) {
+            // duplicate: 앞선 요청이 이미 같은 기사를 만들었다 — 서버가 새로 만들지 않고 그 글을 돌려줬다.
+            GW.showToast(data && data.duplicate ? '이미 게재된 기사입니다. 중복으로 올리지 않았습니다.' : '게재됐습니다', 'success', 4000);
             // 발행 성공 — 해당 임시저장 D1에서 삭제. 옛 localStorage 잔여도 정리.
             try { localStorage.removeItem('gw_draft_' + self.category); } catch (_) {}
             if (self._currentDraftId) {
@@ -851,8 +859,19 @@
               GW.clearToken();
               GW.showToast('세션이 만료됐습니다. 다시 로그인해주세요.', 'error');
               self._closeWriteForm();
+            } else if (err.timedOut) {
+              // 서버는 글을 만들었을 수 있다. 목록을 다시 불러 결과를 보여주고, 다시 눌러도
+              // 서버가 같은 기사를 중복 생성하지 않으므로 그대로 재시도를 안내한다.
+              GW.showToast('응답이 늦어 게재 여부를 확인하지 못했습니다. 목록에 없으면 다시 눌러주세요. 같은 기사는 한 번만 올라갑니다.', 'error', 8000);
+              self.page = 1;
+              self.total = 0;
+              self.totalPages = 1;
+              self.gridEl.innerHTML = '';
+              self._load();
             } else {
               GW.showToast(err.message || '게재 실패', 'error');
+            }
+            if (err.status !== 401) {
               self._turnstileToken = '';
               if (window.turnstile && self._turnstileWidgetId != null) {
                 window.turnstile.reset(self._turnstileWidgetId);
@@ -860,12 +879,14 @@
             }
           })
           .finally(function () {
+            self._submitting = false;
             submitBtn.disabled = false;
             submitBtn.textContent = '게재하기';
           });
       })
       .catch(function () {
         GW.showToast('내용 저장 중 오류가 발생했습니다', 'error');
+        self._submitting = false;
         submitBtn.disabled = false;
         submitBtn.textContent = '게재하기';
       });

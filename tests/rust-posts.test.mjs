@@ -1813,6 +1813,29 @@ test('post creation rolls back if its audit history cannot be stored', async () 
   } finally {f.sqlite.close();}
 });
 
+test('repeated article creation returns the existing post instead of a duplicate', async () => {
+  const f=fixture({role:'owner'});
+  try {
+    const token=await createToken(secret,{role:'full'});
+    const create=title=>actualCreate({env:f.env,request:new Request('https://synthetic.invalid/api/posts',{method:'POST',headers:{Cookie:'admin_token='+token,'Content-Type':'application/json'},body:JSON.stringify({category:'korea',title,content:'본문',subtitle:null,tag:null,meta_tags:null,special_feature:null,published:true})})});
+    const first=await create('재시도 합성 기사');
+    assert.equal(first.status,201);
+    const firstId=(await first.json()).post.id;
+    const retry=await create('재시도 합성 기사');
+    assert.equal(retry.status,200);
+    const retryBody=await retry.json();
+    assert.equal(retryBody.duplicate,true);
+    assert.equal(retryBody.post.id,firstId);
+    assert.equal(f.sqlite.prepare("SELECT COUNT(*) AS n FROM posts WHERE title='재시도 합성 기사'").get().n,1);
+    assert.equal(f.sqlite.prepare('SELECT COUNT(*) AS n FROM post_history WHERE post_id=?').get(firstId).n,1);
+    // 10분이 지난 같은 제목, 다른 제목은 새 글로 만든다.
+    f.sqlite.prepare("UPDATE posts SET created_at=datetime('now','-11 minutes') WHERE id=?").run(firstId);
+    assert.equal((await create('재시도 합성 기사')).status,201);
+    assert.equal((await create('다른 합성 기사')).status,201);
+    assert.equal(f.sqlite.prepare("SELECT COUNT(*) AS n FROM posts WHERE title IN ('재시도 합성 기사','다른 합성 기사')").get().n,3);
+  } finally {f.sqlite.close();}
+});
+
 test('post updates and status changes roll back when history insertion or finalization fails', async () => {
   for(const method of ['PUT','PATCH']) for(const stage of ['INSERT','UPDATE']) {
     const f=fixture({role:'owner'});

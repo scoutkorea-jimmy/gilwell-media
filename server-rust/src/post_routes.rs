@@ -2211,6 +2211,16 @@ pub async fn create(req: &mut Request, env: &Env) -> Result<Response> {
     }
     let args = post_bindings_utf16(&options.bindings)?;
     let db = env.d1("DB")?;
+    // 응답을 받지 못한 재시도·연타가 같은 기사를 두 번 만들지 않도록, 같은 작성자가 10분 안에
+    // 같은 분류·제목으로 만든 글이 있으면 새로 만들지 않고 그 글을 돌려준다.
+    let recent = db
+        .prepare("SELECT id FROM posts WHERE category = ? AND title = ? AND author_user_id IS ? AND created_at >= datetime('now', '-10 minutes') ORDER BY id DESC LIMIT 1")
+        .bind(&[args[0].clone(), args[1].clone(), args[16].clone()])?
+        .first::<Value>(None)
+        .await?;
+    if let Some(id) = recent.as_ref().and_then(|row| row.get("id")).and_then(Value::as_i64) {
+        return Response::from_json(&json!({"id":id,"duplicate":true}));
+    }
     let snapshot = post_snapshot_expression(&db).await?;
     let insert=db.prepare("INSERT INTO posts (category, title, subtitle, content, image_url, image_caption, image_frame, gallery_images, youtube_url, location_name, location_address, tag, special_feature, meta_tags, manual_related_posts, author, author_user_id, ai_assisted, published, featured, created_at, publish_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), ?, datetime('now'))").bind(&args)?;
     let history=db.prepare(format!("INSERT INTO post_history (post_id, action, summary, snapshot, before_snapshot, after_snapshot) SELECT p.id, 'create', '게시글 생성', {snapshot}, NULL, {snapshot} FROM posts p WHERE p.id = last_insert_rowid()"));

@@ -235,7 +235,7 @@ export async function onRequestPost({ request, env }) {
     if (bindings.some(value => value === undefined)) throw new Error('D1_TYPE_ERROR: undefined post binding');
     const rust = await queryRust({ request, env }, 'post-create', { bindings:encodePostBindings(bindings), publishGuard, memberGuardUid:session.isOwner ? null : Number(session.uid), tokenGuard:{uid:session.uid ? Number(session.uid) : null,iat:Number(session.payload.iat) || 0,exp:Number.isFinite(Number(session.payload.exp)) ? Number(session.payload.exp) : null} });
     if (!rust.ok) throw new Error('Rust post creation failed');
-    const { id: insertedId, featuredLimit, publishBlocked, accessRevoked, sessionRevoked } = await rust.json();
+    const { id: insertedId, duplicate, featuredLimit, publishBlocked, accessRevoked, sessionRevoked } = await rust.json();
     if (sessionRevoked) return json({ error: '인증이 필요합니다. 다시 로그인해주세요.' }, 401);
     if (accessRevoked) return json({ error: '글 작성 권한이 없습니다. 오너에게 권한을 요청하세요.' }, 403);
     if (publishBlocked) return json({ error: '현재 공개 전환이 차단되어 있습니다. 오너 승인 후 다시 시도해주세요.' }, 403);
@@ -243,6 +243,20 @@ export async function onRequestPost({ request, env }) {
     const insertedPost = insertedId
       ? await postAdminRead(env, 'post', insertedId)
       : null;
+
+    // 앞선 요청이 이미 만든 글 — 새로 만들지 않았으므로 생성 로그·캐시 퍼지는 건너뛰고 기록만 남긴다.
+    if (duplicate && insertedPost) {
+      await logOperationalEvent(env, {
+        channel: 'admin',
+        type: 'post_create_deduplicated',
+        level: 'warn',
+        actor: (session.username || safeAuthor || 'unknown'),
+        path: '/api/posts',
+        message: '중복 게시글 생성 요청 차단 · ' + String(insertedPost.title || ''),
+        details: { post_id: insertedPost.id, category: insertedPost.category || category },
+      });
+      return json({ post: insertedPost, duplicate: true }, 200);
+    }
 
     if (insertedPost) {
       await logOperationalEvent(env, {

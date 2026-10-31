@@ -1,6 +1,31 @@
 {
   "items": [
   {
+    "version": "00.195.01",
+    "date": "2026-11-01",
+    "released_at": "2026-11-01 08:10:14 KST",
+    "summary": "기사 게재 버튼이 반응하지 않거나 같은 기사가 두 번 올라가던 문제와 태블릿에서 메뉴가 보이지 않던 문제를 고쳤습니다.",
+    "for_users": [
+      "휴대폰 글쓰기 창에서 챗봇 버튼이 '게재하기' 버튼을 덮어 눌러도 반응이 없던 문제를 고쳤습니다. 글쓰기·수정·로그인 창과 메뉴가 열려 있는 동안에는 챗봇 버튼을 숨깁니다.",
+      "사진이 많은 기사를 올릴 때 12초가 지나면 'signal is aborted without reason' 오류가 뜨던 문제를 고쳤습니다. 이제 충분히 기다리며, 응답이 늦어도 한국어로 안내합니다.",
+      "같은 기사를 다시 눌러도 10분 안에 같은 분류·제목으로 올린 글이 있으면 새로 만들지 않고 이미 올라간 기사로 처리해 중복 게재를 막습니다.",
+      "태블릿에서 '스카우트 소식' 같은 메뉴를 눌러도 하위 메뉴가 보이지 않던 문제와, 기사 페이지를 내리면 메뉴바가 사라지던 문제를 고쳤습니다.",
+      "태블릿 메뉴 서랍의 배경이 비쳐 보이고 닫기·검색 아이콘이 빈 네모로 나오던 문제를 휴대폰과 같은 모양으로 맞췄습니다.",
+      "알림 문구가 챗봇 버튼에 가려지거나 글쓰기 창의 하단 버튼을 덮지 않도록 위치를 조정했습니다."
+    ],
+    "for_developers": [
+      "public/js/board-write.js _submitPost: 진행 중 재전송 차단(_submitting), POST /api/posts timeoutMs 120000, duplicate 응답 안내, 시간 초과 시 목록 재조회. post-page.js PUT 도 timeoutMs 120000.",
+      "public/js/main.js GW.apiFetch: 자체 12초 타임아웃으로 끊긴 경우 한국어 Error(name=AbortError, code=timeout, timedOut=true)로 변환. GW.showToast 에 선택 인자 durationMs 추가.",
+      "server-rust/src/post_routes.rs create: 같은 category·title·author_user_id 로 10분 안에 만든 글이 있으면 INSERT 없이 {id, duplicate:true} 반환. functions/api/posts/index.js 는 200 + duplicate:true 응답과 post_create_deduplicated 운영 로그(warn)를 남기고 캐시 퍼지는 생략. 관리자 기사 저장(POST)도 같은 보호를 받는다.",
+      "운영 기록: 2026-10-31 17:23:44·17:24:26 UTC 같은 제목 글 2건 생성 후 1건 삭제(#562), 16:55 #553 삭제 — 클라이언트 abort 뒤 서버는 생성을 완료하는 경로가 원인.",
+      "public/css/m3-site.css: ≤839px 에서 .nav overflow-x:auto !important 가 is-panel-open 해제를 막아 드롭다운이 잘렸다. .nav-group 을 static 으로 바꿔 패널 기준을 .masthead 로 옮기고 site-chrome.js positionOpenPanel 이 --nav-panel-top/left 를 계산. 메뉴바 가로 스크롤 시 닫고 resize 시 재계산.",
+      "public/css/m3-site.css: 간이 헤더·서랍 M3 스타일을 ≤599px 에서 ≤900px 블록으로 이동(항상 노출 규칙만 ≤599px 유지). site-chrome.js setupMobileCompactHeader 의 post-page 제외 제거.",
+      "public/css/chatbot.css: 서랍·글쓰기/수정/로그인 창이 열리면 .gw-chatbot-root 숨김(:has). public/css/style.css: .toast z-index 9100·최대 폭·keep-all, 글쓰기 창이 열려 있으면 상단 가운데 표시.",
+      "tests/rust-posts.test.mjs: 중복 생성 방지 계약 테스트 추가. 전체 Node 테스트 실패 43건은 수정 전 origin/main(53d53dc3)과 목록이 동일한 기존 실패.",
+      "사이트 버전 00.195.00 → 00.195.01."
+    ]
+  },
+  {
     "version": "03.161.00",
     "date": "2026-10-29",
     "released_at": "2026-10-29 16:36:54 KST",

@@ -511,6 +511,31 @@
       document.querySelectorAll('.nav.nav-grouped').forEach(function (nav) {
         nav.classList.toggle('is-panel-open', anyOpen);
       });
+      document.querySelectorAll('.nav-group.is-open').forEach(positionOpenPanel);
+    }
+
+    // ≤839px 에서는 overflow-x:auto 가 !important 라 is-panel-open 으로 풀리지 않는다.
+    // 대신 CSS 가 .nav-group 을 static 으로 바꿔 패널 기준을 .masthead 로 옮기므로,
+    // 그때만 누른 메뉴 바로 아래·화면 안쪽 좌표를 계산해 넣는다.
+    function positionOpenPanel(group) {
+      var panel = group.querySelector('.nav-group-panel');
+      if (!panel) return;
+      if (window.getComputedStyle(group).position !== 'static') {
+        panel.style.removeProperty('--nav-panel-top');
+        panel.style.removeProperty('--nav-panel-left');
+        return;
+      }
+      var base = panel.offsetParent;
+      var trig = group.querySelector('.nav-group-trigger');
+      if (!base || !trig) return;
+      var baseRect = base.getBoundingClientRect();
+      var trigRect = trig.getBoundingClientRect();
+      var gutter = 12;
+      var width = panel.offsetWidth;
+      var left = trigRect.left + (trigRect.width - width) / 2;
+      left = Math.max(gutter, Math.min(left, document.documentElement.clientWidth - gutter - width));
+      panel.style.setProperty('--nav-panel-left', Math.round(left - baseRect.left - base.clientLeft) + 'px');
+      panel.style.setProperty('--nav-panel-top', Math.round(trigRect.bottom - baseRect.top - base.clientTop + 2) + 'px');
     }
 
     function closeAllExcept(skipGroup) {
@@ -548,6 +573,16 @@
     document.addEventListener('keydown', function (e) {
       if (e.key === 'Escape') closeAllExcept(null);
     });
+
+    // 메뉴바를 가로로 밀면 계산해 둔 패널 좌표가 트리거와 어긋나므로 닫고, 화면 크기가 바뀌면 다시 계산한다.
+    // scroll 은 버블링되지 않아 capture 로 받는다.
+    document.addEventListener('scroll', function (e) {
+      var target = e.target;
+      if (target && target.classList && target.classList.contains('nav-grouped') && target.querySelector('.nav-group.is-open')) {
+        closeAllExcept(null);
+      }
+    }, true);
+    window.addEventListener('resize', syncNavPanelState);
 
     // hover open (데스크톱) — pointer:fine 일 때만
     if (window.matchMedia && window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
@@ -702,7 +737,8 @@
 
   GW.setupMobileCompactHeader = function () {
     if (typeof window === 'undefined' || typeof document === 'undefined') return;
-    if (document.body && document.body.classList.contains('post-page')) return;
+    // 기사 상세도 600–839px 에서는 masthead 가 sticky 가 아니라 스크롤과 함께 사라진다.
+    // 예전처럼 기사 상세를 제외하면 태블릿에서 본문을 내리는 순간 메뉴가 하나도 남지 않는다.
     var refs = GW.ensureMobileCompactHeader();
     if (!refs || refs.header.dataset.bound === '1') {
       if (refs && refs.header) GW.syncMobileCompactNav();

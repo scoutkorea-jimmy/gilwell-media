@@ -3241,6 +3241,24 @@ body[data-home-bootstrap] .lang-btn:hover {
 .toast.show { transform: translateY(0); opacity: 1; }
 .toast.success { border-left: 4px solid var(--success); }
 .toast.error   { border-left: 4px solid var(--danger);  }
+.toast {
+  max-width: min(480px, calc(100vw - 32px));
+  word-break: keep-all;
+  overflow-wrap: break-word;
+  /* 챗봇 FAB(z-index 9000)가 같은 오른쪽 아래에 있어 문구를 가렸다. 토스트는 터치를 받지 않으므로 위에 그려도 FAB 조작을 막지 않는다. */
+  z-index: 9100;
+}
+/* 글쓰기·수정 창이 열려 있으면 하단 버튼줄(취소·임시저장·게재하기)을 덮지 않도록 화면 위쪽 가운데에 띄운다. */
+body:has(.board-write-overlay.open) .toast {
+  top: 16px;
+  bottom: auto;
+  left: 16px;
+  right: 16px;
+  width: fit-content;
+  margin-inline: auto;
+  transform: translateY(-16px);
+}
+body:has(.board-write-overlay.open) .toast.show { transform: translateY(0); }
 
 body.share-modal-open {
   overflow: hidden;

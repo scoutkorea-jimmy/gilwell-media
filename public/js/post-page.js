@@ -813,6 +813,8 @@ window._postSaveEdit = function() {
       }
       return GW.apiFetch('/api/posts/' + _editPostId, {
         method: 'PUT',
+        // 교체한 표지·슬라이드 이미지가 함께 올라가므로 기본 12초 상한으로 끊지 않는다.
+        timeoutMs: 120000,
         body: JSON.stringify(payload)
       });
     })

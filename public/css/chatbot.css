@@ -14,6 +14,13 @@
   font-weight: 500;
 }
 
+/* z-index 9000 이라 열린 창 위에도 뜬다. 휴대폰에서는 FAB 가 글쓰기 창의 '게재하기' 버튼을
+   그대로 덮어 터치를 가로챘다. 글쓰기·수정·로그인 창과 모바일 메뉴가 열려 있는 동안에는 숨긴다. */
+body.mobile-compact-drawer-open .gw-chatbot-root,
+body:has(.board-write-overlay.open, .board-pw-overlay.open, #post-login-modal.open) .gw-chatbot-root {
+  display: none;
+}
+
 /* ---------- FAB ---------- */
 .gw-chatbot-fab {
   width: 56px;

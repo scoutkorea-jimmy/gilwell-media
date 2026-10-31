@@ -6,9 +6,9 @@
   'use strict';
 
   const GW = window.GW = {};
-  GW.APP_VERSION = '00.195.00';
+  GW.APP_VERSION = '00.195.01';
   GW.ADMIN_VERSION = '03.161.00';
-  GW.ASSET_VERSION = '20261029073654';
+  GW.ASSET_VERSION = '20261031231035';
   GW.PALETTE = {
     scoutingPurple: '#622599',
     canvasWhite: '#FFFFFF',
@@ -1638,7 +1638,7 @@
 
   // ── Toast notifications ───────────────────────────────────
   /** Show a toast message. type: 'success' | 'error' */
-  GW.showToast = function (msg, type) {
+  GW.showToast = function (msg, type, durationMs) {
     let el = document.getElementById('toast');
     if (!el) {
       el = document.createElement('div');
@@ -1649,7 +1649,7 @@
     el.textContent = msg;
     el.className   = 'toast ' + (type || 'success') + ' show';
     clearTimeout(el._timer);
-    el._timer = setTimeout(function () { el.className = 'toast'; }, 2800);
+    el._timer = setTimeout(function () { el.className = 'toast'; }, durationMs > 0 ? durationMs : 2800);
   };
 
   GW.copyText = function (text) {
@@ -2082,9 +2082,11 @@
     const canAbort = timeoutMs > 0 && !opts.signal && typeof AbortController !== 'undefined';
     const ac = canAbort ? new AbortController() : null;
     let timeoutId = null;
+    let timedOut = false;
     if (ac) {
       opts.signal = ac.signal;
       timeoutId = setTimeout(function () {
+        timedOut = true;
         try { ac.abort(); } catch (_) {}
       }, timeoutMs);
     }
@@ -2092,6 +2094,16 @@
     let res;
     try {
       res = await fetch(url, opts);
+    } catch (fetchErr) {
+      // 브라우저 원문("signal is aborted without reason")을 그대로 토스트에 띄우지 않는다.
+      // 끊은 것은 클라이언트일 뿐 서버는 요청을 끝까지 처리했을 수 있으므로 실패로 단정하지 않는다.
+      // name 은 AbortError 로 유지해 기존 호출부의 취소 판별을 깨지 않는다.
+      if (!timedOut) throw fetchErr;
+      const timeoutErr = new Error('서버 응답이 늦어 처리 결과를 확인하지 못했습니다. 잠시 후 결과를 확인해주세요.');
+      timeoutErr.name = 'AbortError';
+      timeoutErr.code = 'timeout';
+      timeoutErr.timedOut = true;
+      throw timeoutErr;
     } finally {
       if (timeoutId !== null) clearTimeout(timeoutId);
     }
