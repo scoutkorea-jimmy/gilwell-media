@@ -141,3 +141,18 @@ Owner approved commit/push/deploy. Public commit202191a5 pushed to main; standar
 - 검증: test:rust 348/348, test:rust:pages 3/3(workerd), cargo test, 이식 테스트 site-stability 8·seo-resilience·article-export·post-markdown, site-share-login·public-ssr·scout-topics, node --check, diff --check, audit:exposure, verify_release_metadata. 원본 코드로 되돌리면 결함 테스트 4개가 실패함을 확인.
 - 배포: 소유자 승인으로 03a35735 push, 깨끗한 main 복제본에서 표준 배포 exit0(Pages 57531295). 라이브 VERSION 00.195.03, sitemap 기사 URL 554, 공개 기사 감사 554건/오류0, snapshot 20261101T103518Z-03a35735. 용어집 원문 업데이트 2026-10-08 표시, 특집 하단 V00.195.03·자산 토큰 일치 확인. 503 경로는 운영에서 일부러 재현하지 않았다(테스트로만 확인).
 - 남은 일: rules/03 의 프로덕션 버그 KMS 케이스 스터디 기록(10-22 work 폴더의 제안서 기반)은 아직 하지 않았다.
+
+## 2026-11-01 — M3 스타일시트 캐스케이드 단일화·디자인 토큰 통합·구버전 데드 CSS 정리 (Site 00.196.00, 배포 완료)
+
+- 사용자 지시: 메테리얼 디자인(M3) 전환 과정에서 꼬인 BP미디어 코드를 최신화하고 합리적으로 정리(커밋·푸시·배포 위임 포함). 작업 위치는 맥북 에어 `/Users/jimmy/gilwell-media`(`main`, 기준 HEAD `808f7e56`).
+- 스타일시트 로딩 순서 단일화(`style.css` → 페이지 전용 CSS → `chatbot.css` → `dark-mode.css` → `m3-site.css`): `public/index.html`, `glossary.html`, `memorabilia.html`, `404.html`(`style.css` 추가), `500.html`(`dark-mode.css` 추가), `functions/post/[id].js`, `functions/glossary-raw.js`, `server-rust/src/glossary_raw_shell.html`, `tests/fixtures/rust-article-page.js`, `tests/fixtures/rust-glossary-raw.js` 정렬.
+- CSS 토큰 통합 및 데드 코드 제거(순 719줄 감축):
+  - `public/css/style.css`: 5곳에 흩어져 있던 `:root` 디자인 토큰 블록을 최상단 단일 블록으로 통합, 현재 `admin.html`이 `admin-v3.css`만 단독 로드함에도 남아 있던 구버전 V1/V2 관리자 전용 데드 CSS(`body.admin-page`, `.admin-header*`, `.admin-sidebar*`, `.admin-tab*`, `.admin-shell` 등) 제거, 자기 덮어쓰기 중복 선언(`.section-header`, `.home-col-header`) 및 분산 `@media (pointer: coarse)` 통합(~630줄 감축).
+  - `public/css/dark-mode.css`: 5개 최상위 `:root[data-theme="dark"]` 블록을 단일 블록으로 통합, 모순되던 구버전 헤더 주석 및 미사용 V1 관리자 다크모드 셀렉터 제거.
+  - `public/css/m3-site.css`·`public/css/topics.css`: 중복 규칙(`.home-rail-card .mini-item`, `.topic-intro`, `.topic-guide`, `.topic-news-card` 등) 및 쪼개진 `@media (max-width: 900px / 600px / 599px / prefers-reduced-motion)` 블록을 데스크톱 우선 내림차순으로 병합.
+- 검증·감사 스크립트 및 테스트 최신화:
+  - `scripts/verify_release_metadata.sh`: `SITE_STYLE_FILES`·`M3_STYLE_FILES` 검사 범위를 22개 모든 공개 HTML/SSR 표면으로 확장.
+  - `scripts/audit_css_usage.mjs`·`prune_dead_css.mjs`·`audit_orphans.sh`의 구 경로 및 임시저장(draft) 오탐 쿼리 수정.
+  - `tests/rust-posts.test.mjs`: Node 26 `node:sqlite`의 `undefined` 바인딩 허용 동작 변경에 맞춰 D1 mock의 `run()`이 Cloudflare D1과 동일하게 `undefined` 바인딩을 명시 거부하도록 보강.
+- 검증: `npm run test:rust` 348/348, `test:analytics` 28/28, `test:search-performance` 8/8, `test:card-news` 통과, `site-stability`·`seo-resilience`·`public-ssr`·`scout-topics`·`article-export`·`post-markdown` 13/13 통과, `audit_frontend_refs.mjs --strict` Critical 0건, `audit_public_exposure.mjs` OK, `release_preflight.sh` 통과.
+- 배포: 커밋 `1496b401` `origin/main` push 완료, 표준 배포 `CI=1 ./scripts/deploy_production.sh` exit 0(Pages `513d24dc`). 라이브 VERSION `00.196.00`·ASSET_VERSION `20261101123955` 확인, 공개 기사 감사 554건/오류 0건, release snapshot `20261101T124759Z-1496b401` 저장 완료.

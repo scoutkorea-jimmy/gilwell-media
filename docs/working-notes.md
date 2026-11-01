@@ -11,6 +11,15 @@ scope: site-admin
 >
 > 이 노트는 매 턴마다 컨텍스트에 자동 로드되지는 않습니다. CLAUDE.md에서 포인터만 유지하고, AI는 회귀 디버깅·신규 기능 착수 시 직접 읽도록 합니다.
 
+## 15 공개 사이트 CSS 캐스케이드 표준 순서 · Rust 셸 자산 동기화 · Node 26 SQLite 바인딩 (00.196.00)
+
+- **표준 CSS 로딩 순서**: 모든 공개 HTML, SSR(`functions/post/[id].js`, `functions/glossary-raw.js`, `functions/feature/[category]/[slug].js`), Rust 셸(`server-rust/src/*_shell.html`), 비교 픽스처(`tests/fixtures/rust-*.js`)는 반드시 다음 순서를 따른다:
+  `style.css` → 페이지 전용 CSS(`home-banner.css` / `topics.css` / `glossary.css` / `memorabilia.css`) → `chatbot.css` → `dark-mode.css` → `m3-site.css`.
+  - `dark-mode.css`나 `topics.css`가 `m3-site.css` 뒤에 오면 M3 역할 토큰/컴포넌트 오버라이드가 깨지므로 주의.
+  - `scripts/verify_release_metadata.sh`가 22개 모든 공개 HTML/SSR 표면의 `style.css` 및 `m3-site.css` 자산 토큰 일치를 강제 검사한다.
+- **`sync_versions.sh` 후 반드시 `npm run build:rust` 실행**: `sync_versions.sh`가 `server-rust/src/feature_shell.html`과 `glossary_raw_shell.html`의 `?v=<ASSET_VERSION>` 및 버전 문자열을 갱신하므로, `sync_versions.sh` 실행 뒤에 `npm run build:rust`를 돌려야 Wasm 바이너리 내부 문자열도 최신 자산 버전과 일치해 `rust-ssr.test.mjs`가 통과한다.
+- **Node 26 `node:sqlite` `undefined` 바인딩 주의**: Node 22에서는 `sqlite.prepare(sql).run(...args)`에 `undefined`가 포함되면 Cloudflare D1과 동일하게 예외가 발생했으나, Node 26(`v26.11+`)부터는 `node:sqlite`가 `undefined`를 `NULL`로 허용한다. D1 호환 테스트 mock(`tests/rust-posts.test.mjs`)에서는 `run()`에서 `args.some(v => v === undefined)`를 명시적으로 검사해야 D1 `D1_TYPE_ERROR` 계약 테스트가 깨지지 않는다.
+
 ## 14 `publish_at` 은 타임존 없는 **KST 벽시계**, `created_at` 은 **UTC** — 시간대 버그의 단일 원인
 
 00.170.00 에서 **NEW 배지 사라짐**(Site)과 **접속 시간 히트맵 9시간 밀림**(Admin) 두 버그가 같은 원인이었다.
