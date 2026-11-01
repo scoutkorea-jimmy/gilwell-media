@@ -131,7 +131,7 @@ Owner approved commit/push/deploy. Public commit202191a5 pushed to main; standar
 
 - 최종 릴리스: af750de를 origin/main에 push, Pages7f91f21a-f129-4b58-b0e2-73663a242512 배포 성공. live ADMIN_VERSION03.160.04·KMS revision6·전체 원문·JS byte 일치·changelog1건 확인. 표준 배포 exit0, 공개 기사536건/오류0건, snapshot20261027T083931Z-af750de 저장. 카드뉴스 Worker 예약0건 재확인. 후속 기록 커밋은 문서만 변경하며 배포 코드/자산은 바꾸지 않는다.
 
-## 2026-11-01 — 10-22 안정성·SEO·AEO 수정을 Rust 기준으로 이식 (Site, 미배포)
+## 2026-11-01 — 10-22 안정성·SEO·AEO 수정을 Rust 기준으로 이식 (Site 00.195.03, 배포 완료)
 
 - 기준 origin/main 6bc70670, worktree `bpmedia-stability-port`(브랜치 fix/site-stability-seo-port). 원래 checkout의 미커밋 10-22 변경은 보존(리셋·stash 없음)했고 이 브랜치가 그 대체본이다.
 - sitemap·뉴스 sitemap·용어집 원문: DB/Rust 실패 시 기사 없는 200 대신 503 + no-store + Retry-After 300. sitemap의 죽은 JS 대체 경로 삭제. 용어집 "업데이트" 날짜는 실제 저장 시각(KST), 모르면 생략.
@@ -139,4 +139,5 @@ Owner approved commit/push/deploy. Public commit202191a5 pushed to main; standar
 - 기사 HTML/API: 공감·관련·수동 관련·특집 쿼리 실패는 해당 위젯만 비우고 기사 유지. 유니코드 범위 밖 숫자 엔티티 보호(서버·브라우저), 중첩 목록을 JSON-LD·설명·발췌에 포함. 모바일 당겨서 새로고침을 대화상자·입력·멀티터치에서 차단.
 - upstream 결함 추가 수정: Rust `feature_shell.html`·`glossary_raw_shell.html`의 CSS/JS 토큰(20261027)과 특집 하단 버전 표기(V00.194.03)가 낡아 있었다. sync_versions/verify_release_metadata 대상에 Rust 셸과 레거시 비교 fixture를 추가. 홈 레일 요청 간 공유는 upstream에서 이미 해결돼 회귀 테스트만 추가.
 - 검증: test:rust 348/348, test:rust:pages 3/3(workerd), cargo test, 이식 테스트 site-stability 8·seo-resilience·article-export·post-markdown, site-share-login·public-ssr·scout-topics, node --check, diff --check, audit:exposure, verify_release_metadata. 원본 코드로 되돌리면 결함 테스트 4개가 실패함을 확인.
-- 다음: Site 규칙상 커밋·푸시·배포는 소유자 확인 후 rules/02·03 절차(버전 bump·changelog·sync_versions·표준 배포)로 진행.
+- 배포: 소유자 승인으로 03a35735 push, 깨끗한 main 복제본에서 표준 배포 exit0(Pages 57531295). 라이브 VERSION 00.195.03, sitemap 기사 URL 554, 공개 기사 감사 554건/오류0, snapshot 20261101T103518Z-03a35735. 용어집 원문 업데이트 2026-10-08 표시, 특집 하단 V00.195.03·자산 토큰 일치 확인. 503 경로는 운영에서 일부러 재현하지 않았다(테스트로만 확인).
+- 남은 일: rules/03 의 프로덕션 버그 KMS 케이스 스터디 기록(10-22 work 폴더의 제안서 기반)은 아직 하지 않았다.
