@@ -89,12 +89,17 @@ export async function onRequestGet(context) {
     const counted = await recordUniqueView(env, id, viewerKey).catch(() => false);
     if (counted) post.views = (post.views || 0) + 1;
   }
-  const manualRelatedPromise = findManualRelatedPosts(env, post, 5);
+  // Optional widgets degrade to empty values; only the core article query may fail the page.
+  const optional = (name, promise, fallback) => promise.catch((err) => {
+    console.error('GET /post/:id ' + name + ' failed:', err);
+    return fallback;
+  });
+  const manualRelatedPromise = optional('manual related posts', findManualRelatedPosts(env, post, 5), []);
   const [likeStats, relatedPosts, manualRelatedPosts, specialFeaturePosts] = await Promise.all([
-    getLikeStats(env, id, viewerKey),
-    findRelatedPosts(env, post, 5, manualRelatedPromise),
+    optional('likes', getLikeStats(env, id, viewerKey), { likes: 0, liked: false }),
+    optional('related posts', findRelatedPosts(env, post, 5, manualRelatedPromise), []),
     manualRelatedPromise,
-    findSpecialFeaturePosts(env, post, 50),
+    optional('special feature posts', findSpecialFeaturePosts(env, post, 50), []),
   ]);
 
   const requestUrlObj = new URL(request.url);
@@ -170,7 +175,7 @@ export async function onRequestGet(context) {
   });
   const isNew    = isTodayKst(publicDateValue);
   // AI 검색·뉴스 패널이 인용할 수 있도록 본문 plain text를 NewsArticle.articleBody에 직접 노출.
-  // 5000자 cap = JSON-LD 직렬화 크기 폭증 방지 + Google이 권장하는 "본문 요약" 범위.
+  // 5000자 cap = JSON-LD 직렬화 크기 폭증 방지.
   // wordCount는 공백 분리 토큰 수 — 한국어/영어 혼용에서도 일관된 단순 지표.
   const articleBodyFull = extractPlainBody(post.content || '');
   const articleBodySchema = articleBodyFull.length > 5000
@@ -242,12 +247,12 @@ export async function onRequestGet(context) {
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png"/>
   <link rel="apple-touch-icon" href="/img/logo.png"/>
   <link rel="shortcut icon" href="/img/favicon-48.png"/>
-  <link rel="stylesheet" href="/css/style.css?v=20261101095439">
-  <link rel="stylesheet" href="/css/post.css?v=20261101095439">
-  <link rel="stylesheet" href="/css/chatbot.css?v=20261101095439">
-  <link rel="stylesheet" href="/css/dark-mode.css?v=20261101095439">
-  <link rel="stylesheet" href="/css/m3-site.css?v=20261101095439">
-  <link rel="stylesheet" href="/css/topics.css?v=20261101095439">
+  <link rel="stylesheet" href="/css/style.css?v=20261101102417">
+  <link rel="stylesheet" href="/css/post.css?v=20261101102417">
+  <link rel="stylesheet" href="/css/chatbot.css?v=20261101102417">
+  <link rel="stylesheet" href="/css/dark-mode.css?v=20261101102417">
+  <link rel="stylesheet" href="/css/m3-site.css?v=20261101102417">
+  <link rel="stylesheet" href="/css/topics.css?v=20261101102417">
 </head>
 <body class="post-page">
   <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
@@ -434,7 +439,7 @@ export async function onRequestGet(context) {
         <h4>관리자</h4>
         <a href="/admin.html">관리자 페이지 →</a>
         <a href="/glossary-raw">용어집 RAW로 보기 →</a>
-        <p class="footer-build">Site <span class="site-build-version">V00.195.02</span> · Admin <span class="admin-build-version">V03.161.01</span></p>
+        <p class="footer-build">Site <span class="site-build-version">V00.195.03</span> · Admin <span class="admin-build-version">V03.161.01</span></p>
       </div>
       <div class="footer-bottom">
         <p data-i18n="footer.copyright">© 2026 ${SITE_BRAND_NAME} · ${SITE_DOMAIN_LABEL}</p>
@@ -664,10 +669,10 @@ export async function onRequestGet(context) {
 
   <script>window.GW_BOOT_RUNTIME=${serializeForScript(publicRuntime)};window.GW_KAKAO_JS_KEY=${serializeForScript(String(publicRuntime.kakao_js_key || ''))};window.GW_POST_BOOT=${serializeForScript({ editPostId: id, sharePostUrl: postUrl, sharePostTitle: titleText, sharePostSubtitle: subtitleText, editSeed: JSON.parse(editSeed), visibleTags })};</script>
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.4/dist/purify.min.js" integrity="sha384-eEu5CTj3qGvu9PdJuS+YlkNi7d2XxQROAFYOr59zgObtlcux1ae1Il3u7jvdCSWu" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-  <script src="/js/main.js?v=20261101095439"></script>
-  <script src="/js/site-chrome.js?v=20261101095439"></script>
-  <script src="/js/chatbot.js?v=20261101095439" defer></script>
-  <script src="/js/post-page.js?v=20261101095439"></script>
+  <script src="/js/main.js?v=20261101102417"></script>
+  <script src="/js/site-chrome.js?v=20261101102417"></script>
+  <script src="/js/chatbot.js?v=20261101102417" defer></script>
+  <script src="/js/post-page.js?v=20261101102417"></script>
   <script async type="text/javascript" charset="utf-8" src="https://t1.kakaocdn.net/kas/static/ba.min.js"></script>
 </body>
 </html>`;
@@ -849,7 +854,7 @@ function decodeHtmlEntitiesOnce(str) {
       const code = entity.charAt(1) === 'x' || entity.charAt(1) === 'X'
         ? parseInt(entity.slice(2), 16)
         : parseInt(entity.slice(1), 10);
-      return Number.isFinite(code) && code > 0 ? String.fromCodePoint(code) : match;
+      return Number.isFinite(code) && code > 0 && code <= 0x10FFFF ? String.fromCodePoint(code) : match;
     }
     return match;
   });
@@ -995,7 +1000,7 @@ function extractPlainBody(str) {
         raw = doc.blocks.map(b => {
           const d = b.data || {};
           if (b.type === 'paragraph' || b.type === 'header' || b.type === 'quote') return d.text || '';
-          if (b.type === 'list') return (d.items || []).map(i => typeof i === 'string' ? i : (i.content || '')).join(' ');
+          if (b.type === 'list') return renderEditorListItems(d.items || [], 'ul');
           if (b.type === 'image' || b.type === 'embed') return d.caption || '';
           return '';
         }).join('\n');
@@ -1019,7 +1024,7 @@ function calcReadingTime(str) {
       if (Array.isArray(doc.blocks)) {
         text = doc.blocks.map(b => {
           const d = b.data || {};
-          if (b.type === 'list') return (d.items || []).map(i => typeof i === 'string' ? i : (i.content || '')).join(' ');
+          if (b.type === 'list') return renderEditorListItems(d.items || [], 'ul');
           return d.text || d.content || '';
         }).join(' ');
       }
@@ -1027,7 +1032,7 @@ function calcReadingTime(str) {
   } else {
     text = str || '';
   }
-  const plain = text.replace(/<[^>]+>/g, '').replace(/&[a-z#0-9]+;/gi, ' ');
+  const plain = text.replace(/<[^>]+>/g, ' ').replace(/&[a-z#0-9]+;/gi, ' ');
   const koreans = (plain.match(/[\uAC00-\uD7A3]/g) || []).length;
   const words = (plain.match(/[a-zA-Z]+/g) || []).length;
   return Math.max(1, Math.ceil(koreans / 500 + words / 200));

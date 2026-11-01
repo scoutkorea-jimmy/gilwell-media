@@ -53,12 +53,17 @@ export async function onRequestGet(context) {
       const counted = await recordUniqueView(env, id, viewerKey).catch(() => false);
       if (counted) post.views = (post.views || 0) + 1;
     }
-    const manualRelatedPromise = findManualRelatedPosts(env, post, 5);
+    // Optional widgets degrade to empty values; only the core article query may fail the page.
+    const optional = (name, promise, fallback) => promise.catch((err) => {
+      console.error('GET /api/posts/:id ' + name + ' failed:', err);
+      return fallback;
+    });
+    const manualRelatedPromise = optional('manual related posts', findManualRelatedPosts(env, post, 5), []);
     const [likeStats, relatedPosts, manualRelatedPosts, specialFeaturePosts] = await Promise.all([
-      getLikeStats(env, id, viewerKey),
-      findRelatedPosts(env, post, 5, manualRelatedPromise),
+      optional('likes', getLikeStats(env, id, viewerKey), { likes: 0, liked: false }),
+      optional('related posts', findRelatedPosts(env, post, 5, manualRelatedPromise), []),
       manualRelatedPromise,
-      findSpecialFeaturePosts(env, post, 50),
+      optional('special feature posts', findSpecialFeaturePosts(env, post, 50), []),
     ]);
     post.likes = likeStats.likes;
     post.liked = likeStats.liked;

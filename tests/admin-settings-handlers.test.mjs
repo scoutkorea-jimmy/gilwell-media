@@ -649,6 +649,11 @@ test('sensitive OTP gate rejects unavailable status without bypassing enrollment
   } finally { f.sql.close(); }
 });
 
+// Intentional changes from the frozen originals: unknown glossary dates are omitted instead of
+// showing today, and llms.txt points to the canonical editorial policy.
+const withoutTodayDate=html=>html.replace(/ · 업데이트 \d{4}-\d{2}-\d{2}/,'');
+const withPolicyLink=(text,origin)=>text.replace(/- 1차 출처 원칙[^\n]*\n- 편집자 명시[^\n]*\n- 정정 정책[^\n]*\n- AI 사용 고지[^\n]*\n/,`- 편집 원칙·출처 검증·AI 활용·정정 기준은 [편집 정책 원문](${origin}/editorial-policy)을 참조\n- 기사별 작성자·발행일·수정일은 해당 기사 HTML의 구조화 데이터와 markdown 메타데이터에서 확인\n`);
+
 test('raw glossary matches original HTML, ordering, escaping and HEAD', async () => {
   const f=fixture();
   try {
@@ -658,7 +663,7 @@ test('raw glossary matches original HTML, ordering, escaping and HEAD', async ()
       const old=await originalRawGlossary[handler]({env:f.env,request});
       const current=await rawGlossary[handler]({env:f.env,request});
       assert.equal(current.status,old.status); assert.equal(current.headers.get('content-type'),old.headers.get('content-type'));
-      const body=await current.text(); assert.equal(body,await old.text());
+      const body=await current.text(); assert.equal(body,withoutTodayDate(await old.text()));
       if(method==='GET') { assert(body.includes('&lt;script&gt;x&lt;/script&gt;')); assert(body.indexOf('가족')<body.indexOf('나무')); }
     }
   } finally { f.sql.close(); }
@@ -677,16 +682,17 @@ test('Rust raw glossary cards preserve Korean sorting, escaping and unusual-data
     const pageInput={title:'<안전>',meta:'<meta content="@@COUNT@@">',links:'<a>@@TITLE@@</a>'};
     const page=await (await queryRust({env:f.env,request},'glossary-raw-page',pageInput)).json();
     assert.equal(page.rendered,true);
-    assert.equal(page.html,rawGlossary.renderGlossaryRawShell({title:pageInput.title,metaBlock:pageInput.meta,links:pageInput.links,count:6,cards:rendered.cards,date:new Date().toISOString().slice(0,10)}));
-    assert.equal(await (await rawGlossary.onRequestGet({request,env:f.env})).text(),await (await originalRawGlossary.onRequestGet({request,env:f.env})).text());
+    assert.equal(page.html,rawGlossary.renderGlossaryRawShell({title:pageInput.title,metaBlock:pageInput.meta,links:pageInput.links,count:6,cards:rendered.cards,date:''}));
+    assert.equal(await (await rawGlossary.onRequestGet({request,env:f.env})).text(),withoutTodayDate(await (await originalRawGlossary.onRequestGet({request,env:f.env})).text()));
     f.sql.prepare('UPDATE glossary_terms SET sort_order=? WHERE id=1').run('legacy-invalid');
     const fallback=await (await queryRust({env:f.env,request},'glossary-raw-render',{})).json();
     assert.equal(fallback.rendered,false);
     assert.equal((await (await queryRust({env:f.env,request},'glossary-raw-page',pageInput)).json()).rendered,false);
-    assert.equal(await (await rawGlossary.onRequestGet({request,env:f.env})).text(),await (await originalRawGlossary.onRequestGet({request,env:f.env})).text());
+    assert.equal(await (await rawGlossary.onRequestGet({request,env:f.env})).text(),withoutTodayDate(await (await originalRawGlossary.onRequestGet({request,env:f.env})).text()));
     const prepare=f.env.DB.prepare.bind(f.env.DB);
     f.env.DB.prepare=sql=>{const stmt=prepare(sql);if(sql.includes('FROM glossary_terms')) stmt.all=async()=>{throw new Error('synthetic glossary failure');};return stmt;};
-    assert.equal(await (await rawGlossary.onRequestGet({request,env:f.env})).text(),await (await originalRawGlossary.onRequestGet({request,env:f.env})).text());
+    const unavailable=await rawGlossary.onRequestGet({request,env:f.env});
+    assert.equal(unavailable.status,503); assert.equal(unavailable.headers.get('retry-after'),'300'); assert.equal(unavailable.headers.get('cache-control'),'no-store');
   } finally {f.sql.close();}
 });
 
@@ -750,7 +756,7 @@ test('llms.txt retains legacy public-date filtering, output and fallback', async
       const request=new Request('https://local-test.invalid/llms.txt',{method:handler==='onRequestHead'?'HEAD':'GET'});
       const old=await originalLlmsTxt[handler]({request,env:f.env}), current=await llmsTxt[handler]({request,env:f.env});
       assert.equal(current.status,old.status); assert.equal(current.headers.get('x-robots-tag'),old.headers.get('x-robots-tag'));
-      const body=await current.text(); assert.equal(body,await old.text());
+      const body=await current.text(); assert.equal(body,withPolicyLink(await old.text(),'https://local-test.invalid'));
       assert(body.includes('공개 기사')); assert(body.includes('UTC 기사')); assert(!body.includes('미래 기사')); assert(!body.includes('비공개 기사'));
     }
     f.sql.exec('DROP TABLE posts');

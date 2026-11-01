@@ -34,7 +34,7 @@ export async function onRequestGet({ request, env }) {
     console.error('GET /api/articles.ndjson DB error:', err);
     return new Response('{"error":"internal_error"}\n', {
       status: 500,
-      headers: { 'Content-Type': 'application/x-ndjson; charset=UTF-8' },
+      headers: { 'Content-Type': 'application/x-ndjson; charset=UTF-8', 'Cache-Control': 'no-store' },
     });
   }
 
@@ -46,4 +46,8 @@ export async function onRequestGet({ request, env }) {
       'Access-Control-Allow-Origin': '*',
     },
   });
+}
+
+export async function onRequestHead(context) {
+  return new Response(null, await onRequestGet(context));
 }

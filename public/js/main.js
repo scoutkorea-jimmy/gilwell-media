@@ -6,9 +6,9 @@
   'use strict';
 
   const GW = window.GW = {};
-  GW.APP_VERSION = '00.195.02';
+  GW.APP_VERSION = '00.195.03';
   GW.ADMIN_VERSION = '03.161.01';
-  GW.ASSET_VERSION = '20261101095439';
+  GW.ASSET_VERSION = '20261101102417';
   GW.PALETTE = {
     scoutingPurple: '#622599',
     canvasWhite: '#FFFFFF',
@@ -1339,7 +1339,7 @@
         var code = entity.charAt(1) === 'x' || entity.charAt(1) === 'X'
           ? parseInt(entity.slice(2), 16)
           : parseInt(entity.slice(1), 10);
-        return Number.isFinite(code) && code > 0 ? String.fromCodePoint(code) : match;
+        return Number.isFinite(code) && code > 0 && code <= 0x10FFFF ? String.fromCodePoint(code) : match;
       }
       return match;
     });
@@ -1623,9 +1623,7 @@
         if (Array.isArray(doc.blocks)) {
           str = doc.blocks.map(function (b) {
             if (b.type === 'paragraph' || b.type === 'header') return b.data.text || '';
-            if (b.type === 'list') return (b.data.items || []).map(function (i) {
-              return typeof i === 'string' ? i : (i.content || '');
-            }).join(' ');
+            if (b.type === 'list') return GW.renderEditorListItems(b.data.items || [], 'ul');
             if (b.type === 'quote') return b.data.text || '';
             return '';
           }).join(' ');

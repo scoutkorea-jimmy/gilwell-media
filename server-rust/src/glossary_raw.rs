@@ -115,6 +115,19 @@ fn render(rows: &[Value]) -> Option<String> {
     }).collect::<Vec<_>>().join("\n"))
 }
 
+// Latest saved timestamp as a Korea-time date; naive DB values are UTC like isoTimestamp().
+fn saved_date(rows: &[Value]) -> Option<String> {
+    let latest = rows
+        .iter()
+        .flat_map(|row| ["updated_at", "created_at"].map(|key| row.get(key).and_then(Value::as_str)))
+        .flatten()
+        .map(|value| crate::seo::sitemap_iso(value, "Z"))
+        .max()
+        .filter(|value| !value.is_empty())?;
+    let time = js_sys::Date::new(&latest.into()).get_time() + 9.0 * 3_600_000.0;
+    Some(String::from(js_sys::Date::new(&time.into()).to_iso_string().slice(0, 10)))
+}
+
 async fn fetch_rows(env: &Env) -> Result<Vec<Value>> {
     env.d1("DB")?.prepare("SELECT id, bucket, term_ko, term_en, term_fr, description_ko, sort_order, created_at, updated_at FROM glossary_terms").all().await?.results::<Value>()
 }
@@ -142,7 +155,9 @@ pub async fn render_page(req: &mut Request, env: &Env) -> Result<Response> {
     let Some(cards) = render(&rows) else {
         return Response::from_json(&json!({"rendered":false,"rows":rows}));
     };
-    let date = String::from(js_sys::Date::new_0().to_iso_string().slice(0, 10));
+    let date = saved_date(&rows)
+        .map(|date| format!(" · 업데이트 {date}"))
+        .unwrap_or_default();
     let title = escape(&input.title);
     let count = rows.len().to_string();
     let mut html = String::new();

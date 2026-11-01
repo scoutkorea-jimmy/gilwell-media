@@ -56,6 +56,8 @@ SITE_STYLE_FILES=(
   functions/post/'[id]'.js
   functions/feature/'[category]'/'[slug]'.js
   functions/glossary-raw.js
+  server-rust/src/feature_shell.html
+  server-rust/src/glossary_raw_shell.html
 )
 
 M3_STYLE_FILES=(
@@ -80,6 +82,8 @@ M3_STYLE_FILES=(
   functions/post/'[id]'.js
   functions/feature/'[category]'/'[slug]'.js
   functions/glossary-raw.js
+  server-rust/src/feature_shell.html
+  server-rust/src/glossary_raw_shell.html
 )
 
 SITE_MAIN_JS_FILES=(
@@ -96,6 +100,7 @@ SITE_MAIN_JS_FILES=(
   public/calendar.html
   functions/post/'[id]'.js
   functions/feature/'[category]'/'[slug]'.js
+  server-rust/src/feature_shell.html
 )
 
 SITE_CHROME_JS_FILES=(
@@ -112,6 +117,7 @@ SITE_CHROME_JS_FILES=(
   public/calendar.html
   functions/post/'[id]'.js
   functions/feature/'[category]'/'[slug]'.js
+  server-rust/src/feature_shell.html
 )
 
 BOARD_JS_FILES=(

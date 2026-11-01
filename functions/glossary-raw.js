@@ -1,6 +1,7 @@
 import { renderTopicLinks } from './topics/[slug].js';
 import { buildShareMetaBlockRust, getResolvedShareImage, loadSiteMeta } from './_shared/site-meta.js';
 import { queryRust } from './_shared/rust-server.js';
+import { isoTimestamp } from './_shared/seo-dates.js';
 
 const BUCKETS = ['가', '나', '다', '라', '마', '바', '사', '아', '자', '차', '카', '타', '파', '하'];
 const CHOSEONG_BUCKETS = ['가', '가', '나', '다', '다', '라', '마', '바', '바', '사', '사', '아', '자', '자', '차', '카', '타', '파', '하'];
@@ -29,7 +30,7 @@ async function renderGlossaryRawPage({ request, env }, headOnly = false) {
     naverVerification: siteMeta.naver_verification,
   }, {request, env});
   const links = renderTopicLinks();
-  let count = 0, cards = '', body = null;
+  let count = 0, cards = '', date = '', body = null;
   try {
     const result = await queryRust({request, env}, 'glossary-raw-page', {title, meta: metaBlock, links});
     if (!result.ok) throw new Error('Rust glossary raw lookup failed');
@@ -38,12 +39,16 @@ async function renderGlossaryRawPage({ request, env }, headOnly = false) {
       body = data.html;
     } else {
       const items = normalizeGlossaryRows(data.rows || []);
-      count = items.length; cards = items.map(renderItemCard).join('\n');
+      count = items.length; cards = items.map(renderItemCard).join('\n'); date = glossarySavedDate(data.rows || []);
     }
   } catch (err) {
     console.error('GET /glossary-raw error:', err);
+    return new Response(headOnly ? null : 'Glossary temporarily unavailable', {
+      status: 503,
+      headers: { 'Content-Type': 'text/plain; charset=UTF-8', 'Cache-Control': 'no-store', 'Retry-After': '300' },
+    });
   }
-  if (body === null) body = renderGlossaryRawShell({title, metaBlock, count, cards, links, date: new Date().toISOString().slice(0, 10)});
+  if (body === null) body = renderGlossaryRawShell({title, metaBlock, count, cards, links, date});
 
   return new Response(headOnly ? null : body, {
     status: 200,
@@ -54,6 +59,12 @@ async function renderGlossaryRawPage({ request, env }, headOnly = false) {
   });
 }
 
+// Latest saved timestamp shown as a Korea-time date; unknown dates are omitted, never "today".
+export function glossarySavedDate(rows) {
+  const latest = rows.flatMap(row => [isoTimestamp(row.updated_at), isoTimestamp(row.created_at)]).filter(Boolean).sort().at(-1);
+  return latest ? new Date(Date.parse(latest) + 9 * 3600000).toISOString().slice(0, 10) : '';
+}
+
 export function renderGlossaryRawShell({title, metaBlock, count, cards, links, date}) {
   return `<!doctype html>
 <html lang="ko">
@@ -62,10 +73,10 @@ export function renderGlossaryRawShell({title, metaBlock, count, cards, links, d
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${escapeHtml(title)}</title>
   ${metaBlock}
-  <link rel="stylesheet" href="/css/style.css?v=20261101095439">
-  <link rel="stylesheet" href="/css/glossary.css?v=20261101095439">
-  <link rel="stylesheet" href="/css/m3-site.css?v=20261101095439">
-  <link rel="stylesheet" href="/css/topics.css?v=20261101095439">
+  <link rel="stylesheet" href="/css/style.css?v=20261101102417">
+  <link rel="stylesheet" href="/css/glossary.css?v=20261101102417">
+  <link rel="stylesheet" href="/css/m3-site.css?v=20261101102417">
+  <link rel="stylesheet" href="/css/topics.css?v=20261101102417">
   <style>
     body.glossary-raw-page {
       margin: 0;
@@ -190,7 +201,7 @@ export function renderGlossaryRawShell({title, metaBlock, count, cards, links, d
       <span class="category-tag tag-glossary">용어집 원문 색인</span>
       <h1>스카우트 용어집 원문 색인</h1>
       <p>검색엔진과 사람, 그리고 외부 도구가 용어집의 원문을 한 번에 읽을 수 있도록 만든 공개 색인 페이지입니다. 한국어·영어·프랑스어 용어와 한국어 설명을 그대로 모아 보여줍니다.</p>
-      <div class="glossary-raw-meta">총 ${count}개 용어 · 공개 데이터 원문 보기 · 업데이트 ${escapeHtml(date)}</div>
+      <div class="glossary-raw-meta">총 ${count}개 용어 · 공개 데이터 원문 보기${date ? ` · 업데이트 ${escapeHtml(date)}` : ''}</div>
       <div class="glossary-raw-links">
         ${links}
         <a href="/glossary">일반 용어집 보기</a>

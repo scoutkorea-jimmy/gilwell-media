@@ -41,6 +41,10 @@ SITE_FILES=(
   functions/post/'[id]'.js
   functions/feature/'[category]'/'[slug]'.js
   functions/glossary-raw.js
+  server-rust/src/feature_shell.html
+  server-rust/src/glossary_raw_shell.html
+  tests/fixtures/rust-article-page.js
+  tests/fixtures/rust-glossary-raw.js
 )
 
 for file in "${SITE_FILES[@]}"; do
@@ -57,6 +61,8 @@ PAGE_CSS_FILES=(
   public/latest.html public/korea.html public/apr.html public/wosm.html public/people.html
   public/calendar.html public/wosm-members.html public/glossary.html public/jamboree16.html
   functions/post/'[id]'.js functions/feature/'[category]'/'[slug]'.js functions/glossary-raw.js
+  server-rust/src/feature_shell.html server-rust/src/glossary_raw_shell.html
+  tests/fixtures/rust-article-page.js tests/fixtures/rust-glossary-raw.js
 )
 for file in "${PAGE_CSS_FILES[@]}"; do
   perl -0pi -e "s#/css/board\\.css\\?v=[0-9A-Za-z.-]+#/css/board.css?v=${ASSET_VERSION}#g; s#/css/calendar\\.css\\?v=[0-9A-Za-z.-]+#/css/calendar.css?v=${ASSET_VERSION}#g; s#/css/post\\.css\\?v=[0-9A-Za-z.-]+#/css/post.css?v=${ASSET_VERSION}#g; s#/css/wosm-members\\.css\\?v=[0-9A-Za-z.-]+#/css/wosm-members.css?v=${ASSET_VERSION}#g; s#/css/glossary\\.css\\?v=[0-9A-Za-z.-]+#/css/glossary.css?v=${ASSET_VERSION}#g; s#/css/jamboree16\\.css\\?v=[0-9A-Za-z.-]+#/css/jamboree16.css?v=${ASSET_VERSION}#g" "$file"

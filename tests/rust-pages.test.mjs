@@ -2115,8 +2115,10 @@ test('compiled Pages + real workerd + isolated D1 preserve glossary routes and s
     const autoRelated=(await (await send('/api/posts/1',{headers:{'User-Agent':'Googlebot'}})).json()).post.related_posts;
     assert.deepEqual(autoRelated.map(row=>row.id),[2]);
     await ssrFault.put('related','1');
+    // Optional related-post failures keep the article and degrade only that widget.
     const failedRelated=await send('/api/posts/1',{headers:{'User-Agent':'Googlebot'}});
-    assert.equal(failedRelated.status,500);
+    assert.equal(failedRelated.status,200);
+    assert.deepEqual((await failedRelated.json()).post.related_posts,[]);
     await ssrFault.delete('related');
     const recoveredRelated=await send('/api/posts/1',{headers:{'User-Agent':'Googlebot'}});
     assert.equal(recoveredRelated.status,200);
@@ -2154,7 +2156,7 @@ test('compiled Pages + real workerd + isolated D1 preserve glossary routes and s
     const markdown=await send('/post/1.md');
     assert.equal(markdown.status,200); assert.match(markdown.headers.get('content-type'),/text\/markdown/);
     const markdownBody=await markdown.text();
-    assert(markdownBody.includes('# 합성 공개 기사')); assert(markdownBody.includes('- https://example.invalid/source'));
+    assert(markdownBody.includes('# 합성 공개 기사')); assert(markdownBody.includes('자료출처: https://example.invalid/source)')); assert(!markdownBody.includes('## 자료출처'));
     assert.equal((await send('/post/2.md')).status,404);
     await db.prepare('UPDATE posts SET content=? WHERE id=1').bind(JSON.stringify({blocks:[null]})).run();
     const corruptMarkdown=await send('/post/1.md');

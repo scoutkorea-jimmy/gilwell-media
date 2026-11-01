@@ -10,6 +10,8 @@
 
 import { SITE_BRAND_NAME } from './site-copy.mjs';
 import { queryRust } from './rust-server.js';
+import { publicAuthor } from './post-author.js';
+import { isoTimestamp, postLastmod } from './seo-dates.js';
 
 export async function buildRustPostMarkdownResponse({ post, postUrl, origin, request, env }) {
   const response = await queryRust({request,env}, 'post-markdown-render', {
@@ -21,8 +23,8 @@ export async function buildRustPostMarkdownResponse({ post, postUrl, origin, req
 }
 
 export function buildPostMarkdownResponse({ post, postUrl, origin }) {
-  const pubDate = String(post.publish_at || post.created_at || '').slice(0, 10);
-  const updated = String(post.updated_at || '').slice(0, 10);
+  const pubDate = isoTimestamp(post.publish_at, '+09:00') || isoTimestamp(post.created_at);
+  const updated = postLastmod(post);
   const body = renderPostMarkdown({ post, postUrl, pubDate, updated, origin });
   return new Response(body, {
     headers: {
@@ -48,7 +50,7 @@ export function buildMarkdownErrorResponse(status, message) {
 function renderPostMarkdown({ post, postUrl, pubDate, updated, origin }) {
   const title = (post.title || '').trim();
   const subtitle = (post.subtitle || '').trim();
-  const author = (post.author || 'Editor.A').trim();
+  const author = publicAuthor(post.author);
   const category = (post.category || '').trim();
   const tags = parseTags(post.tag);
   const metaTags = parseTags(post.meta_tags);
@@ -77,7 +79,8 @@ function renderPostMarkdown({ post, postUrl, pubDate, updated, origin }) {
     bodyParts.push(`*${subtitle}*`);
     bodyParts.push('');
   }
-  bodyParts.push(`_${pubDate || ''} · ${author}${category ? ' · ' + category : ''}_`);
+  const displayDate = pubDate ? new Date(Date.parse(pubDate) + 9 * 3600000).toISOString().slice(0, 10) : '';
+  bodyParts.push(`_${displayDate} · ${author}${category ? ' · ' + category : ''}_`);
   bodyParts.push('');
 
   const heroImg = post.image_url ? absoluteUrl(post.image_url, origin) : '';
@@ -90,14 +93,6 @@ function renderPostMarkdown({ post, postUrl, pubDate, updated, origin }) {
   const bodyMd = editorJsonToMarkdown(post.content || '', origin);
   if (bodyMd) {
     bodyParts.push(bodyMd);
-    bodyParts.push('');
-  }
-
-  const citations = extractCitations(post.content || '');
-  if (citations.length) {
-    bodyParts.push('## 자료출처');
-    bodyParts.push('');
-    citations.forEach((url) => bodyParts.push(`- ${url}`));
     bodyParts.push('');
   }
 
@@ -131,13 +126,7 @@ function editorJsonToMarkdown(raw, origin) {
         out.push('');
       }
     } else if (type === 'list') {
-      const ordered = data.style === 'ordered';
-      const items = Array.isArray(data.items) ? data.items : [];
-      items.forEach((item, idx) => {
-        const content = typeof item === 'string' ? item : (item.content || '');
-        const prefix = ordered ? `${idx + 1}.` : '-';
-        out.push(`${prefix} ${inlineToMd(content)}`);
-      });
+      out.push(...renderListItems(data.items, data.style === 'ordered'));
       out.push('');
     } else if (type === 'quote') {
       const lines = inlineToMd(data.text || '').split('\n');
@@ -180,6 +169,18 @@ function editorJsonToMarkdown(raw, origin) {
     }
   }
   return out.join('\n').replace(/\n{3,}/g, '\n\n').trim();
+}
+
+// Nested Editor.js list items keep their descendants, indented under the parent marker.
+function renderListItems(items, ordered, indent = '') {
+  return (Array.isArray(items) ? items : []).flatMap((item, index) => {
+    const content = typeof item === 'string' ? item : (item.content || '');
+    const prefix = ordered ? `${index + 1}.` : '-';
+    return [
+      `${indent}${prefix} ${inlineToMd(content)}`,
+      ...renderListItems(item.items, ordered, indent + ' '.repeat(prefix.length + 1)),
+    ];
+  });
 }
 
 function inlineToMd(html) {
@@ -242,31 +243,4 @@ function absoluteUrl(u, origin) {
   if (s.startsWith('//')) return 'https:' + s;
   if (s.startsWith('/')) return origin + s;
   return s;
-}
-
-function extractCitations(content) {
-  if (!content) return [];
-  let raw = String(content);
-  let text = raw;
-  if (raw.trim().charAt(0) === '{') {
-    try {
-      const doc = JSON.parse(raw.trim());
-      if (Array.isArray(doc.blocks)) {
-        text = doc.blocks.map((b) => {
-          const d = b.data || {};
-          if (b.type === 'paragraph') return d.text || '';
-          return '';
-        }).join('\n');
-      }
-    } catch (_) { /* fall through */ }
-  }
-  const urls = new Set();
-  const sourcePattern = /(?:자료출처|출처|Source|source)\s*[:：]\s*([\s\S]*?)(?:\n\n|$)/g;
-  let match;
-  while ((match = sourcePattern.exec(text)) !== null) {
-    const block = match[1];
-    const urlMatches = block.match(/https?:\/\/\S+/g) || [];
-    urlMatches.forEach((u) => urls.add(u.replace(/[)\].,;]+$/, '')));
-  }
-  return Array.from(urls);
 }

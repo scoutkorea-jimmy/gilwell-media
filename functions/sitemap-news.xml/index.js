@@ -25,12 +25,7 @@ async function buildNewsSitemapResponse({ request, env }, headOnly) {
     console.error('GET /sitemap-news.xml auto publish error:', err);
   });
 
-  let body = `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
-        xmlns:news="http://www.google.com/schemas/sitemap-news/0.9">
-
-</urlset>
-`;
+  let body;
   try {
     // 공개 시각은 반드시 PUBLIC_DATE_EXPR(KST 정규화)로 비교한다.
     //
@@ -54,6 +49,10 @@ async function buildNewsSitemapResponse({ request, env }, headOnly) {
     body = await rust.text();
   } catch (err) {
     console.error('GET /sitemap-news.xml query error:', err);
+  return new Response(headOnly ? null : 'News sitemap temporarily unavailable', {
+    status: 503,
+    headers: { 'Content-Type': 'text/plain; charset=UTF-8', 'Cache-Control': 'no-store', 'Retry-After': '300' },
+  });
   }
 
 

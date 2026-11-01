@@ -262,14 +262,30 @@
       current = 0;
     }
 
+    function refreshBlocked(target) {
+      return document.body.style.overflow === 'hidden'
+        || document.body.classList.contains('share-modal-open')
+        || !!(target && target.closest && target.closest('input,textarea,select,button,a,[contenteditable],[role="dialog"],[aria-modal="true"]'));
+    }
+
+    function cancelPull() {
+      pulling = false;
+      resetIndicator();
+    }
+
     window.addEventListener('touchstart', function (event) {
-      if (scrollTop() > 0 || !event.touches || event.touches.length !== 1) return;
+      cancelPull();
+      if (scrollTop() > 0 || refreshBlocked(event.target) || !event.touches || event.touches.length !== 1) return;
       startY = event.touches[0].clientY;
       pulling = true;
     }, { passive: true });
 
     window.addEventListener('touchmove', function (event) {
-      if (!pulling || scrollTop() > 0 || !event.touches || event.touches.length !== 1) return;
+      if (!pulling) return;
+      if (scrollTop() > 0 || refreshBlocked(event.target) || !event.touches || event.touches.length !== 1) {
+        cancelPull();
+        return;
+      }
       var delta = event.touches[0].clientY - startY;
       if (delta <= 0) {
         resetIndicator();
@@ -284,10 +300,10 @@
       if (delta > 6) event.preventDefault();
     }, { passive: false });
 
-    window.addEventListener('touchend', function () {
+    window.addEventListener('touchend', function (event) {
       if (!pulling) return;
       pulling = false;
-      if (current >= threshold) {
+      if (!refreshBlocked(event.target) && scrollTop() === 0 && current >= threshold) {
         indicator.classList.add('ready', 'loading');
         if (labelEl) labelEl.textContent = '새로고침 중...';
         window.location.reload();
@@ -296,10 +312,7 @@
       resetIndicator();
     });
 
-    window.addEventListener('touchcancel', function () {
-      pulling = false;
-      resetIndicator();
-    });
+    window.addEventListener('touchcancel', cancelPull);
 
     GW._pullToRefreshBound = true;
   };

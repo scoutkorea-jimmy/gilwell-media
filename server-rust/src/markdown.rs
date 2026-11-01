@@ -147,26 +147,7 @@ pub fn body(raw: &str, origin: &str) -> worker::Result<String> {
             }
             "list" => {
                 let ordered = data.get("style").and_then(Value::as_str) == Some("ordered");
-                if let Some(items) = data.get("items").and_then(Value::as_array) {
-                    for (index, item) in items.iter().enumerate() {
-                        if item.is_null() {
-                            return Err(worker::Error::RustError(
-                                "Invalid markdown list item".into(),
-                            ));
-                        }
-                        let content = if let Some(s) = item.as_str() {
-                            s.to_owned()
-                        } else {
-                            string(item.get("content"))
-                        };
-                        let prefix = if ordered {
-                            format!("{}.", index + 1)
-                        } else {
-                            "-".into()
-                        };
-                        out.push(format!("{prefix} {}", inline(&content)));
-                    }
-                }
+                list_items(&mut out, data.get("items"), ordered, "")?;
                 out.push(String::new());
             }
             "quote" => {
@@ -233,4 +214,30 @@ pub fn body(raw: &str, origin: &str) -> worker::Result<String> {
         }
     }
     Ok(crate::trim(&replace(&out.join("\n"), r"\n{3,}", "g", "\n\n")).to_owned())
+}
+
+// Nested Editor.js list items keep their descendants, indented under the parent marker.
+fn list_items(out: &mut Vec<String>, items: Option<&Value>, ordered: bool, indent: &str) -> worker::Result<()> {
+    let Some(items) = items.and_then(Value::as_array) else {
+        return Ok(());
+    };
+    for (index, item) in items.iter().enumerate() {
+        if item.is_null() {
+            return Err(worker::Error::RustError("Invalid markdown list item".into()));
+        }
+        let content = if let Some(s) = item.as_str() {
+            s.to_owned()
+        } else {
+            string(item.get("content"))
+        };
+        let prefix = if ordered {
+            format!("{}.", index + 1)
+        } else {
+            "-".into()
+        };
+        out.push(format!("{indent}{prefix} {}", inline(&content)));
+        let child = format!("{indent}{}", " ".repeat(prefix.len() + 1));
+        list_items(out, item.get("items"), ordered, &child)?;
+    }
+    Ok(())
 }

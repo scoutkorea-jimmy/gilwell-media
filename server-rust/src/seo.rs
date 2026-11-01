@@ -93,54 +93,6 @@ fn md_yaml(value: &str) -> String {
     )
 }
 
-fn markdown_citations(raw: &str) -> Vec<String> {
-    if raw.is_empty() {
-        return Vec::new();
-    }
-    let mut text = raw.to_owned();
-    if crate::trim(raw).starts_with('{')
-        && let Ok(doc) = serde_json::from_str::<Value>(crate::trim(raw))
-        && let Some(blocks) = doc.get("blocks").and_then(Value::as_array)
-    {
-        text = blocks
-            .iter()
-            .map(|block| {
-                if block.get("type").and_then(Value::as_str) != Some("paragraph") {
-                    return String::new();
-                }
-                block
-                    .get("data")
-                    .and_then(|data| data.get("text"))
-                    .filter(|v| {
-                        !v.is_null() && v != &&json!(false) && v != &&json!(0) && v != &&json!("")
-                    })
-                    .map(crate::post_routes::js_string)
-                    .unwrap_or_default()
-            })
-            .collect::<Vec<_>>()
-            .join("\n");
-    }
-    let source = js_sys::RegExp::new(
-        r"(?:자료출처|출처|Source|source)\s*[:：]\s*([\s\S]*?)(?:\n\n|$)",
-        "g",
-    );
-    let url = js_sys::RegExp::new(r"https?://\S+", "g");
-    let mut seen = std::collections::HashSet::new();
-    let mut citations = Vec::new();
-    while let Some(found) = source.exec(&text) {
-        let block = String::from(found.get(1));
-        url.set_last_index(0);
-        while let Some(matched) = url.exec(&block) {
-            let value = String::from(matched.get(0));
-            let clean = value.trim_end_matches([')', ']', '.', ',', ';']).to_owned();
-            if seen.insert(clean.clone()) {
-                citations.push(clean);
-            }
-        }
-    }
-    citations
-}
-
 pub async fn markdown(req: &mut Request) -> Result<Response> {
     let input: MarkdownInput = req.json().await?;
     let field = |key| {
@@ -155,25 +107,21 @@ pub async fn markdown(req: &mut Request) -> Result<Response> {
     let title = crate::trim(&title);
     let subtitle = field("subtitle");
     let subtitle = crate::trim(&subtitle);
-    let author = field("author");
-    let author = crate::trim(if author.is_empty() {
-        "Editor.A"
-    } else {
-        &author
-    });
+    let author = crate::post_routes::export_author(&field("author"));
+    let author = author.as_str();
     let category = field("category");
     let category = crate::trim(&category);
-    let published = field("publish_at");
-    let created = field("created_at");
-    let date = String::from(
-        js_sys::JsString::from(if published.is_empty() {
-            created.as_str()
-        } else {
-            published.as_str()
-        })
-        .slice(0, 10),
-    );
-    let updated = String::from(js_sys::JsString::from(field("updated_at")).slice(0, 10));
+    let date = match sitemap_iso(&field("publish_at"), "+09:00") {
+        date if date.is_empty() => sitemap_iso(&field("created_at"), "Z"),
+        date => date,
+    };
+    let updated = sitemap_lastmod(&input.post);
+    let display_date = if date.is_empty() {
+        String::new()
+    } else {
+        let time = js_sys::Date::new(&JsValue::from_str(&date)).get_time() + 9.0 * 3_600_000.0;
+        String::from(js_sys::Date::new(&time.into()).to_iso_string().slice(0, 10))
+    };
     let tags = |key| {
         field(key)
             .split([',', ';', '|'])
@@ -219,7 +167,7 @@ pub async fn markdown(req: &mut Request) -> Result<Response> {
         body.push(String::new());
     }
     body.push(format!(
-        "_{date} · {author}{}_",
+        "_{display_date} · {author}{}_",
         if category.is_empty() {
             String::new()
         } else {
@@ -244,13 +192,6 @@ pub async fn markdown(req: &mut Request) -> Result<Response> {
     let rendered_body = crate::markdown::body(&field("content"), &input.origin)?;
     if !rendered_body.is_empty() {
         body.push(rendered_body);
-        body.push(String::new());
-    }
-    let citations = markdown_citations(&field("content"));
-    if !citations.is_empty() {
-        body.push("## 자료출처".into());
-        body.push(String::new());
-        body.extend(citations.into_iter().map(|url| format!("- {url}")));
         body.push(String::new());
     }
     body.push("---".into());
@@ -290,7 +231,9 @@ pub async fn llms_recent(req: &mut Request, env: &Env) -> Result<Response> {
     for row in rows {
         let field = |key| row.get(key).and_then(Value::as_str).unwrap_or_default();
         let title = llms_escape(field("title"));
-        let title = if title.is_empty() { "(무제)" } else { &title };
+        let title = if title.is_empty() { "(무제)".to_owned() } else { title };
+        // Brackets and backslashes in a title must not break the markdown link.
+        let title = title.replace('\\', "\\\\").replace('[', "\\[").replace(']', "\\]");
         let subtitle = llms_escape(field("subtitle"));
         let date = field("pubdate").chars().take(10).collect::<String>();
         let category = llms_escape(field("category"));
@@ -336,7 +279,7 @@ struct SitemapOptions {
     pages: Vec<SitemapPage>,
 }
 
-fn sitemap_iso(raw: &str, zone: &str) -> String {
+pub(crate) fn sitemap_iso(raw: &str, zone: &str) -> String {
     if raw.is_empty() {
         return String::new();
     }
@@ -407,7 +350,7 @@ pub async fn sitemap(req: &mut Request, env: &Env) -> Result<Response> {
         Ok(data) => data,
         Err(error) => {
             console_error!("GET /sitemap.xml error: {}", error);
-            (Vec::new(), Vec::new())
+            return Response::error("Sitemap temporarily unavailable", 503);
         }
     };
     let lastmods = posts.iter().map(sitemap_lastmod).collect::<Vec<_>>();
@@ -508,7 +451,7 @@ pub async fn news(req: &mut Request, env: &Env) -> Result<Response> {
         Ok(rows) => rows,
         Err(err) => {
             console_error!("GET /sitemap-news.xml query error: {}", err);
-            Vec::new()
+            return Response::error("News sitemap temporarily unavailable", 503);
         }
     };
     let rows = rows.iter().map(|row| {

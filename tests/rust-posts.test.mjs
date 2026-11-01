@@ -1435,8 +1435,9 @@ test('sitemaps and RSS preserve database failure responses',async()=>{
         const response=await run({env:f.env,request:new Request('https://synthetic.invalid'+path)});
         out.push({status:response.status,body:await response.text()});
       }
-      assert.deepEqual(out[1],out[0],path);
-      assert.equal(out[1].status,path==='/rss.xml'?500:200);
+      if (path==='/rss.xml') { assert.deepEqual(out[1],out[0],path); assert.equal(out[1].status,500); continue; }
+      // A sitemap without its articles must not be published as a valid 200 document.
+      assert.deepEqual(out[1],{status:503,body:path==='/sitemap.xml'?'Sitemap temporarily unavailable':'News sitemap temporarily unavailable'},path);
     } finally {before.sqlite.close();after.sqlite.close();}
   }
 });

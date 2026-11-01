@@ -1,6 +1,31 @@
 {
   "items": [
   {
+    "version": "00.195.03",
+    "date": "2026-11-01",
+    "released_at": "2026-11-01 19:24:17 KST",
+    "summary": "검색엔진·AI용 기사 목록과 기사 페이지가 일시적인 오류에도 잘못된 내용을 내보내지 않도록 안정성을 높였습니다.",
+    "for_users": [
+      "서버가 잠깐 불안정할 때 사이트맵이 기사 없이 빈 목록으로 나가던 문제를 고쳤습니다. 이제 검색엔진에 '잠시 후 다시 오라'고 알려 색인이 비지 않습니다.",
+      "기사의 공감·관련 기사·특집 목록 중 하나가 잠깐 실패해도 기사 본문은 정상으로 열립니다.",
+      "AI용 기사 원문(markdown)에 작성자가 '불러오는 중'으로 나가던 문제, 날짜가 하루 어긋나던 문제, 여러 단계 목록의 하위 항목이 빠지던 문제를 고쳤습니다.",
+      "용어집 원문 페이지의 '업데이트' 날짜가 실제 마지막 수정일을 보여줍니다.",
+      "모바일에서 글 수정 창이나 입력칸을 당길 때 페이지가 새로고침되어 작성 중인 내용이 사라질 수 있던 문제를 막았습니다.",
+      "특집 기사 페이지와 용어집 원문 페이지가 최신 디자인 파일과 버전 표기를 쓰도록 바로잡았습니다."
+    ],
+    "for_developers": [
+      "functions/sitemap.xml, sitemap-news.xml, glossary-raw.js + server-rust/src/seo.rs: DB/Rust 실패 시 200 빈 XML 대신 503 + no-store + Retry-After 300. sitemap.xml 의 미사용 JS 대체 렌더 삭제.",
+      "server-rust/src/glossary_raw.rs saved_date + glossary_raw_shell.html: 업데이트 날짜 = updated_at/created_at 최대값의 KST 날짜, 없으면 생략(JS glossarySavedDate 와 동일).",
+      "server-rust/src/seo.rs markdown + functions/_shared/post-markdown.js: export_author/publicAuthor, sitemap_iso/isoTimestamp 기반 published·updated(postLastmod), KST 표시일, 출처 URL 재추출(markdown_citations/extractCitations) 제거. markdown.rs list_items 로 중첩 목록 들여쓰기 보존.",
+      "server-rust/src/seo.rs llms_recent: 제목의 \\\\ [ ] 이스케이프. llms-template.txt Editorial 을 /editorial-policy 링크로 교체. functions/api/articles.ndjson.js: onRequestHead 추가, 오류 응답 no-store.",
+      "functions/post/[id].js, functions/api/posts/[id].js: 공감·관련·수동관련·특집 조회를 optional() 로 감싸 실패 시 빈 값. decodeHtmlEntitiesOnce(서버)·public/js/main.js(브라우저)에서 0x10FFFF 초과 코드포인트 보존. extractPlainBody·calcReadingTime·클라이언트 발췌가 renderEditorListItems 로 중첩 목록 포함.",
+      "public/js/site-chrome.js: 당겨서 새로고침을 body overflow 잠금·공유 모달·입력/버튼/링크/contenteditable/dialog 대상·멀티터치에서 취소.",
+      "server-rust/src/feature_shell.html·glossary_raw_shell.html 의 자산 토큰(20261027082848)과 특집 하단 버전(V00.194.03) 이 낡아 있던 문제: scripts/sync_versions.sh·verify_release_metadata.sh 대상에 Rust 셸과 tests/fixtures 레거시 비교본 추가.",
+      "테스트: tests/site-stability(8)·seo-resilience·article-export·post-markdown 추가, 의도 변경에 맞춰 admin-settings-handlers·rust-posts·rust-pages 기대값 갱신. test:rust 348/348, test:rust:pages 3/3, cargo test 통과.",
+      "사이트 버전 00.195.02 → 00.195.03."
+    ]
+  },
+  {
     "version": "00.195.02",
     "date": "2026-11-01",
     "released_at": "2026-11-01 18:53:16 KST",
