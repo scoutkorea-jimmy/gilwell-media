@@ -18,21 +18,17 @@ BP미디어 카드뉴스*.html
 test-results/
 playwright-report/
 playwright/.cache/
-test-results/
-playwright-report/
 
 # Offline tag-analysis artifacts (regenerable: node scripts/tag-analysis/04_run_all.mjs)
 # Contains a D1 post dump — must never be committed or deployed.
 output/
 
-# Playwright MCP 검증 산출물 (스크린샷·콘솔 로그)
+# Playwright MCP 검증 산출물 (스크린샷·콘솔 로그) 및 로컬 QA/리뷰 아티팩트
 .playwright-mcp/
-
-# Admin reorganization QA screenshots and operational snapshots
-/work/gpt-admin-reorganization-20261015/
-/work/gpt-admin-internals-20261015/
+.freebuff/
+/work/
+/agent-guide/
 
 # Rust compiler output and local migration evidence
 /server-rust/target/
 /server-rust/build/
-/work/rust-migration/

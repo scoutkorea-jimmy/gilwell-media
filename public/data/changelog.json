@@ -1,6 +1,22 @@
 {
   "items": [
   {
+    "version": "03.162.00",
+    "date": "2026-11-01",
+    "released_at": "2026-11-01 22:23:00 KST",
+    "summary": "관리자·KMS 스타일시트와 저장소 내 일회성 스크립트·잔여 폴더를 정리하고, 도감 관리자 자동완성·일괄수정 스타일을 정상 연결했습니다.",
+    "for_users": [
+      "관리자 도감 패널의 발행처·태그 자동완성 목록, 일괄 작업 툴바, 행사 그룹 헤더 스타일이 정상적으로 표시됩니다.",
+      "KMS 페이지가 불러오는 스타일시트에서 더 이상 쓰이지 않던 구버전 관리자 스타일 4,260여 줄(약 102KB)을 덜어내어 로딩을 가볍게 만들었습니다."
+    ],
+    "for_developers": [
+      "public/css/admin.css 하단(7543~7691행)에 잘못 들어가 있던 Admin v3 도감 자동완성·일괄수정·행사 그룹 규칙(.v3-autocomplete*, .memo-bulk-toolbar, .memo-ev-grouped 등)을 실제 admin.html 이 로드하는 public/css/admin-v3.css 로 이관.",
+      "public/css/admin.css(kms.html 전용 로드)에서 구버전 V1/V2 관리자 데드 CSS(2133~6244행: ADMIN STYLES 및 body.admin-page 블록 4,112줄)를 제거해 7,692줄(188KB) → 3,430줄(86KB)로 경량화.",
+      "저장소 내 완료된 일회성 마이그레이션·임시 스크립트 7종(scripts/migrate_existing_images_to_r2.mjs, migrate_semantic_color_tokens.mjs, normalize_scale.mjs, split_css.mjs, prune_dead_css.mjs, dead-css-classes.txt, test-totp.mjs) 및 빈 루트 img/ 폴더 정리.",
+      ".gitignore 정리: 중복 항목 제거 및 로컬 QA/리뷰 산출물 경로(/work/, /agent-guide/, .freebuff/) 일괄 무시 처리. 관리자 버전 03.161.01 → 03.162.00."
+    ]
+  },
+  {
     "version": "00.196.00",
     "date": "2026-11-01",
     "released_at": "2026-11-01 21:40:00 KST",
