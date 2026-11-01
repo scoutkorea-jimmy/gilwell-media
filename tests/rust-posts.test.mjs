@@ -1946,7 +1946,7 @@ test('deleting an article preserves hero options and retries concurrent hero edi
     const batch = f.env.DB.batch.bind(f.env.DB);
     let raced = false;
     f.env.DB.batch = async statements => {
-      if (!raced && statements[0]?.args[0] === 'hero_rev') {
+      if (!raced && statements.at(-1)?.args[0] === 'hero_rev') {
         raced = true;
         f.sqlite.prepare("UPDATE settings SET value=? WHERE key='hero'").run(JSON.stringify({ manual_post_ids: [1, 3], manual_position: 'before_auto', custom: 'concurrent' }));
         f.sqlite.prepare("UPDATE settings SET value='5' WHERE key='hero_rev'").run();
@@ -2213,4 +2213,27 @@ test('featured limit is rechecked inside post create and edit transactions', asy
       assert.equal(f.sqlite.prepare('SELECT COUNT(*) AS n FROM post_history').get().n,0);
     } finally {f.sqlite.close();}
   }
+});
+
+test('Rust SQL never depends on connection-scoped changes() or last_insert_rowid()', async () => {
+  // Production D1 lost 13 view increments that relied on changes() inside a batch (2026-10-31).
+  const { readdirSync, readFileSync } = await import('node:fs');
+  const dir = new URL('../server-rust/src/', import.meta.url);
+  const offenders = readdirSync(dir).filter(name => name.endsWith('.rs'))
+    .filter(name => /\b(changes|last_insert_rowid|total_changes)\s*\(\s*\)/i.test(readFileSync(new URL(name, dir), 'utf8')));
+  assert.deepEqual(offenders, []);
+});
+
+test('post engagement is not recorded for a post that no longer exists', async () => {
+  const f = fixture();
+  try {
+    const headers = { 'CF-Connecting-IP': '192.0.2.9', 'User-Agent': 'Mozilla/5.0', 'Content-Type': 'application/json' };
+    const send = post_id => actualEngagement({ env: f.env, request: new Request('https://synthetic.invalid/api/analytics/post-engagement', { method: 'POST', headers, body: JSON.stringify({ post_id, session_key: 'deleted-post-tab', engaged_seconds: 3 }) }) });
+    const missing = await (await send(987654)).json();
+    assert.equal(missing.recorded, false);
+    assert.equal(f.sqlite.prepare('SELECT COUNT(*) AS n FROM post_engagement WHERE post_id=987654').get().n, 0);
+    const existing = await (await send(1)).json();
+    assert.equal(existing.recorded, true);
+    assert.equal(f.sqlite.prepare("SELECT engaged_seconds FROM post_engagement WHERE post_id=1 AND session_key='deleted-post-tab'").get().engaged_seconds, 3);
+  } finally { f.sqlite.close(); }
 });

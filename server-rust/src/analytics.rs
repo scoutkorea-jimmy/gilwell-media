@@ -283,13 +283,20 @@ pub async fn record_visit(req: &mut Request, env: &Env) -> Result<Response> {
     Response::from_json(&json!({"recorded":recorded,"viewer_key":input.values[0]}))
 }
 
+// Tabs left open after a post is deleted keep reporting dwell time; only existing posts are recorded.
+const ENGAGEMENT_UPSERT: &str = "INSERT INTO post_engagement (post_id, viewer_key, session_key, engaged_seconds) SELECT ?1, ?2, ?3, ?4 WHERE EXISTS (SELECT 1 FROM posts WHERE id = ?1) ON CONFLICT(post_id, session_key) DO UPDATE SET viewer_key = excluded.viewer_key, engaged_seconds = CASE WHEN excluded.engaged_seconds > post_engagement.engaged_seconds THEN excluded.engaged_seconds ELSE post_engagement.engaged_seconds END, updated_at = datetime('now')";
+
 pub async fn engagement(req: &mut Request, env: &Env) -> Result<Response> {
     let input: Bindings = req.json().await?;
     if input.values.len() != 4 {
         return Err(Error::RustError("Invalid engagement values".into()));
     }
     let args = post_bindings(&input.values)?;
-    env.d1("DB")?.prepare("INSERT INTO post_engagement (post_id, viewer_key, session_key, engaged_seconds) VALUES (?, ?, ?, ?) ON CONFLICT(post_id, session_key) DO UPDATE SET viewer_key = excluded.viewer_key, engaged_seconds = CASE WHEN excluded.engaged_seconds > post_engagement.engaged_seconds THEN excluded.engaged_seconds ELSE post_engagement.engaged_seconds END, updated_at = datetime('now')").bind(&args)?.run().await?;
+    env.d1("DB")?
+        .prepare(ENGAGEMENT_UPSERT)
+        .bind(&args)?
+        .run()
+        .await?;
     Response::from_json(&json!({"ok":true}))
 }
 
@@ -351,9 +358,15 @@ pub async fn record_engagement(req: &mut Request, env: &Env) -> Result<Response>
         session.into(),
         wasm_bindgen::JsValue::from_f64(seconds),
     ];
-    env.d1("DB")?.prepare("INSERT INTO post_engagement (post_id, viewer_key, session_key, engaged_seconds) VALUES (?, ?, ?, ?) ON CONFLICT(post_id, session_key) DO UPDATE SET viewer_key = excluded.viewer_key, engaged_seconds = CASE WHEN excluded.engaged_seconds > post_engagement.engaged_seconds THEN excluded.engaged_seconds ELSE post_engagement.engaged_seconds END, updated_at = datetime('now')").bind(&values)?.run().await?;
+    let written = env
+        .d1("DB")?
+        .prepare(ENGAGEMENT_UPSERT)
+        .bind(&values)?
+        .run()
+        .await?;
+    let recorded = written.meta()?.and_then(|m| m.changes).unwrap_or(0) > 0;
     Response::from_json(
-        &json!({"recorded":true,"viewer_key":input.viewer_key,"post_id":post_id,"engaged_seconds":seconds}),
+        &json!({"recorded":recorded,"viewer_key":input.viewer_key,"post_id":post_id,"engaged_seconds":seconds}),
     )
 }
 

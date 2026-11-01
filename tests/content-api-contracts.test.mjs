@@ -926,7 +926,7 @@ test('draft create rolls back insert and pruning if batch result lookup fails',a
     for(let i=0;i<10;i++) f.sqlite.prepare('INSERT INTO drafts(owner_editor_code,title) VALUES(?,?)').run('owner','기존 '+i);
     const fields=Array(20).fill(null);fields[1]='새 초안';fields[16]=1;fields[17]=0;fields[18]=0;fields[19]='본문';
     const context={env:f.env,request:{url:'https://synthetic.invalid/'}};
-    f.state.failOnSql=/SELECT \* FROM drafts WHERE id=last_insert_rowid/;
+    f.state.failOnSql=/SELECT \* FROM drafts WHERE id=\(SELECT MAX\(id\) FROM drafts\)/;
     const failed=await queryRust(context,'draft-create',{owner:'owner',fields});
     assert.equal(failed.ok,false);
     assert.equal(f.sqlite.prepare('SELECT COUNT(*) AS n FROM drafts').get().n,10);

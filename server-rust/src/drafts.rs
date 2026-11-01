@@ -115,10 +115,12 @@ pub async fn create(req: &mut Request, env: &Env) -> Result<Response> {
     let mut args = vec![JsValue::from_str(&options.owner)];
     args.extend(bindings(&options.fields, options.text_units.as_ref())?);
     let insert = db.prepare("INSERT INTO drafts (owner_editor_code, editing_post_id, title, subtitle, category, tag, meta_tags, author, publish_at, youtube_url, image_url, image_caption, gallery_images, location_name, location_address, special_feature, manual_related_posts, published_flag, featured_flag, ai_assisted, content) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)").bind(&args)?;
-    let prune = db.prepare("DELETE FROM drafts WHERE owner_editor_code = ? AND id IN (SELECT id FROM drafts WHERE owner_editor_code = ? AND id != last_insert_rowid() ORDER BY datetime(updated_at) DESC, id DESC LIMIT -1 OFFSET 9)")
+    let prune = db.prepare("DELETE FROM drafts WHERE owner_editor_code = ? AND id IN (SELECT id FROM drafts WHERE owner_editor_code = ? AND id != (SELECT MAX(id) FROM drafts) ORDER BY datetime(updated_at) DESC, id DESC LIMIT -1 OFFSET 9)")
         .bind(&[options.owner.as_str().into(), options.owner.as_str().into()])?;
     let select = db
-        .prepare("SELECT * FROM drafts WHERE id=last_insert_rowid() AND owner_editor_code=?")
+        .prepare(
+            "SELECT * FROM drafts WHERE id=(SELECT MAX(id) FROM drafts) AND owner_editor_code=?",
+        )
         .bind(&[options.owner.as_str().into()])?;
     let results = db.batch(vec![insert, prune, select]).await?;
     let id = results

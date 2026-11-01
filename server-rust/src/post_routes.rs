@@ -1683,12 +1683,16 @@ pub async fn views(req: &mut Request, env: &Env) -> Result<Response> {
     let options: ViewOptions = req.json().await?;
     let db = env.d1("DB")?;
     let id = JsValue::from_f64(options.post_id);
-    let results=db.batch(vec![
-        db.prepare("INSERT OR IGNORE INTO post_views (post_id, viewer_key, viewed_bucket) VALUES (?, ?, ?)").bind(&[id.clone(),options.viewer_key.into(),options.view_bucket.into()])?,
-        db.prepare("UPDATE posts SET views = views + 1 WHERE id = ? AND changes() = 1").bind(&[id])?,
+    // Increment only while the viewer's bucket row is still absent, then insert it, in one batch
+    // transaction. Never the connection-scoped SQLite changes function: production D1 lost 13 increments with it (2026-10-31).
+    let key: JsValue = options.viewer_key.into();
+    let bucket: JsValue = options.view_bucket.into();
+    let results = db.batch(vec![
+        db.prepare("UPDATE posts SET views = views + 1 WHERE id = ? AND NOT EXISTS (SELECT 1 FROM post_views WHERE post_id = ? AND viewer_key = ? AND viewed_bucket = ?)").bind(&[id.clone(), id.clone(), key.clone(), bucket.clone()])?,
+        db.prepare("INSERT OR IGNORE INTO post_views (post_id, viewer_key, viewed_bucket) VALUES (?, ?, ?)").bind(&[id, key, bucket])?,
     ]).await?;
-    let changed = results[0].meta()?.and_then(|m| m.changes).unwrap_or(0) > 0;
-    Response::from_json(&json!({"counted":changed}))
+    let counted = results[1].meta()?.and_then(|m| m.changes).unwrap_or(0) > 0;
+    Response::from_json(&json!({"counted":counted}))
 }
 
 pub async fn likes(req: &mut Request, env: &Env) -> Result<Response> {
@@ -2218,13 +2222,17 @@ pub async fn create(req: &mut Request, env: &Env) -> Result<Response> {
         .bind(&[args[0].clone(), args[1].clone(), args[16].clone()])?
         .first::<Value>(None)
         .await?;
-    if let Some(id) = recent.as_ref().and_then(|row| row.get("id")).and_then(Value::as_i64) {
+    if let Some(id) = recent
+        .as_ref()
+        .and_then(|row| row.get("id"))
+        .and_then(Value::as_i64)
+    {
         return Response::from_json(&json!({"id":id,"duplicate":true}));
     }
     let snapshot = post_snapshot_expression(&db).await?;
     let insert=db.prepare("INSERT INTO posts (category, title, subtitle, content, image_url, image_caption, image_frame, gallery_images, youtube_url, location_name, location_address, tag, special_feature, meta_tags, manual_related_posts, author, author_user_id, ai_assisted, published, featured, created_at, publish_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), ?, datetime('now'))").bind(&args)?;
-    let history=db.prepare(format!("INSERT INTO post_history (post_id, action, summary, snapshot, before_snapshot, after_snapshot) SELECT p.id, 'create', '게시글 생성', {snapshot}, NULL, {snapshot} FROM posts p WHERE p.id = last_insert_rowid()"));
-    let guard = db.prepare("SELECT CASE WHEN changes() != 1 THEN json('invalid') ELSE NULL END");
+    let history=db.prepare(format!("INSERT INTO post_history (post_id, action, summary, snapshot, before_snapshot, after_snapshot) SELECT p.id, 'create', '게시글 생성', {snapshot}, NULL, {snapshot} FROM posts p WHERE p.id = (SELECT MAX(id) FROM posts)"));
+    let guard = db.prepare("SELECT CASE WHEN NOT EXISTS (SELECT 1 FROM post_history WHERE rowid = (SELECT MAX(rowid) FROM post_history) AND post_id = (SELECT MAX(id) FROM posts) AND action = 'create') THEN json('invalid') ELSE NULL END");
     let needs_featured = options.bindings[19].as_i64() == Some(1);
     let mut statements = Vec::new();
     if let Some(guard) = &options.token_guard {
@@ -2476,9 +2484,9 @@ pub async fn update(req: &mut Request, env: &Env) -> Result<Response> {
     args.extend([id.clone(), expected.clone(), expected.clone()]);
     let fields=o.fields.iter().map(|field| if field=="updated_at = datetime('now')" { "updated_at = CASE WHEN julianday(updated_at) >= julianday('now') THEN strftime('%Y-%m-%d %H:%M:%f',updated_at,'+0.001 seconds') ELSE strftime('%Y-%m-%d %H:%M:%f','now') END" } else {field.as_str()}).collect::<Vec<_>>().join(", ");
     let before=db.prepare(format!("INSERT INTO post_history (post_id, action, summary, snapshot, before_snapshot, after_snapshot) SELECT p.id, ?, ?, {snapshot}, {snapshot}, ? FROM posts p WHERE p.id = ? AND (? IS NULL OR TRIM(COALESCE(p.updated_at,'')) = ?)")).bind(&[o.action.into(),o.summary.into(),claim.clone(),id.clone(),expected.clone(),expected.clone()])?;
-    let guard=db.prepare("SELECT CASE WHEN EXISTS(SELECT 1 FROM posts WHERE id=? AND (? IS NULL OR TRIM(COALESCE(updated_at,''))=?)) AND changes()!=1 THEN json('invalid') ELSE NULL END").bind(&[id.clone(),expected.clone(),expected.clone()])?;
+    let guard=db.prepare("SELECT CASE WHEN EXISTS(SELECT 1 FROM posts WHERE id=? AND (? IS NULL OR TRIM(COALESCE(updated_at,''))=?)) AND NOT EXISTS(SELECT 1 FROM post_history WHERE post_id=? AND after_snapshot=?) THEN json('invalid') ELSE NULL END").bind(&[id.clone(),expected.clone(),expected.clone(),id.clone(),claim.clone()])?;
     let update=db.prepare(format!("UPDATE posts SET {fields} WHERE id = ? AND (? IS NULL OR TRIM(COALESCE(updated_at,'')) = ?)")).bind(&args)?;
-    let after=db.prepare(format!("UPDATE post_history SET snapshot = (SELECT {snapshot} FROM posts p WHERE p.id=?), after_snapshot = (SELECT {snapshot} FROM posts p WHERE p.id=?) WHERE post_id=? AND after_snapshot=? AND changes()=1")).bind(&[id.clone(),id.clone(),id.clone(),claim.clone()])?;
+    let after=db.prepare(format!("UPDATE post_history SET snapshot = (SELECT {snapshot} FROM posts p WHERE p.id=?), after_snapshot = (SELECT {snapshot} FROM posts p WHERE p.id=?) WHERE post_id=? AND after_snapshot=?")).bind(&[id.clone(),id.clone(),id.clone(),claim.clone()])?;
     let final_guard=db.prepare("SELECT CASE WHEN EXISTS(SELECT 1 FROM post_history WHERE post_id=? AND after_snapshot=?) THEN json('invalid') ELSE NULL END").bind(&[id.clone(),claim])?;
     let mut statements = Vec::new();
     if let Some(guard) = &o.token_guard {

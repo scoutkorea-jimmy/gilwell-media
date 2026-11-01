@@ -1528,11 +1528,14 @@ pub async fn view_record(req: &mut Request, env: &Env) -> Result<Response> {
     let o: MemoView = req.json().await?;
     let db = env.d1("DB")?;
     let id = JsValue::from_f64(o.id);
+    // Same ordering as post views: conditional increment first, then the deduplicating insert.
+    let key: JsValue = o.viewer_key.into();
+    let bucket: JsValue = o.view_bucket.into();
     let results = db.batch(vec![
-        db.prepare("INSERT OR IGNORE INTO memorabilia_views (memorabilia_id, viewer_key, viewed_bucket) VALUES (?, ?, ?)").bind(&[id.clone(),o.viewer_key.into(),o.view_bucket.into()])?,
-        db.prepare("UPDATE memorabilia SET view_count = view_count + 1 WHERE id = ? AND changes() = 1").bind(&[id])?,
+        db.prepare("UPDATE memorabilia SET view_count = view_count + 1 WHERE id = ? AND NOT EXISTS (SELECT 1 FROM memorabilia_views WHERE memorabilia_id = ? AND viewer_key = ? AND viewed_bucket = ?)").bind(&[id.clone(), id.clone(), key.clone(), bucket.clone()])?,
+        db.prepare("INSERT OR IGNORE INTO memorabilia_views (memorabilia_id, viewer_key, viewed_bucket) VALUES (?, ?, ?)").bind(&[id, key, bucket])?,
     ]).await?;
-    let counted = results[0].meta()?.and_then(|m| m.changes).unwrap_or(0) > 0;
+    let counted = results[1].meta()?.and_then(|m| m.changes).unwrap_or(0) > 0;
     Response::from_json(&json!({"counted":counted}))
 }
 

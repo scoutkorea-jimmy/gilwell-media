@@ -428,14 +428,18 @@ pub async fn save(req: &mut Request, env: &Env) -> Result<Response> {
         return Err(Error::RustError("Invalid setting values".into()));
     }
     let db = env.d1("DB")?;
-    let mut statements=vec![db.prepare("INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value WHERE CAST(settings.value AS INTEGER) = ?")
-        .bind(&[revision.into(),o.next_rev.into(),JsValue::from_f64(o.current_rev)])?];
+    // Each value checks the still-unbumped revision itself (never the connection-scoped SQLite changes function);
+    // the revision bump runs last in the same batch transaction and reports the CAS result.
+    let current = JsValue::from_f64(o.current_rev);
+    let mut statements = Vec::new();
     for (key, value) in keys.iter().zip(&o.values) {
-        statements.push(db.prepare("INSERT INTO settings (key, value) SELECT ?, ? WHERE changes() = 1 ON CONFLICT(key) DO UPDATE SET value = excluded.value")
-            .bind(&[(*key).into(),value.into()])?);
+        statements.push(db.prepare("INSERT INTO settings (key, value) SELECT ?, ? WHERE NOT EXISTS (SELECT 1 FROM settings WHERE key = ?) OR (SELECT CAST(value AS INTEGER) FROM settings WHERE key = ?) = ? ON CONFLICT(key) DO UPDATE SET value = excluded.value")
+            .bind(&[(*key).into(),value.into(),revision.into(),revision.into(),current.clone()])?);
     }
+    statements.push(db.prepare("INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value WHERE CAST(settings.value AS INTEGER) = ?")
+        .bind(&[revision.into(),o.next_rev.into(),current])?);
     let results = db.batch(statements).await?;
-    let changes = match results.first() {
+    let changes = match results.last() {
         Some(result) => result.meta()?.and_then(|meta| meta.changes).unwrap_or(0),
         None => 0,
     };

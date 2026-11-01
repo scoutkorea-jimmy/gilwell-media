@@ -1,6 +1,41 @@
 {
   "items": [
   {
+    "version": "00.195.02",
+    "date": "2026-11-01",
+    "released_at": "2026-11-01 18:53:16 KST",
+    "summary": "기사·도감 조회수가 가끔 올라가지 않던 문제를 고치고, 이미 집계에서 빠진 조회수를 바로잡았습니다.",
+    "for_users": [
+      "기사를 열어도 조회수가 오르지 않는 경우가 드물게 있었습니다. 10월 31일 하루에 기사 13개에서 한 번씩 빠졌고, 이번에 집계 방식을 고치고 빠진 13회를 되돌려 놓았습니다.",
+      "도감 자료 조회수도 같은 방식으로 고쳤습니다.",
+      "삭제된 기사를 열어 둔 화면에서 보내던 체류시간 기록은 더 이상 쌓이지 않습니다."
+    ],
+    "for_developers": [
+      "server-rust/src/post_routes.rs views·memorabilia.rs view_record: 'UPDATE ... AND changes() = 1' 을 제거하고 같은 batch 안에서 'UPDATE ... WHERE NOT EXISTS(같은 viewer·bucket 행)' → 'INSERT OR IGNORE' 순서로 바꿨다. 연결 상태 함수에 기대지 않으면서 증가와 기록이 함께 커밋·롤백된다.",
+      "운영 D1 사본 대조(2026-11-01): posts.views < post_views 행 수인 기사 13개(2,10,24,40,74,79,107,121,137,251,265,401,530), 모두 10-31 23:13–23:19 UTC 조회분. 로컬 workerd 에서는 재현되지 않았고 원인은 운영 D1 의 changes() 동작으로 추정(미확정).",
+      "server-rust/src/analytics.rs ENGAGEMENT_UPSERT: 'INSERT ... SELECT ... WHERE EXISTS(posts)' 로 삭제·미존재 기사의 post_engagement 기록을 막고 recorded 를 실제 기록 여부로 반환.",
+      "운영 데이터 보정: 위 13개 기사 views +1(행 수를 넘지 않는 조건부 UPDATE), 삭제된 기사 #562 의 post_engagement 1행·#47 의 post_views·post_history 각 1행 정리, 도감 #12 검색 색인 재생성.",
+      "tests/rust-posts.test.mjs: server-rust/src 에 changes()/last_insert_rowid()/total_changes() 가 다시 들어오면 실패하는 검사, 삭제 기사 체류 기록 거부 검사 추가.",
+      "사이트 버전 00.195.01 → 00.195.02."
+    ]
+  },
+  {
+    "version": "03.161.01",
+    "date": "2026-11-01",
+    "released_at": "2026-11-01 18:53:16 KST",
+    "summary": "설정 저장·기사 작성·임시저장이 서버 내부 상태값에 기대지 않도록 저장 검증 방식을 정비했습니다.",
+    "for_users": [
+      "설정을 저장하거나 기사를 쓰고 고칠 때의 동작은 그대로이며, 드물게 저장이 빠지거나 실패할 수 있던 경로를 미리 막았습니다."
+    ],
+    "for_developers": [
+      "server-rust/src/settings.rs save: 판번호 CAS 뒤 'WHERE changes() = 1' 로 값을 쓰던 순서를 바꿔, 각 값이 '판번호 행이 없거나 아직 current_rev' 인지 직접 확인한 뒤 쓰고 판번호 증가를 마지막에 둔다. 응답 changes 는 마지막(판번호) 문 기준.",
+      "server-rust/src/post_routes.rs create: 이력 INSERT 를 last_insert_rowid() 대신 (SELECT MAX(id) FROM posts)(AUTOINCREMENT) 로, 확인 문을 changes() 대신 '마지막 post_history 행이 그 기사의 create 인지' 로 변경. update: 확인 문과 after 갱신이 changes() 대신 요청마다 고유한 claim(UUID) 행 존재로 판정.",
+      "server-rust/src/drafts.rs create: 정리·조회의 last_insert_rowid() 를 (SELECT MAX(id) FROM drafts) 로 변경.",
+      "검증: Rust 계약 346건 중 실패 2건은 수정 전 origin/main 과 같은 목록, analytics 28/28, card-news 통과, workerd 통합의 기존 실패 지점(2669행) 동일. 운영 D1 사본 위 workerd 쓰기 흐름 24단계·DB 8항목이 운영판과 일치(삭제 기사 체류 기록 차단만 의도대로 다름).",
+      "관리자 버전 03.161.00 → 03.161.01."
+    ]
+  },
+  {
     "version": "00.195.01",
     "date": "2026-11-01",
     "released_at": "2026-11-01 08:10:14 KST",
