@@ -970,13 +970,6 @@ input[type='radio'] {
   overflow: hidden !important;
 }
 
-.home-rail-card .mini-item {
-  border: 0 !important;
-  border-radius: 0 !important;
-  background: transparent !important;
-  box-shadow: none !important;
-}
-
 /* 대표 기사 요약은 카드 높이에 맞춰 줄어든다. 줄 중간에서 잘리지 않고 끝이 흐려지게 한다. */
 @media (min-width: 840px) {
   .home-lead-excerpt {
@@ -991,6 +984,10 @@ input[type='radio'] {
  * 칩은 한 줄(24px)만 예약하고 넘치는 태그는 "+N"(home-helpers.js MINI_LABEL_MAX_ROWS=1).
  */
 .home-rail-card .mini-item {
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
   margin-inline: calc(-1 * var(--md-comp-card-padding)) !important;
   padding: 16px var(--md-comp-card-padding) !important;
   transition: background-color var(--md-sys-motion-spring-fast-effects);
@@ -1032,19 +1029,16 @@ input[type='radio'] {
   white-space: nowrap;
 }
 
+/* 제목 칸의 두 줄 예약 안에서 한 줄 제목이 세로 가운데로 떠 칩과 멀어지지 않게 위에 붙인다. */
 .home-rail-card .mini-item h4 {
   margin: 0 0 6px !important;
   color: var(--md-sys-color-on-surface) !important;
   font-weight: 700 !important;
+  align-items: flex-start !important;
 }
 
 .home-rail-card .mini-item-link {
   color: inherit !important;
-}
-
-/* 제목 칸의 두 줄 예약 안에서 한 줄 제목이 세로 가운데로 떠 칩과 멀어지지 않게 위에 붙인다. */
-.home-rail-card .mini-item h4 {
-  align-items: flex-start !important;
 }
 
 /* 2열(인기 소식·에디터 추천)은 줄이 넓어 대부분 한 줄이다. 두 줄 예약을 두지 않는다. */
@@ -1552,6 +1546,7 @@ input[type='radio'] {
   border-right: 2px solid currentColor;
   border-bottom: 2px solid currentColor;
   transform: rotate(45deg);
+  animation: m3-check-draw 350ms var(--md-sys-motion-spring-fast-spatial) both;
 }
 
 /*
@@ -1597,6 +1592,7 @@ input[type='radio'] {
   background: var(--md-sys-color-secondary-container) !important;
   color: var(--md-sys-color-on-secondary-container) !important;
   font-weight: 700 !important;
+  animation: m3-select-pop var(--md-sys-motion-spring-fast-spatial) both;
 }
 
 .search-page-btn,
@@ -2098,17 +2094,9 @@ footer a,
 }
 
 /* 4) 선택 전환 — 칩 체크는 그려지듯, 버튼 그룹은 스프링으로 모양이 바뀐다 */
-:where(.tag-filter-btn, .filter-btn, .glossary-letter-btn, .calendar-filter-chip, .calendar-tag-preset):is(.active, .is-active, [aria-pressed='true'])::before {
-  animation: m3-check-draw 350ms var(--md-sys-motion-spring-fast-spatial) both;
-}
-
 @keyframes m3-check-draw {
   from { opacity: 0; transform: rotate(45deg) scale(.2); }
   to { opacity: 1; transform: rotate(45deg) scale(1); }
-}
-
-:where(.board-sort-btn, .board-period-btn, .board-days-btn, .search-scope-btn, .members-view-chip, .calendar-view-btn):is(.active, .is-active, [aria-pressed='true']) {
-  animation: m3-select-pop var(--md-sys-motion-spring-fast-spatial) both;
 }
 
 @keyframes m3-select-pop {
@@ -2137,35 +2125,6 @@ html body .mobile-nav-sublink.active {
 @keyframes m3-indicator-grow {
   from { background-size: 32% 100%; }
   to { background-size: 100% 100%; }
-}
-
-/* 5) 모바일 메뉴 — 닫힘 상태를 display:none 대신 visibility 로 두어 여닫는 전환이 실제로 재생되게 한다 */
-@media (max-width: 900px) {
-  .mobile-compact-overlay {
-    display: block !important;
-    opacity: 0;
-    visibility: hidden;
-    transition: opacity 200ms linear, visibility 0s linear 200ms;
-  }
-
-  body.mobile-compact-drawer-open .mobile-compact-overlay {
-    opacity: 1;
-    visibility: visible;
-    transition: opacity 250ms linear;
-  }
-
-  .mobile-compact-drawer {
-    display: block !important;
-    visibility: hidden;
-    transform: translateX(-104%) !important;
-    transition: transform 250ms cubic-bezier(.3, 0, .8, .15), visibility 0s linear 250ms !important;
-  }
-
-  body.mobile-compact-drawer-open .mobile-compact-drawer {
-    visibility: visible;
-    transform: none !important;
-    transition: transform 400ms var(--md-sys-motion-easing-emphasized-decelerate) !important;
-  }
 }
 
 /* 감사 팝업 닫힘 — 들어올 때의 반대 방향으로 짧게 사라진다 */
@@ -2296,8 +2255,200 @@ html body .mobile-nav-sublink.active {
   to { transform: rotate(540deg); }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .pull-refresh-indicator.loading .pull-refresh-icon { animation: none; }
+/* 간이 헤더·메뉴 서랍의 모양과 여닫힘 전환은 태블릿·모바일(≤900px)에서 공통으로 쓴다. */
+@media (max-width: 900px) {
+  .mobile-compact-overlay {
+    display: block !important;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 200ms linear, visibility 0s linear 200ms;
+  }
+
+  body.mobile-compact-drawer-open .mobile-compact-overlay {
+    opacity: 1;
+    visibility: visible;
+    transition: opacity 250ms linear;
+  }
+
+  .mobile-compact-drawer {
+    display: block !important;
+    visibility: hidden;
+    transform: translateX(-104%) !important;
+    transition: transform 250ms cubic-bezier(.3, 0, .8, .15), visibility 0s linear 250ms !important;
+    width: min(92vw, 360px) !important;
+    border: 0 !important;
+    border-radius: 0 var(--md-sys-shape-extra-large) var(--md-sys-shape-extra-large) 0;
+    background: var(--md-sys-color-surface) !important;
+    box-shadow: var(--md-sys-elevation-3) !important;
+    overflow-y: auto;
+  }
+
+  body.mobile-compact-drawer-open .mobile-compact-drawer {
+    visibility: visible;
+    transform: none !important;
+    transition: transform 400ms var(--md-sys-motion-easing-emphasized-decelerate) !important;
+  }
+
+  .mobile-compact-header {
+    height: 64px;
+    padding: 10px 16px !important;
+    border: 0 !important;
+    background: color-mix(in srgb, var(--md-sys-color-surface) 94%, transparent) !important;
+    box-shadow: var(--md-sys-elevation-1);
+  }
+
+  .mobile-compact-toggle,
+  .mobile-compact-search,
+  .mobile-compact-drawer-close {
+    position: relative;
+    width: 44px !important;
+    height: 44px !important;
+    min-width: 44px;
+    min-height: 44px;
+    border: 0 !important;
+    border-radius: var(--md-sys-shape-full) !important;
+    background: var(--md-sys-color-surface-container-high) !important;
+    color: var(--md-sys-color-on-surface) !important;
+  }
+
+  .post-mobile-search {
+    position: relative;
+  }
+
+  .mobile-compact-search::before,
+  .post-mobile-search::before {
+    content: '';
+    width: 14px;
+    height: 14px;
+    border: 2px solid currentColor;
+    border-radius: 50%;
+  }
+
+  .mobile-compact-search::after,
+  .post-mobile-search::after {
+    content: '';
+    position: absolute;
+    width: 7px;
+    height: 2px;
+    background: currentColor;
+    left: 50%;
+    top: 50%;
+    transform: translate(3px, 4px) rotate(45deg);
+    transform-origin: center;
+  }
+
+  .mobile-compact-drawer-close::before,
+  .mobile-compact-drawer-close::after {
+    content: '';
+    position: absolute;
+    width: 17px;
+    height: 2px;
+    background: currentColor;
+    left: 50%;
+    top: 50%;
+  }
+
+  .mobile-compact-drawer-close::before {
+    transform: translate(-50%, -50%) rotate(45deg);
+  }
+
+  .mobile-compact-drawer-close::after {
+    transform: translate(-50%, -50%) rotate(-45deg);
+  }
+
+  .mobile-compact-brand-text {
+    color: var(--md-sys-color-primary) !important;
+    font-size: 1.125rem !important;
+    font-weight: 800;
+  }
+
+  .mobile-compact-drawer-head {
+    min-height: 72px;
+    display: grid !important;
+    grid-template-columns: 44px 1fr 44px;
+    align-items: center;
+    padding: 12px 16px !important;
+    border: 0 !important;
+  }
+
+  .mobile-compact-drawer-head::before {
+    content: '';
+  }
+
+  .mobile-compact-drawer-title {
+    text-align: center;
+    color: var(--md-sys-color-on-surface);
+  }
+
+  .mobile-compact-nav {
+    gap: 8px;
+    padding: 4px 12px 24px !important;
+  }
+
+  .mobile-nav-group,
+  .mobile-nav-link {
+    margin: 0 !important;
+    border: 0 !important;
+    border-radius: var(--md-sys-shape-large) !important;
+    background: var(--md-sys-color-surface-container-low) !important;
+    overflow: hidden;
+  }
+
+  .mobile-nav-link,
+  .mobile-nav-group-summary,
+  .mobile-nav-sublink,
+  .mobile-compact-nav a {
+    min-height: 52px;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border: 0 !important;
+    text-align: center !important;
+    text-transform: none !important;
+  }
+
+  .mobile-nav-group-summary {
+    position: relative;
+    padding: 12px 48px !important;
+  }
+
+  .mobile-nav-group-summary::after {
+    content: '' !important;
+    position: absolute;
+    right: 22px;
+    width: 8px;
+    height: 8px;
+    border-right: 1.5px solid currentColor;
+    border-bottom: 1.5px solid currentColor;
+    transform: rotate(45deg) translateY(-2px);
+  }
+
+  .mobile-nav-group[open] .mobile-nav-group-summary::after {
+    transform: rotate(225deg) translate(-1px, -1px);
+  }
+
+  .mobile-nav-group-children {
+    gap: 4px;
+    padding: 0 8px 8px !important;
+    background: transparent !important;
+  }
+
+  .mobile-nav-sublink {
+    padding: 10px 12px !important;
+    border-radius: var(--md-sys-shape-medium) !important;
+    background: var(--md-sys-color-surface-container) !important;
+  }
+
+  .mobile-nav-sublink::before {
+    display: none !important;
+  }
+
+  .mobile-nav-link.active,
+  .mobile-nav-group.is-active,
+  .mobile-nav-sublink.active {
+    background: var(--md-sys-color-primary-container) !important;
+    color: var(--md-sys-color-on-primary-container) !important;
+  }
 }
 
 @media (max-width: 839px) {
@@ -2427,12 +2578,16 @@ html body .mobile-nav-sublink.active {
     padding-top: 64px !important;
   }
 
-  body:not(.post-page) > .masthead {
+  body:not(.post-page) > .masthead,
+  body.post-page > .masthead {
     display: none !important;
   }
 
-  body.post-page > .masthead {
-    display: none !important;
+  /* 큰 masthead 를 숨기는 폭이므로 간이 헤더를 스크롤과 관계없이 항상 보인다. */
+  .mobile-compact-header {
+    transform: translateY(0) !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
   }
 
   body.post-page .post-mobile-header {
@@ -2513,190 +2668,6 @@ html body .mobile-nav-sublink.active {
     text-align: center;
     text-transform: none !important;
     text-decoration: none;
-  }
-
-}
-
-/* 간이 헤더·메뉴 서랍의 모양은 태블릿(600–900px)에서도 같은 것을 쓴다. 599px 이하에만 두었을 때
-   태블릿에서는 옛 style.css 서랍이 나와 닫기·검색 아이콘이 빈 네모로 보였다. 항상 노출 여부만 아래 599px 블록이 정한다. */
-@media (max-width: 900px) {
-  .mobile-compact-header {
-    height: 64px;
-    padding: 10px 16px !important;
-    border: 0 !important;
-    background: color-mix(in srgb, var(--md-sys-color-surface) 94%, transparent) !important;
-    box-shadow: var(--md-sys-elevation-1);
-  }
-
-  .mobile-compact-toggle,
-  .mobile-compact-search,
-  .mobile-compact-drawer-close {
-    position: relative;
-    width: 44px !important;
-    height: 44px !important;
-    min-width: 44px;
-    min-height: 44px;
-    border: 0 !important;
-    border-radius: var(--md-sys-shape-full) !important;
-    background: var(--md-sys-color-surface-container-high) !important;
-    color: var(--md-sys-color-on-surface) !important;
-  }
-
-  .post-mobile-search {
-    position: relative;
-  }
-
-  .mobile-compact-search::before,
-  .post-mobile-search::before {
-    content: '';
-    width: 14px;
-    height: 14px;
-    border: 2px solid currentColor;
-    border-radius: 50%;
-  }
-
-  .mobile-compact-search::after,
-  .post-mobile-search::after {
-    content: '';
-    position: absolute;
-    width: 7px;
-    height: 2px;
-    background: currentColor;
-    left: 50%;
-    top: 50%;
-    transform: translate(3px, 4px) rotate(45deg);
-    transform-origin: center;
-  }
-
-  .mobile-compact-drawer-close::before,
-  .mobile-compact-drawer-close::after {
-    content: '';
-    position: absolute;
-    width: 17px;
-    height: 2px;
-    background: currentColor;
-    left: 50%;
-    top: 50%;
-  }
-
-  .mobile-compact-drawer-close::before {
-    transform: translate(-50%, -50%) rotate(45deg);
-  }
-
-  .mobile-compact-drawer-close::after {
-    transform: translate(-50%, -50%) rotate(-45deg);
-  }
-
-  .mobile-compact-brand-text {
-    color: var(--md-sys-color-primary) !important;
-    font-size: 1.125rem !important;
-    font-weight: 800;
-  }
-
-  .mobile-compact-drawer {
-    width: min(92vw, 360px) !important;
-    border: 0 !important;
-    border-radius: 0 var(--md-sys-shape-extra-large) var(--md-sys-shape-extra-large) 0;
-    background: var(--md-sys-color-surface) !important;
-    box-shadow: var(--md-sys-elevation-3) !important;
-    overflow-y: auto;
-  }
-
-  .mobile-compact-drawer-head {
-    min-height: 72px;
-    display: grid !important;
-    grid-template-columns: 44px 1fr 44px;
-    align-items: center;
-    padding: 12px 16px !important;
-    border: 0 !important;
-  }
-
-  .mobile-compact-drawer-head::before {
-    content: '';
-  }
-
-  .mobile-compact-drawer-title {
-    text-align: center;
-    color: var(--md-sys-color-on-surface);
-  }
-
-  .mobile-compact-nav {
-    gap: 8px;
-    padding: 4px 12px 24px !important;
-  }
-
-  .mobile-nav-group,
-  .mobile-nav-link {
-    margin: 0 !important;
-    border: 0 !important;
-    border-radius: var(--md-sys-shape-large) !important;
-    background: var(--md-sys-color-surface-container-low) !important;
-    overflow: hidden;
-  }
-
-  .mobile-nav-link,
-  .mobile-nav-group-summary,
-  .mobile-nav-sublink,
-  .mobile-compact-nav a {
-    min-height: 52px;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    border: 0 !important;
-    text-align: center !important;
-    text-transform: none !important;
-  }
-
-  .mobile-nav-group-summary {
-    position: relative;
-    padding: 12px 48px !important;
-  }
-
-  .mobile-nav-group-summary::after {
-    content: '' !important;
-    position: absolute;
-    right: 22px;
-    width: 8px;
-    height: 8px;
-    border-right: 1.5px solid currentColor;
-    border-bottom: 1.5px solid currentColor;
-    transform: rotate(45deg) translateY(-2px);
-  }
-
-  .mobile-nav-group[open] .mobile-nav-group-summary::after {
-    transform: rotate(225deg) translate(-1px, -1px);
-  }
-
-  .mobile-nav-group-children {
-    gap: 4px;
-    padding: 0 8px 8px !important;
-    background: transparent !important;
-  }
-
-  .mobile-nav-sublink {
-    padding: 10px 12px !important;
-    border-radius: var(--md-sys-shape-medium) !important;
-    background: var(--md-sys-color-surface-container) !important;
-  }
-
-  .mobile-nav-sublink::before {
-    display: none !important;
-  }
-
-  .mobile-nav-link.active,
-  .mobile-nav-group.is-active,
-  .mobile-nav-sublink.active {
-    background: var(--md-sys-color-primary-container) !important;
-    color: var(--md-sys-color-on-primary-container) !important;
-  }
-}
-
-@media (max-width: 599px) {
-  /* 큰 masthead 를 숨기는 폭이므로 간이 헤더를 스크롤과 관계없이 항상 보인다. */
-  .mobile-compact-header {
-    transform: translateY(0) !important;
-    opacity: 1 !important;
-    pointer-events: auto !important;
   }
 
   .ticker {
@@ -3017,11 +2988,7 @@ html body .mobile-nav-sublink.active {
 
   .post-page-title,
   .static-page-head h1,
-  .privacy-wrap h1 {
-    font-size: var(--md-sys-typescale-headline-medium) !important;
-    line-height: 1.29 !important;
-  }
-
+  .privacy-wrap h1,
   .board-banner :is(h1, h2),
   .glossary-hero :is(h1, h2),
   .members-hero :is(h1, h2),
@@ -3095,5 +3062,9 @@ html body .mobile-nav-sublink.active {
     animation-duration: .01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: .01ms !important;
+  }
+
+  .pull-refresh-indicator.loading .pull-refresh-icon {
+    animation: none;
   }
 }

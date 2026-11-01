@@ -69,7 +69,7 @@ strong, b,
   font-display: swap;
 }
 
-/* ── Final Home / Admin Type System (V0.059.04) ───────────── */
+/* ── Design Tokens (:root Consolidated) ─────────────────────── */
 :root {
   --gw-scouting-purple: #622599;
   --gw-canvas-white: #ffffff;
@@ -81,339 +81,7 @@ strong, b,
   --gw-river-blue: #82e6de;
   --gw-forest-green: #248737;
   --gw-leaf-green: #9fed8f;
-  --admin-fs-display: 22px;
-  --admin-fs-section: 19px;
-  --admin-fs-title: 17px;
-  --admin-fs-body: 14px;
-  --admin-fs-meta: 12px;
-  --admin-fs-micro: 11px;
-  /* ─── Radius scale (Site + Admin 통일 7-step) ─────────────────────────────
-     ★ 컴포넌트별 매핑 규칙 (반드시 준수 — 임의로 다른 토큰 쓰지 말 것):
 
-       구분                         | 사용 토큰          | 예시 클래스
-       ─────────────────────────────┼─────────────────────┼──────────────────────
-       카드 표면 (surface)          | --radius-lg  (12)   | .memo-card, .post-card
-       대형 hero / feature 카드     | --radius-xl  (16)   | .hero-main, .modal panel
-       모달 (데스크톱)              | --radius-xl  (16)   | .v3-modal, .modal-card
-       모바일 바텀 시트             | --radius-2xl (22)   | .share-modal-card@mobile
-       버튼 (사각, 모든 사이즈)     | --radius-md  (8)    | .memo-btn, .v3-btn 등
-       인풋 / 검색 박스 / 셀렉트    | --radius-md  (8)    | input, select, .memo-search-bar
-       태그 칩 / 필터 칩 / 상태 칩  | --radius-pill (999) | .memo-tag-chip, .post-page-tag
-       카테고리 라벨 (KOREA/APR…)   | --radius-tight (4)  | .category-tag, .post-kicker
-       코드 / 모노 인라인           | --radius-tight (4)  | code, kbd
-       원형 (아바타, dot, 진행 점)  | 50% (literal)       | .avatar, .v3-spin
-       의도적 sharp (full-bleed)    | 0  (literal)        | .modal@mobile, .hero-bleed
-
-     수직 컨테이너에 컨트롤이 내포되는 경우(예: 검색바 input+button):
-     컨테이너·내부 컨트롤 모두 --radius-md, padding 없이 매끄럽게 정렬한다.
-
-     ─ 스케일 자체 (px 통합 매핑) ────────────────────────────────────────────
-     pill (999), 2xl (22←20·24·28), xl (16←14·15·18), lg (12←10·11·13),
-     md (8←7·9), sm (6←5), tight (4←2·3). 기존 --v3-*, --bw-* 는 자동 재지정.
-  */
-  --radius-pill:  999px;
-  --radius-2xl:    22px;
-  --radius-xl:     16px;
-  --radius-lg:     12px;
-  --radius-md:      8px;
-  --radius-sm:      6px;
-  --radius-tight:   4px;
-}
-
-.section-header {
-  align-items: center !important;
-  padding: 13px var(--gap-section) !important;
-  min-height: 44px !important;
-}
-
-.section-header h2 {
-  font-size: var(--fs-lead) !important;
-  line-height: 1.15 !important;
-}
-
-.home-col-header {
-  padding: 13px 14px !important;
-  min-height: 44px !important;
-  margin-bottom: var(--gap-tight) !important;
-}
-
-.home-col-header h3,
-.home-col-header .home-section-more {
-  font-size: var(--fs-caption) !important;
-  line-height: 1.1 !important;
-}
-
-@media (max-width: 768px) {
-  .site-hero-media-backdrop,
-  .home-lead-thumb-backdrop {
-    opacity: var(--media-backdrop-opacity-mobile, 0);
-  }
-
-  .site-hero-media-img {
-    object-fit: var(--media-render-fit-mobile, var(--media-fit, cover));
-    object-position: var(--media-pos-x-mobile, 50%) var(--media-pos-y-mobile, 50%);
-    transform: scale(var(--media-zoom-mobile, 1));
-    transform-origin: var(--media-origin-x-mobile, 50%) var(--media-origin-y-mobile, 50%);
-  }
-
-  .home-lead-thumb {
-    object-fit: var(--media-render-fit-mobile, var(--media-fit, cover));
-    object-position: var(--media-pos-x-mobile, 50%) var(--media-pos-y-mobile, 50%);
-    transform: scale(var(--media-zoom-mobile, 1));
-    transform-origin: var(--media-origin-x-mobile, 50%) var(--media-origin-y-mobile, 50%);
-  }
-
-  .section-header,
-  .home-col-header {
-    min-height: 40px !important;
-  }
-
-  .section-header {
-    padding: 11px var(--gap-card) !important;
-  }
-
-  .home-col-header {
-    padding: 11px var(--gap-element) !important;
-  }
-}
-
-/* ── Global Typography Alignment (V0.059.01) ──────────────── */
-:root {
-  --fs-nav: 12px;
-  --fs-card-title: 18px;
-  --fs-admin-title: 18px;
-}
-
-html,
-body {
-  line-break: strict;
-}
-
-body,
-body *:not(svg):not(path):not(circle):not(line):not(polyline):not(polygon):not(rect):not(ellipse):not(g) {
-  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif!important;
-}
-
-h1, h2, h3, h4, h5, h6,
-p,
-li,
-dt,
-dd,
-blockquote,
-figcaption,
-a,
-button,
-label,
-.article-card h3,
-.mini-item h4,
-.sidebar-item h4,
-.post-card-body h3,
-.post-page-title,
-.home-lead-body h3,
-.hero-main h2,
-.hero-side-item h3,
-.section-header h2,
-.board-banner-text :is(h1, h2),
-.glossary-hero-copy :is(h1, h2),
-.article-item h4,
-.admin-header-copy,
-.admin-sidebar-btn-label,
-.admin-sidebar-btn-desc,
-.dash-stat-label {
-  word-break: keep-all;
-  overflow-wrap: break-word;
-}
-
-.nav a,
-body.admin-page .admin-header-link,
-body.admin-page .admin-group-btn,
-body.admin-page .logout-btn {
-  font-size: var(--fs-nav) !important;
-  line-height: 1.25 !important;
-  letter-spacing: 0.08em !important;
-  text-transform: uppercase !important;
-}
-
-.nav a {
-  color: var(--muted) !important;
-}
-
-.article-card h3,
-.mini-item h4,
-.sidebar-item h4,
-.post-card-body h3,
-.article-item h4 {
-  font-size: var(--fs-card-title) !important;
-  line-height: var(--lh-tight) !important;
-}
-
-body.admin-page .admin-build-label,
-body.admin-page .admin-login-build,
-.masthead-date,
-.masthead-logo .sub,
-.global-search-date {
-  font-size: var(--fs-micro) !important;
-  letter-spacing: 0.06em !important;
-}
-
-/* ── Header Density Tuning (V0.059.03) ────────────────────── */
-.section-header {
-  padding: 18px 28px var(--gap-element) !important;
-  gap: var(--gap-element) !important;
-}
-
-.section-header h2 {
-  font-size: var(--fs-title) !important;
-  line-height: 1.1 !important;
-}
-
-.home-col-header {
-  padding: var(--gap-tight) 14px !important;
-  margin-bottom: var(--gap-tight) !important;
-  box-shadow: 0 6px 14px rgba(0,0,0,0.04), inset 0 1px 0 rgba(255,255,255,0.12) !important;
-}
-
-.home-col-header h3,
-.home-col-header .home-section-more {
-  font-size: var(--fs-meta) !important;
-  line-height: 1.1 !important;
-}
-
-@media (max-width: 768px) {
-  .section-header {
-    padding: 14px var(--gap-card) 10px !important;
-  }
-
-  .home-col-header {
-    padding: var(--gap-tight) var(--gap-element) !important;
-  }
-}
-
-/* ── Global Alice Font Override ───────────────────────────── */
-body,
-button,
-input,
-textarea,
-select,
-option {
-  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
-}
-
-body *:not(svg):not(path):not(circle):not(line):not(polyline):not(polygon):not(rect):not(ellipse):not(g) {
-  font-family: inherit !important;
-}
-
-.admin-header-top {
-  grid-template-columns: minmax(0, 0.9fr) minmax(420px, 1.1fr);
-}
-
-.admin-header .header-right {
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: var(--gap-element);
-}
-
-.admin-header-box {
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: var(--gap-element);
-  padding: 14px;
-  border: 1px solid rgba(255,255,255,0.12);
-  border-radius: var(--radius-lg);   /* 관리자 헤더 박스 통일 */
-  background: rgba(255,255,255,0.04);
-}
-
-.admin-header-box-row {
-  display: grid;
-  gap: var(--gap-element);
-  width: 100%;
-}
-
-.admin-header-box-row-actions {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
-.admin-header-box-row-groups {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-}
-
-.admin-group-btn {
-  font-size: var(--fs-small);
-  letter-spacing: 0.02em;
-  text-transform: none;
-  padding: 11px 14px;
-}
-
-.admin-build-label {
-  align-self: flex-start;
-  opacity: 0.58;
-}
-
-.admin-header-link,
-.logout-btn {
-  min-height: 44px;
-  font-size: var(--fs-small);
-  letter-spacing: 0.02em;
-  text-transform: none;
-}
-
-.logout-btn {
-  color: var(--on-accent);
-  background: linear-gradient(135deg, rgba(98,37,153,0.96), rgba(139,66,210,0.92));
-  border: 1px solid rgba(196,162,255,0.6);
-  border-radius: var(--radius-md);    /* radius 통일 자동 주입 */
-  padding: 10px var(--gap-card);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.18);
-}
-
-.logout-btn:hover {
-  background: linear-gradient(135deg, rgba(112,50,173,1), rgba(152,83,219,0.96));
-  color: var(--on-accent);
-}
-
-.article-item h4 {
-  font-size: var(--fs-chapter);
-  line-height: 1.3;
-  margin-bottom: 14px;
-  white-space: normal;
-  overflow: visible;
-  text-overflow: clip;
-}
-
-.item-meta-chip {
-  min-height: 50px;
-  padding: var(--gap-tight) 10px;
-  font-size: var(--fs-meta);
-  line-height: 1.35;
-}
-
-.item-meta-chip strong {
-  letter-spacing: 0.02em;
-  text-transform: none;
-}
-
-.stat-item .stat-label {
-  font-size: var(--fs-meta);
-  letter-spacing: 0.02em;
-  text-transform: none;
-}
-
-@media (max-width: 760px) {
-  .admin-header-box-row-actions,
-  .admin-header-box-row-groups {
-    grid-template-columns: 1fr;
-  }
-}
-
-/* Nixgon 3중량 정의는 파일 상단에서 일괄 선언됨 (L 300 / M 500 / B 700) */
-
-/* ── Reset & Box Model ───────────────────────────────────────── */
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-/* ── Design Tokens ───────────────────────────────────────────── */
-:root {
   --scouting-purple: #622599;
   --midnight-purple: #4d006e;
   --blossom-pink: #ff8dff;
@@ -428,15 +96,8 @@ body *:not(svg):not(path):not(circle):not(line):not(polyline):not(polygon):not(r
   --ink:        #1f1f1f;   /* 본문 텍스트용 soft black (eye-friendly near-black) */
 
   /* ── 시맨틱 색 토큰 (다크모드 대응 축) ──────────────────────────────────
-     --white / --black 은 "색 이름" 이라 역할이 섞인다. background: var(--white)
-     는 다크에서 어두워져야 하지만, 보라 버튼 위 color: var(--white) 는 다크에서도
-     흰색이어야 한다. 같은 토큰이면 일괄 반전이 불가능하므로 역할별로 쪼갠다.
-
      ★ 새 코드에서는 --white / --black 을 직접 쓰지 말고 아래 토큰을 쓸 것.
-       라이트 모드 값은 기존과 동일하므로 이 분리 자체로는 화면이 바뀌지 않는다.
-       다크 대응값은 `css/dark-mode.css` 에서 재정의한다 (아직 미링크 · 미완성).
-
-       역할                                   토큰
+       다크 대응값은 `css/dark-mode.css` 에서 재정의한다.
        ───────────────────────────────────────┼──────────────────────
        카드·패널 등 밝은 표면 배경             │ --surface
        브랜드/강조 배경 위에 얹는 글자·아이콘  │ --on-accent      (다크에서도 흰색)
@@ -452,11 +113,6 @@ body *:not(svg):not(path):not(circle):not(line):not(polyline):not(polygon):not(r
   --text-strong:       #030303;
   --border-strong:     #030303;
 
-  /* 브랜드 강조색도 같은 이유로 역할 분리한다.
-     다크 배경(#191320)에서 딥퍼플은 전경으로 소멸한다 — Midnight Purple Lc 0.0,
-     Scouting Purple Lc 10.7. 따라서 `-text` 는 다크에서 밝은 대응값으로 바뀌고,
-     `-surface` 는 어두운 보라를 유지해야 그 위 --on-accent(흰 글씨)가 살아남는다.
-     라이트 모드 값은 전부 원래 색과 동일하므로 분리 자체는 화면을 바꾸지 않는다. */
   --accent-surface:            #622599;
   --accent-text:               #622599;
   --accent-border:             #622599;
@@ -485,35 +141,34 @@ body *:not(svg):not(path):not(circle):not(line):not(polyline):not(polygon):not(r
 
   --muted:      rgba(31, 31, 31, 0.58);
   --accent:     var(--scouting-purple);
-  /* 키보드 포커스 링 — Scouting Purple 기반, 배경과 |Lc| 30+ 확보용 가시 링 */
   --focus-ring-color: rgba(98, 37, 153, 0.45);
   --border:     rgba(31, 31, 31, 0.12);
   --bg:         #ffffff;
   --card-bg:    #ffffff;
+  --bg-cream:   #fbf8f3;
 
   /* Category colours */
-  --tag-korea:  var(--ocean-blue);
-  --tag-apr:    var(--fire-red);
-  --tag-wosm:   var(--forest-green);
-  --tag-people: var(--scouting-purple);
+  --tag-korea:    var(--ocean-blue);
+  --tag-apr:      var(--fire-red);
+  --tag-wosm:     var(--forest-green);
+  --tag-people:   var(--scouting-purple);
   --tag-glossary: var(--midnight-purple);
 
   /* Region colours (calendar + region tags; WOSM 회원국 지역 구분) */
   --region-kor:  #0f8db3;
-  --region-apr:  #f24a4a;   /* 2026-07-21: #ff5b5b 은 APCA Lc 56.2 로 기준(60) 미달 → 62.2 */
+  --region-apr:  #f24a4a;
   --region-eur:  #0c7a8a;
   --region-afr:  #b6761b;
   --region-arb:  #7b5cff;
   --region-iar:  #d44f94;
   --region-wosm: var(--forest-green);
 
-  /* 카테고리 칩(글머리 태그) 아웃라인 색 — 각 카테고리 브랜드색과 일치시켜 채움 태그(.tag-*)와 통일.
-     White APCA Lc 45+ (UI 라벨 기준). people/glossary 가 과거 오프팔레트(갈색/올리브)였던 것을 교정. */
+  /* 카테고리 칩(글머리 태그) 아웃라인 색 */
   --kicker-default:  var(--gray-700);
   --kicker-people:   var(--scouting-purple-text);
   --kicker-glossary: var(--midnight-purple-text);
-  /* 확장 음영/스팟 색 팔레트 — 그라데이션 stop·1회성 강조색을 재사용 가능한 토큰으로 등록.
-     값은 기존과 동일(value-identical). 새 음영 필요 시 여기서 고르거나 추가한다. (2026-05-30) */
+
+  /* 확장 음영/스팟 색 팔레트 */
   --shade-purple-1: #2e0047;
   --shade-purple-2: #37004e;
   --shade-purple-3: #3a0057;
@@ -569,54 +224,257 @@ body *:not(svg):not(path):not(circle):not(line):not(polyline):not(polygon):not(r
   --shade-tint-14: #fafaff;
   --shade-tint-15: #fdfbff;
 
-  /* Surface tints */
-  --bg-cream:   #fbf8f3;
-
   /* Feedback colours */
   --success:    var(--forest-green);
   --danger:     var(--fire-red);
-  --fs-micro:    10px;   /* 아주 작은 부기(캡션 미만) */
-  --fs-meta:     11px;   /* 메타 라벨, h5 칩, 날짜 */
-  --fs-caption:  12px;   /* 작은 보조 라벨 */
-  --fs-small:    13.5px; /* 테이블 셀, 고밀도 영역 */
-  --fs-body:     14px;   /* 기본 본문 */
-  --fs-reading:  15px;   /* 긴 문서 본문 (기능정의서) */
-  --fs-lead:     16px;   /* 섹션 리드 문단 */
-  --fs-title:    18px;   /* 세부 섹션 제목 (h4 = ###) */
-  --fs-section:  20px;
-  --fs-chapter:  22px;   /* 대장 섹션 제목 (h3 = ##) */
-  --fs-document: 24px;   /* 문서 제목 (h2 = #) */
-  --fs-display:  32px;
-  /* [스케일 확장 2026-07-21] 32px 초과 구간에 토큰이 없어 리터럴 36·38·40·42·48·56px
-     이 공존했다. 24↔32 사이도 벌어져 28px 단계를 함께 둔다. */
+
+  /* Typography scale */
+  --fs-micro:       10px;   /* 아주 작은 부기(캡션 미만) */
+  --fs-meta:        11px;   /* 메타 라벨, h5 칩, 날짜 */
+  --fs-caption:     12px;   /* 작은 보조 라벨 */
+  --fs-nav:         12px;
+  --fs-small:       13.5px; /* 테이블 셀, 고밀도 영역 */
+  --fs-body:        14px;   /* 기본 본문 */
+  --fs-reading:     15px;   /* 긴 문서 본문 (기능정의서) */
+  --fs-lead:        16px;   /* 섹션 리드 문단 */
+  --fs-title:       18px;   /* 세부 섹션 제목 (h4 = ###) */
+  --fs-card-title:  18px;
+  --fs-admin-title: 18px;
+  --fs-section:     20px;
+  --fs-chapter:     22px;   /* 대장 섹션 제목 (h3 = ##) */
+  --fs-document:    24px;   /* 문서 제목 (h2 = #) */
   --fs-headline:    28px;
+  --fs-display:     32px;
   --fs-display-lg:  40px;
   --fs-hero:        48px;
   --fs-hero-lg:     56px;
+  --admin-fs-display: 22px;
+  --admin-fs-section: 19px;
+  --admin-fs-title:   17px;
+  --admin-fs-body:    14px;
+  --admin-fs-meta:    12px;
+  --admin-fs-micro:   11px;
   --lh-tight:   1.35;
   --lh-copy:    1.65;
   --mobile-user-scale: 1;
-  --btn-height-primary: 44px;
+
+  /* Radius scale (Site + Admin 통일 7-step) */
+  --radius-pill:  999px;
+  --radius-2xl:    22px;
+  --radius-xl:     16px;
+  --radius-lg:     12px;
+  --radius-md:      8px;
+  --radius-sm:      6px;
+  --radius-tight:   4px;
+
+  /* Control heights */
+  --btn-height-primary:   44px;
   --btn-height-secondary: 36px;
-  --chip-height: 26px;
+  --chip-height:          26px;
 
   /* Spacing system (4px-grid, semantic naming) */
   --gap-micro:         4px;   /* 아이콘-글자 간격, 얇은 구분선 */
   --gap-tight:         8px;   /* 칩 안 padding, 인라인 요소 간격 */
   --gap-element:      12px;   /* 컴포넌트 내부 요소 간격 */
   --gap-card:         16px;   /* 카드 내부 padding, 리스트 항목 */
+  --gap-wide:         20px;   /* 16↔24 사이 — 리터럴 18·20px 흡수 */
   --gap-section:      24px;   /* 섹션 내부 블록 간격 */
   --gap-section-out:  32px;   /* 섹션과 섹션 사이 */
-  --gap-wide:         20px;   /* [2026-07-21] 16↔24 사이 — 리터럴 18·20px 흡수 */
   --gap-page:         48px;   /* 페이지 단위 큰 여백 */
   --pad-page-desktop: 48px;   /* 데스크톱 본문 좌우 거터 */
   --pad-page-tablet:  32px;   /* 태블릿 좌우 거터 */
   --pad-page-mobile:  16px;   /* 모바일 좌우 거터 */
+
+  /* Home & Board layout tokens */
+  --board-card-gap:       6px;
+  --home-section-gap:    18px;
+  --home-grid-gap:       24px;
+  --home-block-bottom:   72px;
+  --home-title-gap:      14px;
+  --home-priority-height: 640px;
+
+  /* Gradients */
   --gradient-ink: linear-gradient(90deg, var(--black) 0%, #191717 52%, #221d1c 100%);
   --gradient-purple: linear-gradient(90deg, var(--scouting-purple) 0%, #562085 52%, #45186b 100%);
   --gradient-purple-deep: linear-gradient(135deg, var(--scouting-purple) 0%, #4e1d7a 46%, #2a103f 100%);
   --gradient-footer-panel: linear-gradient(135deg, rgba(255,255,255,0.14), rgba(255,255,255,0.05));
+
+  /* BW — 홈페이지 작성·수정 모달 토큰 */
+  --bw-surface:      #ffffff;
+  --bw-canvas:       #f8f7fb;
+  --bw-border:       #e2e8f0;
+  --bw-border-m:     #cbd5e1;
+  --bw-text:         #0f172a;
+  --bw-text-s:       #475569;
+  --bw-text-m:       #64748b;
+  --bw-text-l:       #7f8a99;
+  --bw-primary:      #622599;
+  --bw-primary-h:    #4d006e;
+  --bw-primary-lt:   rgba(255,189,255,0.30);
+  --bw-primary-tint: #f6f0ff;
+  --bw-shadow:       0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.04);
+  --bw-shadow-lg:    0 10px 40px rgba(0,0,0,.18), 0 4px 12px rgba(0,0,0,.10);
+  --bw-radius:       var(--radius-xl);
+  --bw-radius-s:     var(--radius-md);
+  --bw-gap-xs:       6px;
+  --bw-gap-sm:       10px;
+  --bw-gap-md:       16px;
+  --bw-gap-lg:       22px;
+  --bw-gap-xl:       28px;
+  --bw-font:         'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
 }
+
+/* ── Global Typography & Header Density ─────────────────────── */
+html,
+body {
+  line-break: strict;
+}
+
+body,
+button,
+input,
+textarea,
+select,
+option {
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
+}
+
+body *:not(svg):not(path):not(circle):not(line):not(polyline):not(polygon):not(rect):not(ellipse):not(g) {
+  font-family: inherit !important;
+}
+
+h1, h2, h3, h4, h5, h6,
+p,
+li,
+dt,
+dd,
+blockquote,
+figcaption,
+a,
+button,
+label,
+.article-card h3,
+.mini-item h4,
+.sidebar-item h4,
+.post-card-body h3,
+.post-page-title,
+.home-lead-body h3,
+.hero-main h2,
+.hero-side-item h3,
+.section-header h2,
+.board-banner-text :is(h1, h2),
+.glossary-hero-copy :is(h1, h2),
+.article-item h4 {
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+
+.nav a {
+  font-size: var(--fs-nav) !important;
+  line-height: 1.25 !important;
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase !important;
+  color: var(--muted) !important;
+}
+
+.article-card h3,
+.mini-item h4,
+.sidebar-item h4,
+.post-card-body h3,
+.article-item h4 {
+  font-size: var(--fs-card-title) !important;
+  line-height: var(--lh-tight) !important;
+}
+
+.masthead-date,
+.masthead-logo .sub,
+.global-search-date {
+  font-size: var(--fs-micro) !important;
+  letter-spacing: 0.06em !important;
+}
+
+.section-header {
+  align-items: center !important;
+  padding: 18px 28px var(--gap-element) !important;
+  min-height: 44px !important;
+  gap: var(--gap-element) !important;
+}
+
+.section-header h2 {
+  font-size: var(--fs-title) !important;
+  line-height: 1.1 !important;
+}
+
+.home-col-header {
+  padding: var(--gap-tight) 14px !important;
+  min-height: 44px !important;
+  margin-bottom: var(--gap-tight) !important;
+  box-shadow: 0 6px 14px rgba(0,0,0,0.04), inset 0 1px 0 rgba(255,255,255,0.12) !important;
+}
+
+.home-col-header h3,
+.home-col-header .home-section-more {
+  font-size: var(--fs-meta) !important;
+  line-height: 1.1 !important;
+}
+
+@media (max-width: 768px) {
+  .site-hero-media-backdrop,
+  .home-lead-thumb-backdrop {
+    opacity: var(--media-backdrop-opacity-mobile, 0);
+  }
+
+  .site-hero-media-img,
+  .home-lead-thumb {
+    object-fit: var(--media-render-fit-mobile, var(--media-fit, cover));
+    object-position: var(--media-pos-x-mobile, 50%) var(--media-pos-y-mobile, 50%);
+    transform: scale(var(--media-zoom-mobile, 1));
+    transform-origin: var(--media-origin-x-mobile, 50%) var(--media-origin-y-mobile, 50%);
+  }
+
+  .section-header,
+  .home-col-header {
+    min-height: 40px !important;
+  }
+
+  .section-header {
+    padding: 14px var(--gap-card) 10px !important;
+  }
+
+  .home-col-header {
+    padding: var(--gap-tight) var(--gap-element) !important;
+  }
+}
+
+.article-item h4 {
+  font-size: var(--fs-chapter);
+  line-height: 1.3;
+  margin-bottom: 14px;
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+}
+
+.item-meta-chip {
+  min-height: 50px;
+  padding: var(--gap-tight) 10px;
+  font-size: var(--fs-meta);
+  line-height: 1.35;
+}
+
+.item-meta-chip strong {
+  letter-spacing: 0.02em;
+  text-transform: none;
+}
+
+.stat-item .stat-label {
+  font-size: var(--fs-meta);
+  letter-spacing: 0.02em;
+  text-transform: none;
+}
+
+/* ── Reset & Box Model ───────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 /* ── Base ────────────────────────────────────────────────────── */
 html {
@@ -1968,15 +1826,6 @@ body[data-home-bootstrap] .lang-btn:hover {
   max-width: 1366px;
   margin:    0 auto;
   padding:   var(--home-section-gap, 18px) 48px 60px;
-}
-
-:root {
-  --board-card-gap: 6px;
-  --home-section-gap: 18px;
-  --home-grid-gap: 24px;
-  --home-block-bottom: 72px;
-  --home-title-gap: 14px;
-  --home-priority-height: 640px;
 }
 
 .home-priority {
@@ -3549,7 +3398,6 @@ footer a {
   font-weight: 500;
 }
 
-.admin-build-label,
 .admin-login-build {
   display: block;
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
@@ -3557,13 +3405,6 @@ footer a {
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: rgba(26, 26, 26, 0.55);
-}
-
-.admin-build-label {
-  margin-right: 10px;
-}
-
-.admin-login-build {
   margin-top: 10px;
   text-align: center;
 }
@@ -4245,14 +4086,6 @@ footer a:hover { color: var(--on-accent); }
   .share-meta-grid {
     grid-template-columns: 1fr;
   }
-  .admin-group-nav {
-    flex-wrap: wrap;
-    padding: var(--gap-element) 20px var(--gap-card);
-  }
-  .admin-inline-save {
-    flex-direction: column;
-    align-items: stretch;
-  }
 }
 
 /* ── Drag-and-drop ────────────────────────────────────────── */
@@ -4281,80 +4114,6 @@ footer a:hover { color: var(--on-accent); }
 .contributors-admin-item.is-pointer-sorting {
   opacity: .92;
   box-shadow: 0 18px 40px rgba(20, 15, 12, 0.14);
-}
-
-.admin-header {
-  background:      var(--surface-inverse);
-  color:           var(--on-accent);
-  padding:         var(--gap-card) 40px;
-  display:         flex;
-  align-items:     center;
-  justify-content: space-between;
-  position:        sticky;
-  top:             0;
-  z-index:         100;
-}
-
-.admin-header .logo {
-  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
-  font-size:   var(--fs-title);
-  font-weight: 700;
-}
-
-.admin-header .badge {
-  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
-  font-size:      var(--fs-micro);
-  letter-spacing: 0.15em;
-  background:     var(--accent-surface);
-  padding:        3px 10px;
-  margin-left:    var(--gap-element);
-  text-transform: uppercase;
-}
-
-.admin-header .header-right {
-  display:     flex;
-  align-items: center;
-  gap:         var(--gap-wide);
-  flex-wrap:   wrap;
-  justify-content: flex-end;
-}
-
-.admin-header a {
-  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
-  font-size:      var(--fs-meta);
-  letter-spacing: 0.1em;
-  color:          rgba(245,243,238,0.6);
-  text-decoration: none;
-  text-transform:  uppercase;
-  transition:     color 0.15s;
-}
-
-.admin-header a:hover { color: var(--on-accent); }
-
-.logout-btn {
-  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
-  font-size:      var(--fs-meta);
-  letter-spacing: 0.1em;
-  color:          var(--accent-text);
-  background:     none;
-  border:         1px solid var(--accent-border);
-  border-radius: var(--radius-md);    /* radius 통일 자동 주입 */
-  padding:        5px 14px;
-  cursor:         pointer;
-  text-transform: uppercase;
-  transition:     all 0.15s;
-}
-
-.logout-btn:hover { background: var(--accent-surface); color: var(--on-accent); }
-
-.admin-body {
-  max-width:             1100px;
-  margin:                0 auto;
-  padding:               40px;
-  display:               grid;
-  grid-template-columns: 1fr 380px;
-  gap:                   var(--gap-section-out);
-  align-items:           start;
 }
 
 /* Panel */
@@ -4467,11 +4226,6 @@ footer a:hover { color: var(--on-accent); }
 
 .submit-btn:hover    { background: var(--accent-surface); }
 .submit-btn.editing  { background: var(--tag-apr); }
-
-.admin-inline-save .submit-btn {
-  width: auto;
-  margin-top: 0;
-}
 
 .editor-action-row {
   display: flex;
@@ -4977,63 +4731,6 @@ footer a:hover { color: var(--on-accent); }
   .footer-live-stats  { justify-items: start; }
   .footer-bottom      { padding: var(--gap-card) 0; flex-direction: column; gap: var(--gap-tight); text-align: center; }
 
-  .admin-header       { padding: 0; display: block; }
-  .admin-header-copy  { display: none; }
-  .admin-header-top   { padding: 14px 20px; align-items: flex-start; }
-  .admin-header .header-right {
-    width: 100%;
-    justify-content: flex-start;
-    gap: var(--gap-element);
-  }
-  .admin-group-nav {
-    justify-content: flex-start;
-    gap: var(--gap-tight);
-    padding: 10px 20px 14px;
-    overflow-x: auto;
-    white-space: nowrap;
-  }
-  .admin-tab-strip {
-    justify-content: flex-start;
-    gap: var(--gap-tight);
-    padding: var(--gap-tight) 20px var(--gap-element);
-    overflow-x: auto;
-    white-space: nowrap;
-  }
-  .admin-group-btn {
-    flex: 0 0 auto;
-  }
-  .admin-tab-strip-btn {
-    flex: 0 0 auto;
-  }
-  .admin-shell {
-    display: flex;
-    flex-direction: column;
-    padding: 20px;
-    gap: var(--gap-card);
-  }
-  .admin-sidebar {
-    position: static;
-    top: auto;
-    z-index: auto;
-    gap: var(--gap-element);
-    margin: 0 -20px;
-    padding: 0 20px var(--gap-tight);
-    background: var(--shade-tint-4);
-  }
-  .admin-sidebar-group {
-    flex-direction: row;
-    flex-wrap: nowrap;
-    gap: var(--gap-tight);
-    overflow-x: auto;
-    padding: 10px;
-  }
-  .admin-sidebar-btn {
-    flex: 0 0 auto;
-    min-width: 148px;
-    padding: 10px var(--gap-element);
-  }
-  .admin-sidebar-btn-label { font-size: var(--fs-body); }
-  .admin-sidebar-btn-desc  { font-size: var(--fs-micro); }
   .form-row           { grid-template-columns: 1fr; }
   .stats-row          { grid-template-columns: 1fr; }
   .editor-action-row  { flex-direction: column; }
@@ -5045,8 +4742,6 @@ footer a:hover { color: var(--on-accent); }
   .marketing-fullscreen-controls {
     justify-content: flex-start;
   }
-  .admin-inline-save  { grid-template-columns: 1fr; }
-  .admin-inline-save .submit-btn { width: 100%; }
 
   .glossary-admin-toolbar { grid-template-columns: 1fr; }
   .glossary-admin-row { grid-template-columns: 1fr; }
@@ -5304,33 +4999,6 @@ footer a:hover { color: var(--on-accent); }
   .post-card-labels .post-kicker,
   .post-card-labels .category-tag {
     transform: none;
-  }
-  .admin-shell        { padding: var(--gap-card); }
-  .admin-header-top   { padding: var(--gap-element) var(--gap-card); align-items: flex-start; gap: var(--gap-element); }
-  .admin-header .logo { font-size: var(--mobile-fs-title); }
-  .admin-header .badge { margin-left: var(--gap-tight); }
-  .admin-build-label,
-  .admin-header a,
-  .logout-btn { font-size: var(--mobile-fs-micro); letter-spacing: 0.06em; }
-  .admin-group-nav { padding: var(--gap-tight) var(--gap-card) var(--gap-element); }
-  .admin-group-btn { font-size: var(--mobile-fs-meta); padding: 9px var(--gap-element); }
-  .admin-sidebar { top: auto; margin: 0 -16px; padding: 0 var(--gap-card) var(--gap-tight); }
-  .admin-sidebar-group {
-    padding: var(--gap-tight);
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    scrollbar-width: thin;
-  }
-  .admin-sidebar-btn { min-width: 136px; flex: 0 0 auto; }
-  .admin-sidebar-group-title,
-  .admin-sidebar-btn-desc { font-size: var(--mobile-fs-micro); }
-  .admin-sidebar-btn-label { font-size: var(--fs-body); }
-  .admin-subnav {
-    top: auto;
-    justify-content: flex-start;
-    overflow-x: auto;
-    flex-wrap: nowrap;
-    margin-bottom: var(--gap-card);
   }
   .share-meta-inline-grid { grid-template-columns: 1fr; }
 
@@ -6028,269 +5696,6 @@ footer a:hover { color: var(--on-accent); }
 .global-search-item p { font-size:var(--fs-small); color:var(--muted); margin:0 0 6px; line-height:1.6; }
 .global-search-date { font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif; font-size:var(--fs-micro); color:var(--muted); }
 .global-search-empty { text-align:center; padding:40px; font-size:var(--fs-body); color:var(--muted); }
-
-/* ════════════════════════════════════════════════════════════
-   ADMIN TABS LAYOUT
-   ════════════════════════════════════════════════════════════ */
-.admin-header-top {
-  display:         grid;
-  grid-template-columns: minmax(0, 1.2fr) minmax(320px, auto);
-  align-items:     stretch;
-  gap:             var(--gap-section);
-  padding:         18px var(--gap-section-out);
-  border-bottom:   1px solid rgba(255,255,255,0.1);
-}
-.admin-brand {
-  display: flex;
-  flex-direction: column;
-  gap: var(--gap-element);
-  padding: 18px 20px;
-  background: linear-gradient(135deg, rgba(98,37,153,0.9), rgba(67,20,106,0.88));
-  border: 1px solid rgba(255,255,255,0.12);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.12);
-}
-
-.admin-header-copy {
-  margin: 0;
-  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
-  font-size: var(--fs-body);
-  line-height: 1.6;
-  color: rgba(245,243,238,0.82);
-}
-
-.admin-group-nav {
-  display: flex;
-  align-items: stretch;
-  justify-content: flex-end;
-  padding: var(--gap-element) var(--gap-section-out) var(--gap-card);
-  border-bottom: 1px solid rgba(255,255,255,0.12);
-}
-
-.admin-group-nav-inner {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: var(--gap-element);
-  padding: var(--gap-element) var(--gap-card);
-  border: 1px solid rgba(255,255,255,0.1);
-  background: rgba(255,255,255,0.03);
-}
-
-.admin-group-btn {
-  border: 1px solid rgba(255,255,255,0.18);
-  border-radius: var(--radius-md);    /* radius 통일 자동 주입 */
-  background: rgba(255,255,255,0.04);
-  color: rgba(245,243,238,0.82);
-  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
-  font-size: var(--fs-meta);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  padding: 10px 14px;
-  cursor: pointer;
-  transition: background 0.15s, border-color 0.15s, color 0.15s;
-}
-
-.admin-group-btn:hover,
-.admin-group-btn.active {
-  background: rgba(255,255,255,0.12);
-  border-color: rgba(255,255,255,0.34);
-  color: var(--on-accent);
-}
-
-.admin-header {
-  position: static;
-  z-index: 220;
-  background: linear-gradient(180deg, var(--surface-inverse) 0%, var(--shade-gray-1) 100%);
-}
-
-.admin-header .logo {
-  font-size: var(--fs-document);
-}
-
-.admin-header .badge {
-  align-self: flex-start;
-  margin-left: 0;
-}
-
-.admin-header .header-right {
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: var(--gap-card);
-  padding: 18px 20px;
-  border: 1px solid rgba(255,255,255,0.1);
-  background: rgba(255,255,255,0.03);
-}
-
-.admin-header-link,
-.logout-btn {
-  min-height: 42px;
-}
-
-.admin-header-link {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 10px 14px;
-  border: 1px solid rgba(255,255,255,0.16);
-  background: rgba(255,255,255,0.06);
-  color: rgba(245,243,238,0.88) !important;
-}
-
-.admin-header-link:hover {
-  background: rgba(255,255,255,0.12);
-}
-
-.admin-shell {
-  max-width: 1366px;
-  margin: 0 auto;
-  padding: 18px var(--gap-section-out) var(--gap-section-out);
-  display: flex;
-  flex-direction: column;
-  gap: var(--gap-wide);
-  align-items: stretch;
-}
-
-.admin-sidebar {
-  position: static;
-  z-index: auto;
-  display: block;
-}
-
-.admin-sidebar-group {
-  border: 1px solid var(--border);
-  background: rgba(255,255,255,0.96);
-  padding: 10px;
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--gap-tight);
-  box-shadow: 0 10px 24px rgba(0,0,0,0.05);
-}
-
-.admin-sidebar-group-title {
-  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
-  font-size: var(--fs-micro);
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--muted);
-  margin-bottom: 10px;
-}
-
-.admin-sidebar-btn {
-  width: auto;
-  min-width: 150px;
-  display: flex;
-  flex-direction: column;
-  gap: var(--gap-micro);
-  text-align: left;
-  padding: 11px 14px;
-  border: 1px solid transparent;
-  border-radius: var(--radius-md);    /* radius 통일 자동 주입 */
-  background: transparent;
-  cursor: pointer;
-  transition: border-color 0.15s, background 0.15s;
-}
-
-.admin-sidebar-btn-label {
-  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
-  font-size: var(--fs-reading);
-  font-weight: 700;
-  color: var(--ink);
-}
-
-.admin-sidebar-btn-desc {
-  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
-  font-size: var(--fs-micro);
-  letter-spacing: 0.06em;
-  color: var(--muted);
-}
-
-.admin-sidebar-btn.active,
-.admin-sidebar-btn:hover {
-  border-color: rgba(98, 37, 153, 0.24);
-  background: rgba(98, 37, 153, 0.05);
-}
-
-[data-role-min="full"][style*="display: none"] {
-  display: none !important;
-}
-
-.admin-tab-content {
-  min-width: 0;
-  width: 100%;
-}
-
-.admin-subnav {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: var(--gap-tight);
-  margin-bottom: 20px;
-  position: static;
-  top: auto;
-  z-index: auto;
-  padding: 10px var(--gap-element);
-  background: rgba(236, 234, 228, 0.96);
-  backdrop-filter: blur(8px);
-  border: 1px solid var(--border);
-  box-shadow: 0 10px 20px rgba(0,0,0,0.04);
-}
-
-.admin-settings-block {
-  display: flex;
-  flex-direction: column;
-  gap: var(--gap-card);
-}
-
-.admin-settings-block-head {
-  display: flex;
-  flex-direction: column;
-  gap: var(--gap-tight);
-}
-
-.admin-settings-block-head strong {
-  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
-  font-size: var(--fs-section);
-  color: var(--ink);
-}
-
-.admin-settings-block-head span {
-  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
-  font-size: var(--fs-micro);
-  letter-spacing: 0.06em;
-  color: var(--muted);
-}
-
-.admin-selected-post {
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);    /* radius 통일 자동 주입 R2 */
-  background: rgba(255,255,255,0.8);
-  padding: 14px var(--gap-card);
-}
-
-.admin-selected-post-card {
-  display: flex;
-  flex-direction: column;
-}
-
-.admin-subnav-btn {
-  padding: var(--gap-tight) var(--gap-element);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);    /* radius 통일 자동 주입 */
-  background: var(--bg);
-  color: var(--muted);
-  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
-  font-size: var(--fs-micro);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  cursor: pointer;
-}
-
-.admin-subnav-btn:hover {
-  border-color: var(--accent-border);
-  color: var(--accent-text);
-}
-.admin-tab-panel { display: none; }
-.admin-tab-panel.active { display: block; }
 
 /* Author tag on cards */
 .post-author {
@@ -7069,31 +6474,6 @@ footer a:hover { color: var(--on-accent); }
    BW — 홈페이지 작성 모달 (Admin V3 inspired, 00.121+)
    카드 2-컬럼 레이아웃 · 고정 푸터 · 토큰화 스케일
    ══════════════════════════════════════════════════════════ */
-
-:root {
-  --bw-surface:    #ffffff;
-  --bw-canvas:     #f8f7fb;
-  --bw-border:     #e2e8f0;
-  --bw-border-m:   #cbd5e1;
-  --bw-text:       #0f172a;
-  --bw-text-s:     #475569;
-  --bw-text-m:     #64748b;
-  --bw-text-l:     #7f8a99;   /* 2026-07-21: #94a3b8 은 APCA Lc 50.2 로 기준(60) 미달이었다 → 62.6 */
-  --bw-primary:    #622599;
-  --bw-primary-h:  #4d006e;
-  --bw-primary-lt: rgba(255,189,255,0.30);
-  --bw-primary-tint: #f6f0ff;
-  --bw-shadow:     0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.04);
-  --bw-shadow-lg:  0 10px 40px rgba(0,0,0,.18), 0 4px 12px rgba(0,0,0,.10);
-  --bw-radius:     var(--radius-xl);   /* 16px — 통일 스케일 재지정 (2026-05-27) */
-  --bw-radius-s:   var(--radius-md);   /* 8px */
-  --bw-gap-xs:     6px;
-  --bw-gap-sm:     10px;
-  --bw-gap-md:     16px;
-  --bw-gap-lg:     22px;
-  --bw-gap-xl:     28px;
-  --bw-font:       'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
-}
 
 /* Overlay — 살짝 블러된 다크 배경 */
 .bw-overlay {
@@ -7998,6 +7378,11 @@ body.wosm-members-page #main-content {
     align-items: center;
   }
 
+  .nav-link {
+    min-width: 44px;
+    justify-content: center;
+  }
+
   /* ── 마스트헤드 컨트롤 ──────────────────────────────── */
   .masthead-type-btn {
     min-height: 44px;
@@ -8010,7 +7395,13 @@ body.wosm-members-page #main-content {
   }
 
   /* 포커스 시에만 보이는 요소지만, 보일 때는 기준을 지켜야 한다 */
-  .skip-link {
+  .skip-link,
+  .hero-pause-btn,
+  .home-section-more,
+  .mini-share-link,
+  .post-share-btn,
+  .post-action-btn,
+  .mobile-compact-brand {
     min-height: 44px;
     display: inline-flex;
     align-items: center;
@@ -8025,56 +7416,25 @@ body.wosm-members-page #main-content {
     background-clip: content-box;
   }
 
-  /* ── 게시판 페이지네이션 ────────────────────────────── */
+  /* ── 게시판 페이지네이션 · 최소 폭 확보 ─────────────── */
   .board-page-btn,
-  .board-more-btn {
-    min-height: 44px;
-  }
-}
-
-/* 터치 타겟 확보 (00.176.10) — 실측 44px 미만 요소 보정.
-   기준·근거는 css/style.css 의 '터치 타겟 확보' 블록 주석 참조. */
-@media (pointer: coarse) {
-  .nav-link { min-width: 44px; justify-content: center; }
-  .hero-pause-btn,
-  .home-section-more,
-  .mini-share-link,
-  .post-share-btn,
-  .post-action-btn {
-    min-height: 44px;
-    display: inline-flex;
-    align-items: center;
-  }
-  .mobile-compact-toggle,
-  .mobile-compact-search,
-  .modal-close {
-    min-width: 44px;
-    min-height: 44px;
-  }
-  .mobile-compact-brand {
-    min-height: 44px;
-    display: inline-flex;
-    align-items: center;
-  }
-}
-
-/* 터치 타겟 — 2차 보정 (00.176.10)
-   1차 후 남은 것: 높이는 확보됐으나 라벨이 짧아 폭이 부족한 버튼들과,
-   style.css 안에 정의돼 있어 board.css 규칙이 닿지 않던 작성 모달(--bw-*). */
-@media (pointer: coarse) {
-  .home-section-more,
-  .mini-share-link,
-  .post-page-tag,
-  .board-page-btn,
-  .nav-link {
-    min-width: 44px;
-  }
-
+  .board-more-btn,
   .bw-input,
   .bw-select,
   .bw-btn {
     min-height: 44px;
   }
+
+  .home-section-more,
+  .mini-share-link,
+  .post-page-tag,
+  .board-page-btn {
+    min-width: 44px;
+  }
+
+  .mobile-compact-toggle,
+  .mobile-compact-search,
+  .modal-close,
   .bw-close,
   .board-write-close {
     min-width: 44px;

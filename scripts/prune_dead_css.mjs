@@ -24,7 +24,7 @@ const APPLY = process.argv.includes('--apply');
 const DEAD = new Set(fs.readFileSync(path.join(ROOT, 'scripts/dead-css-classes.txt'), 'utf8')
   .split('\n').map((s) => s.trim()).filter((s) => s && !s.startsWith('#')));
 
-const FILES = ['css/style.css'];
+const FILES = ['public/css/style.css'];
 
 /** 주석을 길이 보존 마스킹 — 인덱스를 원본과 맞춘다 */
 const mask = (s) => s.replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, ' '));

@@ -31,17 +31,17 @@ const CSS_PATH = path.join(ROOT, 'public/css/style.css');
 const SHARED_JS = ['public/js/main.js', 'public/js/site-chrome.js', 'public/js/chatbot.js'];
 
 const SURFACES = {
-  home: ['index.html', 'public/js/home.js', 'public/js/home-helpers.js', 'public/js/home-render.js', 'public/js/home-hero.js', 'public/js/home-runtime.js'],
-  board: ['latest.html', 'korea.html', 'apr.html', 'wosm.html', 'people.html', 'public/js/board.js', 'public/js/board-write.js'],
-  post: ['functions/post/[id].js', 'public/js/post-page.js', 'functions/feature/[category]/[slug].js'],
-  glossary: ['glossary.html', 'public/js/glossary.js', 'functions/glossary-raw.js'],
-  calendar: ['calendar.html', 'public/js/calendar.js'],
-  memorabilia: ['memorabilia.html', 'public/js/memorabilia.js', 'public/js/memorabilia-shared.js'],
-  wosm_members: ['wosm-members.html', 'public/js/wosm-members.js'],
-  search: ['search.html', 'public/js/search.js'],
-  jamboree16: ['jamboree16.html', 'public/js/jamboree16.js'],
-  kms: ['kms.html', 'public/js/kms.js'],
-  static: ['about.html', 'contributors.html', 'privacy.html', 'editorial-policy.html', '404.html', '500.html'],
+  home: ['public/index.html', 'public/js/home.js', 'public/js/home-helpers.js', 'public/js/home-render.js', 'public/js/home-hero.js', 'public/js/home-runtime.js'],
+  board: ['public/latest.html', 'public/korea.html', 'public/apr.html', 'public/wosm.html', 'public/people.html', 'public/js/board.js', 'public/js/board-write.js'],
+  post: ['functions/post/[id].js', 'public/js/post-page.js', 'functions/feature/[category]/[slug].js', 'server-rust/src/feature_shell.html'],
+  glossary: ['public/glossary.html', 'public/js/glossary.js', 'functions/glossary-raw.js', 'server-rust/src/glossary_raw_shell.html'],
+  calendar: ['public/calendar.html', 'public/js/calendar.js'],
+  memorabilia: ['public/memorabilia.html', 'public/js/memorabilia.js', 'public/js/memorabilia-shared.js'],
+  wosm_members: ['public/wosm-members.html', 'public/js/wosm-members.js'],
+  search: ['public/search.html', 'public/js/search.js'],
+  jamboree16: ['public/jamboree16.html', 'public/js/jamboree16.js', 'public/js/jamboree16-photos.js'],
+  kms: ['public/kms.html', 'public/js/kms.js'],
+  static: ['public/about.html', 'public/contributors.html', 'public/privacy.html', 'public/editorial-policy.html', 'public/help.html', 'public/404.html', 'public/500.html'],
 };
 
 function readIfExists(rel) {

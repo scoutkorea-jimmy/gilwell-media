@@ -122,7 +122,7 @@ function fixture({role = 'anonymous', fail = false, due = false, failHome = fals
           return {results:sqlite.prepare(sql).all(...args)};
         },
         async first() { if (sql.includes('FROM admin_users')) return user; const footer=sql.includes('COUNT(DISTINCT viewer_key) AS u') && sql.includes('FROM site_visits'); const today=sql.includes("datetime(visited_at, '+9 hours')"); if (fail || (failAnalytics && sql.includes('FROM site_visits')) || (footer && ((failFooterToday && today) || (failFooterTotal && !today))) || (failSetting && sql.includes('FROM settings') && (args[0] === failSetting || sql.includes("key = '" + failSetting + "'"))) || (failHero && args[0] === 1 && sql.includes('SELECT id, category, title, subtitle, image_url'))) throw new Error('synthetic database failure'); return sqlite.prepare(sql).get(...args) || null; },
-        async run() { if (fail) throw new Error('synthetic database failure'); const r=sqlite.prepare(sql).run(...args); return {success:true,meta:{changes:Number(r.changes),last_row_id:Number(r.lastInsertRowid)}}; },
+        async run() { if (fail) throw new Error('synthetic database failure'); if (args.some(v => v === undefined)) throw new Error('D1_TYPE_ERROR: undefined post binding'); const r=sqlite.prepare(sql).run(...args); return {success:true,meta:{changes:Number(r.changes),last_row_id:Number(r.lastInsertRowid)}}; },
       };
     },
     async batch(statements) {

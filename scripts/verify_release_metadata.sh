@@ -44,6 +44,7 @@ done
 SITE_STYLE_FILES=(
   public/index.html
   public/latest.html
+  public/jamboree16.html
   public/korea.html
   public/apr.html
   public/wosm.html
@@ -51,8 +52,15 @@ SITE_STYLE_FILES=(
   public/people.html
   public/glossary.html
   public/contributors.html
+  public/about.html
+  public/help.html
   public/search.html
   public/calendar.html
+  public/memorabilia.html
+  public/privacy.html
+  public/editorial-policy.html
+  public/404.html
+  public/500.html
   functions/post/'[id]'.js
   functions/feature/'[category]'/'[slug]'.js
   functions/glossary-raw.js
@@ -72,6 +80,7 @@ M3_STYLE_FILES=(
   public/glossary.html
   public/contributors.html
   public/about.html
+  public/help.html
   public/search.html
   public/calendar.html
   public/memorabilia.html

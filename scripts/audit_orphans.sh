@@ -64,7 +64,7 @@ ORPHAN_ENGAGEMENT=$(run_d1 \
 echo "post_engagement rows with no parent   : $ORPHAN_ENGAGEMENT"
 
 ORPHAN_DRAFTS=$(run_d1 \
-  "SELECT COUNT(*) AS count FROM drafts WHERE editing_post_id IS NOT NULL AND editing_post_id NOT IN (SELECT id FROM posts)" \
+  "SELECT COUNT(*) AS count FROM drafts WHERE editing_post_id IS NOT NULL AND editing_post_id > 0 AND editing_post_id NOT IN (SELECT id FROM posts)" \
   | extract_count)
 echo "drafts editing dead post              : $ORPHAN_DRAFTS"
 
