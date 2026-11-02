@@ -451,6 +451,11 @@ for (const width of [280, 390, 1465, 1920, 2560, 5120]) test(`${width}px visible
   await page.locator('[data-v3-period-scope="analytics"] [data-days="7"]').click();
   const range = await page.locator('[data-v3-period-scope="analytics"]').evaluate(el => Array.from(el.querySelectorAll('input')).map(input => input.value));
   expect((Date.parse(range[1]) - Date.parse(range[0])) / 86400000).toBe(6);
+  const dayRequest = page.waitForRequest(req => /\/api\/admin\/analytics\?.*days=1(&|$)/.test(req.url()));
+  await page.locator('[data-v3-period-scope="analytics"] [data-days="1"]').click();
+  await dayRequest;
+  const dayRange = await page.locator('[data-v3-period-scope="analytics"]').evaluate(el => Array.from(el.querySelectorAll('input')).map(input => input.value));
+  expect(dayRange[0]).toBe(dayRange[1]);
   await page.locator('[data-v3-period-scope="analytics"] [data-days="30"]').click();
   await expect(page.locator('[data-v3-period-scope="analytics"] [data-days="30"]')).toHaveClass(/is-active/);
   await expect(page.locator('.v3-visit-post')).toHaveCount(10);
