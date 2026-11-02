@@ -2,13 +2,16 @@ import { test, expect, type Page, type Route } from '@playwright/test';
 import { writeFile } from 'node:fs/promises';
 import { installSyntheticAdmin, assertRenderedBounds } from './analytics-internals-fixture';
 import { buildTagInsights, splitCommaTokens } from '../functions/_shared/tag-insights.js';
-import { resolveAdminAnalyticsRange, analyticsRangeMeta } from '../functions/_shared/admin-analytics-range.js';
+import { resolveAdminAnalyticsRange, analyticsRangeMeta, shiftAnalyticsDate } from '../functions/_shared/admin-analytics-range.js';
 
 const ORIGIN = 'http://127.0.0.1:8781';
 const lastTag = '힣 검색범위밖의긴메타태그';
+// 합성 기사는 어제(KST)에 발행해 기본 30일 범위 안에 둔다. 고정 날짜는 한 달 뒤 범위를 벗어나 태그 그래프가 비었다.
+const KST_TODAY = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Seoul', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+const POST_DAY = shiftAnalyticsDate(KST_TODAY, -1);
 const postRows = Array.from({ length: 85 }, (_, index) => ({ id: index + 1, title: '합성 태그 기사 ' + index,
   category: 'korea', tag: '검증 글머리', meta_tags: '공통,' + (index === 84 ? lastTag : '검증태그 ' + index),
-  published: 1, publish_at: '2026-10-01 10:00:00', created_at: '2026-10-01 01:00:00', views: 0 }));
+  published: 1, publish_at: POST_DAY + ' 10:00:00', created_at: POST_DAY + ' 01:00:00', views: 0 }));
 
 async function open(page: Page) {
   const boundary = await installSyntheticAdmin(page);
@@ -198,8 +201,8 @@ test('Geo and tags ignore delayed prior-period responses', async ({ page }) => {
 test('Tag custom scope and graph-unlisted search open exact published detail by keyboard and restore focus', async ({ page }) => {
   const { state, boundary } = await open(page); await panel(page, 'analytics-tags');
   const bar = page.locator('[data-v3-period-scope="analytics-tag"]');
-  await bar.locator('[data-v3-role="start"]').fill('2026-10-01'); await bar.locator('[data-v3-role="end"]').fill('2026-10-02');
-  await bar.locator('.v3-apply-btn').click(); await expect(page.locator('#analytics-tags-status')).toContainText('2026-10-01 ~ 2026-10-02');
+  await bar.locator('[data-v3-role="start"]').fill(POST_DAY); await bar.locator('[data-v3-role="end"]').fill(KST_TODAY);
+  await bar.locator('.v3-apply-btn').click(); await expect(page.locator('#analytics-tags-status')).toContainText(POST_DAY + ' ~ ' + KST_TODAY);
   const request = state.reads.filter(url => url.pathname === '/api/admin/tag-insights').at(-1)!;
   expect(request.searchParams.get('all')).toBeNull();
   await page.locator('#v3-ti-graph-search').fill(lastTag);
@@ -208,7 +211,7 @@ test('Tag custom scope and graph-unlisted search open exact published detail by 
   const modal = page.locator('.v3-ti-articles-modal'); await expect(modal).toBeVisible();
   await expect(modal).toContainText('정확한 메타 태그'); await expect(page.locator('#v3-ti-articles-close')).toBeFocused();
   const detail = state.reads.filter(url => url.pathname === '/api/admin/tag-articles').at(-1)!;
-  expect(detail.searchParams.get('start')).toBe('2026-10-01'); expect(detail.searchParams.get('end')).toBe('2026-10-02'); expect(detail.searchParams.get('tag')).toBe(lastTag);
+  expect(detail.searchParams.get('start')).toBe(POST_DAY); expect(detail.searchParams.get('end')).toBe(KST_TODAY); expect(detail.searchParams.get('tag')).toBe(lastTag);
   await page.keyboard.press('Escape'); await expect(modal).toHaveCount(0); await expect(result).toBeFocused();
   const node = page.locator('.v3-ti-graph-node').first(); await node.focus(); await page.keyboard.press('Enter');
   await expect(modal).toBeVisible(); await page.keyboard.press('Escape'); await expect(node).toBeFocused();
