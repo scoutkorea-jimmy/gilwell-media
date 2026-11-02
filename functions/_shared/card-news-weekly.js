@@ -59,6 +59,21 @@ export function weeklyPeriod(now = new Date(), rolling = false) {
   return { start, end, timezone: 'Asia/Seoul', key: `${start.slice(0, 10)}_${end.slice(0, 10)}` };
 }
 
+// ISO 주차: 월요일 00:00부터 일요일 23:59:59까지, KST 기준.
+export function isoWeekPeriod(value) {
+  const match = /^(\d{4})-W(\d{2})$/.exec(String(value || ''));
+  if (!match) throw new Error('연도와 주차를 확인해 주세요.');
+  const year = Number(match[1]), week = Number(match[2]);
+  if (year < 2000 || year > 9998 || week < 1 || week > 53) throw new Error('존재하는 연도와 주차를 선택해 주세요.');
+  const jan4 = new Date(Date.UTC(year, 0, 4));
+  const monday = new Date(jan4.getTime() - ((jan4.getUTCDay() + 6) % 7) * DAY + (week - 1) * 7 * DAY);
+  const thursday = new Date(monday.getTime() + 3 * DAY);
+  if (thursday.getUTCFullYear() !== year) throw new Error('해당 연도에 없는 주차입니다.');
+  const startDate = monday.toISOString().slice(0, 10);
+  const endDate = new Date(monday.getTime() + 6 * DAY).toISOString().slice(0, 10);
+  return { start: startDate + ' 00:00:00', end: endDate + ' 23:59:59', timezone: 'Asia/Seoul', key: startDate + '_' + endDate };
+}
+
 function plain(value) {
   return String(value || '').replace(/<[^>]*>/g, ' ').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/\s+/g, ' ').trim();
 }
@@ -173,8 +188,8 @@ export async function loadWeeklyCandidates(env, period, origin, fetcher = fetch)
   return result.slice(0, 20);
 }
 
-export async function createWeeklyIssue(env, { now = new Date(), rolling = false, origin = 'https://bpmedia.net', fetcher = fetch } = {}) {
-  const period = weeklyPeriod(now, rolling);
+export async function createWeeklyIssue(env, { now = new Date(), rolling = false, week = null, origin = 'https://bpmedia.net', fetcher = fetch } = {}) {
+  const period = week ? isoWeekPeriod(week) : weeklyPeriod(now, rolling);
   const slug = `weekly-${period.key}${rolling ? '-manual' : ''}`;
   const existingResponse = await queryRust({env, request:{url:'https://internal.invalid/'}}, 'card-news-weekly', {operation:'find', slug});
   if (!existingResponse.ok) throw new Error('Rust weekly lookup failed');
@@ -182,7 +197,7 @@ export async function createWeeklyIssue(env, { now = new Date(), rolling = false
   if (existing) return { ok: true, ...existing, existing: true };
   const candidates = await loadWeeklyCandidates(env, period, origin, fetcher);
   if (!candidates.length) return { ok: true, status: 'no_articles', reason: '이번 기간에 이미지와 본문을 확인한 기사가 아직 없습니다.', period };
-  const date = new Date(now.getTime() + 9 * 3600000).toISOString().slice(0, 10);
+  const date = week ? period.end.slice(0, 10) : new Date(now.getTime() + 9 * 3600000).toISOString().slice(0, 10);
   const title = `함께 읽는 스카우트 소식 · ${period.start.slice(5, 10)}–${period.end.slice(5, 10)}`;
   const data = withSelection({ template: WEEKLY_TEMPLATE, revision: 1, title, period,
     issueDate: date.replaceAll('-', '.'), date: date.replaceAll('-', '.'),

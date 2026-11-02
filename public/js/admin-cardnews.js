@@ -92,6 +92,31 @@
     });
   }
 
+  function selectedWeekPeriod() {
+    var input = $('#cardnews-week-select'), label = $('#cardnews-week-period');
+    var m = input && /^(\d{4})-W(\d{2})$/.exec(input.value);
+    if (!m) { if (label) label.textContent = ''; return null; }
+    var year = Number(m[1]), week = Number(m[2]), jan4 = new Date(Date.UTC(year, 0, 4));
+    var monday = new Date(jan4.getTime() - ((jan4.getUTCDay() + 6) % 7) * 86400000 + (week - 1) * 604800000);
+    if (week < 1 || week > 53 || new Date(monday.getTime() + 3 * 86400000).getUTCFullYear() !== year) { if (label) label.textContent = '존재하지 않는 주차입니다.'; return null; }
+    var sunday = new Date(monday.getTime() + 6 * 86400000);
+    if (label) label.textContent = monday.toISOString().slice(0,10) + ' ~ ' + sunday.toISOString().slice(0,10) + ' (한국 시간)';
+    return input.value;
+  }
+
+  function openSelectedWeek() {
+    var week = selectedWeekPeriod();
+    if (!week) { toast('연도와 주차를 선택해 주세요.', 'error'); return; }
+    if (!canWrite() || state.creating || !canLeave()) return;
+    state.creating = true;
+    var button = $('#cardnews-week-open'); if (button) button.disabled = true;
+    fetch('/api/admin/card-news/weekly', { method: 'POST', credentials: 'same-origin', headers: {'Content-Type':'application/json'}, body: JSON.stringify({week:week}) })
+      .then(function (r) { return r.json().then(function (d) { if (!r.ok) throw new Error(d.reason || '카드뉴스를 준비하지 못했습니다.'); return d; }); })
+      .then(function (d) { state.creating = false; if (!d.id) { toast(d.reason || '이 기간에 만들 수 있는 기사가 없습니다.'); return; } toast(d.existing ? '저장된 주차 카드뉴스를 열었습니다.' : '선택한 주차의 카드뉴스를 준비했습니다.'); openEditor(d.id, d.title); })
+      .catch(function (error) { toast(error.message, 'error'); })
+      .finally(function () { state.creating = false; if (button) button.disabled = false; });
+  }
+
   function loadList() {
     var sequence = ++state.loadSequence;
     var wrap = $('#cardnews-list-wrap');
@@ -116,6 +141,7 @@
     if (!wrap) return;
     var newBtn = $('#cardnews-new-btn'); if (newBtn) newBtn.hidden = !canWrite();
     var weeklyBtn = $('#cardnews-weekly-btn'); if (weeklyBtn) weeklyBtn.hidden = !canWrite();
+    var weekOpen = $('#cardnews-week-open'); if (weekOpen) weekOpen.hidden = !canWrite();
     if (meta) meta.textContent = '총 ' + state.items.length + '개';
     if (!state.items.length) {
       wrap.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">아직 카드뉴스가 없습니다.' + (canWrite() ? ' <strong>+ 새 카드뉴스</strong>로 시작하세요.' : '') + '</div></div>';
@@ -325,6 +351,8 @@
     var bind = function (sel, ev, fn) { var el = $(sel); if (el) el.addEventListener(ev, fn); };
     bind('#cardnews-new-btn', 'click', openNewModal);
     bind('#cardnews-weekly-btn', 'click', createWeekly);
+    bind('#cardnews-week-select', 'change', selectedWeekPeriod);
+    bind('#cardnews-week-open', 'click', openSelectedWeek);
     bind('#cardnews-new-close', 'click', closeNewModal);
     bind('#cardnews-new-cancel', 'click', closeNewModal);
     bind('#cardnews-new-submit', 'click', submitNew);

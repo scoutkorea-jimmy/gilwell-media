@@ -87,6 +87,24 @@ for(const width of [280,320,390,820,1280]) test(`all 14 internal menus populated
   await page.screenshot({path:`test-results/content-internals/content-${width}.png`,fullPage:true});
 });
 
+test('주차를 선택해 해당 기간의 카드뉴스를 연다', async ({page}) => {
+  await page.setViewportSize({width:390,height:900});
+  await open(page);
+  await page.route(ORIGIN+'/api/admin/card-news/weekly', async route => {
+    if (route.request().method() === 'POST') {
+      expect(route.request().postDataJSON()).toEqual({week:'2026-W44'});
+      return route.fulfill({json:{id:77,title:'합성 44주차',existing:true}});
+    }
+    return route.fulfill({json:{auto_generate:false}});
+  });
+  await enter(page,'card-news');
+  await page.locator('#cardnews-week-select').fill('2026-W44');
+  await expect(page.locator('#cardnews-week-period')).toContainText('2026-10-26 ~ 2026-11-01');
+  await page.locator('#cardnews-week-open').click();
+  await expect(page.locator('#cardnews-editor-view')).toBeVisible();
+  await expect(page.locator('#cardnews-editor-frame')).toHaveAttribute('src','/card-news/77?edit=1');
+});
+
 test('real embedded React card-news editor reports dirty, pending, failed and saved versions to its host',async({page})=>{
   const {state,controls}=await open(page);page.on('dialog',dialog=>dialog.dismiss());
   const apiSource=readFileSync(new URL('../functions/api/admin/card-news/index.js',import.meta.url),'utf8');
