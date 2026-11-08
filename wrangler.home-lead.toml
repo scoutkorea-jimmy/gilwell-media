@@ -1,0 +1,10 @@
+name = "gilwell-media-home-lead"
+main = "workers/home-lead-scheduler.js"
+compatibility_date = "2024-09-23"
+
+[triggers]
+# 15:00 UTC = 익일 00:00 KST (한국은 서머타임 없음)
+crons = ["0 15 * * *"]
+
+[vars]
+SITE_ORIGIN = "https://bpmedia.net"

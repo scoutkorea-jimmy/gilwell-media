@@ -1,0 +1,65 @@
+/**
+ * POST /api/admin/totp/verify — 민감 메뉴 진입 시 OTP 확인.
+ *
+ * body { code } : 6자리 TOTP 또는 백업코드(XXXX-XXXX).
+ * 성공 시 10분짜리 admin_otp 서명 쿠키를 발급 → 4개 민감 메뉴 API 통과.
+ * 백업코드는 일회용 — 사용 즉시 저장 해시에서 제거한다.
+ */
+import { loadAdminSession } from '../../../_shared/admin-permissions.js';
+import { verifyTotp, matchBackupCode } from '../../../_shared/totp.js';
+import { enforceRateLimit, rateLimitResponse } from '../../../_shared/rate-limit.js';
+import { issueOtpToken, buildOtpCookie } from '../../../_shared/otp-session.js';
+import { queryRust } from '../../../_shared/rust-server.js';
+
+// 로그인(login.js)과 동일한 Set-Cookie emit 패턴: Headers 인스턴스 + append.
+// (plain-object headers 로 넣은 Set-Cookie 가 일부 환경에서 누락되던 회귀 방지)
+function json(data, status = 200, extraHeaders) {
+  const headers = new Headers({ 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });
+  for (const [k, v] of Object.entries(extraHeaders || {})) {
+    if (Array.isArray(v)) v.forEach((item) => headers.append(k, item));
+    else headers.set(k, v);
+  }
+  return new Response(JSON.stringify(data), { status, headers });
+}
+
+export async function onRequestPost({ request, env }) {
+  const session = await loadAdminSession(request, env);
+  if (!session) return json({ error: 'unauthorized', reason: '로그인이 필요합니다.' }, 401);
+  if (!session.uid) return json({ error: 'legacy_session', reason: '계정으로 로그인해야 합니다.' }, 400);
+
+  const rl = await enforceRateLimit(env, { route: 'totp-verify', identity: 'u' + session.uid, limit: 10, windowSeconds: 60 });
+  if (!rl.ok) return rateLimitResponse(rl, '시도가 너무 많습니다. 잠시 후 다시 시도하세요.');
+
+  let body = {};
+  try { body = await request.json(); } catch (_) { body = {}; }
+  const code = String(body.code || '').trim();
+
+  const lookup = await queryRust({request, env}, 'admin-user-read', {operation:'totp-full', id:session.uid});
+  if (!lookup.ok) throw new Error('Rust TOTP lookup failed');
+  const {row} = await lookup.json();
+  if (!row || !Number(row.totp_enabled) || !row.totp_secret) {
+    return json({ error: 'not_enrolled', reason: '2단계 인증이 설정되어 있지 않습니다.' }, 400);
+  }
+
+  const now = Math.floor(Date.now() / 1000);
+  let ok = await verifyTotp(row.totp_secret, code, now, { window: 1 });
+  let usedBackup = false;
+  if (!ok) {
+    const matched = await matchBackupCode(row.totp_backup_codes, code);
+    if (matched) {
+      ok = true; usedBackup = true;
+      // 일회용 소비 — 사용된 해시 제거
+      let list = [];
+      try { list = JSON.parse(row.totp_backup_codes) || []; } catch (_) { list = []; }
+      list = list.filter((h) => h !== matched);
+      const consumed = await queryRust({request, env}, 'admin-account-mutation', {operation:'totp-consume', id:session.uid, value:JSON.stringify(list), previous:row.totp_backup_codes});
+      if (!consumed.ok) throw new Error('Rust TOTP backup consumption failed');
+      if ((await consumed.json()).changes !== 1) return json({ error: 'bad_code', reason: '코드가 올바르지 않습니다.' }, 401);
+    }
+  }
+  if (!ok) return json({ error: 'bad_code', reason: '코드가 올바르지 않습니다.' }, 401);
+
+  const token = await issueOtpToken(env.ADMIN_SECRET, session.uid);
+  // otp_token: 프론트가 sessionStorage 에 저장 후 X-Admin-Otp 헤더로 재전송(쿠키 백업).
+  return json({ ok: true, used_backup: usedBackup, otp_token: token }, 200, { 'Set-Cookie': buildOtpCookie(token) });
+}

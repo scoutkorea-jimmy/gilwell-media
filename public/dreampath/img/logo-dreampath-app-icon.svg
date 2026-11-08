@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" fill="none" role="img" aria-label="DreamPath app icon">
+  <defs>
+    <radialGradient id="dpAppGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#FFE600" stop-opacity="0.55"></stop>
+      <stop offset="55%" stop-color="#FFE600" stop-opacity="0"></stop>
+    </radialGradient>
+  </defs>
+  <rect width="120" height="120" rx="28" fill="#1B0038"></rect>
+  <circle cx="60" cy="60" r="38" fill="url(#dpAppGlow)"></circle>
+  <circle cx="60" cy="60" r="34" stroke="#B783FF" stroke-width="1.25" stroke-dasharray="2 5" opacity="0.55" fill="none"></circle>
+  <g stroke="#B783FF" stroke-width="1.5" stroke-linecap="round" opacity="0.75">
+    <line x1="60" y1="26" x2="60" y2="60"></line>
+    <line x1="89" y1="43" x2="60" y2="60"></line>
+    <line x1="89" y1="77" x2="60" y2="60"></line>
+    <line x1="60" y1="94" x2="60" y2="60"></line>
+    <line x1="31" y1="77" x2="60" y2="60"></line>
+    <line x1="31" y1="43" x2="60" y2="60"></line>
+  </g>
+  <circle cx="60" cy="26" r="4.5" fill="#9FED8F"></circle>
+  <circle cx="89" cy="43" r="4.5" fill="#FFAE80"></circle>
+  <circle cx="89" cy="77" r="4.5" fill="#FF8DFF"></circle>
+  <circle cx="60" cy="94" r="4.5" fill="#FF5655"></circle>
+  <circle cx="31" cy="77" r="4.5" fill="#82E6DE"></circle>
+  <circle cx="31" cy="43" r="4.5" fill="#B783FF"></circle>
+  <circle cx="60" cy="60" r="10" fill="#FFE600"></circle>
+</svg>

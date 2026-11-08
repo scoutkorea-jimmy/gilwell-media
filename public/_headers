@@ -1,0 +1,42 @@
+/*
+  X-Frame-Options: DENY
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  X-XSS-Protection: 1; mode=block
+  Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://unpkg.com https://esm.sh https://cdnjs.cloudflare.com https://challenges.cloudflare.com https://t1.kakaocdn.net https://t1.daumcdn.net https://static.cloudflareinsights.com https://pagead2.googlesyndication.com https://partner.googleadservices.com https://tpc.googlesyndication.com https://www.googletagservices.com https://adservice.google.com; style-src 'self' 'unsafe-inline' https://unpkg.com https://cdn.jsdelivr.net https://fonts.googleapis.com; img-src 'self' data: https:; font-src 'self' data: https://cdn.jsdelivr.net https://fonts.gstatic.com; connect-src 'self' https://esm.sh https://nominatim.openstreetmap.org https://challenges.cloudflare.com https://cloudflareinsights.com https://display.ad.daum.net https://t1.daumcdn.net https://t1.kakaocdn.net https://serv.ds.kakao.com https://*.onkakao.net https://cdn.jsdelivr.net https://pagead2.googlesyndication.com https://googleads.g.doubleclick.net https://csi.gstatic.com https://ep1.adtrafficquality.google; frame-src 'self' https://www.youtube-nocookie.com https://www.openstreetmap.org https://challenges.cloudflare.com https://t1.daumcdn.net https://display.ad.daum.net https://t1.kakaocdn.net https://googleads.g.doubleclick.net https://tpc.googlesyndication.com https://www.google.com; media-src 'self' data: https:; object-src 'none'; base-uri 'self'; form-action 'self' https://sharer.kakao.com https://accounts.kakao.com; frame-ancestors 'none'
+
+/admin.html
+  X-Robots-Tag: noindex, nofollow
+  Cache-Control: no-store, no-cache, must-revalidate, max-age=0
+  Pragma: no-cache
+  Expires: 0
+
+/admin
+  X-Robots-Tag: noindex, nofollow
+  Cache-Control: no-store, no-cache, must-revalidate, max-age=0
+  Pragma: no-cache
+  Expires: 0
+
+# [2026-07-22] immutable + 1년 → 1시간으로 축소.
+#
+# 자산 URL 은 `?v=<ASSET_VERSION>` 으로 버전을 구분하므로 이론상 내용이 바뀌지
+# 않아 immutable 이 맞다. 문제는 **배포 전파 경쟁**이다. 배포 직후 전파가 끝나기
+# 전에 새 토큰 URL 이 요청되면, 그 엣지가 새 URL 아래 이전 파일을 캐시한다.
+# immutable + 1년이면 그 오염이 1년간 남는다.
+#
+# 실측(2026-07-22): 같은 `?v=` URL 이 NRT/KIX 는 00.178.01, HKG 는 00.178.00 을
+# 반환. 사용자는 접속 POP 에 따라 구버전을 보게 되고, 하드 리로드로도 못 고친다
+# (CDN 은 클라이언트 no-cache 를 무시한다).
+#
+# 1시간이면 오염이 스스로 낫고, 한 릴리스 주기 안의 반복 방문에는 여전히 캐시가
+# 효과적이다. 자세한 경위는 rules/03-deploy.md 참조.
+/css/*
+  Cache-Control: public, max-age=3600
+
+/js/*
+  Cache-Control: public, max-age=3600
+
+/api/*
+  Cache-Control: no-store

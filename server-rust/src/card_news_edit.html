@@ -1,0 +1,15 @@
+  <script>
+    // 에디터 모드: 앱 마운트 후 Tweaks 패널 자동 오픈(호스트 프로토콜 셀프 트리거).
+    (function () {
+      var tries = 0;
+      var t = setInterval(function () {
+        window.postMessage({ type: '__activate_edit_mode' }, '*');
+        if (++tries > 40) clearInterval(t);
+      }, 250);
+      window.addEventListener('message', function (e) {
+        if (e.data && e.data.type === '__edit_mode_available') {
+          window.postMessage({ type: '__activate_edit_mode' }, '*');
+        }
+      });
+    })();
+  </script>

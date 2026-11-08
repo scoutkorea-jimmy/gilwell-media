@@ -1,0 +1,3429 @@
+/* Admin & KMS styles — v00.101.00 */
+
+/* 영문 전용 서체 — Google Sans Flex (Latin 1순위), 한글은 NixgonFont로 자연 폴백 */
+@import url('https://fonts.googleapis.com/css2?family=Google+Sans+Flex:opsz,wght@6..144,1..1000&display=swap');
+/* 키릴문자(러시아/우크라이나/불가리아 등) 전용 폴백 — Noto Sans (unicode-range 분리로 Cyrillic 있을 때만 다운로드) */
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans:wght@300;500;700&display=swap');
+
+/* ════════════════════════════════════════════════════════════
+   KMS — CSS 변수
+   ════════════════════════════════════════════════════════════ */
+.kms-page {
+  /* KMS 로컬 변수는 site 디자인 토큰(§2 Site / §3.4 KMS)을 참조 */
+  --kms-bg:           var(--bg-cream);        /* #fbf8f3 warm cream */
+  --kms-surface:      var(--white);           /* #ffffff */
+  --kms-surface2:     var(--gray-100);        /* #ebebeb light tint */
+  --kms-border:       rgba(3, 3, 3, 0.10);    /* neutral gray border, APCA-aware */
+  --kms-border-soft:  var(--gray-300);        /* #c4c4c4 Lc 33.5 UI 요소 대비 */
+  --kms-ink:          var(--ink);             /* #1f1f1f soft black, Lc 105.1 본문 */
+  --kms-muted:        var(--gray-500);        /* #8f8f8f Lc 61.3 콘텐츠·보조 */
+  --kms-accent:       var(--scouting-purple); /* #622599 Lc 92.4 본문 OK */
+  --kms-accent-strong: var(--midnight-purple);/* #4d006e Lc 100.2 emphasis */
+  --kms-accent-bg:    rgba(98, 37, 153, 0.08);/* scouting-purple tint */
+  --kms-header-h:     56px;
+  --kms-sidebar-w:    268px;
+  margin: 0;
+  padding: 0;
+  height: 100vh;
+  overflow: hidden;
+  background: var(--kms-bg);
+  color: var(--kms-ink);
+  display: flex;
+  justify-content: center;
+}
+
+/* ── 로그인 화면 ─────────────────────────────────────────── */
+.kms-login-screen {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100vh;
+  padding: 24px;
+  box-sizing: border-box;
+}
+
+.kms-login-box {
+  width: 100%;
+  max-width: 380px;
+  padding: 36px 32px;
+  border: 1px solid var(--kms-border);
+  border-radius: var(--radius-2xl);
+  background: var(--kms-surface);
+  box-shadow: 0 24px 56px rgba(20, 15, 12, 0.10);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.kms-login-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+
+.kms-login-brand strong {
+  font-size: 18px;
+}
+
+.kms-login-desc {
+  margin: 0 0 8px;
+  color: var(--kms-muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.kms-login-screen label {
+  font-size: 12px;
+  color: var(--kms-muted);
+  letter-spacing: .06em;
+}
+
+.kms-login-input {
+  width: 100%;
+  padding: 11px 14px;
+  border: 1px solid var(--kms-border);
+  border-radius: var(--radius-lg);
+  background: var(--kms-surface2);
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
+  font-size: 14px;
+  color: var(--kms-ink);
+  box-sizing: border-box;
+}
+
+.kms-login-input:focus {
+  outline: none;
+  border-color: var(--kms-accent);
+}
+
+.kms-login-btn {
+  margin-top: 4px;
+  min-height: 40px;
+  padding: 0 16px;
+  border: 1px solid rgba(92, 42, 157, 0.24);
+  border-radius: var(--radius-pill);
+  background: var(--kms-accent-bg);
+  color: var(--kms-accent);
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.kms-login-btn:disabled { opacity: 0.5; cursor: default; }
+
+.kms-login-error {
+  padding: 10px 13px;
+  border-radius: var(--radius-md);
+  background: rgba(203, 36, 49, 0.08);
+  color: #cb2431;
+  font-size: 13px;
+}
+
+.kms-login-ver {
+  margin: 0;
+  text-align: center;
+  color: var(--kms-muted);
+  font-size: 11px;
+}
+
+/* ── KMS 앱 쉘 ──────────────────────────────────────────── */
+.kms-screen {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 1366px;
+  height: 100vh;
+  overflow: hidden;
+  border-left: 1px solid var(--kms-border);
+  border-right: 1px solid var(--kms-border);
+}
+
+/* ── 헤더 ───────────────────────────────────────────────── */
+.kms-header {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: var(--kms-header-h);
+  padding: 0 16px;
+  border-bottom: 1px solid var(--kms-border);
+  background: rgba(255, 255, 255, 0.97);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 1px 0 var(--kms-border);
+}
+
+.kms-header-left {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.kms-sidebar-toggle {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--kms-border);
+  border-radius: var(--radius-pill);
+  background: var(--kms-surface);
+  color: var(--kms-ink);
+  cursor: pointer;
+}
+
+.kms-brand-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 9px;
+  border-radius: var(--radius-pill);
+  background: var(--kms-accent-bg);
+  color: var(--kms-accent);
+  font-size: 11px;
+  font-weight: bold;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+
+.kms-header-title {
+  font-size: 13px;
+  color: var(--kms-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 200px;
+}
+
+/* ── 탭 네비게이션 ──────────────────────────────────────── */
+.kms-tab-nav {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  justify-content: center;
+  overflow-x: auto;
+  min-width: 0;
+}
+
+.kms-tab-btn {
+  min-height: 34px;
+  padding: 0 16px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--kms-muted);
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background .14s, color .14s;
+  white-space: nowrap;
+}
+
+.kms-tab-btn:hover { background: var(--kms-accent-bg); color: var(--kms-accent); border-color: rgba(92,42,157,.24); }
+.kms-tab-btn.is-active { background: var(--kms-accent-bg); color: var(--kms-accent); border-color: rgba(92,42,157,.3); font-weight: bold; }
+
+/* ── 헤더 우측 액션 ─────────────────────────────────────── */
+.kms-header-right {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.kms-release-note {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 18px;
+  border-bottom: 1px solid rgba(92,42,157,0.18);
+  background: linear-gradient(90deg, rgba(92,42,157,0.10), rgba(92,42,157,0.04));
+  color: #3e235f;
+}
+
+.kms-release-note strong {
+  font-size: 12px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: #5c2a9d;
+}
+
+.kms-release-note span {
+  font-size: 13px;
+  color: #5b544c;
+}
+
+.kms-release-note code {
+  margin-left: auto;
+  padding: 4px 8px;
+  border: 1px solid rgba(92,42,157,0.18);
+  border-radius: var(--radius-pill);
+  background: rgba(255,255,255,0.75);
+  font-size: 11px;
+  color: #5c2a9d;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.kms-mode-switch {
+  display: flex;
+  padding: 3px;
+  border: 1px solid var(--kms-border);
+  border-radius: var(--radius-pill);
+  background: var(--kms-surface2);
+}
+
+.kms-mode-btn {
+  min-height: 30px;
+  padding: 0 12px;
+  border: none;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--kms-muted);
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.kms-mode-btn.is-active {
+  background: var(--kms-surface);
+  color: var(--kms-accent);
+  box-shadow: 0 1px 3px rgba(0,0,0,.08);
+}
+
+.kms-save-btn {
+  min-height: 34px;
+  padding: 0 16px;
+  border: 1px solid rgba(92,42,157,.24);
+  border-radius: var(--radius-pill);
+  background: var(--kms-accent-bg);
+  color: var(--kms-accent);
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
+  font-size: 12px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.kms-save-btn:disabled { opacity: 0.5; cursor: default; }
+
+.kms-back-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  padding: 0 12px;
+  border: 1px solid var(--kms-border);
+  border-radius: var(--radius-pill);
+  background: var(--kms-surface);
+  color: var(--kms-muted);
+  font-size: 12px;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.kms-back-link:hover { color: var(--kms-ink); }
+
+/* ── 레이아웃 ───────────────────────────────────────────── */
+.kms-layout {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+}
+
+/* ── 사이드바 ───────────────────────────────────────────── */
+.kms-sidebar {
+  width: var(--kms-sidebar-w);
+  flex-shrink: 0;
+  border-right: 1px solid var(--kms-border);
+  background: var(--kms-surface);
+  overflow-y: auto;
+  height: 100%;
+}
+
+.kms-sidebar-inner {
+  padding: 16px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* 모바일 오버레이 */
+.kms-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.35);
+  z-index: 199;
+}
+
+.kms-overlay.is-visible { display: block; }
+
+/* ── 검색 ───────────────────────────────────────────────── */
+.kms-search-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.kms-search-icon {
+  position: absolute;
+  left: 10px;
+  color: var(--kms-muted);
+  pointer-events: none;
+}
+
+.kms-search-input {
+  width: 100%;
+  padding: 8px 10px 8px 30px;
+  border: 1px solid var(--kms-border);
+  border-radius: var(--radius-md);
+  background: var(--kms-surface2);
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
+  font-size: 12px;
+  color: var(--kms-ink);
+  box-sizing: border-box;
+}
+
+.kms-search-input:focus { outline: none; border-color: var(--kms-accent); }
+
+/* ── 사이드바 메타 ──────────────────────────────────────── */
+.kms-sidebar-meta {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.kms-sidebar-meta span {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  background: var(--kms-surface2);
+  border: 1px solid var(--kms-border);
+  font-size: 11px;
+  color: var(--kms-muted);
+}
+
+.kms-sidebar-meta strong { color: var(--kms-ink); }
+
+/* ── 사이드바 원칙 ──────────────────────────────────────── */
+.kms-sidebar-principles {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.kms-principle-item {
+  padding: 7px 10px;
+  border-left: 2px solid var(--kms-accent);
+  background: var(--kms-accent-bg);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  font-size: 11px;
+  color: var(--kms-accent);
+  line-height: 1.5;
+}
+
+/* ── 목차 리스트 ────────────────────────────────────────── */
+.kms-section-list {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.kms-list-empty {
+  padding: 12px 6px;
+  color: var(--kms-muted);
+  font-size: 12px;
+  text-align: center;
+}
+
+.kms-section-link {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  width: 100%;
+  padding: 7px 10px;
+  border: none;
+  border-radius: var(--radius-md);
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  transition: background .12s;
+}
+
+.kms-section-link:hover { background: var(--kms-accent-bg); }
+
+/* 스크롤 스파이 — 현재 뷰포트에 보이는 섹션 하이라이트. 좌측 강조 바 + 배경. */
+.kms-section-link.is-current {
+  background: var(--kms-accent-bg);
+  box-shadow: inset 3px 0 0 var(--kms-accent, #4D006E);
+  font-weight: 600;
+}
+.kms-section-link.is-current .kms-section-title { color: var(--kms-accent, #4D006E); }
+
+/* TOP으로 이동 플로팅 버튼 — 메인 스크롤이 300px 이상일 때 노출. */
+.kms-back-to-top {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 40;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 14px;
+  border: 1px solid rgba(77, 0, 110, .2);
+  border-radius: var(--radius-pill);
+  background: #fff;
+  color: var(--kms-accent, #4D006E);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: .02em;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(77, 0, 110, .18);
+  transition: background .12s, box-shadow .12s, transform .12s;
+}
+.kms-back-to-top:hover { background: var(--kms-accent, #4D006E); color: #fff; box-shadow: 0 6px 18px rgba(77, 0, 110, .28); transform: translateY(-1px); }
+.kms-back-to-top[hidden] { display: none; }
+@media (max-width: 768px) {
+  .kms-back-to-top { right: 16px; bottom: 16px; padding: 9px 12px; font-size: 11px; }
+}
+
+/* 버전기록 검색 + 기간 필터 row (2026-05-27) */
+.kms-cl-filters {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 16px 0;
+  padding: 12px 14px;
+  background: #fff;
+  border: 1px solid var(--kms-border, #e5e5ea);
+  border-radius: var(--radius-lg);
+}
+.kms-cl-filters-search {
+  flex: 1 1 240px;
+  min-width: 200px;
+  padding: 8px 12px;
+  border: 1px solid var(--kms-border, #e5e5ea);
+  border-radius: var(--radius-md);
+  font-family: inherit;
+  font-size: 13px;
+  background: #fff;
+  color: var(--kms-ink, #1f1f1f);
+}
+.kms-cl-filters-search:focus {
+  outline: none;
+  border-color: var(--kms-accent, #4D006E);
+  box-shadow: 0 0 0 3px rgba(77, 0, 110, 0.12);
+}
+.kms-cl-filters-dates {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.kms-cl-filters-date {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--kms-muted, #6f6f6f);
+}
+.kms-cl-filters-date input[type="date"] {
+  padding: 6px 8px;
+  border: 1px solid var(--kms-border, #e5e5ea);
+  border-radius: var(--radius-sm);
+  font-family: inherit;
+  font-size: 12px;
+  background: #fff;
+  color: var(--kms-ink, #1f1f1f);
+}
+.kms-cl-filters-pagesize {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--kms-muted, #6f6f6f);
+}
+.kms-cl-filters-pagesize select {
+  padding: 6px 8px;
+  border: 1px solid var(--kms-border, #e5e5ea);
+  border-radius: var(--radius-sm);
+  font-family: inherit;
+  font-size: 12px;
+  background: #fff;
+  color: var(--kms-ink, #1f1f1f);
+  cursor: pointer;
+}
+.kms-cl-filters-meta {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--kms-muted, #6f6f6f);
+  font-weight: 500;
+}
+@media (max-width: 720px) {
+  .kms-cl-filters-meta { margin-left: 0; width: 100%; order: 99; }
+}
+
+/* 버전기록 페이지네이션 */
+.kms-cl-pagination {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--kms-border, #e5e5ea);
+}
+.kms-cl-page-btn {
+  min-width: 34px;
+  padding: 6px 10px;
+  border: 1px solid var(--kms-border, #e5e5ea);
+  border-radius: var(--radius-sm);
+  background: #fff;
+  color: var(--kms-ink, #1f1f1f);
+  font-family: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background .12s, border-color .12s;
+}
+.kms-cl-page-btn:hover:not(:disabled) { background: var(--kms-accent-bg); border-color: var(--kms-accent, #4D006E); }
+.kms-cl-page-btn.is-active { background: var(--kms-accent, #4D006E); border-color: var(--kms-accent, #4D006E); color: #fff; }
+.kms-cl-page-btn:disabled { opacity: .4; cursor: not-allowed; }
+.kms-cl-page-gap { padding: 0 4px; color: var(--kms-muted, #8e8e93); font-size: 12px; }
+.kms-cl-page-info { margin-left: auto; font-size: 11px; color: var(--kms-muted, #8e8e93); }
+.kms-cl-page-info-single { margin-top: 16px; font-size: 11px; color: var(--kms-muted, #8e8e93); text-align: right; }
+
+.kms-section-label {
+  flex-shrink: 0;
+  font-size: 10px;
+  color: var(--kms-muted);
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  min-width: 32px;
+}
+
+.kms-section-title {
+  font-size: 12px;
+  color: var(--kms-ink);
+  line-height: 1.4;
+  word-break: keep-all;
+}
+
+.kms-tree-sub { padding-left: 18px; }
+.kms-tree-sub2 { padding-left: 32px; }
+
+.kms-section-group-label {
+  padding: 12px 10px 4px;
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
+  font-size: 9px;
+  letter-spacing: .15em;
+  text-transform: uppercase;
+  color: var(--kms-muted);
+}
+
+/* ── 메인 영역 ──────────────────────────────────────────── */
+.kms-main {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  overflow-y: auto;
+}
+
+.kms-tab-panel {
+  padding: var(--gap-section) var(--gap-section-out) calc(var(--gap-section-out) + var(--gap-card));
+  max-width: 900px;
+}
+
+/* ── 패널 헤더 (모든 탭 공통) ────────────────────────────── */
+.kms-panel-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: var(--gap-section);
+  margin-bottom: calc(var(--gap-section) + var(--gap-micro));
+  padding-bottom: var(--gap-section);
+  border-bottom: 1px solid var(--kms-border);
+}
+
+.kms-panel-header-text {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-micro);
+  min-width: 0;
+  max-width: 680px;
+}
+
+.kms-kicker {
+  font-size: var(--fs-meta);
+  color: var(--kms-muted);
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
+.kms-panel-header h2 {
+  margin: 0;
+  font-size: var(--fs-document);
+  line-height: 1.2;
+  color: var(--kms-accent-strong);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.kms-panel-header p {
+  margin: 0;
+  font-size: var(--fs-body);
+  color: var(--kms-muted);
+  line-height: 1.65;
+}
+
+.kms-panel-header code {
+  background: var(--kms-surface2);
+  border: 1px solid var(--kms-border);
+  border-radius: var(--radius-tight);
+  padding: 1px 5px;
+  font-size: var(--fs-caption);
+}
+
+.kms-panel-header-side {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-self: start;
+  justify-self: end;
+  min-width: 190px;
+}
+
+.kms-panel-header-meta {
+  min-width: 0;
+}
+
+.kms-panel-header-meta span {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 7px 10px;
+  border-radius: var(--radius-md);
+  background: var(--kms-surface2);
+  border: 1px solid var(--kms-border);
+  font-size: 11px;
+  color: var(--kms-muted);
+}
+
+.kms-panel-header-meta strong { color: var(--kms-ink); font-size: 12px; }
+
+.kms-panel-header-side--chips {
+  min-width: auto;
+}
+
+.kms-panel-header-side--chips .kms-cl-filter {
+  justify-content: flex-end;
+}
+
+/* ── docs 탭: 편집 컨트롤이 panel-header 안쪽에 위치 ────── */
+.kms-panel-header-actions {
+  gap: var(--gap-element);
+  min-width: 220px;
+}
+.kms-panel-header-actions .kms-meta-row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-tight);
+}
+.kms-panel-header-actions .kms-meta-row span {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--gap-element);
+  padding: 7px 10px;
+  border-radius: var(--radius-md);
+  background: var(--kms-surface2);
+  border: 1px solid var(--kms-border);
+  font-size: var(--fs-meta);
+  color: var(--kms-muted);
+}
+.kms-panel-header-actions .kms-meta-row strong {
+  color: var(--kms-ink);
+  font-size: var(--fs-caption);
+}
+.kms-panel-header-actions .kms-action-row {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-tight);
+  padding-top: var(--gap-tight);
+  border-top: 1px dashed var(--kms-border);
+  justify-content: flex-end;
+}
+/* 편집 컨트롤 사이즈 축소 (헤더 대비 콤팩트) */
+.kms-panel-header-actions .kms-mode-switch {
+  padding: 2px;
+  border-radius: var(--radius-sm);
+}
+.kms-panel-header-actions .kms-mode-btn {
+  padding: 4px 10px;
+  font-size: var(--fs-caption);
+}
+.kms-panel-header-actions .kms-save-btn {
+  padding: 5px var(--gap-element);
+  font-size: var(--fs-caption);
+}
+
+/* ── 검색 결과 배너 ─────────────────────────────────────── */
+.kms-search-result-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  background: var(--kms-accent-bg);
+  border: 1px solid rgba(92, 42, 157, 0.18);
+  font-size: 13px;
+  color: var(--kms-accent);
+}
+
+.kms-search-clear-btn {
+  min-height: 30px;
+  padding: 0 12px;
+  border: 1px solid rgba(92, 42, 157, 0.2);
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--kms-accent);
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+mark.kms-highlight {
+  background: rgba(255, 220, 60, 0.6);
+  border-radius: var(--radius-tight);
+  padding: 0 1px;
+}
+
+/* ── 검색 결과 섹션 ─────────────────────────────────────── */
+.kms-search-section {
+  margin-bottom: 20px;
+  padding: 16px 18px;
+  border: 1px solid var(--kms-border);
+  border-radius: var(--radius-lg);
+  background: var(--kms-surface);
+}
+
+.kms-search-section-l2 { border-left: 3px solid var(--kms-accent); }
+.kms-search-section-l3 { border-left: 3px solid rgba(92, 42, 157, 0.4); }
+.kms-search-section-l4 { border-left: 3px solid var(--kms-border); }
+
+.kms-search-section-title { margin: 0 0 10px; font-size: 15px; }
+.kms-search-section-body { font-size: 13px; }
+
+/* ── 기능정의서 문서 스타일 (디자인 가이드 준용 · APCA Lc · Spacing 토큰) ─ */
+/* 다른 탭(API/버전기록/디자인)과 동일하게 tab-panel 폭을 그대로 사용하고,
+   대목차(##) 단위로 카드를 쌓아 가시성을 높인다. */
+.kms-document-body {
+  line-height: 1.8;
+  color: var(--kms-ink);                 /* --ink Lc 105.1 본문 OK */
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-section);               /* 대목차 카드 사이 간격 (24px) */
+}
+
+/* 대목차(##) 단위 카드 — API 가이드/버전기록 카드와 동일 톤 */
+.kms-doc-card {
+  background: var(--kms-surface);        /* Canvas White */
+  border: 1px solid var(--kms-border);
+  border-radius: var(--radius-lg);
+  padding: var(--gap-section-out) var(--gap-section-out) calc(var(--gap-section-out) + var(--gap-tight));
+}
+
+.kms-doc-card--intro {
+  /* # 문서 제목 + 서문 블록을 감싸는 인트로 카드 */
+}
+
+/* 카드 내부 첫 제목의 상단 여백 제거 (카드 패딩이 충분한 상단 공간 제공) */
+.kms-doc-card > .kms-h2:first-child,
+.kms-doc-card > .kms-h3:first-child,
+.kms-doc-card > .kms-h4:first-child {
+  margin-top: 0;
+}
+
+/* 본문 내 <strong> 강조: Midnight Purple (스캔 포인트 가시화) */
+.kms-document-body strong {
+  color: var(--kms-accent-strong);
+  font-weight: 700;
+}
+
+/* === h2 (#) = 문서 제목 (거의 안 쓰지만 대비) === */
+.kms-h2 {
+  margin: var(--gap-section-out) 0 var(--gap-element);
+  padding-bottom: var(--gap-tight);
+  border-bottom: 2px solid var(--kms-border-soft);
+  font-size: var(--fs-document);           /* 24px 토큰 */
+  font-weight: 700;
+  line-height: 1.25;
+  color: var(--kms-accent-strong);
+  letter-spacing: -0.01em;
+}
+.kms-h2:first-child { margin-top: 0; }
+
+/* === h3 (##) = 대장 섹션 제목 (예: "3. 디자인 시스템") === */
+.kms-h3 {
+  margin: calc(var(--gap-section-out) + var(--gap-tight)) 0 var(--gap-section);
+  padding-bottom: var(--gap-element);
+  border-bottom: 2px solid var(--kms-border-soft);
+  font-size: var(--fs-chapter);            /* 22px 토큰 */
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--kms-accent-strong);
+  letter-spacing: -0.01em;
+}
+.kms-h3:first-child { margin-top: 0; }
+
+/* === h4 (###) = 세부 섹션 제목 (예: "3.4 브랜드 컬러 팔레트") === */
+/* 좌측 accent 바 + 큰 글자로 섹션 경계를 명확히 */
+.kms-h4 {
+  margin: var(--gap-section-out) 0 var(--gap-element);
+  padding: var(--gap-micro) 0 var(--gap-micro) var(--gap-card);
+  border-left: 4px solid var(--kms-accent);
+  font-size: var(--fs-title);              /* 18px 토큰 */
+  font-weight: 700;
+  line-height: 1.35;
+  color: var(--kms-accent-strong);
+  letter-spacing: -0.01em;
+  background: none;
+  text-transform: none;
+  display: block;
+  border-radius: 0;
+}
+
+/* === h5 (####) = 서브블록 라벨 (기능 세부 설명 / 각주 / 코드 예시) === */
+/* 기본: 작은 대문자 칩 스타일 (라벨로 시각 인식) */
+.kms-h5 {
+  display: inline-block;
+  margin: var(--gap-section) 0 var(--gap-element);
+  padding: var(--gap-micro) var(--gap-tight);
+  background: var(--kms-accent-bg);
+  border-radius: var(--radius-tight);
+  font-size: var(--fs-meta);               /* 11px 토큰 */
+  font-weight: 700;
+  color: var(--kms-accent);
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  line-height: 1.2;
+}
+
+/* '각주' 라벨은 디엠퍼시스 (gray-100 바탕, gray-700 텍스트) */
+.kms-h5-footnote {
+  background: var(--kms-surface2);
+  color: var(--kms-muted);
+}
+/* '각주' 블록 뒤에 오는 리스트/문단은 gray-700 색 + 왼쪽 dashed */
+.kms-h5-footnote + .kms-list,
+.kms-h5-footnote + .kms-p {
+  border-left: 2px dashed var(--kms-border-soft);
+  padding-left: var(--gap-card);
+  margin-left: var(--gap-micro);
+  color: var(--kms-muted);
+  font-size: var(--fs-body);
+}
+.kms-h5-footnote + .kms-list li {
+  color: var(--kms-muted);
+  font-size: var(--fs-body);
+}
+
+/* '코드 예시' 라벨은 mono 힌트 */
+.kms-h5-code {
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  letter-spacing: .08em;
+}
+
+.kms-p {
+  margin: 0 0 var(--gap-element);
+  font-size: var(--fs-reading);           /* 15px 토큰 */
+  line-height: 1.85;
+  color: var(--kms-ink);
+}
+
+/* h4 직후 첫 문단은 lead 스타일 (섹션 intro) */
+.kms-h4 + .kms-p {
+  font-size: var(--fs-lead);              /* 16px 토큰 */
+  line-height: 1.8;
+  color: var(--kms-ink);
+  font-weight: 500;
+  margin-bottom: var(--gap-card);
+  padding: var(--gap-element) 0 0;
+}
+
+.kms-list {
+  margin: 0 0 var(--gap-card);
+  padding-left: calc(var(--gap-section) - 2px);  /* marker indent (22px) */
+}
+
+.kms-list li {
+  margin: 0 0 var(--gap-tight);         /* 리스트 간격 확대 (4 → 8) */
+  font-size: var(--fs-reading);         /* 15px 토큰 */
+  line-height: 1.75;
+  color: var(--kms-ink);
+  padding-left: 2px;                    /* marker-text 간격 (border/hairline급) */
+}
+.kms-list li::marker {
+  color: var(--kms-accent);
+  font-weight: 700;
+}
+/* 리스트 항목 첫 단어가 <strong>이면 카드처럼 돋보이게 */
+.kms-list li > strong:first-child {
+  color: var(--kms-accent-strong);
+  font-weight: 700;
+}
+.kms-list-ordered {
+  list-style: decimal;
+}
+.kms-list-ordered li::marker {
+  color: var(--kms-accent);
+  font-weight: 700;
+}
+.kms-link {
+  color: var(--kms-accent);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1px;
+  font-weight: 500;
+}
+.kms-link:hover {
+  color: var(--kms-accent-strong);
+  text-decoration-thickness: 2px;
+}
+.kms-link:focus-visible {
+  outline: 2px solid var(--kms-accent);
+  outline-offset: 2px;
+  border-radius: var(--radius-tight);
+}
+.kms-quote {
+  margin: 0 0 var(--gap-card);
+  padding: var(--gap-element) var(--gap-card);
+  border-left: 3px solid var(--kms-accent);
+  background: var(--kms-accent-bg);
+  color: var(--kms-ink);
+  font-size: var(--fs-body);
+  line-height: 1.75;
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+}
+.kms-quote > strong:first-child {
+  color: var(--kms-accent-strong);
+}
+.kms-divider {
+  border: 0;
+  border-top: 1px solid var(--kms-border);
+  margin: var(--gap-section) 0;
+}
+
+.kms-inline-code {
+  padding: 2px var(--gap-micro);
+  border-radius: var(--radius-tight);
+  background: var(--kms-surface2);       /* gray-100 tint */
+  border: 1px solid var(--kms-border);
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: var(--fs-caption);          /* 12px 토큰 */
+  color: var(--kms-accent-strong);       /* midnight-purple for code emphasis */
+  font-weight: 500;
+}
+
+.kms-wikilink {
+  color: var(--kms-accent);
+  text-decoration: underline;
+  text-decoration-style: dotted;
+  text-underline-offset: 3px;
+  font-weight: 500;
+  cursor: help;
+}
+.kms-wikilink:hover {
+  color: var(--kms-accent-strong);
+}
+
+.kms-code-wrap {
+  margin: var(--gap-element) 0 var(--gap-card);
+  border: 1px solid var(--kms-border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background: #030303;                   /* --black */
+}
+
+.kms-code-label {
+  padding: var(--gap-tight) var(--gap-card);
+  background: rgba(255,255,255,.05);
+  border-bottom: 1px solid rgba(255,255,255,.08);
+  color: var(--gray-300);                /* |Lc| 74 on black */
+  font-family: 'JetBrains Mono', monospace;
+  font-size: var(--fs-meta);             /* 11px 토큰 */
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+
+.kms-code {
+  margin: 0;
+  padding: var(--gap-card);
+  overflow-x: auto;
+  font-size: var(--fs-body);             /* 14px → 가독 */
+  line-height: 1.65;
+  color: var(--gray-100);                /* on black, |Lc| ~95 */
+}
+
+.kms-code code { font-family: 'JetBrains Mono', 'Fira Code', monospace; }
+
+/* 테이블 (마크다운 `| col | col |` 자동 렌더링) */
+.kms-table-wrap {
+  margin: var(--gap-element) 0 var(--gap-card);
+  overflow-x: auto;
+  border: 1px solid var(--kms-border);
+  border-radius: var(--radius-lg);
+}
+.kms-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--fs-small);          /* 13.5px 토큰 (cell 단위로 override) */
+  line-height: 1.55;
+}
+.kms-table th,
+.kms-table td {
+  padding: var(--gap-element) var(--gap-card);  /* 12/16: 숨 트이는 행 높이 */
+  border-bottom: 1px solid var(--kms-border);
+  text-align: left;
+  vertical-align: top;
+  color: var(--kms-ink);
+  font-size: var(--fs-small);           /* 13.5px 토큰 */
+  line-height: 1.6;
+}
+.kms-table tr:last-child td {
+  border-bottom: none;
+}
+.kms-table th {
+  background: var(--kms-surface2);
+  font-weight: 700;
+  color: var(--kms-accent-strong);
+  letter-spacing: 0.01em;
+  border-bottom: 2px solid var(--kms-border-soft);
+}
+.kms-table tbody tr:hover {
+  background: var(--kms-accent-bg);
+}
+.kms-table td code,
+.kms-table th code {
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: var(--fs-caption);         /* 12px 토큰 */
+}
+
+/* ── 편집기 ─────────────────────────────────────────────── */
+.kms-editor-panel {
+  margin-top: 20px;
+  border: 1px solid var(--kms-border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.kms-editor-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--kms-border);
+  background: var(--kms-surface2);
+}
+
+.kms-editor-hint {
+  font-size: 11px;
+  color: var(--kms-muted);
+}
+
+.kms-editor-hint code {
+  background: var(--kms-surface);
+  border: 1px solid var(--kms-border);
+  border-radius: var(--radius-tight);
+  padding: 0 4px;
+  font-size: 11px;
+  color: var(--kms-accent);
+}
+
+.kms-editor-input {
+  display: block;
+  width: 100%;
+  min-height: 540px;
+  padding: 20px;
+  border: none;
+  border-radius: var(--radius-md);    /* radius 통일 자동 주입 R3 */
+  background: #fdfcf9;
+  color: var(--kms-ink);
+  font-family: 'Google Sans Flex', 'JetBrains Mono', 'Fira Code', NixgonFont, monospace;
+  font-size: 13px;
+  line-height: 1.8;
+  resize: vertical;
+  box-sizing: border-box;
+  outline: none;
+}
+
+/* Editing remains a readable work surface without changing the KMS reader. */
+.kms-page #kms-editor-panel { width: 100%; max-width: 1280px; margin-inline: auto; }
+.kms-page #kms-tab-docs:not([hidden]):has(> #kms-editor-panel:not([hidden])) { display: flex; flex-direction: column; }
+.kms-page #kms-tab-docs:not([hidden]):has(> #kms-editor-panel:not([hidden])) > #kms-editor-panel { order: 1; }
+.kms-page #kms-tab-docs:not([hidden]):has(> #kms-editor-panel:not([hidden])) > #kms-document-body { order: 2; margin-top: 24px; }
+.kms-page #kms-editor-panel .kms-editor-toolbar { gap: 12px 24px; padding: 16px 20px; }
+.kms-page #kms-editor-panel .kms-editor-hint,
+.kms-page #kms-editor-panel .kms-editor-hint code { font-size: 14px; line-height: 1.6; }
+.kms-page #kms-editor-input { font-size: 14px; line-height: 1.75; }
+.kms-page #kms-editor-input:focus-visible { outline: 2px solid var(--kms-accent); outline-offset: -2px; }
+@media (max-width: 600px) {
+  .kms-page #kms-editor-panel .kms-editor-toolbar { padding: 16px; }
+  .kms-page #kms-editor-input { padding: 16px; }
+}
+
+/* ── API 가이드 ─────────────────────────────────────────── */
+.kms-api-auth-box {
+  margin-bottom: 28px;
+  padding: 16px 20px;
+  border: 1px solid rgba(92, 42, 157, 0.18);
+  border-radius: var(--radius-lg);
+  background: var(--kms-accent-bg);
+  font-size: 13px;
+  line-height: 1.75;
+}
+
+.kms-api-auth-box strong {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 12px;
+  color: var(--kms-accent);
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.kms-api-auth-box ol {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.kms-api-auth-box code {
+  background: rgba(92,42,157,.12);
+  border-radius: var(--radius-tight);
+  padding: 1px 5px;
+  font-size: 12px;
+  color: var(--kms-accent);
+}
+
+.kms-api-guide {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.kms-api-group {
+  border: 1px solid var(--kms-border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background: var(--kms-surface);
+}
+
+.kms-api-group-head {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--kms-border);
+  background: var(--kms-surface2);
+}
+
+.kms-api-group-title {
+  margin: 0 0 4px;
+  font-size: 16px;
+}
+
+.kms-api-group-desc {
+  margin: 0;
+  font-size: 13px;
+  color: var(--kms-muted);
+}
+
+.kms-api-endpoints {
+  display: flex;
+  flex-direction: column;
+}
+
+.kms-api-endpoint {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--kms-border);
+}
+
+.kms-api-endpoint:last-child { border-bottom: none; }
+
+.kms-api-endpoint-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
+}
+
+.kms-api-method {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: var(--radius-tight);
+  color: #fff;
+  font-size: 11px;
+  font-weight: bold;
+  letter-spacing: .06em;
+  white-space: nowrap;
+}
+
+.kms-api-path {
+  font-size: 14px;
+  font-weight: bold;
+  color: var(--kms-ink);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.kms-api-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  font-size: 10px;
+  letter-spacing: .06em;
+  border: 1px solid currentColor;
+}
+
+.kms-api-badge-public   { color: #22863a; border-color: rgba(34,134,58,.3); background: rgba(34,134,58,.07); }
+.kms-api-badge-optional { color: #b08800; border-color: rgba(176,136,0,.3); background: rgba(176,136,0,.07); }
+.kms-api-badge-admin    { color: #cb2431; border-color: rgba(203,36,49,.3); background: rgba(203,36,49,.07); }
+
+.kms-api-summary {
+  margin-bottom: 10px;
+  font-size: 14px;
+  color: var(--kms-ink);
+}
+
+.kms-api-section-label {
+  margin: 10px 0 5px;
+  font-size: 11px;
+  color: var(--kms-muted);
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+
+.kms-api-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  margin-bottom: 4px;
+}
+
+.kms-api-table th,
+.kms-api-table td {
+  padding: 7px 10px;
+  text-align: left;
+  border-bottom: 1px solid var(--kms-border);
+}
+
+.kms-api-table th {
+  background: var(--kms-surface2);
+  font-size: 11px;
+  color: var(--kms-muted);
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
+.kms-api-table code {
+  background: var(--kms-surface2);
+  border: 1px solid var(--kms-border);
+  border-radius: var(--radius-tight);
+  padding: 1px 5px;
+  font-size: 12px;
+  color: var(--kms-accent);
+}
+
+.kms-api-pre {
+  margin: 0 0 4px;
+  padding: 12px 14px;
+  border: 1px solid var(--kms-border);
+  border-radius: var(--radius-md);
+  background: #1e1e2e;
+  overflow-x: auto;
+}
+
+.kms-api-pre code {
+  font-size: 12px;
+  color: #cdd6f4;
+  font-family: 'JetBrains Mono', monospace;
+  white-space: pre;
+}
+
+.kms-api-notes {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+  padding: 9px 12px;
+  border-radius: var(--radius-md);
+  background: rgba(176, 136, 0, 0.07);
+  border: 1px solid rgba(176, 136, 0, 0.2);
+  font-size: 12px;
+  color: #7a6200;
+  line-height: 1.6;
+}
+
+.kms-api-notes-icon { flex-shrink: 0; font-style: normal; }
+
+/* ── 버전기록 ────────────────────────────────────────────── */
+.kms-cl-filter {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+}
+
+.kms-chip {
+  padding: 5px 13px;
+  border: 1px solid var(--kms-border);
+  border-radius: var(--radius-pill);
+  background: var(--kms-surface);
+  color: var(--kms-muted);
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background .12s, color .12s;
+}
+
+.kms-chip:hover { background: var(--kms-accent-bg); color: var(--kms-accent); }
+.kms-chip.is-active { background: var(--kms-accent-bg); color: var(--kms-accent); border-color: rgba(92,42,157,.3); font-weight: bold; }
+
+.kms-changelog {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.kms-cl-item {
+  padding: 18px 20px;
+  border: 1px solid var(--kms-border);
+  border-radius: var(--radius-lg);
+  background: var(--kms-surface);
+}
+
+.kms-cl-item-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+
+.kms-cl-item-version {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.kms-cl-ver {
+  font-size: 16px;
+  font-weight: bold;
+  color: var(--kms-ink);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.kms-cl-type {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: var(--radius-tight);
+  color: #fff;
+  font-size: 11px;
+  font-weight: bold;
+}
+
+.kms-cl-scope {
+  padding: 2px 8px;
+  border-radius: var(--radius-tight);
+  background: var(--kms-surface2);
+  border: 1px solid var(--kms-border);
+  font-size: 11px;
+  color: var(--kms-muted);
+}
+.kms-cl-scope-site {
+  background: rgba(37, 99, 235, 0.12);
+  border-color: rgba(37, 99, 235, 0.18);
+  color: #1d4ed8;
+}
+.kms-cl-scope-admin {
+  background: rgba(124, 58, 237, 0.12);
+  border-color: rgba(124, 58, 237, 0.18);
+  color: #7c3aed;
+}
+.kms-cl-scope-both {
+  background: rgba(24, 20, 17, 0.06);
+  border-color: var(--kms-border);
+  color: var(--kms-muted);
+}
+
+.kms-cl-date {
+  font-size: 12px;
+  color: var(--kms-muted);
+}
+
+.kms-cl-summary {
+  margin: 0 0 10px;
+  font-size: 14px;
+  color: var(--kms-ink);
+  line-height: 1.65;
+}
+
+.kms-cl-changes {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.kms-cl-changes li {
+  margin: 0 0 5px;
+  font-size: 13px;
+  color: #5b544c;
+  line-height: 1.65;
+}
+.kms-cl-issues-wrap {
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border: 1px solid rgba(190, 24, 93, 0.12);
+  border-radius: var(--radius-lg);
+  background: rgba(255, 241, 242, 0.92);
+}
+.kms-cl-issues-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: #be185d;
+  margin-bottom: 6px;
+}
+.kms-cl-issues {
+  margin: 0;
+  padding-left: 18px;
+}
+.kms-cl-issues li {
+  margin: 0 0 5px;
+  font-size: 13px;
+  color: #831843;
+  line-height: 1.65;
+}
+.kms-cl-section {
+  margin: 0 0 10px;
+  padding: 10px 12px;
+  border-radius: var(--radius-lg);
+  background: rgba(248, 250, 252, 0.7);
+  border: 1px solid rgba(98, 37, 153, 0.08);
+}
+.kms-cl-section-users {
+  background: rgba(240, 253, 244, 0.85);
+  border-color: rgba(36, 135, 55, 0.14);
+}
+.kms-cl-section-devs {
+  background: rgba(247, 247, 248, 0.85);
+  border-color: rgba(0, 0, 0, 0.06);
+}
+.kms-cl-section-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: #2d2a26;
+  margin-bottom: 6px;
+}
+.kms-cl-section-devs > .kms-cl-section-title {
+  cursor: pointer;
+  color: #5b544c;
+  user-select: none;
+}
+.kms-cl-section-devs[open] > .kms-cl-section-title {
+  color: #2d2a26;
+  margin-bottom: 8px;
+}
+.kms-cl-section .kms-cl-changes {
+  margin-top: 4px;
+}
+
+/* ── 반응형 ─────────────────────────────────────────────── */
+@media (max-width: 900px) {
+  .kms-sidebar-toggle { display: inline-flex; }
+
+  .kms-sidebar {
+    position: fixed;
+    top: var(--kms-header-h);
+    left: 0;
+    height: calc(100vh - var(--kms-header-h));
+    z-index: 200;
+    transform: translateX(-100%);
+    transition: transform .22s ease;
+  }
+
+  .kms-sidebar.is-open { transform: translateX(0); }
+
+  .kms-header-title { display: none; }
+  .kms-tab-btn { padding: 6px 10px; font-size: 12px; }
+  .kms-panel-header { grid-template-columns: 1fr; }
+  .kms-panel-header-side,
+  .kms-panel-header-meta { min-width: 0; width: 100%; justify-self: stretch; }
+  .kms-panel-header-meta { flex-direction: row; flex-wrap: wrap; }
+  .kms-panel-header-side--chips .kms-cl-filter { justify-content: flex-start; }
+  .kms-tab-panel { padding: 16px 14px 40px; }
+  .kms-doc-card { padding: var(--gap-section) var(--gap-card) calc(var(--gap-section) + var(--gap-tight)); border-radius: var(--radius-lg); }
+}
+
+@media (max-width: 600px) {
+  .kms-tab-btn { font-size: 11px; padding: 5px 8px; }
+  .kms-header-right .kms-back-link { display: none; }
+  .kms-api-endpoint-head { flex-wrap: wrap; }
+  .kms-cl-item-head { flex-direction: column; align-items: flex-start; }
+}
+
+.kms-pc-only-note {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 18px;
+  border: 1px solid rgba(22, 17, 12, 0.1);
+  border-radius: var(--radius-xl);
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 10px 22px rgba(20, 15, 12, 0.05);
+}
+
+.kms-pc-only-note strong {
+  display: inline-flex;
+  flex: 0 0 auto;
+  margin: 0;
+  color: #5c2a9d;
+  font-size: 11px;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+}
+
+.kms-pc-only-note p {
+  margin: 0;
+  color: #5b544c;
+  font-size: 13px;
+  line-height: 1.65;
+}
+
+/* ── 디자인 시스템 탭 ───────────────────────────────────── */
+.kms-ds-body {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.kms-ds-section {
+  padding: 20px 22px;
+  border: 1px solid var(--kms-border);
+  border-radius: 0;
+  background: var(--kms-surface);
+}
+
+.kms-ds-section-title {
+  margin: 0 0 16px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--kms-muted);
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--kms-border);
+  padding-bottom: 10px;
+}
+
+.kms-ds-preview { min-height: 40px; overflow-x: auto; }
+.kms-ds-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.kms-ds-col { display: flex; flex-direction: column; gap: 8px; }
+
+.kms-ds-form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 14px;
+}
+
+.kms-ds-label {
+  display: block;
+  font-size: 11px;
+  color: var(--kms-muted);
+  margin-bottom: 5px;
+  letter-spacing: .06em;
+}
+
+.kms-ds-type-item { margin-bottom: 12px; }
+
+.kms-ds-swatch-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 10px;
+}
+
+.kms-ds-swatch {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border: 1px solid var(--kms-border);
+  border-radius: 0;
+  background: var(--kms-surface2);
+}
+
+.kms-ds-swatch-color {
+  width: 36px;
+  height: 36px;
+  border-radius: 0;
+  flex-shrink: 0;
+}
+
+.kms-ds-swatch-info { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.kms-ds-swatch-var { font-size: 10px; color: var(--kms-accent); font-family: 'JetBrains Mono', monospace; }
+.kms-ds-swatch-label { font-size: 12px; color: var(--kms-ink); font-weight: 600; }
+.kms-ds-swatch-hex { font-size: 10px; color: var(--kms-muted); font-family: 'JetBrains Mono', monospace; }
+
+/* 노트 텍스트 */
+.kms-ds-note {
+  margin: 0 0 8px;
+  font-size: 11px;
+  color: var(--kms-muted);
+  line-height: 1.5;
+}
+.kms-ds-note-top {
+  margin-bottom: 14px;
+  padding: 8px 12px;
+  background: var(--kms-surface2);
+  border-left: 2px solid var(--kms-accent);
+  border-radius: 0;
+}
+
+/* 타이포그래피 행 */
+.kms-ds-type-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--kms-border);
+}
+.kms-ds-type-row:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+.kms-ds-type-meta {
+  font-size: 10px;
+  letter-spacing: .08em;
+  color: var(--kms-muted);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* 그라디언트 그리드 */
+.kms-ds-gradient-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 10px;
+}
+.kms-ds-gradient-item {
+  border: 1px solid var(--kms-border);
+  border-radius: 0;
+  overflow: hidden;
+  background: var(--kms-surface2);
+}
+.kms-ds-gradient-bar {
+  height: 52px;
+  width: 100%;
+}
+.kms-ds-gradient-item .kms-ds-swatch-info {
+  padding: 8px 10px;
+}
+
+/* 간격 그리드 */
+.kms-ds-spacing-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 8px;
+}
+.kms-ds-spacing-item {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 10px 12px;
+  border: 1px solid var(--kms-border);
+  border-radius: 0;
+  background: var(--kms-surface2);
+}
+.kms-ds-spacing-val {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--kms-accent);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* 브레이크포인트 배지 */
+.kms-ds-bp-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border: 1px solid var(--kms-border);
+  border-radius: 0;
+  font-size: 11px;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--kms-muted);
+  background: var(--kms-surface2);
+}
+
+/* 폼 요소 — site의 .form-group이 KMS context에서도 보이도록 */
+.kms-ds-preview .form-group {
+  margin-bottom: 0;
+}
+.kms-ds-preview .form-group label {
+  display: block;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--kms-muted);
+  margin-bottom: 6px;
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
+}
+.kms-ds-preview .form-group input,
+.kms-ds-preview .form-group select,
+.kms-ds-preview .form-group textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid rgba(31,31,31,0.18);
+  background: #fff;
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
+  font-size: 13px;
+  color: #1f1f1f;
+  outline: none;
+  box-sizing: border-box;
+  border-radius: 0;
+  transition: border-color .15s;
+}
+.kms-ds-preview .form-group input:focus,
+.kms-ds-preview .form-group select:focus,
+.kms-ds-preview .form-group textarea:focus {
+  border-color: #1f1f1f;
+}
+.kms-ds-preview .form-group input:disabled { opacity: 0.4; }
+
+/* 필터 버튼 — site .filter-btn 재현 (chip: 26px) */
+.kms-ds-preview .filter-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 26px;
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 0 12px;
+  border: 1px solid rgba(31,31,31,0.18);
+  background: transparent;
+  color: rgba(31,31,31,0.58);
+  cursor: pointer;
+}
+.kms-ds-preview .filter-btn.active,
+.kms-ds-preview .filter-btn:hover {
+  background: #1f1f1f;
+  color: #fff;
+  border-color: #1f1f1f;
+}
+
+/* ════════════════════════════════════════════════════════════
+   HERO SEARCH RESULTS (admin)
+   ════════════════════════════════════════════════════════════ */
+.hero-result-item {
+  padding:     10px 12px;
+  border:      1px solid var(--border);
+  border-top:  none;
+  font-size:   13px;
+  cursor:      pointer;
+  transition:  background .12s;
+  line-height: 1.5;
+}
+.hero-result-item:first-child { border-top: 1px solid var(--border); }
+.hero-result-item:hover       { background: var(--bg); }
+
+/* ════════════════════════════════════════════════════════════
+   TAG PILLS (글머리 선택기)
+   ════════════════════════════════════════════════════════════ */
+
+.tag-pill-group {
+  display:   flex;
+  flex-wrap: wrap;
+  gap:       8px;
+  margin:    8px 0 16px;
+}
+
+.tag-pill {
+  display:       inline-block;
+  padding:       4px 12px;
+  border:        1px solid var(--border);
+  border-radius: var(--radius-pill);    /* radius 통일 자동 주입 R3 */
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
+  font-size:     11px;
+  letter-spacing:.08em;
+  color:         var(--muted);
+  cursor:        pointer;
+  background:    var(--bg);
+  transition:    background .15s, color .15s, border-color .15s;
+  user-select:   none;
+}
+
+.tag-pill:hover {
+  border-color: var(--black);
+  color:        var(--ink);
+}
+
+.tag-pill.active {
+  background:   var(--black);
+  color:        var(--white);
+  border-color: var(--black);
+}
+
+.public-tag-add-tools {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  margin-top: -4px;
+}
+
+.public-tag-add-tools input {
+  min-width: 0;
+}
+
+.public-inline-tag-add {
+  min-height: 38px;
+  padding: 0 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);    /* radius 통일 자동 주입 R3 */
+  background: rgba(255,255,255,0.96);
+  color: var(--ink);
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+
+.public-inline-tag-add:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(255,255,255,1);
+}
+
+.tag-admin-toolbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(180px, .9fr) auto;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.tag-admin-toolbar input,
+.tag-admin-toolbar select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);    /* 인풋 통일 */
+  background: var(--white);
+  color: var(--ink);
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
+  font-size: 12px;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.tag-admin-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.tag-admin-panel {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);    /* radius 통일 자동 주입 R3 */
+  background: var(--bg);
+}
+
+.tag-admin-panel-head {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border);
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
+  font-size: 10px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.tag-admin-lane {
+  min-height: 110px;
+  padding: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  gap: 8px;
+  transition: background .15s, box-shadow .15s, border-color .15s;
+}
+
+.tag-admin-lane.drag-over {
+  background: rgba(98,37,153,0.06);
+  box-shadow: inset 0 0 0 2px rgba(98,37,153,0.18);
+}
+
+.tag-admin-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);    /* radius 통일 자동 주입 R3 */
+  background: var(--white);
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
+  font-size: 11px;
+  color: var(--ink);
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
+}
+
+.tag-admin-chip.dragging {
+  opacity: .45;
+}
+
+.tag-admin-chip-remove {
+  border: 0;
+  border-radius: var(--radius-md);    /* radius 통일 자동 주입 R3 */
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 12px;
+  line-height: 1;
+  padding: 0;
+}
+
+.tag-admin-chip-edit {
+  border: 0;
+  border-radius: var(--radius-md);    /* radius 통일 자동 주입 R3 */
+  background: rgba(98,37,153,0.08);
+  color: #622599;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 10px;
+  line-height: 1;
+  padding: 3px 6px;
+}
+
+.tag-admin-empty {
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
+  font-size: 10px;
+  color: var(--muted);
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.share-meta-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.share-meta-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);    /* radius 통일 자동 주입 R3 */
+  background: var(--bg);
+  padding: 14px;
+}
+
+.share-meta-card-head {
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
+  font-size: 10px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 12px;
+}
+
+.share-meta-card label {
+  display: block;
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
+  font-size: 10px;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 12px 0 6px;
+}
+
+.share-meta-card input,
+.share-meta-card textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);    /* radius 통일 자동 주입 R3 */
+  background: var(--white);
+  color: var(--ink);
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
+  font-size: 13px;
+  box-sizing: border-box;
+  outline: none;
+  resize: vertical;
+}
+
+.share-meta-inline-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.footer-editor-grid {
+  margin-top: 0;
+}
+
+.footer-editor-preview-block {
+  margin-top: 16px;
+}
+
+.footer-editor-preview {
+  padding: 16px 18px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  background: linear-gradient(135deg, rgba(97, 36, 153, 0.08), rgba(97, 36, 153, 0.02));
+}
+
+.footer-editor-preview h4 {
+  margin: 0 0 8px;
+  color: var(--ink);
+}
+
+.footer-editor-preview p {
+  margin: 0 0 4px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.footer-editor-preview a {
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.admin-settings-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 20px 0;
+}
+
+/* Post kicker label shown next to category tag — outline style, same size */
+.post-kicker {
+  display:        inline-block;
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
+  font-size:      10px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  font-weight:    500;
+  background:     transparent;
+  padding:        3px 8px;
+}
+
+.post-kicker-new {
+  border: 1px solid var(--fire-red);
+  background: rgba(255, 174, 128, 0.18);
+  color: var(--fire-red);
+}
+
+/* Per-category kicker border+text colors */
+.tag-korea-kicker { border: 1px solid var(--tag-korea); color: var(--tag-korea); }
+.tag-apr-kicker   { border: 1px solid var(--tag-apr);   color: var(--tag-apr);   }
+.tag-wosm-kicker  { border: 1px solid var(--tag-wosm);  color: var(--tag-wosm);  }
+.tag-people-kicker{ border: 1px solid var(--tag-people); color: var(--tag-people); }
+
+/* ─────────────────────────────────────────────────────────────
+   KMS 디자인 시스템 — 3-레이어 구조
+   ───────────────────────────────────────────────────────────── */
+
+/* 레이어 헤더 */
+.kms-ds-layer-header {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin: 32px 0 16px;
+  padding: 12px 16px;
+  background: var(--ink);
+  color: #fff;
+  border-radius: var(--radius-lg);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.06);
+}
+.kms-ds-layer-header strong {
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #f3e9ff;
+  text-shadow: 0 0 10px rgba(185,149,255,0.22);
+}
+.kms-ds-layer-header span {
+  font-size: 11px;
+  color: rgba(255,255,255,0.94);
+  opacity: 1;
+}
+
+/* 규칙표 */
+.kms-ds-rules {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  border: 1px solid var(--border);
+  margin-bottom: 16px;
+}
+.kms-ds-rule {
+  display: grid;
+  grid-template-columns: 100px 140px 1fr;
+  gap: 0;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.kms-ds-rule:last-child { border-bottom: none; }
+.kms-ds-rule-k {
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.kms-ds-rule-v {
+  font-family: monospace;
+  font-size: 11px;
+  color: var(--ink);
+  font-weight: 600;
+}
+.kms-ds-rule-desc {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+/* HTML 패턴 코드블록 */
+.kms-ds-code {
+  background: #f5f3ef;
+  border: 1px solid var(--border);
+  padding: 10px 14px;
+  font-family: monospace;
+  font-size: 11px;
+  line-height: 1.7;
+  color: var(--ink);
+  overflow-x: auto;
+  white-space: pre;
+  margin: 0 0 16px;
+}
+
+/* 구분 | 활용처 | 코드 | 미리보기 테이블 */
+.kms-ds-table-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border: 1px solid var(--kms-border);
+  border-radius: var(--radius-md);
+  background: var(--kms-surface);
+}
+.kms-ds-table {
+  width: 100%;
+  min-width: 920px;
+  border-collapse: collapse;
+  table-layout: fixed;
+  background: var(--kms-surface);
+}
+.kms-ds-table.is-reference colgroup col:nth-child(1) { width: 22%; }
+.kms-ds-table.is-reference colgroup col:nth-child(2) { width: 28%; }
+.kms-ds-table.is-reference colgroup col:nth-child(3) { width: 30%; }
+.kms-ds-table.is-reference colgroup col:nth-child(4) { width: 20%; }
+.kms-ds-table.is-compact colgroup col:nth-child(1) { width: 24%; }
+.kms-ds-table.is-compact colgroup col:nth-child(2) { width: 42%; }
+.kms-ds-table.is-compact colgroup col:nth-child(3) { width: 34%; }
+.kms-ds-table thead th {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--kms-border);
+  background: var(--kms-surface2);
+  color: var(--kms-muted);
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  text-align: left;
+}
+.kms-ds-table td {
+  padding: 18px 16px;
+  border-bottom: 1px solid rgba(31,31,31,0.08);
+  vertical-align: top;
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  line-height: 1.72;
+  color: var(--kms-ink);
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+.kms-ds-table tbody tr:hover {
+  background: rgba(249,246,241,0.82);
+}
+.kms-ds-table .kms-ds-t-name {
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  line-height: 1.45;
+  white-space: normal;
+  color: var(--kms-ink);
+}
+.kms-ds-table .kms-ds-t-spec {
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: 0;
+  color: var(--kms-muted);
+  font-family: 'JetBrains Mono', monospace;
+  display: block;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(31,31,31,0.08);
+}
+.kms-ds-table .kms-ds-t-usage {
+  color: var(--kms-ink);
+  font-size: 14px;
+}
+.kms-ds-table .kms-ds-t-cls {
+  display: block;
+  margin-top: 10px;
+  padding: 8px 10px 0 0;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 0;
+  color: var(--kms-muted);
+  line-height: 1.5;
+}
+.kms-ds-table .kms-ds-t-code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: 0;
+  line-height: 1.75;
+  color: var(--kms-ink);
+}
+.kms-ds-table .kms-ds-t-preview {
+  text-align: center;
+  vertical-align: middle;
+}
+.kms-ds-table .kms-ds-name-block,
+.kms-ds-table .kms-ds-usage-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  min-height: 100%;
+}
+.kms-ds-table .kms-ds-usage-block {
+  justify-content: flex-start;
+}
+.kms-ds-table .kms-ds-code-block {
+  width: 100%;
+  min-width: 0;
+  padding: 12px 14px;
+  border-radius: var(--radius-lg);
+  background: #232334;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.04);
+  text-align: left;
+}
+.kms-ds-table .kms-ds-code-block code {
+  display: block;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: #cdd6f4;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  line-height: 1.75;
+}
+.kms-ds-table .kms-ds-preview-block {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  min-height: 92px;
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid rgba(31,31,31,0.08);
+  border-radius: var(--radius-lg);
+  background: linear-gradient(180deg, rgba(255,255,255,0.96), rgba(248,244,239,0.92));
+}
+.kms-ds-preview .glossary-table-wrap {
+  border: 1px solid var(--kms-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: var(--kms-surface);
+}
+.kms-ds-preview .glossary-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-size: 13px;
+}
+.kms-ds-preview .glossary-table th,
+.kms-ds-preview .glossary-table td {
+  padding: 10px 12px;
+  text-align: left;
+  border-bottom: 1px solid var(--kms-border);
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+.kms-ds-preview .glossary-table th {
+  background: var(--kms-surface2);
+  color: var(--kms-muted);
+  font-size: 11px;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+.kms-ds-preview .glossary-table tr:last-child td {
+  border-bottom: none;
+}
+.kms-ds-preview .glossary-table tbody tr:nth-child(even) {
+  background: rgba(252,250,247,0.72);
+}
+.kms-ds-preview .glossary-table tbody tr:hover {
+  background: rgba(246,241,235,0.9);
+}
+.kms-ds-table .kms-ds-t-preview > * {
+  margin-left: auto;
+  margin-right: auto;
+}
+.kms-ds-table .kms-ds-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 1180px) {
+  .kms-ds-table td {
+    padding: 14px 12px;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────
+   KMS 디자인 시스템 — 모듈 카탈로그 리디자인
+   ───────────────────────────────────────────────────────────── */
+
+.kms-ds-body {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.kms-ds-overview,
+.kms-ds-section {
+  padding: 20px 20px 22px;
+  border: 1px solid var(--kms-border);
+  border-radius: var(--radius-lg);
+  background: var(--kms-surface);
+}
+
+.kms-ds-overview-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.kms-ds-overview-block {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+
+.kms-ds-overview-kicker,
+.kms-ds-module-kicker,
+.kms-ds-pane-label,
+.kms-ds-meta-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--kms-accent);
+}
+
+.kms-ds-overview-block h3 {
+  margin: 0;
+  font-size: 19px;
+  line-height: 1.35;
+  color: var(--kms-ink);
+}
+
+.kms-ds-kind-grid,
+.kms-ds-guidance-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.kms-ds-kind-card,
+.kms-ds-guidance-card,
+.kms-ds-module {
+  padding: 16px;
+  border: 1px solid var(--kms-border);
+  border-radius: var(--radius-lg);
+  background: var(--kms-surface2);
+}
+
+.kms-ds-kind-card strong,
+.kms-ds-guidance-card strong {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 14px;
+  color: var(--kms-ink);
+}
+
+.kms-ds-kind-card p,
+.kms-ds-guidance-card p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.65;
+  color: var(--kms-muted);
+}
+
+.kms-ds-breakpoint-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.kms-ds-layer-header {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin: 6px 2px -10px;
+  padding: 12px 16px;
+  border-radius: var(--radius-lg);
+  background: var(--ink);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.06);
+}
+
+.kms-ds-layer-header strong {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: #ffffff;
+  text-shadow: 0 0 12px rgba(185,149,255,0.18);
+}
+
+.kms-ds-layer-header span {
+  font-size: 13px;
+  color: rgba(255,255,255,0.92);
+}
+
+.kms-ds-section-head {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.kms-ds-section-title {
+  margin: 0;
+  font-size: 20px;
+  line-height: 1.35;
+  color: var(--kms-ink);
+}
+
+.kms-ds-note-top {
+  margin-bottom: 0;
+  padding: 12px 14px;
+  border: 1px solid rgba(92, 42, 157, 0.18);
+  border-radius: var(--radius-lg);
+  background: var(--kms-accent-bg);
+}
+
+.kms-ds-module-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 14px;
+}
+
+.kms-ds-module {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.kms-ds-module-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.kms-ds-module-title-block {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.kms-ds-module-title {
+  margin: 0;
+  font-size: 17px;
+  line-height: 1.35;
+  color: var(--kms-ink);
+}
+
+.kms-ds-module-summary {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.72;
+  color: #4b443d;
+}
+
+.kms-ds-module-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.kms-ds-meta-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: min(100%, 260px);
+}
+
+.kms-ds-meta-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.kms-ds-meta-pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 5px 10px;
+  border: 1px solid var(--kms-border);
+  border-radius: var(--radius-pill);
+  background: var(--kms-surface);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  line-height: 1.4;
+  color: #4f463e;
+}
+
+.kms-ds-module-display {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 4px;
+  border-top: 1px solid var(--kms-border);
+}
+
+.kms-ds-display-label {
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
+  font-size: 11px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--kms-muted);
+}
+
+.kms-ds-module-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.kms-ds-view-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 30px;
+  padding: 0 13px;
+  border: 1px solid var(--kms-border);
+  border-radius: var(--radius-pill);
+  background: var(--kms-surface);
+  color: var(--kms-muted);
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background .12s, color .12s, border-color .12s;
+}
+
+.kms-ds-view-btn:hover {
+  background: var(--kms-accent-bg);
+  color: var(--kms-accent);
+  border-color: rgba(92,42,157,.3);
+}
+
+.kms-ds-view-btn.is-active {
+  background: var(--kms-accent-bg);
+  color: var(--kms-accent);
+  border-color: rgba(92,42,157,.3);
+  font-weight: bold;
+}
+
+.kms-ds-module-stage {
+  display: block;
+}
+
+.kms-ds-module-pane {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+
+.kms-ds-surface-card {
+  padding: 14px;
+  border: 1px solid var(--kms-border);
+  border-radius: var(--radius-lg);
+  background: var(--kms-surface);
+}
+
+.kms-ds-editor-hint {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--kms-muted);
+}
+
+.kms-ds-code-editor {
+  display: block;
+  width: 100%;
+  min-height: 240px;
+  padding: 16px 18px;
+  box-sizing: border-box;
+  border: 1px solid rgba(31,31,31,0.08);
+  border-radius: var(--radius-md);
+  background: #171822;
+  color: #d7def8;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  line-height: 1.8;
+  resize: vertical;
+  outline: none;
+}
+
+.kms-ds-code-editor:focus {
+  border-color: rgba(92,42,157,0.34);
+  box-shadow: 0 0 0 3px rgba(92,42,157,0.08);
+}
+
+.kms-ds-editor-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.kms-ds-editor-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 32px;
+  padding: 0 14px;
+  border: 1px solid var(--kms-border);
+  border-radius: var(--radius-pill);
+  background: var(--kms-surface);
+  color: var(--kms-muted);
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background .12s, color .12s, border-color .12s;
+}
+
+.kms-ds-editor-btn:hover {
+  background: var(--kms-accent-bg);
+  color: var(--kms-accent);
+  border-color: rgba(92,42,157,.3);
+}
+
+.kms-ds-editor-btn-primary {
+  background: var(--kms-accent-bg);
+  color: var(--kms-accent);
+  border-color: rgba(92,42,157,.3);
+  font-weight: bold;
+}
+
+.kms-ds-module[data-kms-ds-view="code"] [data-kms-ds-pane="preview"],
+.kms-ds-module[data-kms-ds-view="preview"] [data-kms-ds-pane="code"] {
+  display: none;
+}
+
+.kms-ds-preview-canvas {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 220px;
+  padding: 18px;
+  border: 1px solid var(--kms-border);
+  border-radius: var(--radius-md);
+  background: #fcfbf8;
+  overflow: auto;
+  color: #1f1f1f;
+}
+
+.kms-ds-preview-canvas:empty::before {
+  content: '미리보기 버튼을 누르면 이 항목의 코드가 바로 렌더됩니다.';
+  display: block;
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--kms-muted);
+}
+
+.kms-ds-preview-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.kms-ds-token-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 10px;
+}
+
+.kms-ds-token-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px;
+  border: 1px solid var(--kms-border);
+  border-radius: var(--radius-lg);
+  background: var(--kms-surface);
+}
+
+.kms-ds-token-chip {
+  display: block;
+  width: 100%;
+  height: 38px;
+  border-radius: var(--radius-lg);
+}
+
+.kms-ds-token-chip-light {
+  box-shadow: inset 0 0 0 1px rgba(31,31,31,0.12);
+}
+
+.kms-ds-token-card strong,
+.kms-ds-contract-card strong,
+.kms-ds-device-card span,
+.kms-ds-feedback-card small {
+  color: var(--kms-ink);
+}
+
+.kms-ds-token-card code,
+.kms-ds-scale-meta,
+.kms-ds-mobile-note {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: #5a5048;
+}
+
+.kms-ds-type-scale {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.kms-ds-scale-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(31,31,31,0.08);
+}
+
+.kms-ds-scale-item:last-child {
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.kms-ds-scale-item strong {
+  font-size: 30px;
+  line-height: 1.2;
+  color: #1f1f1f;
+}
+
+.kms-ds-scale-title {
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.35;
+  color: #1f1f1f;
+}
+
+.kms-ds-scale-item p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.72;
+  color: #3f3730;
+}
+
+.kms-ds-contract-card {
+  padding: 16px;
+  border: 1px solid var(--kms-border);
+  border-radius: var(--radius-lg);
+  background: var(--kms-surface);
+}
+
+.kms-ds-contract-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.kms-ds-contract-kind {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 0 8px;
+  background: rgba(98,37,153,0.08);
+  color: #622599;
+  font-size: 10px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+
+.kms-ds-contract-meta,
+.kms-ds-touch-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.kms-ds-contract-meta {
+  flex-direction: row;
+  flex-wrap: wrap;
+}
+
+.kms-ds-contract-meta span {
+  padding: 6px 10px;
+  border: 1px solid var(--kms-border);
+  border-radius: var(--radius-pill);
+  background: var(--kms-surface2);
+  font-size: 12px;
+  color: #4f463e;
+}
+
+.kms-ds-contract-bars {
+  display: grid;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.kms-ds-contract-bars span {
+  display: block;
+  height: 10px;
+  background: linear-gradient(90deg, rgba(98,37,153,0.18), rgba(31,31,31,0.08));
+}
+
+.kms-ds-card-preview {
+  max-width: 360px;
+  margin: 0 auto;
+}
+
+.kms-ds-rail-preview {
+  max-width: 100%;
+}
+
+.kms-ds-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.kms-ds-shell-bar {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--kms-border);
+  border-radius: var(--radius-lg);
+  background: var(--kms-surface);
+  font-size: 12px;
+  color: #5b544c;
+}
+
+.kms-ds-shell-hero {
+  padding: 18px;
+  border-radius: var(--radius-lg);
+  background: linear-gradient(135deg, #622599 0%, #2a103f 100%);
+  color: #fff;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08);
+}
+
+.kms-ds-shell-hero strong {
+  display: block;
+  margin-top: 12px;
+  font-size: 28px;
+  line-height: 1.2;
+  color: #fff;
+}
+
+.kms-ds-shell-hero p {
+  margin: 10px 0 0;
+  font-size: 14px;
+  line-height: 1.7;
+  color: rgba(255,255,255,0.94);
+}
+
+.kms-ds-feedback-grid,
+.kms-ds-device-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+}
+
+.kms-ds-feedback-card,
+.kms-ds-device-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid var(--kms-border);
+  border-radius: var(--radius-lg);
+  background: var(--kms-surface);
+}
+
+.kms-ds-toast-demo {
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  padding: 0 14px;
+  background: #1f1f1f;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .04em;
+}
+
+.kms-ds-dark-surface,
+.kms-ds-dark-surface strong,
+.kms-ds-dark-surface p,
+.kms-ds-dark-surface span,
+.kms-ds-dark-surface small,
+.kms-ds-dark-surface code,
+.kms-ds-dark-surface a {
+  color: #fff;
+}
+
+.kms-ds-dark-surface p,
+.kms-ds-dark-surface small,
+.kms-ds-dark-surface code {
+  color: rgba(255,255,255,0.94);
+}
+
+.kms-ds-toast-demo.is-success {
+  border-left: 4px solid #248737;
+}
+
+.kms-ds-device-frame {
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid var(--kms-border);
+  border-radius: var(--radius-md);
+  background: var(--kms-surface2);
+}
+
+.kms-ds-device-frame div {
+  height: 22px;
+  background: rgba(98,37,153,0.12);
+}
+
+.kms-ds-device-frame-desktop {
+  grid-template-columns: 1fr 1.15fr;
+}
+
+.kms-ds-device-frame-mobile {
+  grid-template-columns: 1fr;
+}
+
+.kms-ds-mobile-note {
+  padding: 10px 12px;
+  border: 1px dashed rgba(31,31,31,0.2);
+  border-radius: var(--radius-lg);
+  background: var(--kms-surface2);
+  line-height: 1.6;
+}
+
+@media (max-width: 1180px) {
+  .kms-ds-overview-grid,
+  .kms-ds-kind-grid,
+  .kms-ds-guidance-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 900px) {
+  .kms-ds-overview,
+  .kms-ds-section,
+  .kms-ds-module {
+    padding: 18px;
+  }
+
+  .kms-ds-overview-block h3 {
+    font-size: 18px;
+  }
+
+  .kms-ds-shell-hero strong {
+    font-size: 22px;
+  }
+
+  .kms-ds-module-head {
+    flex-direction: column;
+  }
+
+  .kms-ds-module-display {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+@media (max-width: 640px) {
+  .kms-ds-overview,
+  .kms-ds-section,
+  .kms-ds-module {
+    padding: 14px;
+  }
+
+  .kms-ds-code-pane,
+  .kms-ds-code-editor,
+  .kms-ds-preview-canvas {
+    min-height: 0;
+  }
+
+  .kms-ds-preview-canvas {
+    padding: 14px;
+  }
+
+  .kms-ds-shell-bar {
+    grid-template-columns: 1fr;
+  }
+
+  .kms-ds-feedback-grid,
+  .kms-ds-device-grid,
+  .kms-ds-token-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── KMS 기사작성표준 탭 ──────────────────────────────────── */
+.kms-editorial-body {
+  padding: 0 0 48px;
+  max-width: 820px;
+}
+
+.kms-ed-section {
+  border: 1px solid var(--kms-border);
+  border-radius: var(--radius-lg);
+  padding: 22px 24px;
+  margin-bottom: 16px;
+  background: var(--kms-surface);
+}
+
+.kms-ed-section--definition {
+  background: var(--kms-surface2);
+  border-color: var(--color-scouting-purple, #622599);
+  border-left-width: 3px;
+}
+
+.kms-ed-heading {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--kms-text);
+  margin: 0 0 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  letter-spacing: 0.02em;
+}
+
+.kms-ed-badge {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  background: var(--color-ocean-blue, #0094B4);
+  color: #fff;
+  letter-spacing: 0;
+}
+
+.kms-ed-badge--warn {
+  background: var(--color-fire-red, #FF5655);
+}
+
+.kms-ed-note {
+  font-size: 11px;
+  color: var(--kms-muted);
+  margin: -8px 0 12px;
+}
+
+/* 핵심 원칙 그리드 */
+.kms-ed-principles {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+.kms-ed-principle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--kms-surface2);
+  border-radius: var(--radius-md);
+  padding: 10px 14px;
+  font-size: 12px;
+  color: var(--kms-text);
+}
+
+.kms-ed-num {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--color-scouting-purple, #622599);
+  min-width: 20px;
+}
+
+/* 프로세스 리스트 */
+.kms-ed-process {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.kms-ed-process li {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  font-size: 12px;
+  color: var(--kms-text);
+}
+
+.kms-ed-process em {
+  color: var(--kms-muted);
+  font-style: normal;
+}
+
+.kms-ed-step {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--color-scouting-purple, #622599);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+/* 규칙 2열 그리드 */
+.kms-ed-rule-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.kms-ed-rule-col {
+  background: var(--kms-surface2);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+}
+
+.kms-ed-rule-col--deny {
+  background: rgba(255, 86, 85, 0.06);
+  border: 1px solid rgba(255, 86, 85, 0.2);
+}
+
+.kms-ed-sub {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--kms-text);
+  margin: 0 0 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.kms-ed-sub--deny {
+  color: var(--color-fire-red, #FF5655);
+}
+
+.kms-ed-ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.kms-ed-ul li {
+  font-size: 12px;
+  color: var(--kms-text);
+  padding-left: 12px;
+  position: relative;
+}
+
+.kms-ed-ul li::before {
+  content: '–';
+  position: absolute;
+  left: 0;
+  color: var(--kms-muted);
+}
+
+.kms-ed-ol {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.kms-ed-ol li {
+  font-size: 12px;
+  color: var(--kms-text);
+  padding: 3px 0;
+}
+
+/* 판단 기준 박스 */
+.kms-ed-criterion {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+  padding: 10px 14px;
+  background: rgba(98, 37, 153, 0.06);
+  border-radius: var(--radius-md);
+  font-size: 12px;
+  color: var(--color-scouting-purple, #622599);
+  font-weight: 500;
+}
+
+/* Body 4문단 그리드 */
+.kms-ed-body-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.kms-ed-body-para {
+  display: flex;
+  gap: 12px;
+  background: var(--kms-surface2);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+}
+
+.kms-ed-para-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--color-scouting-purple, #622599);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.kms-ed-body-para strong {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--kms-text);
+  display: block;
+  margin-bottom: 3px;
+}
+
+.kms-ed-body-para p {
+  font-size: 11px;
+  color: var(--kms-muted);
+  margin: 0;
+}
+
+.kms-ed-rule-box {
+  background: var(--kms-surface2);
+  border-radius: var(--radius-md);
+  padding: 12px 16px;
+  font-size: 12px;
+  color: var(--kms-text);
+}
+
+.kms-ed-rule-box--warn {
+  background: rgba(255, 86, 85, 0.06);
+  border: 1px solid rgba(255, 86, 85, 0.2);
+  color: var(--color-fire-red, #FF5655);
+  font-weight: 500;
+}
+
+/* 표기 규칙 */
+.kms-ed-notation-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.kms-ed-notation-item {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  font-size: 12px;
+  color: var(--kms-text);
+  padding: 8px 14px;
+  background: var(--kms-surface2);
+  border-radius: var(--radius-md);
+}
+
+.kms-ed-notation-label {
+  font-weight: 700;
+  min-width: 36px;
+  color: var(--color-scouting-purple, #622599);
+}
+
+/* Audit 체크리스트 */
+.kms-ed-checklist {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.kms-ed-checklist li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  color: var(--kms-text);
+  padding: 8px 14px;
+  background: var(--kms-surface2);
+  border-radius: var(--radius-md);
+}
+
+.kms-ed-check {
+  color: var(--color-forest-green, #248737);
+  font-weight: 700;
+  font-size: 13px;
+  flex-shrink: 0;
+}
+
+/* 최종 정의 블록쿼트 */
+.kms-ed-definition {
+  margin: 0;
+  padding: 20px 24px;
+  font-size: 14px;
+  line-height: 1.9;
+  color: var(--color-scouting-purple, #622599);
+  font-weight: 500;
+  border-left: 3px solid var(--color-scouting-purple, #622599);
+  background: rgba(98, 37, 153, 0.04);
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+}
+
+@media (max-width: 700px) {
+  .kms-ed-principles { grid-template-columns: 1fr; }
+  .kms-ed-rule-grid  { grid-template-columns: 1fr; }
+  .kms-ed-body-grid  { grid-template-columns: 1fr; }
+}

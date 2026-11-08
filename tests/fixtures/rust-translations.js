@@ -1,0 +1,95 @@
+/**
+ * Gilwell Media · UI Translations
+ *
+ * GET /api/settings/translations  ← public, returns merged { strings }
+ * PUT /api/settings/translations  ← admin only, saves custom overrides
+ */
+import { verifyTokenRole, extractToken } from '../../functions/_shared/auth.js';
+import { gateMenuAccess } from '../../functions/_shared/admin-permissions.js';
+import { loadNavLabels } from '../../functions/_shared/nav-labels.js';
+import { recordSettingChange } from '../../functions/_shared/settings-audit.js';
+
+const LOCKED_TRANSLATION_KEYS = {
+  'nav.contributors': true,
+  'nav.home': true,
+  'nav.latest': true,
+  'nav.korea': true,
+  'nav.apr': true,
+  'nav.wosm': true,
+  'nav.wosm_members': true,
+  'nav.people': true,
+  'nav.calendar': true,
+  'nav.glossary': true,
+};
+
+// ── GET /api/settings/translations ───────────────────────────
+export async function onRequestGet({ env }) {
+  try {
+    const [row, navLabels] = await Promise.all([
+      env.DB.prepare(`SELECT value FROM settings WHERE key = 'translations'`).first(),
+      loadNavLabels(env),
+    ]);
+    const custom = sanitizeTranslationStrings(row ? JSON.parse(row.value || '{}') : {});
+    return json({ strings: custom, nav_labels: navLabels }, 200, publicCacheHeaders(300, 1800));
+  } catch (err) {
+    console.error('GET /api/settings/translations error:', err);
+    return json({ error: 'Database error' }, 500);
+  }
+}
+
+// ── PUT /api/settings/translations ───────────────────────────
+export async function onRequestPut({ request, env }) {
+  const __gate = await gateMenuAccess(request, env, 'translations', 'write'); if (__gate) return __gate
+
+  let body;
+  try { body = await request.json(); } catch {
+    return json({ error: 'Invalid JSON body' }, 400);
+  }
+
+  const strings = sanitizeTranslationStrings(body.strings || {});
+
+  try {
+    const prevRow = await env.DB.prepare(`SELECT value FROM settings WHERE key = 'translations'`).first();
+    if (body.if_current && JSON.stringify(sanitizeTranslationStrings(body.if_current.strings || {})) !== JSON.stringify(sanitizeTranslationStrings(prevRow ? JSON.parse(prevRow.value) : {}))) return json({ error: 'UI 번역이 다른 화면에서 변경되었습니다. 입력을 보존하고 최신 값을 확인해주세요.' }, 409);
+    const write = await env.DB.prepare(
+      `INSERT INTO settings (key, value) VALUES ('translations', ?)
+       ON CONFLICT(key) DO UPDATE SET value = excluded.value WHERE settings.value IS ?`
+    ).bind(JSON.stringify(strings), prevRow ? prevRow.value : null).run();
+    if (write.meta && write.meta.changes !== 1) return json({ error: '동시 번역 변경이 감지되었습니다.' }, 409);
+    await recordSettingChange(env, {
+      key: 'translations',
+      previousValue: prevRow && prevRow.value,
+      path: '/api/settings/translations',
+      message: '번역 문구 설정 변경',
+      details: { count: Object.keys(strings).length },
+    });
+
+    return json({ success: true });
+  } catch (err) {
+    console.error('PUT /api/settings/translations error:', err);
+    return json({ error: 'Database error' }, 500);
+  }
+}
+
+function json(data, status = 200, extraHeaders = {}) {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: Object.assign({ 'Content-Type': 'application/json' }, extraHeaders),
+  });
+}
+
+function publicCacheHeaders(maxAge, swr) {
+  return {
+    'Cache-Control': `public, max-age=${maxAge}, s-maxage=${maxAge}, stale-while-revalidate=${swr}`,
+  };
+}
+
+function sanitizeTranslationStrings(strings) {
+  if (!strings || typeof strings !== 'object') return {};
+  const sanitized = {};
+  Object.keys(strings).forEach((key) => {
+    if (LOCKED_TRANSLATION_KEYS[key]) return;
+    sanitized[key] = strings[key];
+  });
+  return sanitized;
+}

@@ -1,0 +1,70 @@
+당신은 BP미디어 기사 편집장입니다. 아래 기사를 운영자가 지정한 평가 기준에 따라 평가해주세요.
+
+${rubric}
+
+---
+[평가할 기사]
+Title: ${title || '(없음)'}
+Subtitle: ${subtitle || '(없음)'}
+Body:
+${content || '(없음)'}
+Tags: ${tags || '(없음)'}
+---
+
+각 항목을 평가하고 반드시 아래 JSON 형식으로만 응답하세요. 다른 텍스트는 출력하지 마세요.
+
+"revision_suggestion" 필드는 이 기사를 어떻게 수정하면 더 좋아질지 **약 300자(한글 기준) 분량의 구체적이고 실행 가능한 제안**으로 작성하세요. 어떤 문장을 어떻게 바꿀지, 무엇을 추가/삭제할지 명확히 제시하고 한국어로 자연스러운 문장을 사용하세요.
+
+{
+  "overall": {
+    "score": <0-100 정수>,
+    "grade": "<S|A|B|C|D>",
+    "summary": "<전체 평가 한 문장>"
+  },
+  "categories": [
+    {
+      "label": "Title",
+      "score": <0-25 정수>,
+      "max": 25,
+      "issues": ["<문제점>"],
+      "strengths": ["<잘된 점>"]
+    },
+    {
+      "label": "Subtitle",
+      "score": <0-15 정수>,
+      "max": 15,
+      "issues": [],
+      "strengths": []
+    },
+    {
+      "label": "Body 구조·흐름",
+      "score": <0-30 정수>,
+      "max": 30,
+      "issues": [],
+      "strengths": []
+    },
+    {
+      "label": "자연도·발화감",
+      "score": <0-10 정수>,
+      "max": 10,
+      "issues": ["<자연도 문제 — 호흡/좌표/추상↔구체/단정 절제 중 어느 축인지 명시>"],
+      "strengths": []
+    },
+    {
+      "label": "Tags",
+      "score": <0-10 정수>,
+      "max": 10,
+      "issues": [],
+      "strengths": []
+    },
+    {
+      "label": "표기·문체·겸손도",
+      "score": <0-10 정수>,
+      "max": 10,
+      "issues": [],
+      "strengths": []
+    }
+  ],
+  "improvement": "<가장 중요한 개선 방향 2~3줄>",
+  "revision_suggestion": "<약 300자 분량의 구체적인 수정 제안(한국어)>"
+}

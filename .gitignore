@@ -1,0 +1,34 @@
+# Local secrets — NEVER commit
+.dev.vars
+
+# macOS
+.DS_Store
+
+# Node (if you ever run npm install)
+node_modules/
+
+# Card-news source HTML (24MB 자체 포함형 앱) — R2 에 저장, 저장소 커밋 금지
+BP미디어 카드뉴스*.html
+*.cardnews.html
+
+# Wrangler cache
+.wrangler/
+
+# Playwright (R5 smoke tests)
+test-results/
+playwright-report/
+playwright/.cache/
+
+# Offline tag-analysis artifacts (regenerable: node scripts/tag-analysis/04_run_all.mjs)
+# Contains a D1 post dump — must never be committed or deployed.
+output/
+
+# Playwright MCP 검증 산출물 (스크린샷·콘솔 로그) 및 로컬 QA/리뷰 아티팩트
+.playwright-mcp/
+.freebuff/
+/work/
+/agent-guide/
+
+# Rust compiler output and local migration evidence
+/server-rust/target/
+/server-rust/build/

@@ -1,0 +1,117 @@
+---
+tags: [ai-guide, rules, site, design, accessibility]
+aliases: [Design Rules, Color Palette, 디자인 규칙, 접근성]
+scope: project
+---
+
+# 11 · [Site] 디자인 · 컬러 · 접근성
+
+> [!abstract] Scope
+> 공개 사이트의 서체·버튼·레이아웃 규칙과 브랜드 팔레트, WCAG 3.0 APCA 명암비 기준.
+> 색/서체/간격을 건드리는 모든 작업에서 [10-site.md](10-site.md) 와 함께 읽는다.
+
+## Design Rules
+
+- 기본 서체: `NixgonFont` (3중량 300 Light / 500 Medium / 700 Bold, `@font-face`는 `css/style.css` 최상단). 본문 기본 `font-weight: 500`, 제목·강조는 `700`, 메타·장식은 `300`
+- 공개 사이트의 공통 시각 레이어는 `css/m3-site.css`를 각 페이지 전용 CSS 뒤에 로드한다. 이 파일은 Google Material 3의 역할 기반 색상, shape, elevation, state, compact/medium/expanded 적응형 레이아웃을 BP미디어 콘텐츠 구조에 맞게 적용하며 Admin·KMS·Dreampath에는 연결하지 않는다.
+- M3 역할 토큰은 Scouting Purple `#622599`를 seed로 사용하되, 아래 APCA 기준을 통과하는 전경/배경 조합만 콘텐츠 텍스트에 사용한다.
+- 공개 메뉴: `data-managed-nav` — 초기 숨김 → 렌더 완료 후 노출 (flash 방지)
+- 버튼: 같은 계층이면 높이/패딩/폰트 통일
+- 한글: `word-break: keep-all`
+- 모바일: 가로 스크롤 금지
+
+> [!tip] Design Guide
+> KMS 디자인 탭 = 시각적 레퍼런스. 새 디자인 추가 시 KMS + Module Inventory + 이 문서 함께 갱신.
+
+### Material 3 Editorial 참고 기준
+
+- 공식 기준: [Material 3](https://m3.material.io/) 및 [Canonical layouts](https://m3.material.io/foundations/layout/canonical-examples/overview)
+- 콘텐츠 카드 참고: [VibePrompts · Blog Guide Library with Difficulty Tags](https://vibeprompts.dev/blog/blog-guide-library-with-difficulty-tags/)
+- 기사 상세 참고: [VibePrompts · Blog Article End Matter with Share Rail](https://vibeprompts.dev/blog/blog-article-end-matter-with-share-rail/)
+- 그대로 복제하지 않고 BP미디어의 masthead, board, post, glossary, calendar, members, memorabilia DOM·기능 계약에 맞춰 적응한다.
+
+## Color Palette & Accessibility (WCAG 3.0 APCA)
+
+> [!warning] 2026-07-21 — Lc 값 정정됨
+> 이전 표의 Lc 값은 전 항목 **약 +1.7 부풀려져** 있었다. 결정적 증거: 구 표는
+> `--gray-900`(#030303)을 **107.7** 로 적었으나, APCA 정극성 이론 최대치인
+> 순검정/흰색이 **106.04** 다 — 근사 검정이 순검정을 넘을 수 없다.
+> 아래 값은 [`scripts/apca.mjs`](../scripts/apca.mjs) 로 재계산했고, 그 계산기는
+> APCA 표준 앵커 3개(106.04 / −107.88 / 63.06)와 정확히 일치함을 확인했다.
+> **등급이 실제로 바뀐 색은 `--gray-500` 하나**(아래 표 참조).
+> KMS `3.4` 원본도 같은 정정이 필요하다.
+
+**브랜드 팔레트 (10색)** — Canvas White 배경 기준 APCA Lc
+
+| 이름 | HEX | White Lc | 용도 |
+|---|---|---|---|
+| Midnight Purple | `#4D006E` | 98.5 | ✅ 본문 텍스트 / 다크 배경 |
+| Scouting Purple | `#622599` | 90.7 | ✅ 본문 텍스트 / 주 브랜드 배경 |
+| Forest Green | `#248737` | 71.3 | ✅ 콘텐츠 텍스트 / 성공 상태 |
+| Ocean Blue | `#0094B4` | 62.6 | ✅ 콘텐츠·UI (Lc 60+) |
+| Fire Red | `#FF5655` | 57.2 | ⚠ 대형·헤더·UI만 (Lc 45+) / 경고 |
+| Canvas White | `#FFFFFF` | — | 기본 배경 |
+| Blossom Pink | `#FF8DFF` | 38.3 | ⚠ UI·spot 전용 (본문 금지) |
+| Ember Orange | `#FFAE80` | 33.4 | ⚠ UI·spot 전용 (본문 금지) |
+| River Blue | `#82E6DE` | 21.9 | ❌ spot 전용 (본문·UI 모두 부족) |
+| Leaf Green | `#9FED8F` | 19.3 | ❌ spot 전용 (본문·UI 모두 부족) |
+
+**그레이스케일 (5단계, Black = `#030303` 기반)**
+
+| 토큰 | HEX | White Lc | 용도 |
+|---|---|---|---|
+| `--gray-900` (= `--black`) | `#030303` | 106.0 | 최대 대비 emphasis |
+| `--gray-700` | `#3F3F3F` | 94.5 | 보조 텍스트·아이콘 |
+| `--gray-500` | `#8F8F8F` | **59.6** | ⚠ **UI·테두리 전용** — 구 표는 61.3 으로 "콘텐츠 텍스트 OK" 였으나 실제로는 기준(60) 미달. 14px 본문성 텍스트에 쓰지 말 것 |
+| `--gray-300` | `#C4C4C4` | 31.8 | UI·구분선 (텍스트 금지) |
+| `--gray-100` | `#EBEBEB` | 9.4 | 섹션 배경·tint (본문 금지) |
+
+본문 기본은 `--ink`(#1F1F1F, Lc 103.4). RGB/CMYK/PMS 풀표와 배경-텍스트 조합 표는 KMS `3.4 브랜드 컬러 팔레트 및 웹 접근성 원칙` 참조.
+
+**Lc 계산은 반드시 [`scripts/apca.mjs`](../scripts/apca.mjs) 로** — 눈대중이나 WCAG 2.1 비율 계산기를 쓰지 말 것.
+```bash
+node -e "import('./scripts/apca.mjs').then(m=>console.log(m.apcaContrast('#622599','#FFFFFF')))"
+```
+
+### 다크모드 — 팔레트 역할이 뒤집힌다 (2026-07-21 측정)
+
+다크 배경(`#191320`)에서 각 색의 |Lc| 를 실측한 결과, **라이트 모드의 사용 규칙이 그대로 뒤집힌다**:
+
+| 색 | White Lc | Dark Lc | 다크에서의 판정 |
+|---|---|---|---|
+| Midnight Purple | 98.5 | **0.0** | ❌ 배경과 구분 불가 — 전경 사용 불가 |
+| Scouting Purple | 90.7 | 10.7 | ❌ 전경 사용 불가 |
+| Forest Green | 71.3 | 29.5 | ❌ 부족 |
+| Ocean Blue | 62.6 | 38.2 | △ UI 만 |
+| Fire Red | 57.2 | 43.7 | △ UI 만 |
+| Blossom Pink | 38.3 | 63.2 | ✅ 콘텐츠 텍스트 |
+| Ember Orange | 33.4 | 68.3 | ✅ 콘텐츠 텍스트 |
+| River Blue | 21.9 | 80.5 | ✅ **본문 가능** |
+| Leaf Green | 19.3 | 83.3 | ✅ **본문 가능** |
+
+즉 **흰 배경에서 본문 금지였던 파스텔 4색이 다크에서는 가장 잘 읽히고, 브랜드 딥퍼플은 소멸한다.**
+다크모드는 배경·텍스트 반전만으로 끝나지 않으며 **강조색 재매핑이 필수**다.
+
+**WCAG 3.0 APCA Lc 기준 (프로젝트 공식 명암비 알고리즘):**
+- 본문 텍스트(15px+ / 400wt): **|Lc| 75+** 필수, 핵심 표면 90+ 권장
+- 콘텐츠 텍스트(14px+ medium): **|Lc| 60+**
+- 대형·헤더(18px bold / 24px+): **|Lc| 45+**
+- UI·테두리·아이콘·포커스: **|Lc| 30+**
+- WCAG 2.1의 4.5:1·3:1 비율 체계는 사용하지 않음 (지각 기반 Lc로 대체)
+
+**색상 선택 원칙:**
+
+1. **색상만으로 정보 전달 금지** — 에러/성공/경고/링크는 색 + 아이콘 + 텍스트 3중 표기. 색각이상자·그레이스케일 모드에서도 구분 가능해야 함.
+2. **파스텔 4색(Blossom Pink / Ember Orange / River Blue / Leaf Green)은 본문 텍스트 금지** — 카테고리 태그 배경, 일러스트 전용. 그 위 텍스트는 Midnight Purple 또는 Black.
+3. **Fire Red · Ocean Blue는 본문 불가** — 18px bold 이상 헤딩, 버튼 라벨, 아이콘, 테두리에만 (|Lc| 45+/60+).
+4. **리터럴 HEX 금지** — 모두 CSS 변수로만 참조 (`var(--color-scouting-purple)`, `var(--gray-700)` 등). 토큰은 `css/style.css` `:root`. 새 색 추가 시 KMS + Module Inventory + `:root` 동시 갱신.
+5. **키보드 포커스 인디케이터 필수** — 배경과 `|Lc| 30` 이상 (`outline` 또는 `box-shadow`). 기본 outline 제거 시 대체 표시 필수.
+6. **다크/고대비 모드 대응** — `prefers-color-scheme: dark`, `prefers-contrast: more`에서도 Lc 유지.
+
+**검증 (새 UI·색 적용 시):**
+
+- [ ] APCA Contrast Calculator(`https://apcacontrast.com/`)로 모든 텍스트-배경 조합 Lc 검증
+- [ ] Chrome DevTools → Rendering → Emulate vision deficiencies (Protanopia / Deuteranopia / Tritanopia / Achromatopsia) 통과
+- [ ] 그레이스케일 모드에서 상태·링크·에러가 구분되는지 확인
+- [ ] 포커스 인디케이터가 배경과 |Lc| 30 이상인지 확인
+- [ ] 모바일 반투명 배경 처리 시 대비 저하 주의

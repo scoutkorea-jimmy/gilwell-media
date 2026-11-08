@@ -1,0 +1,104 @@
+/**
+ * Dreampath · Notes & Issues
+ * GET    /api/dreampath/notes           (view:notes)
+ * POST   /api/dreampath/notes           (write:notes)
+ * PUT    /api/dreampath/notes?id=N      (write:notes)
+ * DELETE /api/dreampath/notes?id=N      (write:notes)
+ */
+
+import { requirePerm } from '../../_shared/dreampath-perm.js';
+
+function json(data, status = 200) {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: { 'Content-Type': 'application/json' },
+  });
+}
+
+const VALID_TYPES      = ['note', 'issue', 'warning', 'suggestion'];
+const VALID_STATUSES   = ['open', 'resolved'];
+const VALID_PRIORITIES = ['low', 'normal', 'high'];
+
+export async function onRequestGet({ env, data }) {
+  const denied = requirePerm(data, 'view:notes'); if (denied) return denied;
+  const rows = await env.DB.prepare(
+    `SELECT id, title, content, type, status, priority, added_by, reply_to_id, created_at, updated_at
+       FROM dp_notes
+      ORDER BY
+        CASE status WHEN 'open' THEN 0 ELSE 1 END,
+        CASE priority WHEN 'high' THEN 0 WHEN 'normal' THEN 1 ELSE 2 END,
+        created_at DESC`
+  ).all();
+  return json({ notes: rows.results || [] });
+}
+
+export async function onRequestPost({ request, env, data }) {
+  const denied = requirePerm(data, 'write:notes'); if (denied) return denied;
+  let body;
+  try { body = await request.json(); }
+  catch { return json({ error: 'Invalid JSON' }, 400); }
+
+  const { title, content, type, priority, added_by, reply_to_id } = body;
+  if (!title || typeof title !== 'string' || !title.trim()) {
+    return json({ error: 'Title is required.' }, 400);
+  }
+
+  const safeTitle    = title.trim().slice(0, 200);
+  const safeContent  = content ? content.trim().slice(0, 5000) : null;
+  const safeType     = VALID_TYPES.includes(type) ? type : 'note';
+  const safePriority = VALID_PRIORITIES.includes(priority) ? priority : 'normal';
+  const safeAddedBy  = added_by ? added_by.trim().slice(0, 50) : 'Anonymous';
+  const safeReplyToId = reply_to_id ? parseInt(reply_to_id, 10) || null : null;
+
+  // Validate reply_to_id exists
+  if (safeReplyToId) {
+    const parent = await env.DB.prepare(`SELECT id FROM dp_notes WHERE id = ?`).bind(safeReplyToId).first();
+    if (!parent) return json({ error: 'Parent note does not exist.' }, 400);
+  }
+
+  // Use authenticated user name, ignore body.added_by for attribution integrity
+  const authorName = data.dpUser?.name || safeAddedBy;
+
+  const result = await env.DB.prepare(
+    `INSERT INTO dp_notes (title, content, type, priority, added_by, reply_to_id)
+     VALUES (?, ?, ?, ?, ?, ?)`
+  ).bind(safeTitle, safeContent, safeType, safePriority, authorName, safeReplyToId).run();
+
+  return json({ id: result.meta.last_row_id, ok: true });
+}
+
+export async function onRequestPut({ request, env, data }) {
+  const denied = requirePerm(data, 'write:notes'); if (denied) return denied;
+  const url = new URL(request.url);
+  const id  = parseInt(url.searchParams.get('id') || '', 10);
+  if (!id || isNaN(id)) return json({ error: 'id is required.' }, 400);
+
+  let body;
+  try { body = await request.json(); }
+  catch { return json({ error: 'Invalid JSON' }, 400); }
+
+  const fields = [];
+  const values = [];
+
+  if (body.title !== undefined) { fields.push('title = ?'); values.push(body.title.trim().slice(0, 200)); }
+  if (body.content !== undefined) { fields.push('content = ?'); values.push(body.content ? body.content.trim().slice(0, 5000) : null); }
+  if (body.type !== undefined && VALID_TYPES.includes(body.type)) { fields.push('type = ?'); values.push(body.type); }
+  if (body.status !== undefined && VALID_STATUSES.includes(body.status)) { fields.push('status = ?'); values.push(body.status); }
+  if (body.priority !== undefined && VALID_PRIORITIES.includes(body.priority)) { fields.push('priority = ?'); values.push(body.priority); }
+
+  if (fields.length === 0) return json({ error: 'No fields to update.' }, 400);
+  fields.push("updated_at = datetime('now')");
+  values.push(id);
+
+  await env.DB.prepare(`UPDATE dp_notes SET ${fields.join(', ')} WHERE id = ?`).bind(...values).run();
+  return json({ ok: true });
+}
+
+export async function onRequestDelete({ request, env, data }) {
+  const denied = requirePerm(data, 'write:notes'); if (denied) return denied;
+  const url = new URL(request.url);
+  const id  = parseInt(url.searchParams.get('id') || '', 10);
+  if (!id || isNaN(id)) return json({ error: 'id is required.' }, 400);
+  await env.DB.prepare(`DELETE FROM dp_notes WHERE id = ?`).bind(id).run();
+  return json({ ok: true });
+}

@@ -1,0 +1,80 @@
+// Compatibility reference from origin/main 835a326a; test-only.
+export async function getViewerKey(request, env) {
+  const ip = request.headers.get('CF-Connecting-IP')
+    || request.headers.get('x-forwarded-for')
+    || request.headers.get('x-real-ip')
+    || '';
+  if (!ip || !env || !env.ADMIN_SECRET) return null;
+
+  const input = `${ip}|${env.ADMIN_SECRET}`;
+  const bytes = new TextEncoder().encode(input);
+  const digest = await crypto.subtle.digest('SHA-256', bytes);
+  const hash = Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, '0')).join('');
+  return hash;
+}
+
+export async function recordUniqueView(env, postId, viewerKey) {
+  if (!viewerKey) return false;
+  const viewBucket = String(Math.floor(Date.now() / (12 * 60 * 60 * 1000)));
+  const insert = await env.DB.prepare(
+    `INSERT OR IGNORE INTO post_views (post_id, viewer_key, viewed_bucket)
+     VALUES (?, ?, ?)`
+  ).bind(postId, viewerKey, viewBucket).run();
+
+  if (!insert.meta?.changes) return false;
+
+  await env.DB.prepare(`UPDATE posts SET views = views + 1 WHERE id = ?`).bind(postId).run();
+  return true;
+}
+
+// 기념품(memorabilia) 조회수 — posts.views 패턴 동일. 같은 뷰어는 12시간 버킷당 1회만.
+export async function recordUniqueMemorabiliaView(env, memorabiliaId, viewerKey) {
+  if (!viewerKey) return false;
+  const viewBucket = String(Math.floor(Date.now() / (12 * 60 * 60 * 1000)));
+  const insert = await env.DB.prepare(
+    `INSERT OR IGNORE INTO memorabilia_views (memorabilia_id, viewer_key, viewed_bucket)
+     VALUES (?, ?, ?)`
+  ).bind(memorabiliaId, viewerKey, viewBucket).run();
+
+  if (!insert.meta?.changes) return false;
+
+  await env.DB.prepare(`UPDATE memorabilia SET view_count = view_count + 1 WHERE id = ?`).bind(memorabiliaId).run();
+  return true;
+}
+
+export async function getLikeStats(env, postId, viewerKey) {
+  const [countRow, likedRow] = await Promise.all([
+    env.DB.prepare(`SELECT COUNT(*) AS count FROM post_likes WHERE post_id = ?`).bind(postId).first(),
+    viewerKey
+      ? env.DB.prepare(`SELECT 1 FROM post_likes WHERE post_id = ? AND viewer_key = ? LIMIT 1`).bind(postId, viewerKey).first()
+      : Promise.resolve(null),
+  ]);
+
+  return {
+    likes: countRow?.count || 0,
+    liked: !!likedRow,
+  };
+}
+
+export function isLikelyNonHumanRequest(request) {
+  if (!request) return false;
+  const userAgent = String(request.headers.get('user-agent') || '').toLowerCase();
+  const purpose = String(request.headers.get('purpose') || request.headers.get('x-purpose') || '').toLowerCase();
+  const secPurpose = String(request.headers.get('sec-purpose') || '').toLowerCase();
+  const moz = String(request.headers.get('x-moz') || '').toLowerCase();
+
+  if (purpose.includes('prefetch') || purpose.includes('preview') || secPurpose.includes('prefetch') || moz.includes('prefetch')) {
+    return true;
+  }
+
+  const botPatterns = [
+    'bot', 'spider', 'crawl', 'slurp', 'bingpreview', 'facebookexternalhit',
+    'meta-externalagent', 'discordbot', 'telegrambot', 'slackbot', 'whatsapp',
+    'kakaotalk', 'kakao', 'linkedinbot', 'pinterest', 'redditbot', 'embedly',
+    'quora link preview', 'applebot', 'lighthouse', 'pagespeed', 'headlesschrome',
+    'curl', 'wget', 'python-requests', 'axios', 'go-http-client', 'java/', 'okhttp',
+    'node-fetch', 'undici', 'googleother', 'apis-google', 'inspectiontool',
+    'adsbot-google', 'mediapartners-google'
+  ];
+  return botPatterns.some((pattern) => userAgent.includes(pattern));
+}

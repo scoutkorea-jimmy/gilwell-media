@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>@@TITLE@@</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Archivo+Black&display=swap">
+  <link rel="stylesheet" href="/card-news-app/styles.css?v=@@VERSION@@">
+  <script>
+    window.CARD_NEWS_ID = @@ID@@;
+    window.TWEAK_DEFAULTS = @@DATA@@;
+  </script>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone@7/babel.min.js" crossorigin></script>
+  <script src="https://cdn.jsdelivr.net/npm/html-to-image@1.11.11/dist/html-to-image.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+
+  <script src="/card-news-app/image-slot.js?v=@@VERSION@@"></script>
+  <script type="text/babel" data-presets="react" src="/card-news-app/tweaks-panel.jsx?v=@@VERSION@@"></script>
+  <script type="text/babel" data-presets="react" src="/card-news-app/data.jsx?v=@@VERSION@@"></script>
+  <script type="text/babel" data-presets="react" src="/card-news-app/cards.jsx?v=@@VERSION@@"></script>
+  <script type="text/babel" data-presets="react" src="/card-news-app/app.jsx?v=@@VERSION@@"></script>
+@@EDIT@@</body>
+</html>

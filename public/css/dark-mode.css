@@ -1,0 +1,150 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   다크 모드 — 옵트인 (`<html data-theme="dark">`).
+   기본값은 라이트이며, OS 가 다크여도 사용자가 직접 선택하지 않으면 밝은 화면 그대로다.
+
+   이 파일은 공개 HTML 과 SSR 템플릿에서 페이지 전용 시트(post.css, calendar.css,
+   topics.css 등) 뒤에, Material 3 레이어(m3-site.css) 바로 앞에 링크된다.
+
+   ── 설계 원칙 (APCA Lc 기준) ──────────────────────────────────────────────
+   · --white / --black 및 브랜드 강조색을 역할별 시맨틱 토큰(-surface / -text / -border)으로 분리.
+   · 딥퍼플은 다크 배경에서 전경으로 소멸하므로 `-text` 변형만 밝은 값으로 재매핑하고,
+     `-surface` 변형은 어두운 채로 유지해 그 위의 --on-accent(흰 글씨) 대비를 보존한다.
+   · 모든 토큰 값은 scripts/apca.mjs 로 --bg(#191320)·--surface(#211a2a) 양쪽에 대해
+     본문 |Lc| 75+, 콘텐츠 60+ 통과를 검증했다.
+
+   ── 수정할 때 지킬 것 ────────────────────────────────────────────────────
+   · 값을 바꾸면 반드시 검증한다:
+       DARK_MODE_TEST=1 npx playwright test tests/darkmode-contrast.spec.ts
+   · 새 색 토큰을 추가하면 여기에도 다크 대응값을 넣는다.
+   · 적용 범위는 공개 사이트뿐이다. admin.html / kms.html / dreampath 는 자체 토큰 체계를 갖는다.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+:root[data-theme="dark"] {
+  /* 폼 컨트롤·스크롤바·기본 UI 가 다크를 따르도록 브라우저에 알린다 */
+  color-scheme: dark;
+
+  /* ── 표면 ─────────────────────────────────────────────── */
+  --bg:               #191320;
+  --surface:          #211a2a;
+  --card-bg:          #211a2a;
+  --surface-inverse:  #2c2436;
+
+  /* ── 그레이스케일 (역할 기준 반전) ────────────────────── */
+  --gray-900:         #f5f3f7;   /* |Lc| 99.6 */
+  --gray-700:         #c3bdcb;   /* |Lc| 67.4 */
+  --gray-500:         #8d8598;   /* UI·테두리 전용 */
+  --gray-300:         #3a3145;   /* 구분선 */
+  --gray-100:         #241d2e;   /* 섹션 배경 tint */
+
+  /* ── 텍스트 ───────────────────────────────────────────── */
+  --ink:              #eceaef;   /* |Lc| 93.8 · 본문 */
+  --text-strong:      #f5f3f7;   /* |Lc| 99.6 · 최대 강조 */
+  --muted:            #c3bdcb;   /* |Lc| 67.4 · 보조 */
+
+  /* ── 선 / 포커스 ──────────────────────────────────────── */
+  --border:           rgba(236, 234, 239, 0.16);
+  --border-strong:    rgba(236, 234, 239, 0.32);
+  --focus-ring-color: rgba(199, 169, 238, 0.60);
+
+  /* ── 강조색: 텍스트·테두리 변형 ───────────────────────── */
+  --accent-text:            #d3baf4;   /* |Lc| 70.4 */
+  --scouting-purple-text:   #d3baf4;   /* |Lc| 70.4 */
+  --midnight-purple-text:   #d3baf4;   /* |Lc| 70.4 */
+  --forest-green-text:      #9fed8f;   /* |Lc| 83.3 — Leaf Green */
+  --ocean-blue-text:        #82e6de;   /* |Lc| 80.5 — River Blue */
+  --fire-red-text:          #ffb3b2;   /* |Lc| 71.6 */
+
+  --accent-border:          #8b5fc4;
+  --scouting-purple-border: #8b5fc4;
+  --midnight-purple-border: #9b72d0;
+  --forest-green-border:    #4fa862;
+  --ocean-blue-border:      #2fb6d4;
+  --fire-red-border:        #ff7d7c;
+
+  --gradient-ink: linear-gradient(90deg, #2c2436 0%, #241d2e 52%, #1f1929 100%);
+
+  /* ── 상태 별칭 토큰 ───────────────────────────────────── */
+  --success:          var(--forest-green-text);   /* #9fed8f · |Lc| 83.3 */
+  --danger:           var(--fire-red-text);       /* #ffb3b2 · |Lc| 71.6 */
+
+  /* ── 지역(region) 팔레트 (캘린더·회원국 현황 텍스트) ──── */
+  --region-kor:       #6fd3ef;
+  --region-apr:       #ff9e9d;
+  --region-eur:       #6fd0dd;
+  --region-afr:       #e5b264;
+  --region-arb:       #bcb0ff;
+  --region-iar:       #f39ac4;
+  --region-wosm:      var(--forest-green-text);
+
+  /* ── 게시판 작성 모달(--bw-*) ─────────────────────────── */
+  --bw-surface:       #211a2a;
+  --bw-canvas:        #191320;
+  --bw-border:        rgba(236, 234, 239, 0.16);
+  --bw-border-m:      rgba(236, 234, 239, 0.30);
+  --bw-text:          #eceaef;   /* |Lc| 93.0 */
+  --bw-text-s:        #c3bdcb;   /* |Lc| 66.5 */
+  --bw-text-m:        #cac3d5;   /* |Lc| 70.0 */
+  --bw-text-l:        #c6bfd1;   /* |Lc| 67.4 */
+  --bw-primary-tint:  #2c2436;
+  --bw-shadow:        0 1px 3px rgba(0, 0, 0, .5), 0 1px 2px rgba(0, 0, 0, .4);
+  --bw-shadow-lg:     0 10px 40px rgba(0, 0, 0, .6), 0 4px 12px rgba(0, 0, 0, .45);
+
+  /* ── shade 팔레트 (전경 텍스트 |Lc| 60+ 보장) ─────────── */
+  --shade-amber-1:    #e8bc4d;   /* 68.8 */
+  --shade-blue-2:     #6fd0dd;   /* 68.9 */
+  --shade-gray-2:     #cfc9d8;   /* 74.4 */
+  --shade-gray-3:     #c8c2d1;   /* 70.3 */
+  --shade-gray-4:     #cbc3b9;   /* 70.1 */
+  --shade-gray-5:     #c5bfce;   /* 68.6 */
+  --shade-gray-6:     #bfb9c9;   /* 65.1 */
+  --shade-gray-7:     #bbb5c4;   /* 62.8 */
+  --shade-gray-8:     #b6b0c0;   /* 60.1 */
+  --shade-green-3:    #9fed8f;   /* 83.3 */
+  --shade-purple-9:   #d3baf4;   /* 70.4 */
+  --shade-red-1:      #ff9eb4;   /* 64.4 */
+  --shade-red-2:      #ffb0ad;   /* 70.3 */
+  --shade-red-4:      #ffb3a3;   /* 71.1 */
+  --shade-red-5:      #e0b45c;   /* 64.6 */
+  --shade-tint-7:     #2c2436;   /* 배경 역할 */
+}
+
+@media (prefers-contrast: more) {
+  :root[data-theme="dark"] {
+    --ink:     #ffffff;
+    --muted:   #e4e1e8;
+    --border:  rgba(236, 234, 239, 0.42);
+  }
+}
+
+/* ── 컴포넌트별 리터럴 색·표면 보정 ──────────────────────────────────────── */
+[data-theme="dark"] body[data-home-bootstrap] .lang-btn { color: rgba(236, 234, 239, 0.55); }
+[data-theme="dark"] .share-modal-btn-help { color: rgba(236, 234, 239, 0.72); }
+[data-theme="dark"] .admin-login-build { color: rgba(236, 234, 239, 0.66); }
+[data-theme="dark"] .post-related-date { color: rgba(236, 234, 239, 0.68); }
+[data-theme="dark"] .calendar-map-result-place::before { color: rgba(236, 234, 239, 0.55); }
+[data-theme="dark"] .members-section-eyebrow,
+[data-theme="dark"] .member-country-toggle-count { color: rgba(211, 186, 244, 0.88); }
+
+[data-theme="dark"] .post-card-thumb img,
+[data-theme="dark"] .hero-slide img {
+  filter: brightness(0.94);
+}
+
+[data-theme="dark"] .memo-modal-body,
+[data-theme="dark"] .gw-ep-create-form { background: #241d2e; }
+[data-theme="dark"] .gw-chatbot-thread { background: #1f1929; }
+
+[data-theme="dark"] .memo-btn-danger { color: #ff9e9d; }
+[data-theme="dark"] .memo-btn-danger:hover { background: #a32b2b; border-color: #ff9e9d; }
+
+[data-theme="dark"] .home-rail-card,
+[data-theme="dark"] .item-meta-chip,
+[data-theme="dark"] .post-history-entry,
+[data-theme="dark"] .bw-footer { background: rgba(33, 26, 42, 0.98); }
+[data-theme="dark"] .pull-refresh-label { background: rgba(33, 26, 42, 0.96); }
+[data-theme="dark"] .share-modal-close { background: rgba(33, 26, 42, 0.90); }
+[data-theme="dark"] .mobile-compact-drawer-close { background: rgba(33, 26, 42, 0.88); }
+
+/* 브라우저 기본 다크 링크색(#9E9EFF, |Lc| 52.9) 방지 */
+[data-theme="dark"] a,
+[data-theme="dark"] a:not([class]) { color: var(--accent-text); }

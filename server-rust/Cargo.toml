@@ -1,0 +1,21 @@
+[package]
+name = "bpmedia-server"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+worker = { version = "=0.8.7", features = ["d1"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+futures-util = "0.3"
+web-sys = { version = "0.3", features = ["Url", "UrlSearchParams"] }
+
+[profile.release]
+lto = true
+opt-level = "s"
+# wasm-bindgen needs the externref table that full symbol stripping removes.
+strip = "debuginfo"

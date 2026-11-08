@@ -1,0 +1,613 @@
+// Compatibility reference from origin/main 835a326a; test-only.
+import { loadSiteMeta, normalizeSiteMeta } from '../../functions/_shared/site-meta.js';
+import { selectHomeRailIds, hydrateByIds } from './rust-home-rails.js';
+import { serializePostImage } from '../../functions/_shared/images.js';
+import { logApiError } from '../../functions/_shared/ops-log.js';
+import { ensureDuePostsPublished } from '../../functions/_shared/publish-due-posts.js';
+import { loadNavLabels } from '../../functions/_shared/nav-labels.js';
+import { loadActiveHomeBanners } from '../../functions/_shared/home-banners.js';
+import { PUBLIC_DATE_EXPR } from '../../functions/_shared/post-public-date.js';
+import { recordHomepageIssue } from '../../functions/_shared/homepage-issues.js';
+import { DEFAULT_TICKER_ITEMS } from '../../functions/_shared/site-copy.mjs';
+import { toCardPost } from '../../functions/_shared/post-excerpt.js';
+import { readHomeLeadState, selectAutoHomeLeadId } from './rust-home-lead-auto.js';
+
+// 카드 목록(lead/picks/latest/popular/columns)용 직렬화.
+// 홈 렌더러가 본문에서 실제로 쓰는 건 메인 스토리의 420자 발췌 한 곳뿐인데
+// 이전에는 25건의 content 전문(약 55KB, 응답의 42%)을 매번 내려보냈다.
+// 히어로는 애초에 content 를 SELECT 하지 않으므로 이 경로를 타지 않는다.
+function serializeCardPost(post, origin) {
+  return toCardPost(serializePostImage(post, origin));
+}
+
+const DEFAULT_HOME_LEAD_MEDIA = {
+  fit: 'cover',
+  desktop: {
+    position_x: 50,
+    position_y: 50,
+    zoom: 100,
+  },
+  mobile: {
+    position_x: 50,
+    position_y: 50,
+    zoom: 100,
+  },
+};
+
+const DEFAULT_HERO_MEDIA = {
+  fit: 'cover',
+  desktop: {
+    position_x: 50,
+    position_y: 50,
+    zoom: 100,
+  },
+  mobile: {
+    position_x: 50,
+    position_y: 50,
+    zoom: 100,
+  },
+};
+
+const MAX_MANUAL_HERO_POSTS = 2;
+const AUTO_HERO_POST_COUNT = 3;
+const MAX_TOTAL_HERO_POSTS = MAX_MANUAL_HERO_POSTS + AUTO_HERO_POST_COUNT;
+
+// 카드용 게시글 컬럼 단일 정의 — loadHomeLead/loadHomePicks/loadPostList/loadLatestPosts
+// 가 동일한 SELECT 목록을 4곳에 복제하던 것을 통합. 컬럼 추가/변경을 한 곳에서만 한다.
+// (loadPopular 는 CTE 기반 별도 컬럼셋이라 제외)
+const POST_CARD_COLUMNS = `id, category, title, subtitle, content, image_url, image_caption, image_frame, created_at, publish_at, featured, tag, views, author, published, sort_order, youtube_url,
+            (SELECT COUNT(*) FROM post_likes WHERE post_id = posts.id) AS likes`;
+const DEFAULT_HERO_MANUAL_POSITION = 'after_auto';
+
+const HOME_SECTION_ISSUE_DEFS = {
+  site_meta: { title: '홈 사이트 메타 로드 실패', severity: 'medium', area: 'seo', source_path: '/api/home /api/settings/site-meta' },
+  nav_labels: { title: '홈 메뉴명 로드 실패', severity: 'high', area: 'ui', source_path: '/api/home /api/settings/nav-labels' },
+  translations: { title: '홈 번역 문자열 로드 실패', severity: 'medium', area: 'ui', source_path: '/api/home /api/settings/translations' },
+  ticker: { title: '홈 티커 로드 실패', severity: 'low', area: 'homepage', source_path: '/api/home /api/settings/ticker' },
+  stats: { title: '홈 통계 로드 실패', severity: 'medium', area: 'analytics', source_path: '/api/home' },
+  analytics: { title: '홈 푸터 분석 로드 실패', severity: 'medium', area: 'analytics', source_path: '/api/home /site_visits' },
+  hero: { title: '홈 히어로 로드 실패', severity: 'high', area: 'homepage', source_path: '/api/home' },
+  lead: { title: '홈 메인 스토리 로드 실패', severity: 'high', area: 'homepage', source_path: '/api/home' },
+  latest: { title: '홈 최신 소식 로드 실패', severity: 'high', area: 'homepage', source_path: '/api/home' },
+  popular: { title: '홈 인기 소식 로드 실패', severity: 'medium', area: 'homepage', source_path: '/api/home' },
+  banners: { title: '홈 배너 로드 실패', severity: 'low', area: 'homepage', source_path: '/api/home' },
+  picks: { title: '홈 에디터 추천 로드 실패', severity: 'medium', area: 'homepage', source_path: '/api/home' },
+  korea: { title: '홈 Korea 섹션 로드 실패', severity: 'medium', area: 'homepage', source_path: '/api/home' },
+  apr: { title: '홈 APR 섹션 로드 실패', severity: 'medium', area: 'homepage', source_path: '/api/home' },
+  wosm: { title: '홈 WOSM 섹션 로드 실패', severity: 'medium', area: 'homepage', source_path: '/api/home' },
+  people: { title: '홈 Scout People 섹션 로드 실패', severity: 'medium', area: 'homepage', source_path: '/api/home' },
+};
+
+export async function onRequestGet(context) {
+  const { env, request } = context;
+  try {
+    const origin = new URL(request.url).origin;
+    // 예약 공개 보정을 응답 경로에서 분리 — due 글이 있을 때 UPDATE + purgeContentCache
+    // (네트워크 퍼지)까지 동기로 기다리며 홈 응답이 수초 튀던 원인(8s 스파이크). 동일
+    // 작업을 5분 주기 publish-due cron(wrangler.publish-due.toml)이 이미 담당하므로
+    // 즉시성은 약간 양보(예약글 최대 ~수분 지연, 운영자 승인). waitUntil 로 응답 후
+    // 백그라운드 실행해 opportunistic 하게 계속 처리. (KMS feature-definition 의
+    // "트래픽/지연 증가 시 inline 호출 제거" 트리거 도달분)
+    const runDuePublish = () =>
+      ensureDuePostsPublished(env, origin).catch((err) => {
+        console.error('GET /api/home auto publish error (bg):', err);
+      });
+    if (context.waitUntil) context.waitUntil(runDuePublish());
+    else runDuePublish();
+
+    const issues = {};
+    const resolveSection = (key, loader, fallback) =>
+      Promise.resolve()
+        .then(loader)
+        .catch(async (err) => {
+          issues[key] = true;
+          console.error(`GET /api/home section "${key}" failed:`, err);
+          // 이슈 기록 자체가 실패해도(예: DB 쓰기 오류) resolveSection 이 reject 되어
+          // Promise.all → 홈 API 전체 500 으로 번지지 않도록 swallow. (안정성 검토 00.170.07)
+          await recordHomeSectionIssue(env, key, err).catch(() => {});
+          return fallback;
+        });
+
+    const [
+      siteMeta,
+      navLabels,
+      translations,
+      ticker,
+      stats,
+      footerAnalytics,
+      hero,
+      lead,
+      latest,
+      popular,
+      picks,
+      banners,
+      korea,
+      apr,
+      wosm,
+      people,
+    ] = await Promise.all([
+      resolveSection('site_meta', () => loadSiteMeta(env), normalizeSiteMeta(null)),
+      resolveSection('nav_labels', () => loadNavLabels(env), {}),
+      resolveSection('translations', () => loadTranslations(env), {}),
+      resolveSection('ticker', () => loadTicker(env), DEFAULT_TICKER_ITEMS),
+      resolveSection('stats', () => loadStats(env), {
+        korea: 0,
+        apr: 0,
+        wosm: 0,
+        people: 0,
+        today: 0,
+      }),
+      resolveSection('analytics', () => loadFooterAnalytics(env), {
+        provider: 'site_visits',
+        provider_label: '공개 페이지 전체 방문 집계',
+        today_unique: 0,
+        today_views: 0,
+        total_unique: 0,
+        today_visits: 0,
+        total_visits: 0,
+        total_pageviews: 0,
+        measured_basis: 'site_visits',
+      }),
+      resolveSection('hero', () => loadHero(env, origin), { posts: [], interval_ms: 3000 }),
+      resolveSection('lead', () => loadHomeLead(env, origin), { post: null, media: DEFAULT_HOME_LEAD_MEDIA }),
+      resolveSection('latest', () => loadLatestPosts(env, origin, 4), []),
+      // 추천·인기는 서로를 알아야 하므로(인기가 추천과 중복 제거) 함께 계산한다.
+      resolveSection('popular', () => loadRails(env, origin).then((r) => r.popular), []),
+      resolveSection('picks', () => loadRails(env, origin).then((r) => r.picks), []),
+      resolveSection('banners', () => loadActiveHomeBanners(env), []),
+      resolveSection('korea', () => loadPostList(env, origin, { category: 'korea', limit: 4 }), []),
+      resolveSection('apr', () => loadPostList(env, origin, { category: 'apr', limit: 4 }), []),
+      resolveSection('wosm', () => loadPostList(env, origin, { category: 'wosm', limit: 4 }), []),
+      resolveSection('people', () => loadPostList(env, origin, { category: 'people', limit: 4 }), []),
+    ]);
+
+    return json({
+      site_meta: siteMeta,
+      nav_labels: navLabels,
+      translations: { strings: translations },
+      ticker: { items: ticker },
+      stats,
+      analytics: footerAnalytics,
+      hero,
+      lead,
+      latest: { posts: latest },
+      popular: { posts: popular },
+      picks: { posts: picks },
+      banners,
+      columns: {
+        korea: { posts: korea },
+        apr: { posts: apr },
+        wosm: { posts: wosm },
+        people: { posts: people },
+      },
+      issues,
+    }, 200, { 'Cache-Control': 'no-store' });
+  } catch (err) {
+    console.error('GET /api/home error:', err);
+    await recordHomepageIssue(env, {
+      title: '홈 API 전체 응답 실패',
+      issue_type: 'error',
+      status: 'open',
+      severity: 'high',
+      area: 'api',
+      source_path: '/api/home',
+      summary: '홈 API가 전체적으로 실패해 주요 데이터 응답을 만들지 못했습니다.',
+      impact: '홈페이지 전체가 초기 fallback 상태로 보이거나 데이터가 비어 보일 수 있습니다.',
+      cause: trimMessage(err && err.message),
+      action_items: 'Functions 로그와 D1 응답 상태, 최근 배포 변경사항을 우선 점검합니다.',
+      reporter: 'system:auto-home',
+      occurred_at: nowUtcText(),
+    });
+    await logApiError(env, request, err, { channel: 'site' });
+    return json({ error: 'Database error' }, 500);
+  }
+}
+
+async function recordHomeSectionIssue(env, key, err) {
+  const meta = HOME_SECTION_ISSUE_DEFS[key];
+  if (!meta) return null;
+  return recordHomepageIssue(env, {
+    title: meta.title,
+    issue_type: 'error',
+    status: 'open',
+    severity: meta.severity,
+    area: meta.area,
+    source_path: meta.source_path,
+    summary: meta.title + '가 감지되어 해당 섹션은 fallback 데이터로 내려갔습니다.',
+    impact: '홈 일부 영역이 비어 보이거나 기본값으로 대체될 수 있습니다.',
+    cause: trimMessage(err && err.message),
+    action_items: '해당 로더와 관련 settings/posts 쿼리, Functions 로그를 점검합니다.',
+    reporter: 'system:auto-home',
+    occurred_at: nowUtcText(),
+  });
+}
+
+async function loadTranslations(env) {
+  const row = await env.DB.prepare(`SELECT value FROM settings WHERE key = 'translations'`).first();
+  const parsed = row ? JSON.parse(row.value || '{}') : {};
+  if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+    return sanitizeTranslationStrings(
+      parsed.strings && typeof parsed.strings === 'object' && !Array.isArray(parsed.strings)
+        ? parsed.strings
+        : parsed
+    );
+  }
+  throw new Error('Translations settings must be an object');
+}
+
+function sanitizeTranslationStrings(strings) {
+  if (!strings || typeof strings !== 'object') return {};
+  const sanitized = {};
+  Object.keys(strings).forEach((key) => {
+    if (key.indexOf('nav.') === 0) return;
+    sanitized[key] = strings[key];
+  });
+  return sanitized;
+}
+
+async function loadTicker(env) {
+  const row = await env.DB.prepare(`SELECT value FROM settings WHERE key = 'ticker'`).first();
+  if (!row) return DEFAULT_TICKER_ITEMS;
+  const parsed = JSON.parse(row.value || '[]');
+  if (Array.isArray(parsed)) return parsed;
+  throw new Error('Ticker settings must be an array');
+}
+
+async function loadStats(env) {
+  const [koreaRow, aprRow, wosmRow, peopleRow, todayRow] = await Promise.all([
+    env.DB.prepare(`SELECT COUNT(*) AS n FROM posts WHERE category = 'korea' AND published = 1`).first(),
+    env.DB.prepare(`SELECT COUNT(*) AS n FROM posts WHERE category = 'apr' AND published = 1`).first(),
+    env.DB.prepare(`SELECT COUNT(*) AS n FROM posts WHERE category = 'wosm' AND published = 1`).first(),
+    env.DB.prepare(`SELECT COUNT(*) AS n FROM posts WHERE category = 'people' AND published = 1`).first(),
+    env.DB.prepare(`
+      SELECT COUNT(*) AS n
+        FROM posts
+       WHERE published = 1
+         AND date(${PUBLIC_DATE_EXPR}) = date('now', '+9 hours')
+    `).first(),
+  ]);
+  return {
+    korea: koreaRow?.n ?? 0,
+    apr: aprRow?.n ?? 0,
+    wosm: wosmRow?.n ?? 0,
+    people: peopleRow?.n ?? 0,
+    today: todayRow?.n ?? 0,
+  };
+}
+
+async function loadFooterAnalytics(env) {
+  // 4개의 full-table 스캔(today unique/views + total unique/views)을 동일 WHERE 별로
+  // COUNT(DISTINCT)+COUNT(*) 를 한 SELECT 에 묶어 2 스캔으로 축소. 결과값은 동일.
+  // /api/home 은 no-store 라 매 방문 이 비용을 치르므로 스캔 횟수 절감이 직접 이득 (00.166.x).
+  const PUBLIC_WHERE = `path NOT LIKE '/api/%' AND path NOT IN ('/admin', '/admin.html')`;
+  const [todayRow, totalRow] = await Promise.all([
+    env.DB.prepare(`SELECT COUNT(DISTINCT viewer_key) AS u, COUNT(*) AS v
+                      FROM site_visits
+                     WHERE ${PUBLIC_WHERE}
+                       AND datetime(visited_at, '+9 hours') >= datetime(date('now', '+9 hours'))`)
+      .first().catch(() => null),
+    env.DB.prepare(`SELECT COUNT(DISTINCT viewer_key) AS u, COUNT(*) AS v
+                      FROM site_visits
+                     WHERE ${PUBLIC_WHERE}`)
+      .first().catch(() => null),
+  ]);
+  const todayUnique = todayRow ? (todayRow.u || 0) : 0;
+  const todayViews  = todayRow ? (todayRow.v || 0) : 0;
+  const totalUnique = totalRow ? (totalRow.u || 0) : 0;
+  const totalViews  = totalRow ? (totalRow.v || 0) : 0;
+  return {
+    provider: 'site_visits',
+    provider_label: '공개 페이지 전체 방문 집계',
+    today_unique: todayUnique,
+    today_views: todayViews,
+    total_unique: totalUnique,
+    today_visits: todayUnique,
+    total_visits: totalUnique,
+    total_pageviews: totalViews,
+    measured_basis: 'site_visits',
+  };
+}
+
+async function loadHero(env, origin) {
+  const [row, intervalRow, mediaRow] = await Promise.all([
+    env.DB.prepare(`SELECT value FROM settings WHERE key = 'hero'`).first(),
+    env.DB.prepare(`SELECT value FROM settings WHERE key = 'hero_interval'`).first(),
+    env.DB.prepare(`SELECT value FROM settings WHERE key = 'hero_media'`).first(),
+  ]);
+  const interval_ms = getSafeInterval(intervalRow && intervalRow.value);
+  const heroSettings = parseHeroSettings(row && row.value);
+  const postIds = heroSettings.manual_post_ids;
+  const mediaMap = normalizeHeroMediaMap(parseJsonValue(mediaRow && mediaRow.value), postIds);
+  const manualPosts = await loadManualHeroPosts(env, origin, postIds, mediaMap);
+  const autoPosts = await loadAutomaticHeroPosts(env, origin, manualPosts.map((post) => post.id));
+  const posts = heroSettings.manual_position === 'before_auto'
+    ? manualPosts.concat(autoPosts)
+    : autoPosts.concat(manualPosts);
+
+  return {
+    posts: posts.slice(0, MAX_TOTAL_HERO_POSTS),
+    interval_ms,
+  };
+}
+
+async function loadManualHeroPosts(env, origin, postIds, mediaMap) {
+  if (!Array.isArray(postIds) || !postIds.length) return [];
+
+  const posts = [];
+  for (const id of postIds) {
+    const post = await env.DB.prepare(
+      `SELECT id, category, title, subtitle, image_url, created_at, publish_at
+         FROM posts
+        WHERE id = ? AND published = 1`
+    ).bind(id).first();
+    if (!post) continue;
+    const serialized = serializePostImage(post, origin);
+    serialized.media = mediaMap[String(id)] || DEFAULT_HERO_MEDIA;
+    posts.push(serialized);
+  }
+  return posts;
+}
+
+async function loadAutomaticHeroPosts(env, origin, excludedIds) {
+  const exclusions = Array.isArray(excludedIds)
+    ? excludedIds.map((id) => parseInt(id, 10)).filter((id) => Number.isFinite(id) && id > 0)
+    : [];
+  const conditions = ['published = 1'];
+  const bindings = [];
+
+  if (exclusions.length) {
+    conditions.push(`id NOT IN (${exclusions.map(() => '?').join(', ')})`);
+    bindings.push(...exclusions);
+  }
+
+  const { results } = await env.DB.prepare(
+    `SELECT id, category, title, subtitle, image_url, created_at, publish_at
+       FROM posts
+      WHERE ${conditions.join(' AND ')}
+      ORDER BY ${PUBLIC_DATE_EXPR} DESC, id DESC
+      LIMIT ?`
+  ).bind(...bindings, AUTO_HERO_POST_COUNT).all();
+
+  return (results || []).map((post) => {
+    const serialized = serializePostImage(post, origin);
+    serialized.media = DEFAULT_HERO_MEDIA;
+    return serialized;
+  });
+}
+
+async function loadHomeLead(env, origin) {
+  const state = await readHomeLeadState(env);
+  const postId = state.postId || (state.mode === 'auto' ? (await selectAutoHomeLeadId(env)).id : 0);
+  const media = normalizeHomeLeadMedia(parseJsonValue(state.mediaValue));
+  if (!postId) return { post: null, media };
+  const post = await env.DB.prepare(
+    `SELECT ${POST_CARD_COLUMNS}
+       FROM posts
+      WHERE id = ? AND published = 1`
+  ).bind(postId).first();
+  return { post: post ? serializeCardPost(post, origin) : null, media };
+}
+
+function safeParsePickOrder(raw) {
+  try {
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed
+      .map((n) => parseInt(n, 10))
+      .filter((n) => Number.isFinite(n) && n > 0);
+  } catch (_) { return []; }
+}
+
+async function loadPostList(env, origin, opts = {}) {
+  const conditions = ['published = 1'];
+  const bindings = [];
+  if (opts.category) {
+    conditions.push('category = ?');
+    bindings.push(opts.category);
+  }
+  if (opts.featured) {
+    conditions.push('featured = 1');
+  }
+  const limit = Math.max(1, Math.min(10, parseInt(opts.limit || 4, 10)));
+  const { results } = await env.DB.prepare(
+    `SELECT ${POST_CARD_COLUMNS}
+       FROM posts
+      WHERE ${conditions.join(' AND ')}
+      ORDER BY ${PUBLIC_DATE_EXPR} DESC, id DESC
+      LIMIT ?`
+  ).bind(...bindings, limit).all();
+  return (results || []).map((post) => serializeCardPost(post, origin));
+}
+
+async function loadLatestPosts(env, origin, limit) {
+  const safeLimit = Math.max(1, Math.min(10, parseInt(limit || 4, 10)));
+  const { results } = await env.DB.prepare(
+    `SELECT ${POST_CARD_COLUMNS}
+       FROM posts
+      WHERE published = 1
+      ORDER BY ${PUBLIC_DATE_EXPR} DESC, id DESC
+      LIMIT ?`
+  ).bind(safeLimit).all();
+  return (results || []).map((post) => serializeCardPost(post, origin));
+}
+
+/**
+ * 홈 추천·인기 레일 — 한 번만 계산해 요청 안에서 재사용한다.
+ * resolveSection 이 두 번 호출하므로 메모이즈하지 않으면 집계 쿼리가 두 번 나간다.
+ */
+function loadRails(env, origin) {
+  if (!env.__homeRailsPromise) {
+    env.__homeRailsPromise = (async () => {
+      const { pickIds, popularIds } = await selectHomeRailIds(env, 4);
+      const ids = [...new Set([...pickIds, ...popularIds])];
+      const cards = await hydrateByIds(env, ids, POST_CARD_COLUMNS, (row) => serializeCardPost(row, origin));
+      const byId = new Map(cards.map((c) => [c.id, c]));
+      return {
+        picks: pickIds.map((id) => byId.get(id)).filter(Boolean),
+        popular: popularIds.map((id) => byId.get(id)).filter(Boolean),
+      };
+    })();
+  }
+  return env.__homeRailsPromise;
+}
+async function scalar(env, sql) {
+  const row = await env.DB.prepare(sql).first();
+  return row?.count || 0;
+}
+
+function getSafeInterval(value) {
+  const parsed = parseInt(value, 10);
+  if (!Number.isFinite(parsed)) return 3000;
+  return Math.min(15000, Math.max(2000, parsed));
+}
+
+function parseHeroSettings(raw) {
+  const fallback = {
+    manual_post_ids: [],
+    manual_position: DEFAULT_HERO_MANUAL_POSITION,
+  };
+  if (!raw) return fallback;
+
+  const value = String(raw).trim();
+  if (!value) return fallback;
+
+  if (value.startsWith('{')) {
+    const parsed = parseJsonValue(value);
+    const manualIds = Array.isArray(parsed && parsed.manual_post_ids)
+      ? parsed.manual_post_ids
+      : Array.isArray(parsed && parsed.post_ids)
+        ? parsed.post_ids
+        : [];
+    return {
+      manual_post_ids: manualIds
+        .map((id) => parseInt(id, 10))
+        .filter((id) => Number.isFinite(id) && id > 0)
+        .slice(0, MAX_MANUAL_HERO_POSTS),
+      manual_position: parsed && parsed.manual_position === 'before_auto'
+        ? 'before_auto'
+        : DEFAULT_HERO_MANUAL_POSITION,
+    };
+  }
+
+  if (value.startsWith('[')) {
+    const parsed = parseJsonValue(value);
+    return {
+      manual_post_ids: Array.isArray(parsed)
+        ? parsed.map((id) => parseInt(id, 10)).filter((id) => Number.isFinite(id) && id > 0).slice(0, MAX_MANUAL_HERO_POSTS)
+        : [],
+      manual_position: DEFAULT_HERO_MANUAL_POSITION,
+    };
+  }
+
+  const single = parseInt(value, 10);
+  return {
+    manual_post_ids: Number.isFinite(single) && single > 0 ? [single] : [],
+    manual_position: DEFAULT_HERO_MANUAL_POSITION,
+  };
+}
+
+function parseJsonValue(raw) {
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw);
+  } catch (_) {
+    return null;
+  }
+}
+
+function normalizeHomeLeadMedia(input) {
+  const raw = input && typeof input === 'object' ? input : {};
+  const fallbackDesktop = {
+    position_x: clampNumber(raw.position_x, 0, 100, DEFAULT_HOME_LEAD_MEDIA.desktop.position_x),
+    position_y: clampNumber(raw.position_y, 0, 100, DEFAULT_HOME_LEAD_MEDIA.desktop.position_y),
+    zoom: clampNumber(raw.zoom, 60, 150, DEFAULT_HOME_LEAD_MEDIA.desktop.zoom),
+  };
+  const fallbackMobile = {
+    position_x: fallbackDesktop.position_x,
+    position_y: fallbackDesktop.position_y,
+    zoom: fallbackDesktop.zoom,
+  };
+  const desktop = raw.desktop && typeof raw.desktop === 'object' ? raw.desktop : raw;
+  const mobile = raw.mobile && typeof raw.mobile === 'object' ? raw.mobile : raw;
+  return {
+    fit: raw.fit === 'contain' ? 'contain' : 'cover',
+    desktop: {
+      position_x: clampNumber(desktop.position_x, 0, 100, fallbackDesktop.position_x),
+      position_y: clampNumber(desktop.position_y, 0, 100, fallbackDesktop.position_y),
+      zoom: clampNumber(desktop.zoom, 60, 150, fallbackDesktop.zoom),
+    },
+    mobile: {
+      position_x: clampNumber(mobile.position_x, 0, 100, fallbackMobile.position_x),
+      position_y: clampNumber(mobile.position_y, 0, 100, fallbackMobile.position_y),
+      zoom: clampNumber(mobile.zoom, 60, 150, fallbackMobile.zoom),
+    },
+  };
+}
+
+function normalizeHeroMediaMap(input, allowedIds) {
+  const map = input && typeof input === 'object' ? input : {};
+  const allowed = Array.isArray(allowedIds) ? allowedIds.map(String) : null;
+  return Object.keys(map).reduce((acc, key) => {
+    if (allowed && allowed.indexOf(String(key)) === -1) return acc;
+    acc[String(key)] = normalizeHeroMedia(map[key]);
+    return acc;
+  }, {});
+}
+
+function normalizeHeroMedia(input) {
+  const raw = input && typeof input === 'object' ? input : {};
+  const fallbackDesktop = {
+    position_x: clampNumber(raw.position_x, 0, 100, DEFAULT_HERO_MEDIA.desktop.position_x),
+    position_y: clampNumber(raw.position_y, 0, 100, DEFAULT_HERO_MEDIA.desktop.position_y),
+    zoom: clampNumber(raw.zoom, 60, 150, DEFAULT_HERO_MEDIA.desktop.zoom),
+  };
+  const fallbackMobile = {
+    position_x: fallbackDesktop.position_x,
+    position_y: fallbackDesktop.position_y,
+    zoom: fallbackDesktop.zoom,
+  };
+  const desktop = raw.desktop && typeof raw.desktop === 'object' ? raw.desktop : raw;
+  const mobile = raw.mobile && typeof raw.mobile === 'object' ? raw.mobile : raw;
+  return {
+    fit: raw.fit === 'contain' ? 'contain' : 'cover',
+    desktop: {
+      position_x: clampNumber(desktop.position_x, 0, 100, fallbackDesktop.position_x),
+      position_y: clampNumber(desktop.position_y, 0, 100, fallbackDesktop.position_y),
+      zoom: clampNumber(desktop.zoom, 60, 150, fallbackDesktop.zoom),
+    },
+    mobile: {
+      position_x: clampNumber(mobile.position_x, 0, 100, fallbackMobile.position_x),
+      position_y: clampNumber(mobile.position_y, 0, 100, fallbackMobile.position_y),
+      zoom: clampNumber(mobile.zoom, 60, 150, fallbackMobile.zoom),
+    },
+  };
+}
+
+function clampNumber(value, min, max, fallback) {
+  const parsed = parseInt(value, 10);
+  if (!Number.isFinite(parsed)) return fallback;
+  return Math.min(max, Math.max(min, parsed));
+}
+
+function json(data, status = 200, extraHeaders = {}) {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: Object.assign({ 'Content-Type': 'application/json' }, extraHeaders),
+  });
+}
+
+function trimMessage(value) {
+  const text = String(value || '').trim();
+  if (!text) return '';
+  return text.length > 500 ? text.slice(0, 500) : text;
+}
+
+function nowUtcText() {
+  return new Date().toISOString().slice(0, 19).replace('T', ' ');
+}
+
+function publicCacheHeaders(maxAge, swr) {
+  return {
+    'Cache-Control': `public, max-age=${maxAge}, s-maxage=${maxAge}, stale-while-revalidate=${swr}`,
+  };
+}
