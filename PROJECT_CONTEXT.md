@@ -161,13 +161,18 @@ Owner approved commit/push/deploy. Public commit202191a5 pushed to main; standar
 
 2026-11-02 작업 중: 관리자 카드뉴스에서 ISO 주차를 선택해 해당 월~일 KST 공개 기사로 수동 호를 준비하고 기존 호를 재사용하는 변경을 작성했다. 기존 최근 7일 수동 제작 및 자동 제작 중지 상태를 유지한다. 로컬 검증과 운영 배포는 각각 별도 상태로 확인한다.
 
-## 2026-11-08 — 캘린더 폐지 릴리스 (배포 준비)
+## 2026-11-08 — 캘린더 폐지 릴리스 (배포 완료)
 
 - 최신 사용자 결정: 문서·번역본 자료실 계획 취소, 캘린더 기능 제거만 수행. 승인 전 커밋·푸시·배포하지 않음.
 - 기존 제보 문구 미배포 변경 보존. 캘린더 전용 페이지·JS·CSS·관리자 패널/모달·API 구현·Rust 모듈과 메뉴/사이트맵 연결 제거. 기존 주소는 데이터 접근 없이410(no-store/noindex).
 - 기존 calendar_events35건·설정·통계·이력 보존. 운영 DB 쓰기 없음. 문서 샘플 서버8797 종료, 샘플은 ignored work에만 보관.
-- KMS 운영 원본/revision6은 배포 전 상태를 유지. 승인 후 폐지 기준·API 종료를 KMS에 반영하고 snapshot을 동기화해야 함. 로컬 제안·검증은 work/calendar-removal.
+- KMS revision6→7 갱신·스냅샷 동기화 완료. 이전 본문 settings_history233, 운영 기록 operational_events2036. 검증 기록은 work/calendar-removal.
 
 - 사용자 최종 배포 승인: "반영해서 업데이트해줘". 이번 릴리스에는 캘린더 제거만 포함하며 기존 제보 문구 미배포 변경은 제외.
 - KMS revision6→7 CAS 갱신, 이전 본문 settings_history 보관·operational_events 기록·전체 readback 일치. 일정35건 보존.
-- 릴리스 버전 Site00.198.00 / Admin03.165.00. 독립 배포 사본에서 필수 검증·표준 배포 후 결과를 추가한다.
+- 릴리스 버전 Site00.198.00 / Admin03.165.00. 독립 배포 사본에서 필수 검증과 표준 배포를 완료했다.
+
+- 배포 완료: 커밋3a3e4cc2, Pages b5c84c48.gilwell-media.pages.dev, 표준 deploy_production.sh exit0. 라이브 Site00.198.00/Admin03.165.00/KMS7 일치.
+- 라이브 /calendar(.html,/), 일정/태그/안내문API410, 전용JS/CSS404. 공개·관리자 메뉴·sitemap에서 제거. 빈 POST/HEAD도410. 운영 calendar_events35건·기존 제보 문구 보존.
+- 검증: Rust340/340, workerd/격리D1 3/3, 관리자 포커스 브라우저4/4, 메타데이터·노출경계·공개SSR. 표준 공개 기사 감사588건/오류0. snapshot20261108T135744Z-3a3e4cc2 저장.
+- 원래 체크아웃을 배포 커밋으로 동기화하고 기존 미배포 제보 문구28파일을 보존. 별도 문서·PDF 자료실은 배포하지 않음. 실제 네이티브 브라우저 확인은 사용자 동시 조작으로 중단됐으며 라이브HTTP와 로컬Chrome 검증을 구분한다.
