@@ -99,7 +99,7 @@ function fixture(role = 'owner', permissions = []) {
       },
     },
   };
-  for (const name of ['Dashboard', 'HomepageIssues', 'SiteHistory', 'List', 'Calendar', 'Glossary', 'AnalyticsVisits', 'AnalyticsTags', 'GeoAudience', 'Marketing', 'Releases', 'Hero', 'HomeLeadUI', 'TagSettingsUI', 'MetaUI', 'BoardCopy', 'AuthorUI', 'BannerUI', 'HomeBannersUI', 'TickerUI', 'ContributorsUI', 'EditorsUI', 'NavLabelsUI', 'TranslationsUI', 'WosmMembersUI', 'ReferenceSitesUI', 'PrivacyPolicyUI']) {
+  for (const name of ['Dashboard', 'HomepageIssues', 'SiteHistory', 'List', 'Glossary', 'AnalyticsVisits', 'AnalyticsTags', 'GeoAudience', 'Marketing', 'Releases', 'Hero', 'HomeLeadUI', 'TagSettingsUI', 'MetaUI', 'BoardCopy', 'AuthorUI', 'BannerUI', 'HomeBannersUI', 'TickerUI', 'ContributorsUI', 'EditorsUI', 'NavLabelsUI', 'TranslationsUI', 'WosmMembersUI', 'ReferenceSitesUI', 'PrivacyPolicyUI']) {
     context['_load' + name] = () => context.loads.push(name);
   }
   context._initArticleScorer = () => {}; context._loadAiScoreHistory = () => {};
@@ -392,19 +392,5 @@ function deferredWrites() {
   assert.ok(f.timers.has(c._writeDraftDebounce), 'Publication failure resumes autosave for unsaved input');
 }
 
-{
-  const f = fixture(); const c = f.context;
-  const modalCode = admin.slice(admin.indexOf('  function _openCalModal('), admin.indexOf('  function _closeCalModal()'));
-  for (const match of modalCode.matchAll(/document\.getElementById\('([^']+)'\)/g)) f.ids.set(match[1], new Node('field'));
-  const dialog = new Node('dialog'); dialog.scrollTop = 320;
-  c._contentDialogs = {};
-  c._contentCloseDialog = () => true;
-  c._contentOpenDialog = id => { c._contentDialogs[id] = {}; };
-  f.ids.get('cal-modal').querySelector = () => dialog;
-  for (const name of ['_renderCalTags', '_renderCalTagPresets', '_renderCalTargetGroups', '_renderCalRelatedPosts', '_syncCalCategoryUi', '_renderCalGeoPreview']) c[name] = () => {};
-  vm.runInContext(modalCode, c); c._openCalModal(null);
-  assert.equal(dialog.scrollTop, 0, 'Reopening calendar begins at the title and dates');
-  assert.equal(f.ids.get('cal-modal').style.display, 'flex');
-}
 
 console.log('Admin navigation assertions passed: permissions, groups, guard, OTP, mobile, compatibility, deferred autosave/publication.');

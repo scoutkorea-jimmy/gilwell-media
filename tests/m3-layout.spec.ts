@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 
 const PUBLIC_PATHS = [
   '/', '/latest', '/korea', '/apr', '/wosm', '/people', '/glossary',
-  '/wosm-members', '/calendar', '/memorabilia', '/search?q=스카우트',
+  '/wosm-members', '/memorabilia', '/search?q=스카우트',
   '/jamboree16', '/contributors', '/about', '/privacy', '/editorial-policy',
   '/post/6', '/post/385',
 ];
@@ -132,14 +132,6 @@ test('기사 상단과 보조 정보는 중첩 외곽선을 만들지 않는다'
   expect(styles.sidebar.background).not.toBe('rgba(0, 0, 0, 0)');
   expect(styles.sidebarSection.border).toBe('0px');
   expect(styles.sidebarSection.background).toBe('rgba(0, 0, 0, 0)');
-});
-
-test('캘린더 날짜 셀은 버튼 공통 pill 모양을 상속하지 않는다', async ({ page }) => {
-  await page.setViewportSize({ width: 820, height: 1000 });
-  await page.goto('/calendar');
-  await expect(page.locator('.calendar-day').first()).toBeVisible({ timeout: 10_000 });
-  const radius = await page.locator('.calendar-day').first().evaluate((el) => getComputedStyle(el).borderRadius);
-  expect(radius).toBe('0px');
 });
 
 test('공개 화면의 보이는 버튼은 이름과 최소 터치 크기를 가진다', async ({ page }) => {
@@ -570,7 +562,7 @@ test('공개 홈페이지 UI 소스에는 이모지 글리프를 사용하지 �
   const files = [
     'public/memorabilia.html', 'public/js/site-chrome.js', 'public/js/board-write.js',
     'public/js/main.js', 'public/js/chatbot.js', 'public/js/home-runtime.js',
-    'public/js/board.js', 'public/js/jamboree16.js', 'public/js/calendar.js',
+    'public/js/board.js', 'public/js/jamboree16.js',
     'public/js/memorabilia.js', 'public/card-news-app/app.jsx', 'functions/post/[id].js',
   ];
   const emoji = /[✏📷🖼✨💾😊👇📦👁🔗⬆🔒❤♥]/u;
@@ -581,7 +573,7 @@ test('공개 홈페이지 UI 소스에는 이모지 글리프를 사용하지 �
 test('입력 필드·칩·버튼 그룹은 M3 규격(56/48 필드, 16px 입력, 32 칩)을 지킨다', async ({ page }) => {
   test.setTimeout(90_000);
   await page.setViewportSize({ width: 1440, height: 1000 });
-  for (const path of ['/korea', '/search?q=스카우트', '/glossary', '/memorabilia', '/wosm-members', '/calendar']) {
+  for (const path of ['/korea', '/search?q=스카우트', '/glossary', '/memorabilia', '/wosm-members']) {
     await page.goto(path, { waitUntil: 'domcontentloaded' });
     await page.waitForTimeout(1_200);
     const result = await page.evaluate(() => {
@@ -597,7 +589,7 @@ test('입력 필드·칩·버튼 그룹은 M3 규격(56/48 필드, 16px 입력, 
       const chips = [...document.querySelectorAll('.tag-filter-btn, .glossary-letter-btn')]
         .filter(visible)
         .map((el) => ({ height: Math.round(el.getBoundingClientRect().height), font: parseFloat(getComputedStyle(el).fontSize) }));
-      const groups = [...document.querySelectorAll('.board-sort-toggle, .search-scope-row, .calendar-view-toggle, .members-view-chips')]
+      const groups = [...document.querySelectorAll('.board-sort-toggle, .search-scope-row, .members-view-chips')]
         .filter(visible)
         .map((el) => getComputedStyle(el).columnGap);
       return { fields, chips, groups };

@@ -32,7 +32,6 @@ SITE_FILES=(
   public/about.html
   public/help.html
   public/search.html
-  public/calendar.html
   public/memorabilia.html
   public/privacy.html
   public/editorial-policy.html
@@ -59,7 +58,7 @@ perl -0pi -e "s#/js/jamboree16\\.js\\?v=[0-9A-Za-z.-]+#/js/jamboree16.js?v=${ASS
 # 해당 시트를 링크하는 모든 표면에서 ?v= 를 함께 갱신한다.
 PAGE_CSS_FILES=(
   public/latest.html public/korea.html public/apr.html public/wosm.html public/people.html
-  public/calendar.html public/wosm-members.html public/glossary.html public/jamboree16.html
+  public/wosm-members.html public/glossary.html public/jamboree16.html
   functions/post/'[id]'.js functions/feature/'[category]'/'[slug]'.js functions/glossary-raw.js
   server-rust/src/feature_shell.html server-rust/src/glossary_raw_shell.html
   tests/fixtures/rust-article-page.js tests/fixtures/rust-glossary-raw.js
@@ -76,7 +75,6 @@ PUBLIC_HTML_FILES=(
   public/people.html
   public/glossary.html
   public/search.html
-  public/calendar.html
 )
 
 for file in "${PUBLIC_HTML_FILES[@]}"; do

@@ -5,17 +5,16 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 
 const ORIGIN = 'http://127.0.0.1:8794';
 const destinations = [
-  ['dashboard',null],['list',null],['write',null],['calendar',null],['card-news',null],['article-scorer',null],['ai-score-history',null],['glossary',null],
+  ['dashboard',null],['list',null],['write',null],['card-news',null],['article-scorer',null],['ai-score-history',null],['glossary',null],
   ['settings','wosm-members'],['settings','reference-sites'],['memorabilia',null],['memorabilia-categories',null],['memorabilia-events',null],['memorabilia-comments',null],
 ] as const;
-const cal = {id:1,title:'합성 일정 · 긴 행사명과 개최 지역을 함께 표시하는 검증 '.repeat(5),start_at:'2026-10-15',event_category:'KOR',event_tags:[],target_groups:[],related_posts:[],updated_at:'current'};
 const glossary = {id:1,term_ko:'가족 스카우트',term_en:'Family Scouting',term_fr:'',description_ko:'합성 용어 설명',bucket:'가',updated_at:'current'};
 const memo = {id:1,title_en:'Synthetic badge title '.repeat(8),title_ko:'합성 패치의 긴 제목과 상세 식별 정보 '.repeat(6),status:'draft',images:[],related_links:[],tags:[],country_codes:[],category_id:1,updated_at:'current'};
 const category = {id:1,slug:'badge',label_en:'LongSyntheticCategoryWithoutSpacesForResponsiveVerification',label_ko:'합성 패치 분류의 긴 이름',sort_order:0};
 const event = {id:1,slug:'synthetic',name_en:'Synthetic event',name_ko:'합성 행사',start_year:2026,start_month:10,end_year:2026,end_month:10,country_codes:[],category_id:1,usage_count:1};
 const data: Record<string,unknown> = {
   '/api/admin/operations': {scheduled_posts:[],draft_posts:[],recent_errors:[],recent_logins:[],recent_settings:[],deployments:[]},
-  '/api/calendar': {items:[cal]}, '/api/glossary': {items:[glossary]},
+  '/api/glossary': {items:[glossary]},
   '/api/settings/wosm-members': {items:[{country_ko:'대한민국',country_en:'Republic of Korea',extra_fields:{},sort_order:0}],columns:[{key:'country_names',label:'국가명',type:'country_names',system:true}],registered_count:0,revision:1},
   '/api/settings/reference-sites': {items:[{name:'합성 자료실',url:'https://example.invalid/'+ 'long-path/'.repeat(25),summary:'긴 설명을 줄바꿈하고 읽을 수 있는지 확인하는 합성 문장입니다. '.repeat(10),related_federations:['Asia-Pacific']}],revision:1},
   '/api/settings/score-rubric': {content:'합성 평가 기준',isDefault:true},
@@ -55,9 +54,9 @@ async function open(page: Page, role:'owner'|'member'='owner', populated=true) {
     }
     controls.writes.push(req.method()+' '+path);
     if(path==='/api/posts'&&req.method()==='POST'){controls.lastPost=req.postDataJSON();return route.fulfill({json:{post:{...SYNTHETIC_POST,...controls.lastPost,id:103,updated_at:'new'}}});}
-    if(['/api/calendar/1','/api/glossary/1','/api/settings/reference-sites','/api/settings/wosm-members','/api/memorabilia/1','/api/memorabilia/categories/1','/api/memorabilia/events/1','/api/admin/card-news/1'].includes(path)) {
+    if(['/api/glossary/1','/api/settings/reference-sites','/api/settings/wosm-members','/api/memorabilia/1','/api/memorabilia/categories/1','/api/memorabilia/events/1','/api/admin/card-news/1'].includes(path)) {
       const body=req.postDataJSON();
-      controls.deferred={path,body,release:async status=>{await route.fulfill({status,json:status===409?{error:path==='/api/memorabilia/1'?'version_mismatch':'다른 변경이 감지되었습니다',reason:'다른 변경이 감지되었습니다'}:path.includes('calendar')?{item:{...cal,...body,updated_at:'new'}}:path.includes('glossary')?{item:{...glossary,...body,updated_at:'new'}}:path.includes('reference-sites')?{items:body.items,revision:2}:path.includes('wosm-members')?{...data[path] as any,...body,revision:2}:path.includes('categories')?{item:{...category,...body}}:path.includes('events')?{ok:true,id:1}:{id:1,updated_at:'new'}}); controls.deferred=null;}};
+      controls.deferred={path,body,release:async status=>{await route.fulfill({status,json:status===409?{error:path==='/api/memorabilia/1'?'version_mismatch':'다른 변경이 감지되었습니다',reason:'다른 변경이 감지되었습니다'}:path.includes('glossary')?{item:{...glossary,...body,updated_at:'new'}}:path.includes('reference-sites')?{items:body.items,revision:2}:path.includes('wosm-members')?{...data[path] as any,...body,revision:2}:path.includes('categories')?{item:{...category,...body}}:path.includes('events')?{ok:true,id:1}:{id:1,updated_at:'new'}}); controls.deferred=null;}};
       return;
     }
     // Every mutation is synthetic. AI requests fail locally and are never paid.

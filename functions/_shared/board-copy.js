@@ -17,9 +17,6 @@ export const DEFAULT_BOARD_COPY = Object.freeze({
   glossary: {
     description: '스카우트 용어를 국문·영문·불어 3개 국어 기준으로 정리합니다.',
   },
-  calendar: {
-    description: '등록된 일정과 행사 정보를 월별로 확인할 수 있습니다.',
-  },
   contributors: {
     description: '도움을 주신 모든 분들께 진심으로 감사드립니다.',
   },

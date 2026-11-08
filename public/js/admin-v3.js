@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.164.00
+ * Version: 03.165.00
  *
  * Versioning:
  *   V3.aaa.bb
@@ -235,7 +235,7 @@
   var _wosmPublicCopy = {};
   var _wosmMembersRevision = 0;
   var _wosmMembersSearch = '';
-  var _contentLoadSequence = { dashboard: 0, list: 0, editor: 0, calendar: 0, glossary: 0, history: 0, scorer: 0, wosm: 0, references: 0 };
+  var _contentLoadSequence = { dashboard: 0, list: 0, editor: 0, glossary: 0, history: 0, scorer: 0, wosm: 0, references: 0 };
   var _referenceWosmMembers = [];
   var _referenceWosmColumns = [];
   var _contentDialogs = {};
@@ -248,7 +248,6 @@
   var _writeMediaPending = 0;
   var _scorerInputBaseline = null;
   var _scorerDetailSequence = 0;
-  var _calendarTagsLoadError = false;
   function _scorerInputSnapshot() { return JSON.stringify(['scorer-title','scorer-subtitle','scorer-body','scorer-tags'].map(function (id) { return (_el(id) || {}).value || ''; })); }
 
   function _contentCanWrite(slug) {
@@ -261,7 +260,6 @@
     var values = modal ? Array.prototype.map.call(modal.querySelectorAll('input,textarea,select'), function (input) {
       return [input.id || input.name, input.type === 'checkbox' ? input.checked : input.value];
     }) : [];
-    if (id === 'cal-modal') values.push(_calModalTags, _calModalTargetGroups, _calModalRelatedPosts);
     return JSON.stringify(values);
   }
 
@@ -271,7 +269,7 @@
     var canWrite = _contentCanWrite(slug);
     if (modal) {
       Array.prototype.forEach.call(modal.querySelectorAll('input,textarea,select'), function (input) {
-        if (input.type !== 'hidden') input.disabled = !canWrite || (input.id === 'cal-start-time' && !_el('cal-start-time-enabled').checked) || (input.id === 'cal-end-time' && !_el('cal-end-time-enabled').checked);
+        if (input.type !== 'hidden') input.disabled = !canWrite;
       });
       Array.prototype.forEach.call(modal.querySelectorAll('[data-content-write]'), function (button) { button.hidden = !canWrite; });
       if (!canWrite) Array.prototype.forEach.call(modal.querySelectorAll('button'), function (button) {
@@ -379,17 +377,7 @@
   var _dashboardHeatmapEnd = '';
   var _boardBanner   = {};
   var _ticker        = '';
-  var _calendarTags  = [];
-  var _calModalTags  = [];
-  var _calModalTargetGroups = [];
-  var _calModalRelatedPosts = [];
-  var _calRelatedTimer = null;
 
-  // Calendar
-  var _calItems      = [];
-  var _calCats       = [];
-  var CAL_CATEGORY_OPTIONS = ['KOR', 'APR', 'EUR', 'AFR', 'ARB', 'IAR', 'WOSM'];
-  var CAL_KOR_TARGET_GROUPS = ['비버', '컵', '스카우트', '벤처', '로버', '지도자', '범스카우트', '훈련교수회'];
   var _simpleRowsSeq = 0;
 
   // Glossary
@@ -941,37 +929,6 @@
       _relatedTimer = setTimeout(function () { _searchRelated(q); }, 300);
     });
 
-    // Calendar
-    _bindEl('cal-new-btn', 'click', function () { _openCalModal(null); });
-    _bindEl('cal-modal-close', 'click', _closeCalModal);
-    _bindEl('cal-modal-cancel', 'click', _closeCalModal);
-    _bindEl('cal-save-btn', 'click', _saveCal);
-    _bindEl('cal-tags-add-btn', 'click', _addCalTag);
-    _bindEl('cal-tags-input', 'keydown', function (e) {
-      if (e.key === 'Enter') { e.preventDefault(); _addCalTag(); }
-    });
-    _bindEl('cal-start-time-enabled', 'change', function () {
-      var t = _el('cal-start-time');
-      if (t) { t.disabled = !this.checked; if (!this.checked) t.value = ''; }
-    });
-    _bindEl('cal-end-time-enabled', 'change', function () {
-      var t = _el('cal-end-time');
-      if (t) { t.disabled = !this.checked; if (!this.checked) t.value = ''; }
-    });
-    _bindEl('cal-cat', 'change', _syncCalCategoryUi);
-    _bindEl('cal-related-query', 'input', function () {
-      clearTimeout(_calRelatedTimer);
-      var q = this.value.trim();
-      if (!q) { var r = _el('cal-related-results'); if (r) r.innerHTML = ''; return; }
-      _calRelatedTimer = setTimeout(function () { _searchCalRelated(q); }, 250);
-    });
-    _bindEl('cal-geo-search-btn', 'click', _searchCalGeo);
-    _bindEl('cal-delete-btn', 'click', function () {
-      var idEl = _el('cal-id');
-      var id = idEl ? idEl.value : '';
-      if (id) _deleteCal(parseInt(id, 10));
-    });
-
     // Glossary
     _bindEl('glos-new-btn', 'click', function () { _openGlosModal(null); });
     _bindEl('glos-modal-close', 'click', _closeGlosModal);
@@ -1512,7 +1469,6 @@
     'site-history': '사이트 히스토리',
     list:      '게시글 목록',
     write:     '새 글 작성',
-    calendar:  '캘린더',
     glossary:  '용어집',
     analytics: '분석',
     'analytics-visits': '방문 분석',
@@ -1667,7 +1623,6 @@
       _loadAuthorOptions();
       _refreshDraftListCache().catch(function () {});
     }
-    else if (panel === 'calendar') _loadCalendar();
     else if (panel === 'glossary') _loadGlossary();
     else if (panel === 'analytics-visits' || panel === 'analytics') _loadAnalyticsVisits();
     else if (panel === 'analytics-tags') _loadAnalyticsTags();
@@ -4734,487 +4689,6 @@
         GW.showToast(err && err.message ? err.message : '태그 추가 실패', 'error');
       });
   }
-
-  /* ══════════════════════════════════════════════════════════
-     CALENDAR
-  ══════════════════════════════════════════════════════════ */
-
-  // 행사 상태 판정 (홈페이지 calendar.js 기준과 동일)
-  function _calEventStatus(e) {
-    var now   = Date.now();
-    var start = e.start_at ? new Date(e.start_at).getTime() : null;
-    var end   = e.end_at   ? new Date(e.end_at).getTime()   : null;
-    if (!start || start > now) return 'upcoming';  // 개최예정
-    if (!end || end >= now)   return 'ongoing';    // 진행중
-    return 'finished';                              // 행사종료
-  }
-
-  var CAL_STATUS_LABEL = { upcoming: '개최예정', ongoing: '진행중', finished: '행사종료' };
-  var CAL_STATUS_BADGE = { upcoming: 'v3-badge-blue', ongoing: 'v3-badge-green', finished: 'v3-badge-gray' };
-
-  function _loadCalendar() {
-    var sequence = ++_contentLoadSequence.calendar;
-    var el = document.getElementById('cal-list');
-    el.innerHTML = '<div class="v3-loading"><div class="v3-spinner"></div>로딩 중…</div>';
-    var cacheKey = Date.now();
-    Promise.all([
-      _apiFetch('/api/calendar?scope=admin&limit=500&_=' + cacheKey),
-      _apiFetch('/api/settings/calendar-tags?scope=admin&_=' + cacheKey).catch(function () { return { load_failed: true }; }),
-    ]).then(function (results) {
-      if (sequence !== _contentLoadSequence.calendar) return;
-      var data = results[0];
-      _calItems = (data && data.events) || (data && data.items) || [];
-      var tagData = results[1] || {};
-      _calendarTagsLoadError = !!tagData.load_failed;
-      if (!_calendarTagsLoadError) _calendarTags = Array.isArray(tagData.items) ? tagData.items : (Array.isArray(tagData.tags) ? tagData.tags : (Array.isArray(tagData) ? tagData : []));
-
-      // Year filter (from actual data)
-      var years = {};
-      _calItems.forEach(function (e) { if (e.start_at) years[e.start_at.slice(0, 4)] = 1; });
-      var yearSel = document.getElementById('cal-filter-year');
-      var selectedYear = yearSel.value;
-      yearSel.innerHTML = '<option value="all">전체 연도</option>' + Object.keys(years).sort().reverse().map(function (y) {
-        return '<option value="' + y + '">' + y + '</option>';
-      }).join('');
-      yearSel.value = years[selectedYear] ? selectedYear : 'all';
-
-      _bindCalFilters();
-      _renderCalList();
-    }).catch(function (e) {
-      if (sequence !== _contentLoadSequence.calendar) return;
-      el.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">불러오기 실패: ' + GW.escapeHtml(e.message || '') + '</div></div>';
-    });
-  }
-
-  function _bindCalFilters() {
-    ['cal-filter-year', 'cal-filter-region', 'cal-filter-status', 'cal-filter-from', 'cal-filter-to', 'cal-sort']
-      .forEach(function (id) {
-        var el = document.getElementById(id);
-        if (el && !el.dataset.v3Bound) {
-          el.dataset.v3Bound = '1';
-          el.addEventListener('change', _renderCalList);
-          if (el.type === 'date') el.addEventListener('input', _renderCalList);
-        }
-      });
-    var resetBtn = document.getElementById('cal-filter-reset');
-    if (resetBtn && !resetBtn.dataset.v3Bound) {
-      resetBtn.dataset.v3Bound = '1';
-      resetBtn.addEventListener('click', function () {
-        document.getElementById('cal-filter-year').value   = 'all';
-        document.getElementById('cal-filter-region').value = 'all';
-        document.getElementById('cal-filter-status').value = 'all';
-        document.getElementById('cal-filter-from').value   = '';
-        document.getElementById('cal-filter-to').value     = '';
-        document.getElementById('cal-sort').value          = 'asc';
-        _renderCalList();
-      });
-    }
-  }
-
-  function _renderCalList() {
-    var el     = document.getElementById('cal-list');
-    var year   = document.getElementById('cal-filter-year').value;
-    var region = document.getElementById('cal-filter-region').value;
-    var status = document.getElementById('cal-filter-status').value;
-    var from   = document.getElementById('cal-filter-from').value;   // YYYY-MM-DD
-    var to     = document.getElementById('cal-filter-to').value;
-    var sort   = document.getElementById('cal-sort').value;          // asc | desc
-
-    var items = _calItems.filter(function (e) {
-      // 연도
-      if (year !== 'all' && (!e.start_at || e.start_at.slice(0, 4) !== year)) return false;
-      // 지역 (event_category)
-      if (region !== 'all' && (e.event_category || 'WOSM') !== region) return false;
-      // 행사 상태
-      if (status !== 'all' && _calEventStatus(e) !== status) return false;
-      // 시작일 범위
-      var startStr = e.start_at ? e.start_at.slice(0, 10) : '';
-      if (from && startStr && startStr < from) return false;
-      if (to   && startStr && startStr > to)   return false;
-      return true;
-    });
-
-    // 정렬
-    items.sort(function (a, b) {
-      var da = a.start_at || '';
-      var db = b.start_at || '';
-      if (sort === 'asc') return da < db ? -1 : da > db ? 1 : 0;
-      return da > db ? -1 : da < db ? 1 : 0;
-    });
-
-    // 건수 표시
-    var countEl = document.getElementById('cal-count');
-    if (countEl) countEl.textContent = items.length + '건';
-
-    if (!items.length) {
-      el.innerHTML = '<div class="v3-empty"><div class="v3-empty-icon">📅</div><div class="v3-empty-text">' + (_calItems.length ? '검색·필터 조건에 맞는 일정이 없습니다' : '일정이 없습니다') + '</div></div>';
-      return;
-    }
-
-    el.innerHTML = items.map(function (e) {
-      var dt    = e.start_at ? new Date(e.start_at) : null;
-      var month = dt ? dt.toLocaleString('ko', { month: 'short' }) : '';
-      var day   = dt ? dt.getDate() : '—';
-      var evSt  = _calEventStatus(e);
-      var endStr = e.end_at ? ' ~ ' + e.end_at.slice(0, 10) : '';
-      return '<div class="v3-cal-item" role="button" tabindex="0" onkeydown="if(event.target===this&&(event.key===\'Enter\'||event.key===\' \')){event.preventDefault();this.click();}" onclick="V3._openCalEvent(' + e.id + ')">' +
-        '<div class="v3-cal-date-col">' +
-          '<div class="v3-cal-date-m">' + GW.escapeHtml(month) + '</div>' +
-          '<div class="v3-cal-date-d">' + day + '</div>' +
-        '</div>' +
-        '<div class="v3-cal-info">' +
-          '<div class="v3-cal-title">' + GW.escapeHtml(e.title || '') + '</div>' +
-          '<div class="v3-cal-meta">' +
-            '<span class="v3-badge ' + CAL_STATUS_BADGE[evSt] + '">' + CAL_STATUS_LABEL[evSt] + '</span> ' +
-            (e.event_category ? '<span class="v3-badge v3-badge-blue" style="margin-left:4px;">' + GW.escapeHtml(e.event_category) + '</span> ' : '') +
-            '<span style="margin-left:4px;">' + GW.escapeHtml(e.location_name || e.country_name || '') + '</span>' +
-            (endStr ? '<span style="margin-left:6px;font-size:11px;color:var(--v3-text-l);">' + GW.escapeHtml((e.start_at || '').slice(0, 10)) + GW.escapeHtml(endStr) + '</span>' : '') +
-          '</div>' +
-        '</div>' +
-        '<button class="v3-btn v3-btn-ghost v3-btn-xs" onclick="event.stopPropagation();V3._openCalEvent(' + e.id + ')">' + (_contentCanWrite('calendar') ? '수정' : '보기') + '</button>' +
-      '</div>';
-    }).join('');
-  }
-
-  V3._openCalEvent = function (id) {
-    var e = _calItems.find(function (c) { return c.id === id; });
-    if (e) _openCalModal(e);
-  };
-
-  function _syncCalCategoryUi() {
-    var isKor = document.getElementById('cal-cat').value === 'KOR';
-    var wrap = document.getElementById('cal-target-wrap');
-    if (wrap) wrap.style.display = isKor ? '' : 'none';
-    if (!isKor) _calModalTargetGroups = [];
-    _renderCalTargetGroups();
-  }
-
-  function _addCalTag() {
-    var input = document.getElementById('cal-tags-input');
-    var value = String(input && input.value || '').trim();
-    if (!value) { GW.showToast('추가할 태그를 입력해주세요', 'error'); return; }
-    if (_calModalTags.indexOf(value) >= 0) { GW.showToast('이미 추가된 태그입니다', 'error'); return; }
-    _calModalTags.push(value);
-    if (input) input.value = '';
-    _renderCalTags();
-    _renderCalTagPresets();
-  }
-
-  function _renderCalTags() {
-    var el = document.getElementById('cal-tags-list');
-    if (!el) return;
-    if (!_calModalTags.length) {
-      el.innerHTML = '<div class="v3-input-hint">등록된 행사 태그가 없습니다.</div>';
-      return;
-    }
-    el.innerHTML = _calModalTags.map(function (tag) {
-      return '<button type="button" class="calendar-tag-chip" data-cal-tag="' + GW.escapeHtml(tag) + '">' +
-        '<span>' + GW.escapeHtml(tag) + '</span><strong>×</strong></button>';
-    }).join('');
-    Array.prototype.forEach.call(el.querySelectorAll('[data-cal-tag]'), function (btn) {
-      btn.addEventListener('click', function () {
-        var tag = btn.getAttribute('data-cal-tag') || '';
-        _calModalTags = _calModalTags.filter(function (item) { return item !== tag; });
-        _renderCalTags();
-        _renderCalTagPresets();
-      });
-    });
-  }
-
-  function _renderCalTagPresets() {
-    var el = document.getElementById('cal-tag-presets');
-    if (!el) return;
-    if (_calendarTagsLoadError) { el.innerHTML = '<div class="v3-input-hint" role="alert">태그 목록을 불러오지 못했습니다. 저장된 행사 태그는 유지되며 직접 입력할 수 있습니다. 일정 메뉴를 다시 열어 재시도해주세요.</div>'; return; }
-    if (!_calendarTags.length) { el.innerHTML = ''; return; }
-    el.innerHTML = _calendarTags.map(function (tag) {
-      var active = _calModalTags.indexOf(tag) >= 0 ? ' is-active' : '';
-      return '<button type="button" class="calendar-tag-preset' + active + '" data-cal-preset-tag="' + GW.escapeHtml(tag) + '">' + GW.escapeHtml(tag) + '</button>';
-    }).join('');
-    Array.prototype.forEach.call(el.querySelectorAll('[data-cal-preset-tag]'), function (btn) {
-      btn.addEventListener('click', function () {
-        var tag = btn.getAttribute('data-cal-preset-tag') || '';
-        if (_calModalTags.indexOf(tag) >= 0) _calModalTags = _calModalTags.filter(function (item) { return item !== tag; });
-        else _calModalTags.push(tag);
-        _renderCalTags();
-        _renderCalTagPresets();
-      });
-    });
-  }
-
-  function _renderCalTargetGroups() {
-    var el = document.getElementById('cal-target-groups');
-    if (!el) return;
-    el.innerHTML = CAL_KOR_TARGET_GROUPS.map(function (group) {
-      var active = _calModalTargetGroups.indexOf(group) >= 0 ? ' is-active' : '';
-      return '<button type="button" class="calendar-tag-preset' + active + '" data-cal-target-group="' + GW.escapeHtml(group) + '">' + GW.escapeHtml(group) + '</button>';
-    }).join('');
-    Array.prototype.forEach.call(el.querySelectorAll('[data-cal-target-group]'), function (btn) {
-      btn.addEventListener('click', function () {
-        var group = btn.getAttribute('data-cal-target-group') || '';
-        var idx = _calModalTargetGroups.indexOf(group);
-        if (idx >= 0) _calModalTargetGroups.splice(idx, 1);
-        else _calModalTargetGroups.push(group);
-        _renderCalTargetGroups();
-      });
-    });
-  }
-
-  function _searchCalRelated(q) {
-    var dialogState = _contentDialogs['cal-modal'];
-    if (!_contentCanWrite('calendar')) return;
-    var results = document.getElementById('cal-related-results');
-    _apiFetch('/api/posts?q=' + encodeURIComponent(q) + '&limit=8&scope=admin').then(function (data) {
-      if (_contentDialogs['cal-modal'] !== dialogState || _el('cal-related-query').value.trim() !== q) return;
-      var posts = (data && data.posts) || [];
-      if (!posts.length) {
-        results.innerHTML = '<div class="v3-input-hint">검색 결과가 없습니다.</div>';
-        return;
-      }
-      results.innerHTML = posts.map(function (p) {
-        return '<button type="button" class="calendar-related-post-option" data-cal-related-id="' + p.id + '">' +
-          '<div><strong>' + GW.escapeHtml(p.title || '') + '</strong><span>' + GW.escapeHtml(p.category || '') + '</span></div></button>';
-      }).join('');
-      Array.prototype.forEach.call(results.querySelectorAll('[data-cal-related-id]'), function (btn) {
-        btn.addEventListener('click', function () {
-          var id = parseInt(btn.getAttribute('data-cal-related-id'), 10);
-          var post = posts.find(function (item) { return item.id === id; });
-          if (!post || _calModalRelatedPosts.some(function (item) { return item.id === id; })) return;
-          _calModalRelatedPosts.push({ id: post.id, title: post.title || '', category: post.category || '' });
-          document.getElementById('cal-related-query').value = '';
-          results.innerHTML = '';
-          _renderCalRelatedPosts();
-        });
-      });
-    }).catch(function () {
-      if (_contentDialogs['cal-modal'] !== dialogState) return;
-      results.innerHTML = '<div class="v3-input-hint">기사를 검색하지 못했습니다.</div>';
-    });
-  }
-
-  function _renderCalRelatedPosts() {
-    var el = document.getElementById('cal-related-selected');
-    if (!el) return;
-    if (!_calModalRelatedPosts.length) {
-      el.innerHTML = '<div class="v3-input-hint">선택된 관련 기사가 없습니다.</div>';
-      return;
-    }
-    el.innerHTML = _calModalRelatedPosts.map(function (post) {
-      return '<div class="calendar-related-post-pill">' +
-        '<div><strong>' + GW.escapeHtml(post.title || '') + '</strong>' +
-        (post.category ? '<span>' + GW.escapeHtml(post.category) + '</span>' : '') +
-        '</div>' +
-        '<button type="button" data-cal-related-remove="' + post.id + '">해제</button>' +
-      '</div>';
-    }).join('');
-    Array.prototype.forEach.call(el.querySelectorAll('[data-cal-related-remove]'), function (btn) {
-      btn.addEventListener('click', function () {
-        var id = parseInt(btn.getAttribute('data-cal-related-remove'), 10);
-        _calModalRelatedPosts = _calModalRelatedPosts.filter(function (item) { return item.id !== id; });
-        _renderCalRelatedPosts();
-      });
-    });
-  }
-
-  function _renderCalGeoPreview(lat, lng, label) {
-    var preview = document.getElementById('cal-geo-preview');
-    var frame = document.getElementById('cal-geo-frame');
-    var status = document.getElementById('cal-geo-status');
-    if (!preview || !frame || !status || !Number.isFinite(lat) || !Number.isFinite(lng)) {
-      if (preview) preview.style.display = 'none';
-      return;
-    }
-    var d = 0.01;
-    var bbox = (lng - d) + ',' + (lat - d) + ',' + (lng + d) + ',' + (lat + d);
-    frame.src = 'https://www.openstreetmap.org/export/embed.html?bbox=' + bbox + '&layer=mapnik&marker=' + lat + ',' + lng;
-    status.textContent = label ? ('✓ ' + label) : ('좌표 ' + lat + ', ' + lng);
-    preview.style.display = 'flex';
-  }
-
-  function _applyCalGeoResult(item) {
-    var lat = Number(item && item.lat);
-    var lng = Number(item && item.lon);
-    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
-    var address = item && (item.display_name || item.name || '');
-    var label = item && (item.name || item.display_name || '');
-    document.getElementById('cal-lat').value = String(lat);
-    document.getElementById('cal-lng').value = String(lng);
-    if (address) document.getElementById('cal-loc-addr').value = address;
-    if (label) document.getElementById('cal-loc-name').value = label;
-    if (item && item.address && item.address.country) document.getElementById('cal-country').value = item.address.country;
-    document.getElementById('cal-geo-results').innerHTML = '';
-    _renderCalGeoPreview(lat, lng, address);
-  }
-
-  function _searchCalGeo() {
-    var dialogState = _contentDialogs['cal-modal'];
-    if (!_contentCanWrite('calendar')) return;
-    var query = document.getElementById('cal-geo-query').value.trim();
-    var results = document.getElementById('cal-geo-results');
-    if (!query) { GW.showToast('검색할 주소나 장소명을 입력해주세요', 'error'); return; }
-    results.innerHTML = '<div class="v3-input-hint">지도 검색 중…</div>';
-    fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&limit=5&addressdetails=1&q=' + encodeURIComponent(query), {
-      headers: { 'Accept': 'application/json', 'Accept-Language': 'ko,en', 'User-Agent': 'GilwellMedia/1.0' }
-    })
-      .then(function (res) { return res.json(); })
-      .then(function (items) {
-        if (_contentDialogs['cal-modal'] !== dialogState || document.getElementById('cal-geo-query').value.trim() !== query) return;
-        if (!Array.isArray(items) || !items.length) {
-          results.innerHTML = '<div class="v3-input-hint">검색 결과가 없습니다.</div>';
-          return;
-        }
-        results.innerHTML = items.map(function (item, index) {
-          return '<button type="button" class="calendar-related-post-option" data-cal-geo-index="' + index + '">' +
-            '<div><strong>' + GW.escapeHtml(item.name || item.display_name || '지도 결과') + '</strong>' +
-            '<span>' + GW.escapeHtml(item.display_name || '') + '</span></div></button>';
-        }).join('');
-        Array.prototype.forEach.call(results.querySelectorAll('[data-cal-geo-index]'), function (btn) {
-          btn.addEventListener('click', function () {
-            _applyCalGeoResult(items[parseInt(btn.getAttribute('data-cal-geo-index'), 10)]);
-          });
-        });
-      })
-      .catch(function () {
-        if (_contentDialogs['cal-modal'] !== dialogState) return;
-        results.innerHTML = '<div class="v3-input-hint">지도 검색에 실패했습니다.</div>';
-      });
-  }
-
-  function _openCalModal(e) {
-    if (_contentDialogs['cal-modal'] && !_contentCloseDialog('cal-modal')) return;
-    document.getElementById('cal-id').value = e ? e.id : '';
-    document.getElementById('cal-modal-title').textContent = e ? '일정 수정' : '새 일정';
-    document.getElementById('cal-title').value = e ? (e.title || '') : '';
-    document.getElementById('cal-title-original').value = e ? (e.title_original || '') : '';
-    document.getElementById('cal-desc').value = e ? (e.description || '') : '';
-    document.getElementById('cal-start').value = e && e.start_at ? e.start_at.slice(0, 10) : '';
-    document.getElementById('cal-start-time-enabled').checked = !!(e && e.start_has_time);
-    document.getElementById('cal-start-time').disabled = !(e && e.start_has_time);
-    document.getElementById('cal-start-time').value = e && e.start_has_time && e.start_at ? e.start_at.slice(11, 16) : '';
-    document.getElementById('cal-end').value = e && e.end_at ? e.end_at.slice(0, 10) : '';
-    document.getElementById('cal-end-time-enabled').checked = !!(e && e.end_has_time);
-    document.getElementById('cal-end-time').disabled = !(e && e.end_has_time);
-    document.getElementById('cal-end-time').value = e && e.end_has_time && e.end_at ? e.end_at.slice(11, 16) : '';
-    document.getElementById('cal-cat').value = e ? (e.event_category || 'KOR') : 'KOR';
-    document.getElementById('cal-country').value = e ? (e.country_name || '') : '';
-    document.getElementById('cal-loc-name').value = e ? (e.location_name || '') : '';
-    document.getElementById('cal-loc-addr').value = e ? (e.location_address || '') : '';
-    document.getElementById('cal-link').value = e ? (e.link_url || '') : '';
-    document.getElementById('cal-lat').value = e && e.latitude != null ? String(e.latitude) : '';
-    document.getElementById('cal-lng').value = e && e.longitude != null ? String(e.longitude) : '';
-    document.getElementById('cal-related-query').value = '';
-    document.getElementById('cal-related-results').innerHTML = '';
-    document.getElementById('cal-geo-query').value = '';
-    document.getElementById('cal-geo-results').innerHTML = '';
-    _calModalTags = e && Array.isArray(e.event_tags) ? e.event_tags.slice() : [];
-    _calModalTargetGroups = e && Array.isArray(e.target_groups) ? e.target_groups.slice() : [];
-    _calModalRelatedPosts = e && Array.isArray(e.related_posts) ? e.related_posts.map(function (item) {
-      return { id: item.id, title: item.title || '', category: item.category || item.related_post_category || '' };
-    }) : [];
-    _renderCalTags();
-    _renderCalTagPresets();
-    _renderCalTargetGroups();
-    _renderCalRelatedPosts();
-    _syncCalCategoryUi();
-    _renderCalGeoPreview(
-      e && e.latitude != null ? Number(e.latitude) : NaN,
-      e && e.longitude != null ? Number(e.longitude) : NaN,
-      e ? (e.location_address || e.location_name || '') : ''
-    );
-    document.getElementById('cal-delete-btn').style.display = e ? '' : 'none';
-    document.getElementById('cal-modal').style.display = 'flex';
-    var dialog = document.getElementById('cal-modal').querySelector('.v3-modal');
-    if (dialog) dialog.scrollTop = 0;
-    _contentOpenDialog('cal-modal', 'calendar');
-    _contentDialogs['cal-modal'].updatedAt = e && e.updated_at || '';
-  }
-
-  function _closeCalModal() {
-    return _contentCloseDialog('cal-modal');
-  }
-  V3.closeCalendarModal = _closeCalModal;
-  V3.addCalendarTag = _addCalTag;
-  V3.searchCalendarGeo = _searchCalGeo;
-
-  function _saveCal() {
-    var dialogState = _contentDialogs['cal-modal'];
-    if (!_contentCanWrite('calendar') || !dialogState || dialogState.pending) return;
-    var snapshot = _contentFormSnapshot('cal-modal');
-    var id = document.getElementById('cal-id').value;
-    var title = document.getElementById('cal-title').value.trim();
-    var titleOriginal = document.getElementById('cal-title-original').value.trim();
-    if (!title && !titleOriginal) { GW.showToast('행사명(국문) 또는 원문 제목을 입력해주세요', 'error'); return; }
-    if (!document.getElementById('cal-start').value) { GW.showToast('행사 시작 일을 입력해주세요', 'error'); return; }
-    var body = {
-      title: title,
-      title_original: titleOriginal,
-      description: document.getElementById('cal-desc').value.trim(),
-      start_date: document.getElementById('cal-start').value || '',
-      start_time: document.getElementById('cal-start-time-enabled').checked ? (document.getElementById('cal-start-time').value || '') : '',
-      end_date: document.getElementById('cal-end').value || '',
-      end_time: document.getElementById('cal-end-time-enabled').checked ? (document.getElementById('cal-end-time').value || '') : '',
-      event_category: document.getElementById('cal-cat').value || 'KOR',
-      country_name: document.getElementById('cal-country').value.trim(),
-      location_name: document.getElementById('cal-loc-name').value.trim(),
-      location_address: document.getElementById('cal-loc-addr').value.trim(),
-      latitude: document.getElementById('cal-lat').value || '',
-      longitude: document.getElementById('cal-lng').value || '',
-      event_tags: _calModalTags.slice(),
-      target_groups: _calModalTargetGroups.slice(),
-      related_post_id: _calModalRelatedPosts.length ? _calModalRelatedPosts[0].id : null,
-      related_posts: _calModalRelatedPosts.slice(),
-      link_url: document.getElementById('cal-link').value.trim(),
-      expected_updated_at: dialogState.updatedAt || undefined,
-    };
-    var method = id ? 'PUT' : 'POST';
-    var url    = id ? '/api/calendar/' + id : '/api/calendar';
-    var btn = document.getElementById('cal-save-btn');
-    _setButtonBusy(btn, '저장 중…');
-    dialogState.pending = true;
-    _apiFetch(url, { method: method, body: JSON.stringify(body) })
-      .then(function (data) {
-        var saved = data && data.item;
-        if (saved && saved.id) {
-          var index = _calItems.findIndex(function (item) { return item.id === saved.id; });
-          if (index >= 0) _calItems[index] = saved;
-          else _calItems.unshift(saved);
-          _renderCalList();
-        }
-        GW.showToast('저장했습니다', 'success');
-        _clearButtonBusy(btn, '완료');
-        dialogState.pending = false;
-        if (_contentDialogs['cal-modal'] === dialogState) {
-          if (_contentFormSnapshot('cal-modal') === snapshot) _contentCloseDialog('cal-modal', true);
-          else {
-            document.getElementById('cal-id').value = saved && saved.id || id;
-            dialogState.updatedAt = saved && saved.updated_at || dialogState.updatedAt;
-            // The submitted version is saved; newer edits remain visible and dirty.
-            dialogState.baseline = snapshot;
-            GW.showToast('저장 후 추가로 변경한 내용은 아직 저장되지 않았습니다.', 'info');
-          }
-        }
-        _loadCalendar();
-      }).catch(function (e) { GW.showToast(e.message || '저장 실패', 'error'); })
-      .finally(function () { dialogState.pending = false; if (btn.classList.contains('is-busy')) _clearButtonBusy(btn); });
-  }
-  V3.saveCalendar = _saveCal;
-
-  function _deleteCal(id) {
-    if (!_contentCanWrite('calendar') || (_contentDialogs['cal-modal'] && _contentDialogs['cal-modal'].pending)) return;
-    _confirm('일정 삭제', '이 일정을 삭제하시겠습니까?').then(function (ok) {
-      if (!ok) return;
-      _apiFetch('/api/calendar/' + id, { method: 'DELETE' })
-        .then(function () {
-          GW.showToast('삭제했습니다', 'success');
-          _contentCloseDialog('cal-modal', true);
-          _loadCalendar();
-        }).catch(function (e) { GW.showToast(e.message || '삭제 실패', 'error'); });
-    });
-  }
-  V3.deleteCalendar = function () {
-    var idEl = _el('cal-id');
-    var id = idEl ? parseInt(idEl.value, 10) : 0;
-    if (id) _deleteCal(id);
-  };
 
   /* ══════════════════════════════════════════════════════════
      GLOSSARY
@@ -11535,7 +11009,6 @@
     { key: 'wosm', label: 'WOSM', note: '/wosm' },
     { key: 'people', label: '스카우트 인물', note: '/people' },
     { key: 'glossary', label: '용어집', note: '/glossary' },
-    { key: 'calendar', label: '캘린더', note: '/calendar' },
     { key: 'contributors', label: '도움을 주신 분들', note: '/contributors' },
     { key: 'wosm_members', label: '세계연맹 회원국 현황', note: '/wosm-members' },
   ];
@@ -12083,7 +11556,6 @@
       { key: 'nav.wosm', label: 'WOSM' },
       { key: 'nav.wosm_members', label: '세계연맹 회원국 현황' },
       { key: 'nav.people', label: '스카우트 인물' },
-      { key: 'nav.calendar', label: '캘린더' },
       { key: 'nav.glossary', label: '용어집' }
     ];
     el.innerHTML = rows.map(function (row) {
@@ -12110,7 +11582,6 @@
         'nav.wosm',
         'nav.wosm_members',
         'nav.people',
-        'nav.calendar',
         'nav.glossary'
       ];
     }

@@ -18,32 +18,6 @@ struct TextInput {
     body: Value,
 }
 
-#[derive(Deserialize)]
-struct CalendarCopyInput {
-    raw: Value,
-    defaults: Vec<(String, String)>,
-}
-
-pub async fn calendar_copy(req: &mut Request) -> Result<Response> {
-    let input: CalendarCopyInput = req.json().await?;
-    let entries: Vec<(String, String)> = input
-        .defaults
-        .into_iter()
-        .map(|(key, fallback)| {
-            let value = input
-                .raw
-                .get(&key)
-                .and_then(Value::as_str)
-                .map(crate::trim)
-                .filter(|value| !value.is_empty())
-                .unwrap_or(&fallback)
-                .to_owned();
-            (key, value)
-        })
-        .collect();
-    Response::from_json(&json!({"entries":entries}))
-}
-
 pub async fn normalize_text(req: &mut Request) -> Result<Response> {
     let input: TextInput = req.json().await?;
     match input.kind.as_str() {
@@ -149,7 +123,6 @@ pub async fn translations(req: &mut Request) -> Result<Response> {
         "nav.wosm",
         "nav.wosm_members",
         "nav.people",
-        "nav.calendar",
         "nav.glossary",
         "constructor",
         "__defineGetter__",
@@ -493,8 +466,6 @@ pub async fn single(req: &mut Request, env: &Env) -> Result<Response> {
     if !matches!(
         o.key.as_str(),
         "board_card_gap"
-            | "calendar_tags"
-            | "calendar_copy"
             | "score_rubric"
             | "ticker"
             | "author_name"
@@ -548,7 +519,7 @@ pub async fn single(req: &mut Request, env: &Env) -> Result<Response> {
         "put"
             if matches!(
                 o.key.as_str(),
-                "board_card_gap" | "calendar_tags" | "calendar_copy" | "score_rubric"
+                "board_card_gap" | "score_rubric"
             ) =>
         {
             let value = o
@@ -1329,30 +1300,6 @@ pub async fn reference_sites_normalize(req: &mut Request) -> Result<Response> {
         result.push(json!({"name":text_units(&name),"url":url,"summary":text_units(&summary),"related_federations":federations}));
     }
     Response::from_json(&json!({"items":result}))
-}
-
-#[derive(Deserialize)]
-struct CalendarTagsInput {
-    items: Vec<String>,
-}
-pub async fn calendar_tags_normalize(req: &mut Request) -> Result<Response> {
-    let input: CalendarTagsInput = req.json().await?;
-    let mut seen = std::collections::HashSet::new();
-    let mut items = Vec::new();
-    for value in input.items {
-        let text = js_sys::JsString::from(value.as_str()).trim();
-        if text.length() == 0 || text.length() > 40 {
-            continue;
-        }
-        let text = String::from(text);
-        if seen.insert(text.clone()) {
-            items.push(text);
-        }
-        if items.len() >= 50 {
-            break;
-        }
-    }
-    Response::from_json(&json!({"items":items}))
 }
 
 #[derive(Deserialize)]

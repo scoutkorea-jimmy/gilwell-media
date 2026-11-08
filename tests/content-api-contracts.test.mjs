@@ -7,8 +7,6 @@ import { normalizeScoreRubric, normalizeScoreRubricRust } from '../functions/_sh
 import { validateCommentSubmission, validateCommentSubmissionRust } from '../functions/_shared/memorabilia-comments.js';
 import { normalizeImageFrame, normalizeImageFrameRust, serializeImageFrameForStore, serializeImageFrameForStoreRust } from '../functions/_shared/image-frame.js';
 import { recordPostHistory } from '../functions/_shared/post-history.js';
-import { sanitizeCalendarCopy, DEFAULT_CALENDAR_COPY } from '../functions/_shared/calendar-copy.js';
-import { sanitizeCalendarCopy as oldSanitizeCalendarCopy } from './fixtures/rust-settings/calendar-copy-shared.js';
 import { recordPostHistory as oldRecordPostHistory } from './fixtures/rust-posts/post-history-helper.js';
 import { onRequestPost as postLike } from '../functions/api/posts/[id]/like.js';
 import { onRequestPut as postReorder, onRequestDelete as postReset } from '../functions/api/posts/reorder.js';
@@ -67,7 +65,6 @@ import { validateUpload, validateUploadRust } from '../functions/api/memorabilia
 import { detectImageMagic, detectImageMagicRust, parseImageMimeRust, extractImageKeyFromUrl, extractImageKeyFromUrlRust, deleteStoredImageByUrl } from '../functions/_shared/image-storage.js';
 import { normalizeDraftText, normalizeDraftTextRust, normalizeDraftFields } from '../functions/api/admin/drafts.js';
 import { onRequestGet as publicMemoSlug } from '../functions/api/memorabilia/slug/[slug].js';
-import { normalizeCalendarInput, calendarValues } from '../functions/_shared/calendar.js';
 import { onRequestGet as oldGetBanner, onRequestPut as oldPutBanner } from './fixtures/rust-settings/board-banner.js';
 import { onRequestGet as getBanner, onRequestPut as putBanner } from '../functions/api/settings/board-banner.js';
 import { onRequestGet as oldGetEditors, onRequestPut as oldPutEditors } from './fixtures/rust-settings/editors.js';
@@ -108,16 +105,8 @@ import { onRequestGet as getRubric, onRequestPut as putRubric, onRequestDelete a
 import { onRequestPut as oldPutWosm, onRequestGet as oldGetWosm } from './fixtures/rust-settings/wosm-members.js';
 import { onRequestPut as oldPutReferences, onRequestGet as oldGetReferences } from './fixtures/rust-settings/reference-sites.js';
 import { onRequestPut as putWosm, onRequestGet as getWosm } from '../functions/api/settings/wosm-members.js';
-import { onRequestGet as oldGetTags, onRequestPut as oldPutTags } from './fixtures/rust-settings/calendar-tags.js';
-import { onRequestGet as getTags, onRequestPut as putTags, normalizeCalendarTags, normalizeCalendarTagsRust } from '../functions/api/settings/calendar-tags.js';
-import { onRequestGet as oldGetCopy, onRequestPut as oldPutCopy } from './fixtures/rust-settings/calendar-copy.js';
-import { onRequestGet as getCopy, onRequestPut as putCopy } from '../functions/api/settings/calendar-copy.js';
 import { onRequestPut as putReferences, onRequestGet as getReferences, sanitizeReferenceSites, sanitizeReferenceSitesRust } from '../functions/api/settings/reference-sites.js';
 import { onRequestGet as getGlossary } from '../functions/api/glossary/index.js';
-import { onRequestGet as getCalendar, onRequestPost as createCalendar } from '../functions/api/calendar/index.js';
-import { onRequestGet as oldCalendar, onRequestPost as oldCreateCalendar } from './fixtures/rust-calendar/index.js';
-import { onRequestPut as putCalendar, onRequestDelete as deleteCalendar } from '../functions/api/calendar/[id].js';
-import { onRequestPut as oldPutCalendar, onRequestDelete as oldDeleteCalendar } from './fixtures/rust-calendar/detail.js';
 import { onRequestPut as putGlossary } from '../functions/api/glossary/[id].js';
 import { onRequestPatch as patchMemorabilia, onRequestGet as getMemorabilia } from '../functions/api/memorabilia/[id].js';
 import { upsertMemorabiliaFtsRow as oldUpsertMemoFts } from './fixtures/rust-memorabilia/search.js';
@@ -134,9 +123,6 @@ function fixture(permissions = [], role = 'member') {
   sqlite.exec('CREATE TABLE settings(key TEXT PRIMARY KEY,value TEXT)');
   sqlite.exec('CREATE TABLE api_rate_limit(bucket_key TEXT PRIMARY KEY,count INTEGER NOT NULL,window_start_at INTEGER NOT NULL)');
   sqlite.exec('CREATE TABLE posts(id INTEGER PRIMARY KEY,title TEXT,category TEXT)');
-  const calendarSource = readFileSync(new URL('../server-rust/src/calendar.rs', import.meta.url), 'utf8');
-  sqlite.exec(calendarSource.match(/CREATE TABLE IF NOT EXISTS calendar_events \([^"]+\)/)[0]);
-  sqlite.exec('ALTER TABLE calendar_events ADD COLUMN target_groups TEXT');
   const user = { id: 77, role, status: 'active', username: 'synthetic_content', token_min_iat: 0, permissions: JSON.stringify({ access_admin: true, permissions }) };
   const state = { writes: [], batches: [], beforeBatch: null, beforeRun: null, failOnSql: null, failAllOnSql: null };
   const DB = Object.assign(new (class D1Database {})(), {
@@ -211,8 +197,8 @@ test('memorabilia maintenance preserves original index deletion and event counts
   } finally {old.sqlite.close();current.sqlite.close();}
 });
 
-test('calendar copy/tags and WOSM reject view-only writers without any mutation', async () => {
-  for (const [handler, slug, path] of [[putWosm,'wosm-members','/api/settings/wosm-members'],[putTags,'calendar','/api/settings/calendar-tags'],[putCopy,'calendar','/api/settings/calendar-copy']]) {
+test('WOSM settings reject view-only writers without any mutation', async () => {
+  for (const [handler, slug, path] of [[putWosm,'wosm-members','/api/settings/wosm-members']]) {
     const f = fixture(['view:' + slug]);
     const response = await handler({ env: f.env, request: await request(f, path, {}) });
     assert.equal(response.status, 403); assert.equal(f.state.writes.length, 0); assert.equal(f.state.batches.length, 0);
@@ -220,8 +206,8 @@ test('calendar copy/tags and WOSM reject view-only writers without any mutation'
   }
 });
 
-test('members with the matching write permission keep calendar/WOSM save access', async () => {
-  for (const [handler,slug,path,body] of [[putWosm,'wosm-members','/api/settings/wosm-members',{items:[],registered_count:0,if_revision:0}],[putTags,'calendar','/api/settings/calendar-tags',{items:['합성 태그']}],[putCopy,'calendar','/api/settings/calendar-copy',{}]]) {
+test('members with the matching write permission keep WOSM save access', async () => {
+  for (const [handler,slug,path,body] of [[putWosm,'wosm-members','/api/settings/wosm-members',{items:[],registered_count:0,if_revision:0}]]) {
     const f=fixture(['write:'+slug]);const response=await handler({env:f.env,request:await request(f,path,body)});assert.equal(response.status,200);assert.ok(f.state.writes.some(sql=>sql.includes('INSERT INTO settings')));f.sqlite.close();
   }
 });
@@ -244,10 +230,10 @@ test('admin retrieval failure is distinct from empty, public WOSM fallback is pr
   f.sqlite.close();
 });
 
-test('glossary/calendar admin cache bypass keeps public cache contracts', async () => {
+test('glossary admin cache bypass keeps public cache contracts', async () => {
   const f = fixture([], 'owner');
   f.sqlite.exec('CREATE TABLE glossary_terms(id INTEGER,bucket TEXT,term_ko TEXT,term_en TEXT,term_fr TEXT,description_ko TEXT,sort_order INTEGER,created_at TEXT,updated_at TEXT)');
-  for (const [handler, path, maxAge] of [[getGlossary,'glossary',300],[getCalendar,'calendar',120]]) {
+  for (const [handler, path, maxAge] of [[getGlossary,'glossary',300]]) {
     const admin = await handler({ env: f.env, request: new Request('https://synthetic.invalid/api/' + path + '?scope=admin') });
     assert.equal(admin.status, 200); assert.equal(admin.headers.get('cache-control'), 'no-store');
     const publicResponse = await handler({ env: f.env, request: new Request('https://synthetic.invalid/api/' + path) });
@@ -278,23 +264,12 @@ test('reference and WOSM revision batch chain prevents racing loser payload writ
   }
 });
 
-test('calendar and glossary stale updated_at returns409 without losing the saved row', async () => {
+test('glossary stale updated_at returns409 without losing the saved row', async () => {
   const f = fixture([], 'owner');
-  await getCalendar({ env:f.env, request: new Request('https://synthetic.invalid/api/calendar') });
-  f.sqlite.exec("INSERT INTO calendar_events(id,title,start_at,updated_at) VALUES(1,'saved','2026-10-15','current')");
-  const cal = await putCalendar({ env:f.env, params:{id:'1'}, request:await request(f,'/api/calendar/1',{title:'stale',start_date:'2026-10-15',expected_updated_at:'old'}) });
-  assert.equal(cal.status,409); assert.equal(f.sqlite.prepare('SELECT title FROM calendar_events WHERE id=1').get().title,'saved');
   f.sqlite.exec("CREATE TABLE glossary_terms(id INTEGER PRIMARY KEY,bucket TEXT,term_ko TEXT,term_en TEXT,term_fr TEXT,description_ko TEXT,sort_order INTEGER,created_at TEXT,updated_at TEXT); INSERT INTO glossary_terms(id,bucket,term_ko,updated_at) VALUES(1,'가','가족','current')");
   const glos = await putGlossary({ env:f.env, params:{id:'1'}, request:await request(f,'/api/glossary/1',{term_ko:'가나다',expected_updated_at:'old'}) });
   assert.equal(glos.status,409); assert.equal(f.sqlite.prepare('SELECT term_ko FROM glossary_terms WHERE id=1').get().term_ko,'가족');
   f.sqlite.close();
-});
-
-test('calendar repeated writes always advance the existing timestamp even within one millisecond',async()=>{
-  const f=fixture([],'owner');const stamp='2999-01-01 00:00:00.000';f.sqlite.prepare("INSERT INTO calendar_events(id,title,start_at,updated_at) VALUES(1,'saved','2026-10-15',?)").run(stamp);
-  const first=await putCalendar({env:f.env,params:{id:'1'},request:await request(f,'/api/calendar/1',{title:'new',start_date:'2026-10-15',expected_updated_at:stamp})});assert.equal(first.status,200);
-  const next=(await first.json()).item.updated_at;assert.ok(next>stamp);
-  const second=await putCalendar({env:f.env,params:{id:'1'},request:await request(f,'/api/calendar/1',{title:'stale',start_date:'2026-10-15',expected_updated_at:stamp})});assert.equal(second.status,409);assert.equal(f.sqlite.prepare('SELECT title FROM calendar_events WHERE id=1').get().title,'new');f.sqlite.close();
 });
 
 test('memorabilia compare-and-swap catches a race after the precheck without altering event usage or relations',async()=>{
@@ -340,91 +315,6 @@ test('posts internal dwell follows existing list-view policy without changing pu
 });
 
 
-test('calendar handlers preserve legacy reads, permissions, writes, conflicts and deletion', async () => {
-  const before=fixture([], 'owner'),after=fixture([], 'owner');
-  try {
-    const out=[];
-    for (const [f,get,create,put,del] of [[before,oldCalendar,oldCreateCalendar,oldPutCalendar,oldDeleteCalendar],[after,getCalendar,createCalendar,putCalendar,deleteCalendar]]) {
-      f.sqlite.exec("INSERT INTO posts(id,title,category) VALUES(3,'관련 기사','korea'); INSERT INTO calendar_events(id,title,start_at,related_post_id,created_at,updated_at) VALUES(1,'기존 일정','2026-10-01 00:00:00',3,'2026-01-01 00:00:00','2999-01-01 00:00:00.000')");
-      f.sqlite.prepare('UPDATE calendar_events SET event_tags=?,target_groups=? WHERE id=1').run(' Scout, Scout, 캠프 ',JSON.stringify([' 컵 ','컵','스카우트','invalid']));
-      f.sqlite.prepare('INSERT INTO calendar_events(id,title,start_at,event_tags,related_posts_json,target_groups) VALUES(?,?,?,?,?,?)').run(2,'둘째 일정','2026-11-01 00:00:00',JSON.stringify(['태그','태그',' 두 번째 ']),JSON.stringify([{id:'3suffix',title:' 기사 ',category:' korea '},{id:3,title:'중복'}]),'{invalid');
-      f.sqlite.exec("UPDATE calendar_events SET created_at='2026-01-01 00:00:00',updated_at='2026-01-01 00:00:00' WHERE id=2");
-      const result=[];
-      let response=await get({env:f.env,request:new Request('https://synthetic.invalid/api/calendar')});
-      result.push([response.status,response.headers.get('cache-control'),await response.json()]);
-      response=await put({env:f.env,params:{id:'1'},request:await request(f,'/api/calendar/1',{title:'실패',start_date:'2026-10-15',expected_updated_at:'old'})});
-      result.push([response.status,await response.json()]);
-      response=await put({env:f.env,params:{id:'1'},request:await request(f,'/api/calendar/1',{title:'수정 일정',start_date:'2026-10-15',expected_updated_at:'2999-01-01 00:00:00.000'})});
-      result.push([response.status,await response.json()]);
-      response=await create({env:f.env,request:await request(f,'/api/calendar',{title:'새 일정',start_date:'2026-12-20',event_tags:['Scout'],latitude:37.5,longitude:127.1},'POST')});
-      const created=await response.json();
-      delete created.item.created_at; delete created.item.updated_at;
-      result.push([response.status,created]);
-      response=await del({env:f.env,params:{id:'1'},request:await request(f,'/api/calendar/1',{},'DELETE')});
-      result.push([response.status,await response.json()]);
-      response=await del({env:f.env,params:{id:'999'},request:await request(f,'/api/calendar/999',{},'DELETE')});
-      result.push([response.status,await response.json()]);
-      result.push(f.sqlite.prepare('SELECT id,title,start_at,latitude,longitude FROM calendar_events ORDER BY id').all());
-      out.push(result);
-    }
-    assert.deepEqual(out[1],out[0]);
-    assert.deepEqual(out[1].map(x=>Array.isArray(x)?x[0]:undefined).slice(0,6),[200,409,200,201,200,200]);
-  } finally {before.sqlite.close();after.sqlite.close();}
-});
-
-test('Rust calendar date parsing matches existing input behavior', async () => {
-  const f=fixture([], 'owner');
-  try {
-    const cases=[
-      {start_at:'2026-1-2'}, {start_at:'2026.1.2T00:00'}, {start_at:'2026/12/31 9:05:10',end_at:'2027-1-1 0:00'},
-      {start_at:'invalid',start_date:'2026.2.31',start_time:'00:00'}, {start_date:'2026-5-3',start_time:'25:00'},
-      {start_at:'2026-04-01  1:02',end_date:'2026/3/31'}, {start_date:'2026-0-1'}, {start_date:'2026-11-32'},
-      {start_date:'2026-2-5',end_at:'2026-2-6 9:30'}, {start_at:'2026-01-01T00:00:00Z',start_date:'2026-1-2'},
-      {start_at:0,start_date:' 2026-7-9 ',start_time:'9:05:03'}, {start_at:'2026-1-1 00:00:00'},
-    ];
-    for (const body of cases) {
-      body.title='합성 일정';
-      const response=await queryRust({env:f.env,request:{url:'https://synthetic.invalid/'}},'calendar-dates',body);
-      assert.equal(response.status,200);
-      assert.deepEqual(normalizeCalendarInput(body,await response.json()),normalizeCalendarInput(body),JSON.stringify(body));
-    }
-  } finally { f.sqlite.close(); }
-});
-
-test('Rust calendar input normalization matches existing fields and validation', async () => {
-  const f=fixture([], 'owner');
-  try {
-    const cases=[
-      {}, {title:'일정'}, {title_original:' 원문 ',start_date:'2026/1/2'},
-      {title:' 일정 ',title_original:' 원문 ',start_at:'2026-2-3 00:00',end_date:'2026-2-4',event_category:' apr ',event_tags:'태그, 태그, 둘',target_groups:[' 컵 ','컵','스카우트'],latitude:'-37.1234565',longitude:'181',link_url:'https://example.com/한글?a=1'},
-      {title:'x',start_date:'2026-1-1',related_post_id:'3suffix',related_posts:[{id:'3suffix',title:' 기사 ',category:' korea '},{id:3,title:'중복'},{id:4,title:'두 번째'}],event_tags:[' A ','A','']},
-      {title:'x',start_date:'2026-1-1',related_post_ids:[{id:2,title:'둘'}],target_groups:[['컵'],'컵','invalid'],latitude:true,longitude:''},
-      {title:'x',start_date:'2026-1-2',end_date:'2026-1-1',link_url:'javascript:alert(1)'},
-    ];
-    for (const body of cases) {
-      const response=await queryRust({env:f.env,request:{url:'https://synthetic.invalid/'}},'calendar-normalize',body);
-      assert.equal(response.status,200);
-      const actual=await response.json(), old=normalizeCalendarInput(body);
-      assert.deepEqual(actual,old.error?{error:old.error}:{values:calendarValues(old)},JSON.stringify(body));
-    }
-  } finally {f.sqlite.close();}
-});
-
-test('calendar mutation denies anonymous and view-only accounts',async()=>{
-  for(const [handler,method] of [[createCalendar,'POST'],[putCalendar,'PUT'],[deleteCalendar,'DELETE']]) {
-    const f=fixture(['view:calendar']);
-    try {
-      for(const anonymous of [true,false]) {
-        const req=anonymous?new Request('https://synthetic.invalid/api/calendar/1',{method,headers:{'Content-Type':'application/json'},body:JSON.stringify({title:'test',start_date:'2026-10-01'})}):await request(f,'/api/calendar/1',{title:'test',start_date:'2026-10-01'},method);
-        const response=await handler({env:f.env,params:{id:'1'},request:req});
-        assert.equal(response.status,anonymous?401:403);
-      }
-      assert.equal(f.sqlite.prepare('SELECT count(*) AS n FROM calendar_events').get().n,0);
-    } finally {f.sqlite.close();}
-  }
-});
-
-
 test('revisioned setting writes match legacy results and atomic payloads',async()=>{
   const cases=[
     [oldPutWosm,putWosm,'/api/settings/wosm-members',{items:[{country_en:'Synthetic'}],registered_count:31,if_revision:0},[]],
@@ -465,48 +355,6 @@ test('feature definition Rust read keeps latest history and missing-history fall
     f.sqlite.prepare('UPDATE settings SET value=? WHERE key=?').run('legacy','feature_definition');
     assert.equal(await loadFeatureDefinition(f.env),DEFAULT_FEATURE_DEFINITION);
   } finally {f.sqlite.close();}
-});
-
-test('calendar schema readiness is isolated by database binding', async () => {
-  const databases=[new DatabaseSync(':memory:'),new DatabaseSync(':memory:')];
-  try {
-    const bindings=databases.map(sqlite=>{
-      sqlite.exec("CREATE TABLE calendar_events(id INTEGER PRIMARY KEY,title TEXT,start_at TEXT)");
-      return Object.assign(new (class D1Database {})(),{prepare(sql){return {
-        async all(){return {results:sqlite.prepare(sql).all()}},
-        async run(){const result=sqlite.prepare(sql).run();return {success:true,meta:{changes:Number(result.changes)}}},
-      }}});
-    });
-    const {ensureCalendarTable}=await import('../functions/_shared/calendar.js?schema-binding-isolation');
-    await ensureCalendarTable({DB:bindings[0]});
-    await ensureCalendarTable({DB:bindings[1]});
-    for (const db of databases) assert(db.prepare('PRAGMA table_info(calendar_events)').all().some(row=>row.name==='target_groups'));
-  } finally {for (const db of databases) db.close();}
-});
-
-test('calendar schema migration preserves old events and retries after failure', async () => {
-  const sqlite=new DatabaseSync(':memory:');
-  sqlite.exec("CREATE TABLE calendar_events(id INTEGER PRIMARY KEY,title TEXT NOT NULL,description TEXT,location_name TEXT,location_address TEXT,start_at TEXT NOT NULL,end_at TEXT,link_url TEXT,created_at TEXT,updated_at TEXT); INSERT INTO calendar_events(id,title,start_at) VALUES(1,'보존 일정','2027-01-01')");
-  let failOnce=true, race=false;
-  const DB=Object.assign(new (class D1Database {})(),{prepare(sql) { return {
-    async all() {return {results:sqlite.prepare(sql).all()};},
-    async run() {if (race && sql.includes('ADD COLUMN target_groups')) {race=false; sqlite.prepare(sql).run(); throw new Error('synthetic concurrent column creation');} if (failOnce && sql.includes('ADD COLUMN target_groups')) {failOnce=false; throw new Error('synthetic migration failure');} const result=sqlite.prepare(sql).run();return {success:true,meta:{changes:Number(result.changes)}};},
-  }; }});
-  const {ensureCalendarTable}=await import('../functions/_shared/calendar.js?schema-retry-test');
-  try {
-    await assert.rejects(ensureCalendarTable({DB}));
-    assert.equal(sqlite.prepare('SELECT title FROM calendar_events WHERE id=1').get().title,'보존 일정');
-    await ensureCalendarTable({DB});
-    await ensureCalendarTable({DB});
-    const columns=sqlite.prepare('PRAGMA table_info(calendar_events)').all().map(row=>row.name);
-    for(const name of ['title_original','event_category','event_tags','country_name','latitude','longitude','related_post_id','related_posts_json','start_has_time','end_has_time','target_groups']) assert(columns.includes(name),name);
-    assert.equal(sqlite.prepare('SELECT title,event_category FROM calendar_events WHERE id=1').get().title,'보존 일정');
-    assert.equal(sqlite.prepare('SELECT event_category FROM calendar_events WHERE id=1').get().event_category,'WOSM');
-    sqlite.exec('ALTER TABLE calendar_events DROP COLUMN target_groups');
-    race=true;
-    assert.equal((await queryRust({env:{DB},request:{url:'https://synthetic.invalid/'}},'calendar-ensure',{})).status,200);
-    assert(sqlite.prepare('PRAGMA table_info(calendar_events)').all().some(row=>row.name==='target_groups'));
-  } finally {sqlite.close();}
 });
 
 test('revisioned settings reads match legacy public and authorized responses',async()=>{
@@ -670,8 +518,6 @@ test('single settings preserve defaults, sanitized saves, restore and cache head
     ['/api/settings/ai-disclaimer',oldGetDisclaimer,getDisclaimer,oldPutDisclaimer,putDisclaimer,{text:' 합성 안내 '}],
     ['/api/settings/ticker',oldGetTicker,getTicker,oldPutTicker,putTicker,{items:['합성 기사', ' 기타 ']}],
     ['/api/settings/board-layout',oldGetLayout,getLayout,oldPutLayout,putLayout,{gap_px:99}],
-    ['/api/settings/calendar-tags',oldGetTags,getTags,oldPutTags,putTags,{items:['캠프','캠프',' 새 행사 ']}],
-    ['/api/settings/calendar-copy',oldGetCopy,getCopy,oldPutCopy,putCopy,{copy:{page_title:'합성 일정'}}],
     ['/api/settings/score-rubric',oldGetRubric,getRubric,oldPutRubric,putRubric,{content:'합성 평가 기준'},oldDeleteRubric,deleteRubric],
   ]) {
     const before=fixture([],'owner'),after=fixture([],'owner');
@@ -692,20 +538,6 @@ test('single settings preserve defaults, sanitized saves, restore and cache head
     } finally {before.sqlite.close();after.sqlite.close();}
   }
 });
-
-test('Rust calendar copy preserves field order, text and legacy unusual values',async()=>{
-  for(const input of [null,{}, {page_title:'  합성 일정  ',map_help:'\ufeff안내\ufeff'}, {page_title:'😀 일정',ongoing_empty:''},
-    {page_title:123,map_title:['a','b'],month_view_label:true}, {page_title:'\ud800'}, ['unused']]) {
-    const expected=oldSanitizeCalendarCopy(input);
-    const actual=await sanitizeCalendarCopy(input);
-    assert.deepEqual(actual,expected);
-    assert.equal(JSON.stringify(actual),JSON.stringify(expected));
-  }
-  const response=await queryRust({env:{},request:{url:'https://synthetic.invalid/'}},'calendar-copy-normalize',{raw:{page_title:'  합성 일정  '},defaults:Object.entries(DEFAULT_CALENDAR_COPY)});
-  assert.equal(response.status,200);
-  assert.deepEqual(Object.fromEntries((await response.json()).entries),oldSanitizeCalendarCopy({page_title:'  합성 일정  '}));
-});
-
 
 test('single setting adapter rejects non-whitelisted keys and unauthorized deletion',async()=>{
   const f=fixture([],'owner');
@@ -2670,38 +2502,6 @@ test('reference-site Rust path preserves inputs, URL rules and fallback', async 
   for(let trial=0;trial<100;trial++) {
     const items=Array.from({length:next()%20},()=>({name:choose(values),summary:choose(values),url:choose(urls),related_federations:[choose(regions),choose(regions),choose(regions)]}));let calls=0;
     const actual=await sanitizeReferenceSitesRust(items,{},async(...args)=>{calls++;return queryRust(...args);});assert.equal(calls,1);assert.deepEqual(actual,sanitizeReferenceSites(items));
-  }
-});
-
-
-test('Rust calendar tags preserve order, Unicode length and item limits', async () => {
-  const {queryRust}=await import('../functions/_shared/rust-server.js');
-  const raw=[' 캠프 ','캠프','Camp','camp','😀'.repeat(20),'😀'.repeat(21),'\ufeff 교육 \ufeff',0,false,...Array.from({length:60},(_,i)=>`합성 ${i}`)];
-  const response=await queryRust({env:{},request:{url:'https://synthetic.invalid/'}},'calendar-tags-normalize',{items:raw.map(item=>String(item||''))});
-  assert.equal(response.status,200);
-  assert.deepEqual((await response.json()).items,normalizeCalendarTags(raw));
-  assert.deepEqual(await normalizeCalendarTagsRust(raw),normalizeCalendarTags(raw));
-  assert.deepEqual(await normalizeCalendarTagsRust(['\ud83d']),normalizeCalendarTags(['\ud83d']));
-});
-
-
-test('calendar tags use Rust result and retain legacy fallback for invalid input or errors', async () => {
-  const response = value => new Response(JSON.stringify(value), {headers:{'Content-Type':'application/json'}});
-  assert.deepEqual(await normalizeCalendarTagsRust(['legacy'], {}, async () => response({items:['Rust']})), ['Rust']);
-  for (const invalid of [{items:null},{items:['dup','dup']},{items:[' not trimmed ']},{items:['x'.repeat(41)]}]) {
-    assert.deepEqual(await normalizeCalendarTagsRust([' legacy '], {}, async () => response(invalid)), ['legacy']);
-  }
-  assert.deepEqual(await normalizeCalendarTagsRust([' legacy '], {}, async () => {throw new Error('synthetic');}), ['legacy']);
-  let called = false;
-  const lone = ['\ud800','\udc00'];
-  assert.deepEqual(await normalizeCalendarTagsRust(lone, {}, async () => {called=true;throw new Error('unexpected');}), lone);
-  assert.equal(called, false);
-  let seed = 19;
-  const next = () => (seed = (seed * 48271) % 2147483647);
-  const words = ['', '가', '😀', '\ufeff행사\ufeff', '\u0085', 'A', ' a ', 0, false, null, ['x','y'], {x:1}, 'x'.repeat(40), '😀'.repeat(21)];
-  for (let trial=0; trial<80; trial++) {
-    const raw = Array.from({length:next()%100}, () => words[next()%words.length]);
-    assert.deepEqual(await normalizeCalendarTagsRust(raw), normalizeCalendarTags(raw));
   }
 });
 

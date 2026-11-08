@@ -30,7 +30,6 @@ export const ADMIN_MENUS = Object.freeze([
   { group: "기사 운영", items: [
     {"slug":"list","label":"게시글 목록","actions":["view","write"]},
     {"slug":"write","label":"새 글 작성","actions":["view","write"]},
-    {"slug":"calendar","label":"캘린더","actions":["view","write"]},
     {"slug":"card-news","label":"카드뉴스","actions":["view","write"]},
     {"slug":"article-scorer","label":"기사 채점","actions":["view","write"]},
     {"slug":"ai-score-history","label":"AI 채점기록","actions":["view"]}

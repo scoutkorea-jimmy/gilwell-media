@@ -24,7 +24,7 @@ test('페이지 이동과 새로고침이 같은 기사 목록을 유지한다',
 test('공개 자료와 정책이 자바스크립트 없이 로딩 문구를 대신한다', async ({browser,baseURL}) => {
   const context = await browser.newContext({javaScriptEnabled:false});
   const page = await context.newPage();
-  for (const [path,selector] of [['glossary','#glossary-results'],['wosm-members','#wosm-members-body'],['privacy','#privacy-body'],['calendar','#calendar-grid'],['memorabilia','#memo-grid']]) {
+  for (const [path,selector] of [['glossary','#glossary-results'],['wosm-members','#wosm-members-body'],['privacy','#privacy-body'],['memorabilia','#memo-grid']]) {
     await page.goto(baseURL + '/' + path);
     await expect(page.locator(selector)).not.toBeEmpty();
     await expect(page.locator(selector)).not.toContainText('불러오는 중');

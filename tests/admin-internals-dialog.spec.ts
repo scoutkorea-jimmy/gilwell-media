@@ -1,15 +1,15 @@
 import { test, expect } from '@playwright/test';
 import { openSyntheticAdmin } from './admin-reorganization-fixture';
 
-test('calendar dialog keeps focus inside and returns to its opener on Escape', async ({ page }) => {
+test('glossary dialog keeps focus inside and returns to its opener on Escape', async ({ page }) => {
   const state = await openSyntheticAdmin(page);
-  await page.evaluate(() => window.V3.showPanel('calendar'));
-  const opener = page.locator('#cal-new-btn');
+  await page.evaluate(() => window.V3.showPanel('glossary'));
+  const opener = page.locator('#glos-new-btn');
   await opener.click();
-  const dialog = page.getByRole('dialog', { name: '새 일정' });
+  const dialog = page.getByRole('dialog', { name: '새 용어' });
   await expect(dialog).toBeVisible();
   await expect(dialog).toHaveAttribute('aria-modal', 'true');
-  await expect(page.locator('#cal-title')).toBeFocused();
+  await expect(page.locator('#glos-ko')).toBeFocused();
   const controls = dialog.locator('button:visible:not([disabled]),input:visible:not([disabled]),select:visible:not([disabled]),textarea:visible:not([disabled])');
   await controls.last().focus();
   await page.keyboard.press('Tab');
@@ -28,21 +28,21 @@ test('calendar dialog keeps focus inside and returns to its opener on Escape', a
 
 test('nested confirmation restores the underlying dialog and does not submit on Escape', async ({ page }) => {
   const state = await openSyntheticAdmin(page);
-  await page.evaluate(() => window.V3.showPanel('calendar'));
-  await page.locator('#cal-new-btn').click();
-  await page.locator('#cal-title').fill('합성 미저장 일정');
-  await page.locator('#cal-title').focus();
+  await page.evaluate(() => window.V3.showPanel('glossary'));
+  await page.locator('#glos-new-btn').click();
+  await page.locator('#glos-ko').fill('합성 미저장 일정');
+  await page.locator('#glos-ko').focus();
   await page.evaluate(() => {
     const confirmation = document.getElementById('v3-confirm')!;
     document.getElementById('confirm-title')!.textContent = '합성 확인';
     confirmation.style.display = 'flex';
   });
   await expect(page.getByRole('dialog', { name: '합성 확인' })).toBeVisible();
-  await expect(page.locator('#cal-modal')).toHaveAttribute('inert', '');
+  await expect(page.locator('#glos-modal')).toHaveAttribute('inert', '');
   await page.keyboard.press('Escape');
   await expect(page.locator('#v3-confirm')).toBeHidden();
-  await expect(page.locator('#cal-title')).toBeFocused();
-  await expect(page.locator('#cal-modal')).not.toHaveAttribute('inert', '');
+  await expect(page.locator('#glos-ko')).toBeFocused();
+  await expect(page.locator('#glos-modal')).not.toHaveAttribute('inert', '');
   expect(state.writes).toEqual([]);
   expect(state.pageErrors).toEqual([]);
 });

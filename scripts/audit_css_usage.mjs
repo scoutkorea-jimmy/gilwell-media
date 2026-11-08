@@ -35,7 +35,6 @@ const SURFACES = {
   board: ['public/latest.html', 'public/korea.html', 'public/apr.html', 'public/wosm.html', 'public/people.html', 'public/js/board.js', 'public/js/board-write.js'],
   post: ['functions/post/[id].js', 'public/js/post-page.js', 'functions/feature/[category]/[slug].js', 'server-rust/src/feature_shell.html'],
   glossary: ['public/glossary.html', 'public/js/glossary.js', 'functions/glossary-raw.js', 'server-rust/src/glossary_raw_shell.html'],
-  calendar: ['public/calendar.html', 'public/js/calendar.js'],
   memorabilia: ['public/memorabilia.html', 'public/js/memorabilia.js', 'public/js/memorabilia-shared.js'],
   wosm_members: ['public/wosm-members.html', 'public/js/wosm-members.js'],
   search: ['public/search.html', 'public/js/search.js'],

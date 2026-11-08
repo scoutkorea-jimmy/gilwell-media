@@ -1210,23 +1210,10 @@ test('compiled Pages + real workerd + isolated D1 preserve glossary routes and s
     assert.equal((await db.prepare('SELECT COUNT(*) AS n FROM post_history WHERE post_id IN (88104,88105)').first()).n,1);
     await db.prepare('DELETE FROM post_history WHERE post_id IN (88104,88105)').run();
     await db.prepare('DELETE FROM posts WHERE id BETWEEN 88101 AND 88105').run();
-    const calendarBody = {title:'합성 일정',start_date:'2027-01-20',event_tags:['Scout'],latitude:37.5,longitude:127.1};
-    assert.equal((await send('/api/calendar',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(calendarBody)})).status,401);
-    const calendarCreated = await send('/api/calendar',{method:'POST',headers,body:JSON.stringify(calendarBody)});
-    assert.equal(calendarCreated.status,201);
-    const calendar = (await calendarCreated.json()).item;
-    assert.equal(calendar.latitude,37.5);
-    const calendarList = await (await send('/api/calendar')).json();
-    assert.equal(calendarList.items[0].title,calendarBody.title);
-    const changes = await Promise.all(['첫 수정','둘째 수정'].map(title => send('/api/calendar/'+calendar.id,{method:'PUT',headers,body:JSON.stringify({...calendarBody,title,expected_updated_at:calendar.updated_at})})));
-    assert.deepEqual(changes.map(r=>r.status).sort(),[200,409]);
-    const storedCalendar = await db.prepare('SELECT title,updated_at FROM calendar_events WHERE id=?').bind(calendar.id).first();
-    assert(['첫 수정','둘째 수정'].includes(storedCalendar.title));
-    assert(storedCalendar.updated_at > calendar.updated_at);
-    assert.equal((await send('/api/calendar/'+calendar.id,{method:'DELETE',headers})).status,200);
-    assert.equal(await db.prepare('SELECT id FROM calendar_events WHERE id=?').bind(calendar.id).first(),null);
-    assert.equal((await send('/api/calendar/'+calendar.id,{method:'PUT',headers,body:JSON.stringify({...calendarBody,expected_updated_at:calendar.updated_at})})).status,404);
-    await db.prepare("INSERT INTO calendar_events(id,title,start_at,related_post_id) VALUES(100,'공개 일정', '2027-01-01', 1),(101,'비공개 연결 일정', '2027-01-02', 2)").run();
+    for (const path of ['/calendar','/calendar.html','/api/calendar','/api/calendar/100','/api/settings/calendar-tags','/api/settings/calendar-copy']) {
+      assert.equal((await send(path)).status,410,path);
+    }
+    assert.equal((await send('/api/calendar',{method:'POST',headers,body:JSON.stringify({title:'blocked'})})).status,410);
     await db.prepare("INSERT INTO memorabilia(id,slug,title_ko,status,published_at) VALUES(100,'public-synthetic','공개 합성 자료','public','2026-01-01'),(101,'private-synthetic','비공개 합성 자료','draft','2026-01-02')").run();
     await db.prepare("INSERT INTO memorabilia(id,slug,title_ko,status,issuer_ko,updated_at) VALUES(999,'bulk-test','합성 일괄','draft','기존','2026-01-01')").run();
     const memoBulkBody=JSON.stringify({ids:[999],updates:{issuer_ko:'변경',set_tags:['합성 태그'],set_country_codes:['KR']}});
@@ -1384,10 +1371,6 @@ test('compiled Pages + real workerd + isolated D1 preserve glossary routes and s
     assert.deepEqual(await (await send('/api/memorabilia/categories/'+category.id,{method:'DELETE',headers})).json(),{ok:true,deleted:true});
     const glossaryHtml = await (await send('/glossary')).text();
     assert(glossaryHtml.includes('가족'));
-    const calendarHtml = await (await send('/calendar')).text();
-    assert(calendarHtml.includes('공개 일정'));
-    assert(calendarHtml.includes('href="/post/1"'));
-    assert(!calendarHtml.includes('href="/post/2"'));
     const memorabiliaHtml = await (await send('/memorabilia')).text();
     assert(memorabiliaHtml.includes('공개 합성 자료'));
     assert(!memorabiliaHtml.includes('비공개 합성 자료'));
@@ -1658,7 +1641,6 @@ test('compiled Pages + real workerd + isolated D1 preserve glossary routes and s
     assert.equal((await db.prepare('SELECT usage_count FROM memorabilia_events WHERE id=500').first()).usage_count,3);
     for(const table of ['memorabilia_countries','memorabilia_tags','memorabilia_images','memorabilia_likes','memorabilia_comments']) assert.equal((await db.prepare(`SELECT COUNT(*) AS n FROM ${table} WHERE memorabilia_id=103`).first()).n,0,table);
 
-    await db.prepare('DELETE FROM calendar_events WHERE id IN (100,101)').run();
     await db.prepare('DELETE FROM memorabilia WHERE id IN (100,101,102,103)').run();
     for (const [path,key,revision,makeBody] of [
       ['/api/settings/reference-sites','reference_sites','reference_sites_rev',name=>({items:[{name}],if_revision:0})],
@@ -1723,8 +1705,6 @@ test('compiled Pages + real workerd + isolated D1 preserve glossary routes and s
 
     for (const [path,key,body,expected] of [
       ['/api/settings/board-layout','board_card_gap',{gap_px:99},'40'],
-      ['/api/settings/calendar-tags','calendar_tags',{items:['합성','합성',' 태그 ']},'["합성","태그"]'],
-      ['/api/settings/calendar-copy','calendar_copy',{copy:{page_title:'합성 일정'}},null],
       ['/api/settings/score-rubric','score_rubric',{content:'합성 평가 기준'},'합성 평가 기준'],
     ]) {
       assert.equal((await send(path,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})).status,401,path);
@@ -1733,12 +1713,6 @@ test('compiled Pages + real workerd + isolated D1 preserve glossary routes and s
       if(expected!==null) assert.equal(row.value,expected,path); else assert.equal(JSON.parse(row.value).page_title,'합성 일정');
       assert.equal((await send(path)).status,200,path);
     }
-    await ssrFault.put('calendar-copy','1');
-    const fallbackCalendar=await send('/api/settings/calendar-copy',{method:'PUT',headers,body:JSON.stringify({copy:{page_title:' 장애 시 안내 '}})});
-    assert.equal(fallbackCalendar.status,200);
-    assert.equal((await fallbackCalendar.json()).copy.page_title,'장애 시 안내');
-    assert.equal((await (await send('/api/settings/calendar-copy')).json()).copy.page_title,'장애 시 안내');
-    await ssrFault.delete('calendar-copy');
     assert.equal((await send('/api/settings/board-layout',{method:'PUT',headers,body:JSON.stringify({gap_px:20})})).status,200);
     assert.equal((await db.prepare("SELECT value FROM settings_history WHERE key='board_card_gap' ORDER BY id DESC LIMIT 1").first()).value,'40');
     await db.prepare("CREATE TRIGGER synthetic_history_insert_failure BEFORE INSERT ON settings_history WHEN NEW.key='board_card_gap' BEGIN SELECT RAISE(ABORT,'synthetic failure'); END").run();
@@ -1754,13 +1728,6 @@ test('compiled Pages + real workerd + isolated D1 preserve glossary routes and s
     assert.equal(gapFallback.status,200);
     assert.equal(gapFallbackData.gap_px,5);
 
-    assert.equal(await ssrFault.get('calendar-tags-hit'),'1');
-    await ssrFault.put('calendar-tags-fail','1');
-    const tagsFallback=await send('/api/settings/calendar-tags',{method:'PUT',headers,body:JSON.stringify({items:[' 합성 ','합성','교육']})});
-    const tagsFallbackData=await tagsFallback.json();
-    await ssrFault.delete('calendar-tags-fail');
-    assert.equal(tagsFallback.status,200);
-    assert.deepEqual(tagsFallbackData.items,['합성','교육']);
 
     assert.equal(await ssrFault.get('rubric-normalize-hit'),'1');
     await ssrFault.put('rubric-normalize-fail','1');

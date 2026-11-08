@@ -92,10 +92,6 @@ const DEFAULT_SITE_META = {
       title: '도움을 주신 분들 · BP미디어',
       description: '기록과 편집 등 BP미디어 운영에 도움을 주신 분들을 소개하고 감사의 뜻을 전합니다. 스카우트 네트워크의 자발적인 봉사로 운영되는 매체의 기여자 명단입니다.',
     },
-    calendar: {
-      title: '스카우트 행사 캘린더 · BP미디어',
-      description: '한국스카우트연맹과 세계 스카우트의 행사·일정을 월간·연간 보기로 확인하는 캘린더입니다. 진행 중·개최 예정·종료 상태별로 행사를 찾아볼 수 있습니다.',
-    },
     search: {
       title: '검색 · BP미디어',
       description: 'BP미디어 기사와 페이지를 검색합니다.',
@@ -466,7 +462,7 @@ function buildPageStructuredData({ pageKey, title, description, url, imageUrl, d
 // 처럼 목록이 아닌 문서 페이지까지 컬렉션이라고 주장하게 된다. 목록형만 남긴다.
 const COLLECTION_PAGE_KEYS = [
   'latest', 'korea', 'apr', 'wosm', 'people',
-  'glossary', 'memorabilia', 'wosm_members', 'calendar',
+  'glossary', 'memorabilia', 'wosm_members',
 ];
 
 function getPageSchemaType(pageKey) {
@@ -509,7 +505,6 @@ function getBreadcrumbLabel(pageKey) {
     glossary: '스카우트 용어집',
     memorabilia: '스카우트 기념품 도감',
     contributors: '도움을 주신 분들',
-    calendar: '스카우트 캘린더',
     search: '검색',
     editorial_policy: '편집 정책',
     about: '운영 주체',
@@ -531,7 +526,6 @@ function getPageTopic(pageKey) {
     glossary: '스카우트 용어집',
     memorabilia: '스카우트 기념품 도감',
     contributors: '후원 및 기여자 소개',
-    calendar: '스카우트 행사 및 일정',
     search: '사이트 검색 결과',
     editorial_policy: '편집 정책',
     about: '운영 주체',
@@ -553,7 +547,6 @@ function getPageKeywords(pageKey) {
     glossary: '스카우트 용어집, BP미디어',
     memorabilia: '스카우트 기념품, 스카우트 도감, 스카우트 패치, 스카우트 뱃지, 스카우트 항건, 스카우트 우표, Scout Memorabilia, BP미디어',
     contributors: 'BP미디어, 도움을 주신 분들',
-    calendar: '스카우트 캘린더, 스카우트 행사 일정, BP미디어',
     search: 'BP미디어 검색',
     editorial_policy: '편집 정책, 정정 보도, 출처 검증, BP미디어',
     about: '운영 주체, BP미디어, 길웰미디어',

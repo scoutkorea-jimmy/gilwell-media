@@ -55,7 +55,6 @@ SITE_STYLE_FILES=(
   public/about.html
   public/help.html
   public/search.html
-  public/calendar.html
   public/memorabilia.html
   public/privacy.html
   public/editorial-policy.html
@@ -82,7 +81,6 @@ M3_STYLE_FILES=(
   public/about.html
   public/help.html
   public/search.html
-  public/calendar.html
   public/memorabilia.html
   public/privacy.html
   public/editorial-policy.html
@@ -106,7 +104,6 @@ SITE_MAIN_JS_FILES=(
   public/glossary.html
   public/contributors.html
   public/search.html
-  public/calendar.html
   functions/post/'[id]'.js
   functions/feature/'[category]'/'[slug]'.js
   server-rust/src/feature_shell.html
@@ -123,7 +120,6 @@ SITE_CHROME_JS_FILES=(
   public/glossary.html
   public/contributors.html
   public/search.html
-  public/calendar.html
   functions/post/'[id]'.js
   functions/feature/'[category]'/'[slug]'.js
   server-rust/src/feature_shell.html
@@ -186,10 +182,6 @@ grep -F "/js/search.js?v=${ASSET_VERSION_FILE}" public/search.html >/dev/null ||
   echo "Missing search.js asset version in public/search.html"
   exit 1
 }
-grep -F "/js/calendar.js?v=${ASSET_VERSION_FILE}" public/calendar.html >/dev/null || {
-  echo "Missing calendar.js asset version in public/calendar.html"
-  exit 1
-}
 grep -F "/dreampath/app.js?v=${ASSET_VERSION_FILE}" public/dreampath/index.html >/dev/null || {
   echo "Missing app.js asset version in public/dreampath/index.html"
   exit 1
@@ -208,7 +200,6 @@ const managedNavFiles = [
   'public/glossary.html',
   'public/contributors.html',
   'public/search.html',
-  'public/calendar.html',
 ];
 const siteChromeJs = fs.readFileSync('public/js/site-chrome.js', 'utf8');
 // NAV_ITEMS 블록만 추출 — NAV_STRUCTURE children 의 동일 패턴이 잡히지 않도록.

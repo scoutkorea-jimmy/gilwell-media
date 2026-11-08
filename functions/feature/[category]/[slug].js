@@ -55,7 +55,6 @@ async function renderFeaturePage({ params, request, env }, headOnly = false) {
   const navWosm = getNavLabel(navLabels, 'nav.wosm', 'ko');
   const navWosmMembers = getNavLabel(navLabels, 'nav.wosm_members', 'ko');
   const navPeople = getNavLabel(navLabels, 'nav.people', 'ko');
-  const navCalendar = getNavLabel(navLabels, 'nav.calendar', 'ko');
   const navGlossary = getNavLabel(navLabels, 'nav.glossary', 'ko');
   const navMemorabilia = getNavLabel(navLabels, 'nav.memorabilia', 'ko');
   const fallback = () => {
@@ -74,11 +73,11 @@ async function renderFeaturePage({ params, request, env }, headOnly = false) {
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png">
   <link rel="apple-touch-icon" href="/img/logo.png">
   <link rel="shortcut icon" href="/img/favicon-48.png">
-  <link rel="stylesheet" href="/css/style.css?v=20261102085846">
-  <link rel="stylesheet" href="/css/post.css?v=20261102085846">
-  <link rel="stylesheet" href="/css/chatbot.css?v=20261102085846">
-  <link rel="stylesheet" href="/css/dark-mode.css?v=20261102085846">
-  <link rel="stylesheet" href="/css/m3-site.css?v=20261102085846">
+  <link rel="stylesheet" href="/css/style.css?v=20261108134243">
+  <link rel="stylesheet" href="/css/post.css?v=20261108134243">
+  <link rel="stylesheet" href="/css/chatbot.css?v=20261108134243">
+  <link rel="stylesheet" href="/css/dark-mode.css?v=20261108134243">
+  <link rel="stylesheet" href="/css/m3-site.css?v=20261108134243">
   <style>
     .feature-page {
       background:
@@ -404,7 +403,6 @@ async function renderFeaturePage({ params, request, env }, headOnly = false) {
       <a href="/wosm" data-i18n="nav.wosm" data-fallback-label="${escapeHtml(navWosm)}" aria-label="World"></a>
       <a href="/wosm-members" data-i18n="nav.wosm_members" data-fallback-label="${escapeHtml(navWosmMembers)}" aria-label="${escapeHtml(navWosmMembers)}"></a>
       <a href="/people" data-i18n="nav.people" data-fallback-label="${escapeHtml(navPeople)}" aria-label="${escapeHtml(navPeople)}"></a>
-      <a href="/calendar" data-i18n="nav.calendar" data-fallback-label="${escapeHtml(navCalendar)}" aria-label="${escapeHtml(navCalendar)}"></a>
       <a href="/glossary" data-i18n="nav.glossary" data-fallback-label="${escapeHtml(navGlossary)}" aria-label="${escapeHtml(navGlossary)}"></a>
       <a href="/memorabilia" data-i18n="nav.memorabilia" data-fallback-label="${escapeHtml(navMemorabilia)}"></a>
     </nav>
@@ -497,7 +495,7 @@ async function renderFeaturePage({ params, request, env }, headOnly = false) {
         <h4>바로가기</h4>
         <a href="/${category}">${escapeHtml(categoryMeta.label)} 목록 →</a>
         <a href="/latest">최신 기사 보기 →</a>
-        <p class="footer-build">Site <span class="site-build-version">V00.197.00</span> · Admin <span class="admin-build-version">V03.164.00</span></p>
+        <p class="footer-build">Site <span class="site-build-version">V00.198.00</span> · Admin <span class="admin-build-version">V03.165.00</span></p>
       </div>
       <div class="footer-bottom">
         <p>© 2026 ${footerTitle} · ${footerDomain}</p>
@@ -506,9 +504,9 @@ async function renderFeaturePage({ params, request, env }, headOnly = false) {
     </div>
   </footer>
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.4/dist/purify.min.js" integrity="sha384-eEu5CTj3qGvu9PdJuS+YlkNi7d2XxQROAFYOr59zgObtlcux1ae1Il3u7jvdCSWu" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-  <script src="/js/main.js?v=20261102085846"></script>
-  <script src="/js/site-chrome.js?v=20261102085846"></script>
-  <script src="/js/chatbot.js?v=20261102085846" defer></script>
+  <script src="/js/main.js?v=20261108134243"></script>
+  <script src="/js/site-chrome.js?v=20261108134243"></script>
+  <script src="/js/chatbot.js?v=20261108134243" defer></script>
   <script>GW.bootstrapStandardPage();</script>
   <script async type="text/javascript" charset="utf-8" src="https://t1.kakaocdn.net/kas/static/ba.min.js"></script>
 </body>
@@ -529,7 +527,7 @@ async function renderFeaturePage({ params, request, env }, headOnly = false) {
     String(escapeHtml(navWosm)),
     String(escapeHtml(navWosmMembers)),
     String(escapeHtml(navPeople)),
-    String(escapeHtml(navCalendar)),
+    '', // Retired calendar slot preserves the existing Rust shell binding indexes.
     String(escapeHtml(navGlossary)),
     String(escapeHtml(navMemorabilia)),
     String(category),

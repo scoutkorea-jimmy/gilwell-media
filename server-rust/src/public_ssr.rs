@@ -606,9 +606,6 @@ pub async fn render(req: &mut Request, env: &Env) -> Result<Response> {
         "glossary" => {
             "SELECT id, term_ko, term_en, term_fr, description_ko FROM glossary_terms ORDER BY bucket, COALESCE(sort_order, 0), term_ko"
         }
-        "calendar" => {
-            "SELECT c.title, c.start_at, c.end_at, c.location_name, p.id AS post_id FROM calendar_events c LEFT JOIN posts p ON p.id = c.related_post_id AND p.published = 1 ORDER BY c.start_at DESC LIMIT 100"
-        }
         "memorabilia" => {
             "SELECT id, slug, title_ko, title_en FROM memorabilia WHERE status = 'public' ORDER BY COALESCE(published_at, updated_at) DESC, id DESC LIMIT 48"
         }
@@ -638,33 +635,6 @@ pub async fn render(req: &mut Request, env: &Env) -> Result<Response> {
                 })
                 .collect::<String>();
             json!({"glossaryCount":format!("{}개 용어",rows.len()),"glossary":format!("<dl>{terms}</dl>")})
-        }
-        "calendar" => {
-            let html = rows
-                .iter()
-                .map(|r| {
-                    let title = escape(value(r, "title"));
-                    let id = number(r, "post_id");
-                    let title = if id != 0.0 {
-                        format!("<a href=\"/post/{id}\">{title}</a>")
-                    } else {
-                        title
-                    };
-                    let end = value(r, "end_at");
-                    let end = if end.is_empty() {
-                        String::new()
-                    } else {
-                        format!(" ~ {}", escape(end))
-                    };
-                    format!(
-                        "<article><h2>{title}</h2><p>{}{} · {}</p></article>",
-                        escape(value(r, "start_at")),
-                        end,
-                        escape(value(r, "location_name"))
-                    )
-                })
-                .collect::<String>();
-            json!({"calendar":if html.is_empty() {"<p>등록된 일정이 없습니다.</p>"} else {&html}})
         }
         _ => {
             let html=rows.iter().map(|r| {
@@ -704,7 +674,6 @@ pub async fn canonical(req: &mut Request) -> Result<Response> {
             "wosm_members" => "/wosm-members",
             "people" => "/people",
             "glossary" => "/glossary",
-            "calendar" => "/calendar",
             "memorabilia" => "/memorabilia",
             "privacy" => "/privacy",
             _ => &input.pathname,
@@ -742,7 +711,6 @@ fn seo_descriptor(key: &str) -> Value {
             | "glossary"
             | "memorabilia"
             | "wosm_members"
-            | "calendar"
     ) {
         "CollectionPage"
     } else {
@@ -759,7 +727,6 @@ fn seo_descriptor(key: &str) -> Value {
         "glossary" => "스카우트 용어집",
         "memorabilia" => "스카우트 기념품 도감",
         "contributors" => "도움을 주신 분들",
-        "calendar" => "스카우트 캘린더",
         "search" => "검색",
         "editorial_policy" => "편집 정책",
         "about" => "운영 주체",
@@ -777,7 +744,6 @@ fn seo_descriptor(key: &str) -> Value {
         "glossary" => "스카우트 용어집",
         "memorabilia" => "스카우트 기념품 도감",
         "contributors" => "후원 및 기여자 소개",
-        "calendar" => "스카우트 행사 및 일정",
         "search" => "사이트 검색 결과",
         "editorial_policy" => "편집 정책",
         "about" => "운영 주체",
@@ -802,7 +768,6 @@ fn seo_descriptor(key: &str) -> Value {
             "스카우트 기념품, 스카우트 도감, 스카우트 패치, 스카우트 뱃지, 스카우트 항건, 스카우트 우표, Scout Memorabilia, BP미디어"
         }
         "contributors" => "BP미디어, 도움을 주신 분들",
-        "calendar" => "스카우트 캘린더, 스카우트 행사 일정, BP미디어",
         "search" => "BP미디어 검색",
         "editorial_policy" => "편집 정책, 정정 보도, 출처 검증, BP미디어",
         "about" => "운영 주체, BP미디어, 길웰미디어",

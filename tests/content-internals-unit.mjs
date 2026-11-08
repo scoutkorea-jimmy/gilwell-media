@@ -35,7 +35,7 @@ function fixture(file, expose) {
 
 const f = fixture('public/js/admin-v3.js', `
 _apiFetch = GW.apiFetch;
-window.__content = { loadDashboard:_loadDashboard, loadList:_loadList, loadCalendar:_loadCalendar, loadGlossary:_loadGlossary, loadHistory:_loadAiScoreHistory, saveCal:_saveCal, saveGlos:_saveGlos,
+window.__content = { loadDashboard:_loadDashboard, loadList:_loadList, loadGlossary:_loadGlossary, loadHistory:_loadAiScoreHistory, saveGlos:_saveGlos,
   openDialog:_contentOpenDialog, closeDialog:_contentCloseDialog, canWrite:_contentCanWrite, loadWosm:_loadWosmMembersUI, saveWosm:_saveWosmMembers, loadReferences:_loadReferenceSitesUI,
   submitReference:_submitReferenceSiteModal, loadRubric:_loadRubric, get dialogs(){return _contentDialogs;}, get wosm(){return _wosmMembers;}, get count(){return _wosmRegisteredCount;},
   setList(q,page=1){_listSearch=q;_listPage=page;}, setPanel(panel,section){_panel=panel;_settingsSection=section;}, setReference(draft,index){_referenceSiteModalDraft=draft;_referenceSiteModalIndex=index;},
@@ -75,19 +75,14 @@ current.resolve({ total: 0, posts: [] }); await flush(); old.resolve({ total: 40
 assert.equal(f.node('list-count').textContent, '총 0건'); assert.doesNotMatch(f.node('list-tbody').innerHTML, /obsolete/);
 api.setList('', 99); api.loadList(); f.pending.shift().resolve({ total: 0, posts: [] }); await flush();
 assert.match(f.pending[0].args[0], /page=1(?:&|$)/); f.pending.shift().resolve({ total: 0, posts: [] }); await flush();
-// Calendar preserves selected year and requests uncached admin data.
-f.node('cal-filter-year').value = '2026'; api.loadCalendar();
-assert.match(f.pending[0].args[0], /scope=admin/);
-f.pending.shift().resolve({ items: [{ id: 1, title: '일정', start_at: '2026-10-15', updated_at: 'old' }] }); f.pending.shift().resolve({ items: [] }); await flush();
-assert.equal(f.node('cal-filter-year').value, '2026');
 // Glossary failure is distinct from empty, and the administrator uses no-store.
 api.loadGlossary(); assert.match(f.pending[0].args[0], /scope=admin/); assert.equal(f.pending[0].args[1].cache, 'no-store');
 f.pending.shift().reject(new Error('synthetic failure')); await flush(); assert.match(f.node('glos-list').innerHTML, /불러오기 실패/);
-// Real calendar/glossary saves retain post-request typing, block closing during writes and preserve 409.
-for (const [modal, ids, save] of [ ['cal-modal', ['cal-id','cal-title','cal-start'], api.saveCal], ['glos-modal', ['glos-id','glos-ko','glos-en','glos-fr','glos-desc'], api.saveGlos] ]) {
+// Real glossary saves retain post-request typing, block closing during writes and preserve 409.
+for (const [modal, ids, save] of [ ['glos-modal', ['glos-id','glos-ko','glos-en','glos-fr','glos-desc'], api.saveGlos] ]) {
   f.node(modal).fields = ids.map(f.node); f.node(modal).style.display = 'flex';
-  f.node(ids[0]).value = '1'; f.node(ids[1]).value = 'before'; if (modal === 'cal-modal') f.node('cal-start').value = '2026-10-15';
-  api.openDialog(modal, modal === 'cal-modal' ? 'calendar' : 'glossary'); api.dialogs[modal].updatedAt = 'old';
+  f.node(ids[0]).value = '1'; f.node(ids[1]).value = 'before';
+  api.openDialog(modal, 'glossary'); api.dialogs[modal].updatedAt = 'old';
   save(); const request = f.pending.shift(); assert.equal(JSON.parse(request.args[1].body).expected_updated_at, 'old');
   assert.equal(api.closeDialog(modal), false, 'save pending blocks modal close');
   f.node(ids[1]).value = 'typed during request'; request.resolve({ item: { id: 1, title: 'before', updated_at: 'new' } }); await flush();
@@ -139,4 +134,4 @@ const message = data => receive({ origin: 'https://synthetic.invalid', source: f
 message({ type: '__edit_mode_set_keys' }); message({ type: '__card_news_saving', id: 3 });
 assert.equal(card.api.closeEditor(), false); message({ type: '__edit_mode_set_keys' }); message({ type: '__card_news_saved', id: 3 }); assert.equal(card.api.state.dirty, true, 'older save cannot clear later iframe edits');
 assert.equal(card.api.closeEditor(), false); assert.equal(card.api.state.editingId, 3);
-console.log('content-internals-unit: dashboard/list/write guard/calendar/glossary/scorer rubric/history/WOSM/reference/card-news deferred contracts passed');
+console.log('content-internals-unit: dashboard/list/write guard/glossary/scorer rubric/history/WOSM/reference/card-news deferred contracts passed');

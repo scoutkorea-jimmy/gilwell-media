@@ -6,9 +6,9 @@
   'use strict';
 
   const GW = window.GW = {};
-  GW.APP_VERSION = '00.197.00';
-  GW.ADMIN_VERSION = '03.164.00';
-  GW.ASSET_VERSION = '20261102085846';
+  GW.APP_VERSION = '00.198.00';
+  GW.ADMIN_VERSION = '03.165.00';
+  GW.ASSET_VERSION = '20261108134243';
   GW.PALETTE = {
     scoutingPurple: '#622599',
     canvasWhite: '#FFFFFF',
@@ -66,7 +66,6 @@
     { key: 'nav.wosm', label: 'WOSM' },
     { key: 'nav.wosm_members', label: '세계연맹 회원국 현황' },
     { key: 'nav.people', label: '스카우트 인물' },
-    { key: 'nav.calendar', label: '캘린더' },
     { key: 'nav.glossary', label: '용어집' }
   ];
   GW.BOARD_COPY_PAGES = [
@@ -76,7 +75,6 @@
     { key: 'wosm', label: 'WOSM', note: '/wosm' },
     { key: 'people', label: '스카우트 인물', note: '/people' },
     { key: 'glossary', label: '용어집', note: '/glossary' },
-    { key: 'calendar', label: '캘린더', note: '/calendar' },
     { key: 'contributors', label: '도움을 주신 분들', note: '/contributors' },
     { key: 'wosm_members', label: '세계연맹 회원국 현황', note: '/wosm-members' },
   ];

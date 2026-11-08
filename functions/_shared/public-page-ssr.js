@@ -60,7 +60,7 @@ export async function loadPublicPage(env, url, key, originalRequest) {
     }
     return {parts, posts, page, status: page > 1 && !posts.length ? 404 : 200};
   }
-  if (['glossary', 'calendar', 'memorabilia'].includes(key)) {
+  if (['glossary', 'memorabilia'].includes(key)) {
     const rust = await queryRust({ env, request: { url: url.href } }, 'public-ssr', {key});
     if (!rust.ok) throw new Error('Rust public SSR failed');
     return rust.json();

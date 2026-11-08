@@ -8,17 +8,16 @@ import { onRequestGet as renderCardnews } from '../functions/card-news/[id].js';
 
 const ORIGIN = 'http://127.0.0.1:8791';
 const destinations = [
-  ['dashboard',null],['list',null],['write',null],['calendar',null],['card-news',null],['article-scorer',null],['ai-score-history',null],['glossary',null],
+  ['dashboard',null],['list',null],['write',null],['card-news',null],['article-scorer',null],['ai-score-history',null],['glossary',null],
   ['settings','wosm-members'],['settings','reference-sites'],['memorabilia',null],['memorabilia-categories',null],['memorabilia-events',null],['memorabilia-comments',null],
 ] as const;
-const cal = {id:1,title:'합성 일정 · 긴 행사명과 개최 지역을 함께 표시하는 검증 '.repeat(5),start_at:'2026-10-15',event_category:'KOR',event_tags:[],target_groups:[],related_posts:[],updated_at:'current'};
 const glossary = {id:1,term_ko:'가족 스카우트',term_en:'Family Scouting',term_fr:'',description_ko:'합성 용어 설명',bucket:'가',updated_at:'current'};
 const memo = {id:1,title_en:'Synthetic badge title '.repeat(8),title_ko:'합성 패치의 긴 제목과 상세 식별 정보 '.repeat(6),status:'draft',images:[],related_links:[],tags:[],country_codes:[],category_id:1,updated_at:'current'};
 const category = {id:1,slug:'badge',label_en:'LongSyntheticCategoryWithoutSpacesForResponsiveVerification',label_ko:'합성 패치 분류의 긴 이름',sort_order:0};
 const event = {id:1,slug:'synthetic',name_en:'Synthetic event',name_ko:'합성 행사',start_year:2026,start_month:10,end_year:2026,end_month:10,country_codes:[],category_id:1,usage_count:1};
 const data: Record<string,unknown> = {
   '/api/admin/operations': {scheduled_posts:[],draft_posts:[],recent_errors:[],recent_logins:[],recent_settings:[],deployments:[]},
-  '/api/calendar': {items:[cal]}, '/api/glossary': {items:[glossary]},
+  '/api/glossary': {items:[glossary]},
   '/api/settings/wosm-members': {items:[{country_ko:'대한민국',country_en:'Republic of Korea',extra_fields:{},sort_order:0}],columns:[{key:'country_names',label:'국가명',type:'country_names',system:true}],registered_count:0,revision:1},
   '/api/settings/reference-sites': {items:[{name:'합성 자료실',url:'https://example.invalid/'+ 'long-path/'.repeat(25),summary:'긴 설명을 줄바꿈하고 읽을 수 있는지 확인하는 합성 문장입니다. '.repeat(10),related_federations:['Asia-Pacific']}],revision:1},
   '/api/settings/score-rubric': {content:'합성 평가 기준',isDefault:true},
@@ -58,9 +57,9 @@ async function open(page: Page, role:'owner'|'member'='owner', populated=true) {
     }
     controls.writes.push(req.method()+' '+path);
     if(path==='/api/posts'&&req.method()==='POST'){controls.lastPost=req.postDataJSON();return route.fulfill({json:{post:{...SYNTHETIC_POST,...controls.lastPost,id:103,updated_at:'new'}}});}
-    if(['/api/calendar/1','/api/glossary/1','/api/settings/reference-sites','/api/settings/wosm-members','/api/memorabilia/1','/api/memorabilia/categories/1','/api/memorabilia/events/1','/api/admin/card-news/1'].includes(path)) {
+    if(['/api/glossary/1','/api/settings/reference-sites','/api/settings/wosm-members','/api/memorabilia/1','/api/memorabilia/categories/1','/api/memorabilia/events/1','/api/admin/card-news/1'].includes(path)) {
       const body=req.postDataJSON();
-      controls.deferred={path,body,release:async status=>{await route.fulfill({status,json:status===409?{error:path==='/api/memorabilia/1'?'version_mismatch':'다른 변경이 감지되었습니다',reason:'다른 변경이 감지되었습니다'}:path.includes('calendar')?{item:{...cal,...body,updated_at:'new'}}:path.includes('glossary')?{item:{...glossary,...body,updated_at:'new'}}:path.includes('reference-sites')?{items:body.items,revision:2}:path.includes('wosm-members')?{...data[path] as any,...body,revision:2}:path.includes('categories')?{item:{...category,...body}}:path.includes('events')?{ok:true,id:1}:{id:1,updated_at:'new'}}); controls.deferred=null;}};
+      controls.deferred={path,body,release:async status=>{await route.fulfill({status,json:status===409?{error:path==='/api/memorabilia/1'?'version_mismatch':'다른 변경이 감지되었습니다',reason:'다른 변경이 감지되었습니다'}:path.includes('glossary')?{item:{...glossary,...body,updated_at:'new'}}:path.includes('reference-sites')?{items:body.items,revision:2}:path.includes('wosm-members')?{...data[path] as any,...body,revision:2}:path.includes('categories')?{item:{...category,...body}}:path.includes('events')?{ok:true,id:1}:{id:1,updated_at:'new'}}); controls.deferred=null;}};
       return;
     }
     // Every mutation is synthetic. AI requests fail locally and are never paid.
@@ -120,9 +119,9 @@ test('real embedded React card-news editor reports dirty, pending, failed and sa
   expect(state.externalApi).toEqual([]);expect(state.pageErrors).toEqual([]);
 });
 
-test('calendar and glossary defer saves, preserve later typing and 409 input, dirty navigation cancels',async({page})=>{
+test('glossary defers saves, preserve later typing and 409 input, dirty navigation cancels',async({page})=>{
   const {state,controls}=await open(page);page.on('dialog',dialog=>dialog.dismiss());
-  for(const [panel,modal,input,save,invoke] of [['calendar','cal-modal','cal-title','cal-save-btn','_openCalEvent'],['glossary','glos-modal','glos-ko','glos-save-btn','_openGlosItem']]) {
+  for(const [panel,modal,input,save,invoke] of [['glossary','glos-modal','glos-ko','glos-save-btn','_openGlosItem']]) {
     await enter(page,panel);await page.evaluate(({invoke})=>(window as any).V3[invoke](1),{invoke});
     await page.locator('#'+input).fill('보내는 입력');await page.locator('#'+save).click();await expect.poll(()=>!!controls.deferred).toBe(true);
     await page.locator('#'+input).fill('저장 중 추가 입력');await page.locator('#'+modal+' .v3-modal-close').click();await expect(page.locator('#'+modal)).toBeVisible();
@@ -137,8 +136,6 @@ test('calendar and glossary defer saves, preserve later typing and 409 input, di
 test('all content read-only roles suppress mutations including dynamically rendered controls',async({page})=>{
   const {state,controls}=await open(page,'member');
   for(const [panel,section] of destinations.filter(([panel])=>panel!=='write')) await enter(page,panel,section);
-  await enter(page,'calendar');await page.evaluate(()=>(window as any).V3._openCalEvent(1));
-  await expect(page.locator('#cal-save-btn')).toBeHidden();await expect(page.locator('#cal-title')).toBeDisabled();await page.locator('#cal-modal-close').click();
   await enter(page,'glossary');await page.evaluate(()=>(window as any).V3._openGlosItem(1));await expect(page.locator('#glos-save-btn')).toBeHidden();await expect(page.locator('#glos-ko')).toBeDisabled();await page.locator('#glos-modal-close').click();
   await enter(page,'card-news');await expect(page.locator('[data-cn-edit]')).toHaveCount(0);await expect(page.locator('[data-cn-copy]')).toHaveCount(0);await expect(page.locator('[data-cn-del]')).toHaveCount(0);
   await enter(page,'memorabilia-comments');await expect(page.locator('#memoc-table-wrap button[data-action]')).toHaveCount(0);await expect(page.locator('#memoc-table-wrap')).toContainText('읽기 전용');
@@ -156,11 +153,11 @@ test('comments rejected prompt cancellation sends zero PATCH and scorer searches
   expect(controls.reads.some(url=>url.includes('limit=300'))).toBe(false);expect(state.pageErrors).toEqual([]);expect(state.externalApi).toEqual([]);
 });
 
-test('all 14 empty menus and failed reads remain distinct and retryable',async({page})=>{
+test('all remaining empty menus and failed reads remain distinct and retryable',async({page})=>{
   const {state,controls}=await open(page,'owner',false);
   for(const [panel,section] of destinations) await enter(page,panel,section);
   const failures = [
-    ['list',null,'/api/posts','#list-tbody'],['calendar',null,'/api/calendar','#cal-list'],['glossary',null,'/api/glossary','#glos-list'],
+    ['list',null,'/api/posts','#list-tbody'],['glossary',null,'/api/glossary','#glos-list'],
     ['card-news',null,'/api/admin/card-news','#cardnews-list-wrap'],['ai-score-history',null,'/api/admin/ai-score-history','#ai-score-history-list'],
     ['settings','wosm-members','/api/settings/wosm-members','#wosm-members-editor'],['settings','reference-sites','/api/settings/reference-sites','#reference-sites-saved-list'],
     ['memorabilia',null,'/api/memorabilia','#memo-list-wrap'],['memorabilia-categories',null,'/api/memorabilia/categories','#memo-cat-list-wrap'],

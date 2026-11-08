@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test';
 // 페이지 전용 CSS 분리(00.176.00) 회귀 가드.
 //
 // scripts/split_css.mjs 가 style.css 에서 "그 페이지에서만 쓰인다"고 확정된 규칙을
-// css/board.css · calendar.css · post.css · wosm-members.css · glossary.css ·
+// css/board.css · post.css · wosm-members.css · glossary.css ·
 // jamboree16.css 로 떼어냈다. 링크를 빠뜨리거나 잘못된 규칙을 옮기면 해당 페이지의
 // 레이아웃이 조용히 무너진다. 각 시트에서 실제로 온 속성값을 브라우저에서 확인한다.
 
@@ -19,8 +19,6 @@ type Case = {
 const CASES: Case[] = [
   { name: '게시판', path: '/korea', sheet: 'board.css', selector: '.board-grid',
     expect: { prop: 'display', not: 'block' } },
-  { name: '캘린더', path: '/calendar', sheet: 'calendar.css', selector: '.calendar-page',
-    expect: { prop: 'padding-top', not: '0px' } },
   { name: '용어집', path: '/glossary', sheet: 'glossary.css', selector: '.glossary-search-options',
     expect: { prop: 'display', not: 'inline' } },
   // .members-hero 가 이 시트에서 선언하는 건 margin-bottom 하나뿐이다.
@@ -61,7 +59,7 @@ test('홈은 페이지 전용 시트를 로드하지 않는다', async ({ page }
   const pageSheets: string[] = [];
   page.on('request', (req) => {
     const u = req.url();
-    for (const s of ['board.css', 'calendar.css', 'post.css', 'wosm-members.css', 'glossary.css', 'jamboree16.css']) {
+    for (const s of ['board.css', 'post.css', 'wosm-members.css', 'glossary.css', 'jamboree16.css']) {
       if (u.includes(`/css/${s}`)) pageSheets.push(s);
     }
   });

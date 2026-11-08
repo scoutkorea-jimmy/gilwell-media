@@ -63,16 +63,6 @@ test('workerd D1 enforces featured limit inside Rust transactions', async () => 
     const missingSetting=await send('tag-commit',{value:'new',expected:null,removed:['Camp']});
     assert.equal((await missingSetting.json()).changes,0);
     assert.equal(await db.prepare("SELECT value FROM settings WHERE key='tags'").first(),null);
-    await db.prepare('CREATE TABLE calendar_events(id INTEGER PRIMARY KEY,title TEXT NOT NULL,start_at TEXT NOT NULL)').run();
-    await db.prepare("INSERT INTO calendar_events(id,title,start_at) VALUES(1,'보존 일정','2027-01-01')").run();
-    assert.equal((await send('calendar-ensure',{})).status,200);
-    assert.equal((await send('calendar-ensure',{})).status,200);
-    const calendarColumns=(await db.prepare('PRAGMA table_info(calendar_events)').all()).results.map(row=>row.name);
-    assert(calendarColumns.includes('target_groups'));
-    assert(calendarColumns.includes('related_posts_json'));
-    const oldEvent=await db.prepare('SELECT title,event_category FROM calendar_events WHERE id=1').first();
-    assert.equal(oldEvent.title,'보존 일정');
-    assert.equal(oldEvent.event_category,'WOSM');
     await db.prepare('CREATE TABLE site_visits(id INTEGER PRIMARY KEY,viewer_key TEXT,path TEXT)').run();
     await db.prepare("INSERT INTO site_visits VALUES(1,'viewer','/article')").run();
     assert.equal((await send('site-visit-ensure',{})).status,200);

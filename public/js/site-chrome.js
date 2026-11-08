@@ -16,7 +16,6 @@
     'nav.wosm_members': { ko: '세계연맹 회원국 현황', en: 'WOSM Members Status' },
     'nav.people': { ko: '스카우트 인물', en: 'Scout People' },
     'nav.resources_group': { ko: '스카우트 자료실', en: 'Scout Resources' },
-    'nav.calendar': { ko: '캘린더', en: 'Calendar' },
     'nav.glossary': { ko: '용어집', en: 'Glossary' },
     'nav.memorabilia': { ko: '스카우트 기념품 도감', en: 'Scout Memorabilia' },
     'hero.eyebrow': { ko: 'BP미디어 · bpmedia.net', en: 'BPmedia · bpmedia.net' },
@@ -103,7 +102,6 @@
     'nav.wosm_members': true,
     'nav.people': true,
     'nav.resources_group': true,
-    'nav.calendar': true,
     'nav.glossary': true,
     'nav.memorabilia': true,
   };
@@ -131,7 +129,6 @@
     { href: '/wosm', key: 'nav.wosm' },
     { href: '/wosm-members', key: 'nav.wosm_members' },
     { href: '/people', key: 'nav.people' },
-    { href: '/calendar', key: 'nav.calendar' },
     { href: '/glossary', key: 'nav.glossary' },
     { href: '/memorabilia', key: 'nav.memorabilia' },
   ];
@@ -151,7 +148,6 @@
     { type: 'group', key: 'nav.resources_group', children: [
       { href: '/wosm-members', key: 'nav.wosm_members' },
       { href: '/glossary',     key: 'nav.glossary' },
-      { href: '/calendar',     key: 'nav.calendar' },
     ] },
     { type: 'link',  href: '/memorabilia',  key: 'nav.memorabilia' },
     { type: 'link',  href: '/contributors', key: 'nav.contributors' },
@@ -1217,7 +1213,7 @@
     '.mini-item', '.post-card', '.memo-card', '.search-result-card', '.home-memo-card',
     '.member-country-card', '.contributor-card', '.memo-related-card'
   ].join(',');
-  var RIPPLE_SKIP = '.hero-dot, .gw-chatbot-panel *, .calendar-day, .calendar-week-bar, .mh-search-btn';
+  var RIPPLE_SKIP = '.hero-dot, .gw-chatbot-panel *, .mh-search-btn';
 
   function ripple(event) {
     if (event.button !== undefined && event.button !== 0) return;
@@ -1248,7 +1244,7 @@
   }
   document.addEventListener('pointerdown', ripple, { passive: true, capture: true });
 
-  var ENTER_SEL = '.home-lead-card, .mini-item, .post-card, .article-card, .memo-card, .home-memo-card, .search-result-card, .member-country-card, .calendar-event-card, .contributor-card, .memo-related-card, .jam16-photo';
+  var ENTER_SEL = '.home-lead-card, .mini-item, .post-card, .article-card, .memo-card, .home-memo-card, .search-result-card, .member-country-card, .contributor-card, .memo-related-card, .jam16-photo';
   if (!('IntersectionObserver' in window)) return;
   var bootAt = Date.now();
   var seen = typeof WeakSet === 'function' ? new WeakSet() : null;

@@ -20,7 +20,6 @@ aliases: [Homepage Features Hub, 기능 허브]
 6. [[Post Detail Feature]] — 기사 상세, 수정, 관련글
 7. [[Search Feature]] — 검색 쿼리 + 결과 렌더
 8. [[Glossary Feature]] — 용어집
-9. [[Calendar Feature]] — 캘린더 일정
 10. [[WOSM Members Feature]] — 세계연맹 회원국 현황
 11. [[Admin Session Feature]] — 관리자 인증
 12. [[Admin Operations Feature]] — 관리자 운영 패널

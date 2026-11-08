@@ -183,7 +183,7 @@ test('empty write exits freely while real typing preserves the draft on cancelle
   const dialogs: string[] = [];
   page.on('dialog', async dialog => { dialogs.push(dialog.message()); await dialog.dismiss(); });
   await selectNavigation(page, 'write');
-  await selectNavigation(page, 'calendar');
+  await selectNavigation(page, 'glossary');
   expect(dialogs).toEqual([]);
   await selectNavigation(page, 'write');
   await page.locator('#w-title').fill('합성 검증용 미저장 제목');
@@ -241,8 +241,8 @@ test('deferred autosave retains newer edits, blocks publish and cancels a discar
   state.draftSaves[2].release();
   await expect.poll(() => state.reads.filter(path => path === '/api/admin/drafts').length).toBe(nextReadsBefore + 1);
   page.once('dialog', dialog => dialog.accept());
-  expect(await page.evaluate(() => (window as any).V3.showPanel('calendar'))).toBe(true);
-  await expect(page.locator('#panel-calendar')).toBeVisible();
+  expect(await page.evaluate(() => (window as any).V3.showPanel('glossary'))).toBe(true);
+  await expect(page.locator('#panel-glossary')).toBeVisible();
   await page.clock.runFor(5000);
   expect(state.draftSaves.length).toBe(3);
   expect(state.savedDraft?.title).toBe('합성 제목 C');
@@ -309,28 +309,28 @@ for (const width of [280, 390, 1280]) {
     await page.locator('#ai-score-history-refresh-btn').click();
     await expect(page.locator('#ai-score-history-list')).toContainText('불러오기 실패');
 
-    await selectNavigation(page, 'calendar');
-    await page.locator('#cal-new-btn').click();
-    await expect(page.locator('#cal-modal')).toBeVisible();
-    const modal = await page.locator('#cal-modal .v3-modal').boundingBox();
+    await selectNavigation(page, 'glossary');
+    await page.locator('#glos-new-btn').click();
+    await expect(page.locator('#glos-modal')).toBeVisible();
+    const modal = await page.locator('#glos-modal .v3-modal').boundingBox();
     expect(modal!.x).toBeGreaterThanOrEqual(0);
     expect(modal!.x + modal!.width).toBeLessThanOrEqual(width + 1);
-    expect(await page.locator('#cal-modal .v3-modal').evaluate(node => node.scrollTop)).toBe(0);
-    if (width === 390) await page.screenshot({ path: resolve(artifactDir, 'synthetic-calendar-dialog-390.png') });
+    expect(await page.locator('#glos-modal .v3-modal').evaluate(node => node.scrollTop)).toBe(0);
+    if (width === 390) await page.screenshot({ path: resolve(artifactDir, 'synthetic-glossary-dialog-390.png') });
     const writesBefore = state.writes.length;
-    await page.locator('#cal-save-btn').click();
-    await expect(page.locator('#cal-modal')).toBeVisible();
+    await page.locator('#glos-save-btn').click();
+    await expect(page.locator('#glos-modal')).toBeVisible();
     expect(state.writes.length).toBe(writesBefore);
-    if (width === 390) await page.screenshot({ path: resolve(artifactDir, 'synthetic-calendar-validation-dialog-390.png') });
-    await page.locator('#cal-modal-close').click();
-    await expect(page.locator('#cal-modal')).toBeHidden();
-    await assertRenderedBounds(page, `${width}px calendar after dialog`);
+    if (width === 390) await page.screenshot({ path: resolve(artifactDir, 'synthetic-glossary-validation-dialog-390.png') });
+    await page.locator('#glos-modal-close').click();
+    await expect(page.locator('#glos-modal')).toBeHidden();
+    await assertRenderedBounds(page, `${width}px glossary after dialog`);
     if (width === 390) {
       await selectNavigation(page, 'list');
       await page.screenshot({ path: resolve(artifactDir, 'synthetic-owner-list-empty-390.png') });
-      await selectNavigation(page, 'calendar');
-      await page.locator('#cal-new-btn').click();
-      expect(await page.locator('#cal-modal .v3-modal').evaluate(node => node.scrollTop)).toBe(0);
+      await selectNavigation(page, 'glossary');
+      await page.locator('#glos-new-btn').click();
+      expect(await page.locator('#glos-modal .v3-modal').evaluate(node => node.scrollTop)).toBe(0);
     }
     assertFixtureSafety(state);
   });

@@ -10,8 +10,8 @@
   <link rel="icon" type="image/svg+xml" href="/img/favicon.svg">
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png">
   <link rel="shortcut icon" href="/img/favicon-48.png">
-  <link rel="stylesheet" href="/css/admin-v3.css?v=20261102085846">
-  <link rel="stylesheet" href="/css/memorabilia.css?v=20261102085846">
+  <link rel="stylesheet" href="/css/admin-v3.css?v=20261108134243">
+  <link rel="stylesheet" href="/css/memorabilia.css?v=20261108134243">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H" crossorigin="anonymous" referrerpolicy="no-referrer">
   <style>
     #v3-login[style*="display: none"] { pointer-events: none !important; }
@@ -94,9 +94,9 @@
     <button class="v3-login-btn" id="v3-login-btn" type="button" onclick="window.__gwAdminFallbackLogin && window.__gwAdminFallbackLogin(event)">관리자 입장</button>
     <div class="v3-login-err" id="v3-login-err"></div>
     <div class="v3-login-ver">
-      Admin <span class="v3-ver-str v3-ver-admin admin-build-version">V03.164.00</span>
+      Admin <span class="v3-ver-str v3-ver-admin admin-build-version">V03.165.00</span>
       &nbsp;·&nbsp;
-      Site <span class="v3-ver-str v3-ver-site site-build-version">V00.197.00</span>
+      Site <span class="v3-ver-str v3-ver-site site-build-version">V00.198.00</span>
     </div>
   </div>
 </div>
@@ -109,8 +109,8 @@
   <!-- ── Sidebar ─────────────────────────────────────────── -->
   <aside id="v3-sidebar">
     <div id="v3-sidebar-logo">
-      <div class="v3-logo-mark">BP미디어 <span class="v3-logo-version v3-ver-str v3-ver-admin admin-build-version">V03.164.00</span></div>
-      <div class="v3-logo-sub">운영 콘솔 &nbsp;<span class="v3-logo-sub-site">Site <span class="v3-ver-site site-build-version">V00.197.00</span></span></div>
+      <div class="v3-logo-mark">BP미디어 <span class="v3-logo-version v3-ver-str v3-ver-admin admin-build-version">V03.165.00</span></div>
+      <div class="v3-logo-sub">운영 콘솔 &nbsp;<span class="v3-logo-sub-site">Site <span class="v3-ver-site site-build-version">V00.198.00</span></span></div>
     </div>
 
     <!-- ── 세션 타이머 ── -->
@@ -169,10 +169,6 @@
         <button class="v3-nav-item" data-panel="write" data-perm-slug="write" data-perm-action="view">
           <svg class="v3-nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M11 2 L14 5 L5 14 L1 15 L2 11 Z"/><line x1="9" y1="4" x2="12" y2="7"/></svg>
           새 글 작성
-        </button>
-        <button class="v3-nav-item" data-panel="calendar" data-perm-slug="calendar" data-perm-action="view">
-          <svg class="v3-nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="1" y="3" width="14" height="12" rx="1.5"/><line x1="5" y1="1" x2="5" y2="5"/><line x1="11" y1="1" x2="11" y2="5"/><line x1="1" y1="7" x2="15" y2="7"/></svg>
-          캘린더
         </button>
         <button class="v3-nav-item" data-panel="card-news" data-perm-slug="card-news" data-perm-action="view">
           <svg class="v3-nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="2" y="3" width="9" height="10" rx="1.5"/><path d="M13 5h1.5v8.5H6"/><line x1="4.5" y1="6" x2="8.5" y2="6"/><line x1="4.5" y1="8.5" x2="8.5" y2="8.5"/><line x1="4.5" y1="11" x2="7" y2="11"/></svg>
@@ -818,61 +814,6 @@
               <div id="write-history-list" class="v3-text-m v3-text-s"></div>
             </div>
           </div>
-        </div>
-      </div>
-
-      <!-- ════════════════════ CALENDAR ════════════════════ -->
-      <div class="v3-panel" id="panel-calendar">
-        <div class="v3-page-head">
-          <div class="v3-page-head-left">
-            <h1 class="v3-page-title">캘린더</h1>
-            <p class="v3-page-desc">일정 등록과 공개 캘린더 관리</p>
-          </div>
-          <button class="v3-btn v3-btn-primary" id="cal-new-btn" data-perm-slug="calendar" data-perm-action="write" hidden>
-            <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="2" x2="8" y2="14"/><line x1="2" y1="8" x2="14" y2="8"/></svg>
-            새 일정
-          </button>
-        </div>
-        <div class="v3-toolbar v3-toolbar-compact">
-          <div class="v3-toolbar-left">
-            <!-- 연도 -->
-            <select class="v3-filter-select" id="cal-filter-year">
-              <option value="all">전체 연도</option>
-            </select>
-            <!-- 지역 (홈페이지 CATEGORY_META 기준) -->
-            <select class="v3-filter-select" id="cal-filter-region">
-              <option value="all">전체 지역</option>
-              <option value="KOR">KOR · 한국</option>
-              <option value="APR">APR · 아태</option>
-              <option value="EUR">EUR · 유럽</option>
-              <option value="AFR">AFR · 아프리카</option>
-              <option value="ARB">ARB · 아랍</option>
-              <option value="IAR">IAR · 미주</option>
-              <option value="WOSM">WOSM · 세계</option>
-            </select>
-            <!-- 행사 상태 (홈페이지 기준) -->
-            <select class="v3-filter-select" id="cal-filter-status">
-              <option value="all">전체 상태</option>
-              <option value="upcoming">개최예정</option>
-              <option value="ongoing">진행중</option>
-              <option value="finished">행사종료</option>
-            </select>
-            <!-- 시작일 범위 -->
-            <label class="v3-content-filter-field" for="cal-filter-from"><span>시작일 이후</span><input class="v3-input" type="date" id="cal-filter-from" /></label>
-            <label class="v3-content-filter-field" for="cal-filter-to"><span>시작일 이전</span><input class="v3-input" type="date" id="cal-filter-to" /></label>
-            <button class="v3-btn v3-btn-ghost v3-btn-sm" id="cal-filter-reset">초기화</button>
-          </div>
-          <div class="v3-toolbar-right">
-            <!-- 정렬 -->
-            <select class="v3-filter-select" id="cal-sort">
-              <option value="asc">행사일 임박순 ↑</option>
-              <option value="desc">행사일 먼 순 ↓</option>
-            </select>
-            <span id="cal-count" class="v3-inline-count"></span>
-          </div>
-        </div>
-        <div class="v3-cal-list" id="cal-list">
-          <div class="v3-loading"><div class="v3-spinner"></div>로딩 중…</div>
         </div>
       </div>
 
@@ -3200,137 +3141,6 @@
   </div>
 </div>
 
-<!-- Calendar Modal -->
-<div class="v3-overlay" id="cal-modal" style="display:none;">
-  <div class="v3-modal v3-modal-lg v3-cal-modal">
-    <div class="v3-modal-head">
-      <h3 class="v3-modal-title" id="cal-modal-title">일정 추가</h3>
-      <button class="v3-modal-close" id="cal-modal-close" type="button">×</button>
-    </div>
-    <div class="v3-modal-body">
-      <input type="hidden" id="cal-id" />
-      <p class="v3-input-hint">행사명은 국문·원문 중 하나 이상, 시작 일은 필수입니다. 추가 자료와 지도 정보는 아래에서 펼쳐 입력하세요.</p>
-      <input type="hidden" id="cal-lat" />
-      <input type="hidden" id="cal-lng" />
-      <div class="v3-form-grid">
-        <div class="v3-form-group">
-          <label class="v3-label" for="cal-title">행사명(국문)</label>
-          <input class="v3-input" type="text" id="cal-title" maxlength="200" placeholder="예: 세계잼버리 준비 회의" />
-        </div>
-        <div class="v3-form-group">
-          <label class="v3-label" for="cal-title-original">행사명(원문) <span class="v3-label-opt">선택</span></label>
-          <input class="v3-input" type="text" id="cal-title-original" maxlength="200" placeholder="예: World Scout Jamboree Planning Meeting" />
-        </div>
-        <div class="v3-form-group">
-          <label class="v3-label" for="cal-desc">설명 <span class="v3-label-opt">선택</span></label>
-          <textarea class="v3-textarea" id="cal-desc" rows="3" placeholder="일정 상세 내용"></textarea>
-        </div>
-        <div class="v3-form-group">
-          <label class="v3-label" for="cal-cat">캘린더 분류</label>
-          <select class="v3-select" id="cal-cat">
-            <option value="KOR">KOR</option>
-            <option value="APR">APR</option>
-            <option value="EUR">EUR</option>
-            <option value="AFR">AFR</option>
-            <option value="ARB">ARB</option>
-            <option value="IAR">IAR</option>
-            <option value="WOSM">WOSM</option>
-          </select>
-        </div>
-        <div class="v3-form-grid v3-form-2col">
-          <div class="v3-form-group">
-            <label class="v3-label" for="cal-start">행사 시작 일</label>
-            <input class="v3-input" type="date" id="cal-start" />
-          </div>
-          <div class="v3-form-group">
-            <label class="v3-label v3-label-inline" for="cal-start-time">시작 시간 <span class="v3-label-opt">선택</span></label>
-            <label class="calendar-time-toggle" for="cal-start-time-enabled">
-              <input type="checkbox" id="cal-start-time-enabled">
-              <span>입력</span>
-            </label>
-            <input class="v3-input" type="time" id="cal-start-time" disabled />
-          </div>
-        </div>
-        <div class="v3-form-grid v3-form-2col">
-          <div class="v3-form-group">
-            <label class="v3-label" for="cal-end">행사 종료 일 <span class="v3-label-opt">선택</span></label>
-            <input class="v3-input" type="date" id="cal-end" />
-          </div>
-          <div class="v3-form-group">
-            <label class="v3-label v3-label-inline" for="cal-end-time">종료 시간 <span class="v3-label-opt">선택</span></label>
-            <label class="calendar-time-toggle" for="cal-end-time-enabled">
-              <input type="checkbox" id="cal-end-time-enabled">
-              <span>입력</span>
-            </label>
-            <input class="v3-input" type="time" id="cal-end-time" disabled />
-          </div>
-        </div>
-        <section class="v3-content-advanced v3-form-span-full">
-          <div>추가 정보 · 국가, 대상, 태그, 관련 기사, 지도</div>
-        <div class="v3-form-grid v3-form-2col">
-          <div class="v3-form-group">
-            <label class="v3-label" for="cal-country">국가</label>
-            <input class="v3-input" type="text" id="cal-country" placeholder="Korea, Japan…" />
-          </div>
-          <div class="v3-form-group v3-cal-target-wrap" id="cal-target-wrap" style="display:none;">
-            <label class="v3-label">대상 <span class="v3-label-opt">KOR 전용</span></label>
-            <div id="cal-target-groups" class="calendar-tag-presets v3-cal-chip-list"></div>
-          </div>
-        </div>
-        <div class="v3-form-group v3-form-span-full">
-          <label class="v3-label" for="cal-tags-input">행사 태그</label>
-          <div class="calendar-tags-editor">
-            <div id="cal-tags-list" class="calendar-tags-list"></div>
-            <div id="cal-tag-presets" class="calendar-tag-presets v3-cal-chip-list"></div>
-            <div class="calendar-tags-controls">
-              <input class="v3-input" type="text" id="cal-tags-input" maxlength="40" placeholder="태그 입력 후 추가" />
-              <button class="v3-btn v3-btn-outline v3-btn-sm" type="button" id="cal-tags-add-btn">태그 추가</button>
-            </div>
-          </div>
-        </div>
-        <div class="v3-form-group v3-form-span-full">
-          <label class="v3-label" for="cal-link">외부 링크 <span class="v3-label-opt">선택</span></label>
-          <input class="v3-input" type="url" id="cal-link" placeholder="https://…" />
-        </div>
-        <div class="v3-form-group v3-form-span-full">
-          <label class="v3-label" for="cal-related-query">관련 기사 연결</label>
-          <input class="v3-input" type="text" id="cal-related-query" maxlength="120" placeholder="기사 제목 검색" />
-          <div id="cal-related-selected" class="calendar-related-post-selected"></div>
-          <div id="cal-related-results" class="calendar-related-post-results"></div>
-        </div>
-        <div class="v3-form-group v3-form-span-full">
-          <label class="v3-label" for="cal-geo-query">지도 검색</label>
-          <div class="calendar-geo-search">
-            <input class="v3-input" type="text" id="cal-geo-query" maxlength="200" placeholder="행사 주소나 장소명을 검색하세요" />
-            <button class="v3-btn v3-btn-outline v3-btn-sm" type="button" id="cal-geo-search-btn">지도 검색</button>
-          </div>
-          <div id="cal-geo-results" class="calendar-related-post-results"></div>
-          <div id="cal-geo-preview" class="v3-cal-map-preview" style="display:none;">
-            <div id="cal-geo-status" class="v3-input-hint"></div>
-            <iframe id="cal-geo-frame" class="v3-cal-map-frame" loading="lazy"></iframe>
-          </div>
-        </div>
-        <div class="v3-form-grid v3-form-2col">
-          <div class="v3-form-group">
-            <label class="v3-label" for="cal-loc-name">장소명 <span class="v3-label-opt">선택</span></label>
-            <input class="v3-input" type="text" id="cal-loc-name" placeholder="한국스카우트회관" />
-          </div>
-          <div class="v3-form-group">
-            <label class="v3-label" for="cal-loc-addr">주소 <span class="v3-label-opt">선택</span></label>
-            <input class="v3-input" type="text" id="cal-loc-addr" />
-          </div>
-        </div>
-        </section>
-      </div>
-    </div>
-    <div class="v3-modal-foot">
-      <button class="v3-btn v3-btn-danger v3-btn-sm" id="cal-delete-btn" type="button" data-content-write style="display:none;">삭제</button>
-      <button class="v3-btn v3-btn-outline v3-btn-sm" id="cal-modal-cancel" type="button">취소</button>
-      <button class="v3-btn v3-btn-primary v3-btn-sm" id="cal-save-btn" type="button" data-content-write>저장</button>
-    </div>
-  </div>
-</div>
-
 <!-- Glossary Modal -->
 <div class="v3-overlay" id="glos-modal" style="display:none;">
   <div class="v3-modal">
@@ -3530,14 +3340,14 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" integrity="sha384-vtjasyidUo0kW94K5MXDXntzOJpQgBKXmE7e2Ga4LG0skTTLeBi97eFAXsqewJjw" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha384-cxOPjt7s7Iz04uaHJceBmS+qpjv2JkIHNVcuOrM+YHwZOmJGBXI00mdUXEq65HTH" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.4/dist/purify.min.js" integrity="sha384-eEu5CTj3qGvu9PdJuS+YlkNi7d2XxQROAFYOr59zgObtlcux1ae1Il3u7jvdCSWu" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-<script src="/js/main.js?v=20261102085846"></script>
-<script src="/js/shared-country-name-ko.js?v=20261102085846"></script>
-<script src="/js/memorabilia-shared.js?v=20261102085846"></script>
-<script src="/js/admin-v3.js?v=20261102085846"></script>
-<script src="/js/admin-account.js?v=20261102085846"></script>
-<script src="/js/admin-memorabilia.js?v=20261102085846"></script>
-<script src="/js/admin-cardnews.js?v=20261102085846"></script>
-<script src="/js/admin-memorabilia-comments.js?v=20261102085846"></script>
+<script src="/js/main.js?v=20261108134243"></script>
+<script src="/js/shared-country-name-ko.js?v=20261108134243"></script>
+<script src="/js/memorabilia-shared.js?v=20261108134243"></script>
+<script src="/js/admin-v3.js?v=20261108134243"></script>
+<script src="/js/admin-account.js?v=20261108134243"></script>
+<script src="/js/admin-memorabilia.js?v=20261108134243"></script>
+<script src="/js/admin-cardnews.js?v=20261108134243"></script>
+<script src="/js/admin-memorabilia-comments.js?v=20261108134243"></script>
 <script>
   (function () {
     function toggleReveal(visible) {

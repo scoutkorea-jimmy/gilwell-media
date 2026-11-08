@@ -16,7 +16,6 @@ export const DEFAULT_NAV_LABELS = Object.freeze({
   'nav.resources_group': { ko: '스카우트 자료실', en: 'Scout Resources' },
   'nav.wosm_members': { ko: '세계연맹 회원국 현황', en: 'WOSM Members Status' },
   'nav.glossary': { ko: '용어집', en: 'Glossary' },
-  'nav.calendar': { ko: '캘린더', en: 'Calendar' },
   'nav.memorabilia': { ko: '스카우트 기념품 도감', en: 'Scout Memorabilia' },
 });
 
@@ -36,7 +35,6 @@ export const NAV_STRUCTURE = Object.freeze([
   { type: 'group',                        key: 'nav.resources_group', children: [
     { href: '/wosm-members',              key: 'nav.wosm_members' },
     { href: '/glossary',                  key: 'nav.glossary' },
-    { href: '/calendar',                  key: 'nav.calendar' },
   ] },
   { type: 'link',  href: '/memorabilia',  key: 'nav.memorabilia' },
   { type: 'link',  href: '/contributors', key: 'nav.contributors' },
@@ -53,7 +51,6 @@ export const NAV_ITEMS = Object.freeze([
   { href: '/wosm', key: 'nav.wosm' },
   { href: '/wosm-members', key: 'nav.wosm_members' },
   { href: '/people', key: 'nav.people' },
-  { href: '/calendar', key: 'nav.calendar' },
   { href: '/glossary', key: 'nav.glossary' },
   { href: '/memorabilia', key: 'nav.memorabilia' },
 ]);
@@ -69,7 +66,6 @@ export const SITE_PAGE_KEY_BY_PATH = Object.freeze({
   '/people': 'people',
   '/glossary': 'glossary',
   '/contributors': 'contributors',
-  '/calendar': 'calendar',
   '/memorabilia': 'memorabilia',
   '/search': 'search',
   '/editorial-policy': 'editorial_policy',
@@ -94,8 +90,6 @@ export const SITE_PATH_TITLE_FALLBACKS = Object.freeze({
   '/wosm-members.html': DEFAULT_NAV_LABELS['nav.wosm_members'].ko,
   '/people': DEFAULT_NAV_LABELS['nav.people'].ko,
   '/people.html': DEFAULT_NAV_LABELS['nav.people'].ko,
-  '/calendar': DEFAULT_NAV_LABELS['nav.calendar'].ko,
-  '/calendar.html': DEFAULT_NAV_LABELS['nav.calendar'].ko,
   '/glossary': DEFAULT_NAV_LABELS['nav.glossary'].ko,
   '/glossary.html': DEFAULT_NAV_LABELS['nav.glossary'].ko,
   '/memorabilia': DEFAULT_NAV_LABELS['nav.memorabilia'].ko,

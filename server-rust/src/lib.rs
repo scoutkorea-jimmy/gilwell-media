@@ -6,7 +6,6 @@ mod admin_users;
 mod analytics;
 mod analytics_response;
 mod banners;
-mod calendar;
 mod card_excerpt;
 mod card_news;
 mod card_news_shell;
@@ -218,9 +217,6 @@ pub async fn fetch(mut req: Request, env: Env, _ctx: Context) -> Result<Response
             analytics::operations(&mut req, &env).await
         }
         (Method::Post, "/__internal/naver-report-parse") => naver_report::parse(&mut req).await,
-        (Method::Post, "/__internal/calendar-copy-normalize") => {
-            settings::calendar_copy(&mut req).await
-        }
         (Method::Post, "/__internal/search-report-validate") => {
             search_report_validate::validate(&mut req).await
         }
@@ -447,9 +443,6 @@ pub async fn fetch(mut req: Request, env: Env, _ctx: Context) -> Result<Response
         (Method::Post, "/__internal/tag-settings-normalize") => {
             settings::tag_settings_normalize(&mut req).await
         }
-        (Method::Post, "/__internal/calendar-tags-normalize") => {
-            settings::calendar_tags_normalize(&mut req).await
-        }
         (Method::Post, "/__internal/reference-sites-normalize") => {
             settings::reference_sites_normalize(&mut req).await
         }
@@ -506,19 +499,6 @@ pub async fn fetch(mut req: Request, env: Env, _ctx: Context) -> Result<Response
         (Method::Post, "/__internal/post-engagement-record") => {
             analytics::record_engagement(&mut req, &env).await
         }
-        (Method::Post, "/__internal/calendar-list") => calendar::list(&env).await,
-        (Method::Post, "/__internal/calendar-dates") => calendar::dates(&mut req).await,
-        (Method::Post, "/__internal/calendar-normalize") => {
-            calendar::normalize_input(&mut req).await
-        }
-        (Method::Post, "/__internal/calendar-ensure") => calendar::ensure(&env).await,
-        (Method::Post, "/__internal/calendar-create") => {
-            calendar::write(&mut req, &env, false).await
-        }
-        (Method::Post, "/__internal/calendar-update") => {
-            calendar::write(&mut req, &env, true).await
-        }
-        (Method::Post, "/__internal/calendar-delete") => calendar::delete(&mut req, &env).await,
         (Method::Post, "/__internal/article-export") => {
             post_routes::article_export(&mut req, &env).await
         }

@@ -25,7 +25,6 @@ async function buildSitemapResponse({ request, env }, headOnly) {
     { path: '/wosm', priority: '0.9', category: 'wosm' },
     { path: '/wosm-members', priority: '0.8', category: null },
     { path: '/people', priority: '0.9', category: 'people' },
-    { path: '/calendar', priority: '0.8', category: null },
     { path: '/glossary', priority: '0.9', category: 'glossary' },
     { path: '/glossary-raw', priority: '0.8', category: 'glossary' },
     // nav 1차 메뉴인데 사이트맵에서 빠져 있었다 (2026-08-26 점검).

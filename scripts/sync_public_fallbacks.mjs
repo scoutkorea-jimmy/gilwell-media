@@ -21,7 +21,6 @@ const PUBLIC_HTML_FILES = [
   'glossary.html',
   'contributors.html',
   'search.html',
-  'calendar.html',
 ];
 
 const NAV_FALLBACK_BY_HREF = new Map(

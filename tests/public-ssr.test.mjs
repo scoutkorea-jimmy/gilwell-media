@@ -16,8 +16,6 @@ assert.doesNotMatch(glossary.parts.glossary,/<script>/);
 assert.equal(applyPublicParts('<!-- PUBLIC_SSR:glossary -->',glossary),glossary.parts.glossary);
 await loadPublicPage(env,new URL('https://bpmedia.net/memorabilia'),'memorabilia');
 assert.ok(queries.some(sql => sql.includes("status = 'public'")));
-await loadPublicPage(env,new URL('https://bpmedia.net/calendar'),'calendar');
-assert.ok(queries.some(sql => sql.includes('p.published = 1')));
 console.log('PASS public SSR escaping, public-only data and crawlable pagination');
 const { publicAuthor, isPlaceholderAuthor } = await import('../functions/_shared/post-author.js');
 assert.equal(publicAuthor('불러오는 중…'),'BP미디어');

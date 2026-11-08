@@ -35,7 +35,7 @@ KMS 디자인 탭은 이 인벤토리를 시각적으로 보여주는 시작 장
 ### Material 3 Editorial 공통 레이어 (2026-09-25)
 
 - 구현: `public/css/m3-site.css`를 공개 HTML 및 SSR 표면의 마지막 스타일시트로 로드한다.
-- 범위: 홈, 최신 글, 게시판 4종, 세계잼버리 특별관, 회원국, 용어집, 기여자, 소개, 검색, 캘린더, 기념품 도감, 정책, 404/500, 기사·기획·용어집 SSR.
+- 범위: 홈, 최신 글, 게시판 4종, 세계잼버리 특별관, 회원국, 용어집, 기여자, 소개, 검색, 기념품 도감, 정책, 404/500, 기사·기획·용어집 SSR.
 - 제외: Admin, KMS, Dreampath. 각 제품의 규칙과 시각 계약을 공개 사이트 레이어에 섞지 않는다.
 - Foundation: Scouting Purple seed 기반 M3 color roles, type scale, shape, elevation, state layer, motion.
 - Components: filled/tonal/outlined controls, chips, search field, elevated/filled cards, dialogs, feedback states.

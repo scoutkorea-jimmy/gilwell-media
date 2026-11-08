@@ -207,16 +207,6 @@
           response: '{ "layout": "grid", "pageSize": 20 }',
         },
         {
-          method: 'GET|PUT', path: '/api/settings/calendar-copy', auth: 'PUT only',
-          summary: '캘린더 페이지 UI 텍스트 (키-값 쌍)',
-          response: '{ "page_title": "일정 캘린더", "map_title": "캘린더 지도", … }',
-        },
-        {
-          method: 'GET|PUT', path: '/api/settings/calendar-tags', auth: 'PUT only',
-          summary: '캘린더 이벤트 태그 목록',
-          response: '{ "items": ["훈련", "대회", "세미나"] }',
-        },
-        {
           method: 'GET|PUT', path: '/api/settings/feature-definition', auth: 'PUT only',
           summary: 'KMS 기능 정의서 Markdown 원문 저장소',
           request: 'PUT: { "content": "# BP미디어 기능정의서…", "if_revision": number }',
@@ -284,26 +274,6 @@
           summary: '관리자 카드 스튜디오의 인증된 미리보기 프레임',
           response: 'HTML — Cache-Control: private, no-store; X-Frame-Options: SAMEORIGIN',
           notes: 'card-news 보기 권한 필요. CSP frame-ancestors self로 같은 출처의 관리자 화면에서만 포함한다. 정적 페이지의 프레임 차단을 해제하지 않는다.',
-        },
-      ],
-    },
-    {
-      id: 'calendar',
-      label: '캘린더 (Calendar)',
-      desc: '스카우트 행사 일정 조회 및 관리. DB 테이블: calendar_events.',
-      endpoints: [
-        {
-          method: 'GET', path: '/api/calendar', auth: false,
-          summary: '전체 캘린더 이벤트 목록 조회',
-          response: '{ "items": CalendarEvent[] }',
-          notes: 'CalendarEvent: { id, title, title_original, event_category, start_at, end_at, location_name, latitude, longitude, country_name, description, link_url, event_tags[], target_groups[], related_posts[] }',
-        },
-        {
-          method: 'PUT', path: '/api/calendar/:id', auth: true,
-          summary: '캘린더 이벤트 수정 (관리자 전용)',
-          request: '{ title, title_original, event_category, start_at, end_at,\n  location_name, location_address, latitude, longitude, country_name,\n  description, link_url, event_tags[], target_groups[], related_posts[] }',
-          response: '수정된 CalendarEvent 객체',
-          notes: 'event_category: KOR | APR | EUR | AFR | ARB | IAR | WOSM\ntarget_groups (KOR 전용): 비버|컵|스카우트|벤처|로버|지도자|범스카우트|훈련교수회',
         },
       ],
     },

@@ -1,3 +1,4 @@
+import { retiredCalendarResponse } from './_shared/retired-calendar.js';
 import { BOARD_KEYS, loadPublicPage, applyPublicParts, pageNumber } from './_shared/public-page-ssr.js';
 import { buildShareMetaBlockRust, getResolvedShareImage, getSitePageKey, loadSiteMeta, getPageSeoDescriptor } from './_shared/site-meta.js';
 import { POPULAR_WEIGHTS } from './_shared/home-rails.js';
@@ -9,8 +10,10 @@ import { queryRust, singleSetting } from './_shared/rust-server.js';
 const PUBLIC_DATE_EXPR = "CASE WHEN publish_at IS NOT NULL AND trim(publish_at) <> '' THEN CASE WHEN instr(publish_at, 'Z') > 0 OR instr(substr(publish_at, 11), '+') > 0 THEN datetime(replace(publish_at, 'T', ' '), '+9 hours') ELSE datetime(replace(publish_at, 'T', ' ')) END ELSE CASE WHEN created_at IS NOT NULL AND trim(created_at) <> '' THEN datetime(replace(created_at, 'T', ' '), '+9 hours') ELSE NULL END END";
 
 export async function onRequest(context) {
-  const { request, env } = context;
+  const { request } = context;
   const url = new URL(request.url);
+  if (/^\/calendar(?:\.html)?\/?$/.test(url.pathname)) return retiredCalendarResponse(request);
+  const { env } = context;
   const pageKey = getSitePageKey(url.pathname);
 
   // 자동 게시 트리거는 (1) HTML 페이지 요청에만 (2) waitUntil 로 비차단 실행.
@@ -110,7 +113,6 @@ function getCanonicalPath(pathname, pageKey) {
   if (pageKey === 'wosm_members') return '/wosm-members';
   if (pageKey === 'people') return '/people';
   if (pageKey === 'glossary') return '/glossary';
-  if (pageKey === 'calendar') return '/calendar';
   // 도감은 `/memorabilia/<id>` 딥링크가 전부 같은 셸을 반환하므로 대표 URL 하나로 통합.
   if (pageKey === 'memorabilia') return '/memorabilia';
   if (pageKey === 'privacy') return '/privacy';

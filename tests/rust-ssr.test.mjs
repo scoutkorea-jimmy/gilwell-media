@@ -131,7 +131,7 @@ test('combined Rust feature page matches separate rendering in one invocation',a
 test('Rust canonical paths and page titles preserve legacy output and failure fallback',async()=>{
   const context={env:{},request:{url:'https://synthetic.invalid/'}};
   const fail=async()=>new Response('',{status:503});
-  for(const [path,key,page] of [['/','home',1],['/index.html','home',1],['/korea.html','korea',1],['/korea','korea',2],['/latest','latest',100000],['/memorabilia/abc','memorabilia',4],['/wosm-members.html','wosm_members',2],['/privacy.html','privacy',1],['/search','search',2],['/foo','other',3],...['apr','wosm','people','glossary','calendar','contributors','about','editorial_policy','jamboree16'].map(key=>['/'+key,key,1])]) {
+  for(const [path,key,page] of [['/','home',1],['/index.html','home',1],['/korea.html','korea',1],['/korea','korea',2],['/latest','latest',100000],['/memorabilia/abc','memorabilia',4],['/wosm-members.html','wosm_members',2],['/privacy.html','privacy',1],['/search','search',2],['/foo','other',3],...['apr','wosm','people','glossary','contributors','about','editorial_policy','jamboree16'].map(key=>['/'+key,key,1])]) {
     const expected=await resolveCanonical(context,path,key,page,'제목 & 안전',fail);
     const actual=await resolveCanonical(context,path,key,page,'제목 & 안전');
     assert.deepEqual(actual,expected);
@@ -146,7 +146,7 @@ test('Rust canonical paths and page titles preserve legacy output and failure fa
 
 test('Rust share meta rendering matches legacy HTML and safely falls back',async()=>{
   const context={env:{},request:{url:'https://synthetic.invalid/'}};
-  for(const pageKey of ['home','latest','korea','apr','wosm','people','search','glossary','memorabilia','wosm_members','calendar','contributors','about','editorial_policy','jamboree16','topics','privacy']) for(const imageUrl of ['', 'https://synthetic.invalid/img/og-default.png?x=1','https://synthetic.invalid/picture.webp','https://synthetic.invalid/x.jpeg','data:image/png;base64,abc','data:image/','data:image/;x','   ']) {
+  for(const pageKey of ['home','latest','korea','apr','wosm','people','search','glossary','memorabilia','wosm_members','contributors','about','editorial_policy','jamboree16','topics','privacy']) for(const imageUrl of ['', 'https://synthetic.invalid/img/og-default.png?x=1','https://synthetic.invalid/picture.webp','https://synthetic.invalid/x.jpeg','data:image/png;base64,abc','data:image/','data:image/;x','   ']) {
     const options={pageKey,title:'제목 <안전> & "확인"',description:'</script> & 설명',url:'https://synthetic.invalid/?x=1&y=2',imageUrl,googleVerification:'<검증>',naverVerification:'test',itemListElements:[{url:'https://synthetic.invalid/post/1',title:'<기사>'}]};
     const expected=buildShareMetaBlock(options);
     let rendered=false;
@@ -168,14 +168,13 @@ test('Rust share meta rendering matches legacy HTML and safely falls back',async
 });
 
 test('public SSR preserves escaping, ordering and public-only links and records',async()=>{
-  for(const key of ['glossary','calendar','memorabilia']) {
+  for(const key of ['glossary','memorabilia']) {
     const before=fixture(),after=fixture();
     try {
       const url=new URL('https://synthetic.invalid/'+key);
       const prior=await original(before.env,url,key),next=await actual(after.env,url,key);
       assert.deepEqual(next,prior,key);
       const text=Object.values(next.parts).join('');
-      if(key==='calendar') {assert.match(text,/&lt;행사&gt;/);assert.doesNotMatch(text,/href="\/post\/2"/);}
       if(key==='memorabilia') {assert.match(text,/%ED%95%9C%EA%B8%80%20slug/);assert.doesNotMatch(text,/비공개/);}
       if(key==='glossary') assert.match(text,/&lt;설명&gt; &amp; 안전/);
     } finally {before.sqlite.close();after.sqlite.close();}
@@ -183,7 +182,7 @@ test('public SSR preserves escaping, ordering and public-only links and records'
 });
 
 test('public SSR reports D1 failures to the existing page fallback',async()=>{
-  for(const key of ['glossary','calendar','memorabilia']) {
+  for(const key of ['glossary','memorabilia']) {
     const f=fixture(true);
     try {await assert.rejects(actual(f.env,new URL('https://synthetic.invalid/'+key),key));}
     finally {f.sqlite.close();}
@@ -192,7 +191,7 @@ test('public SSR reports D1 failures to the existing page fallback',async()=>{
 
 
 test('public SSR preserves empty-state output',async()=>{
-  for(const [key,table] of [['glossary','glossary_terms'],['calendar','calendar_events'],['memorabilia','memorabilia']]) {
+  for(const [key,table] of [['glossary','glossary_terms'],['memorabilia','memorabilia']]) {
     const before=fixture(),after=fixture();
     try {
       for(const f of [before,after]) f.sqlite.exec(`DELETE FROM ${table}`);

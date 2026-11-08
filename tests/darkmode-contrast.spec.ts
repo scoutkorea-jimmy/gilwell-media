@@ -158,7 +158,7 @@ for (const scheme of ['light', 'dark'] as const) {
     // OS 를 다크로 두고도 라이트가 기본으로 유지되는지 함께 검증한다.
     test.use({ colorScheme: 'dark' });
 
-    for (const p of ['/', '/korea', '/apr', '/wosm', '/people', '/glossary', '/wosm-members', '/calendar', '/search?q=%EC%8A%A4%EC%B9%B4%EC%9A%B0%ED%8A%B8', '/post/6', '/about']) {
+    for (const p of ['/', '/korea', '/apr', '/wosm', '/people', '/glossary', '/wosm-members', '/search?q=%EC%8A%A4%EC%B9%B4%EC%9A%B0%ED%8A%B8', '/post/6', '/about']) {
       test(`${p} 의 텍스트가 대비 기준을 만족한다`, async ({ page }) => {
         await useLocalCss(page);
         // networkidle 은 쓰지 않는다 — 홈 레일이 주기적으로 재조회해 idle 이 오지 않는다.
