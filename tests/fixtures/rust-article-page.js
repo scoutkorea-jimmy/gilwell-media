@@ -237,12 +237,12 @@ export async function onRequestGet({ params, env, request }) {
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png"/>
   <link rel="apple-touch-icon" href="/img/logo.png"/>
   <link rel="shortcut icon" href="/img/favicon-48.png"/>
-  <link rel="stylesheet" href="/css/style.css?v=20261121152132">
-  <link rel="stylesheet" href="/css/post.css?v=20261121152132">
-  <link rel="stylesheet" href="/css/topics.css?v=20261121152132">
-  <link rel="stylesheet" href="/css/chatbot.css?v=20261121152132">
-  <link rel="stylesheet" href="/css/dark-mode.css?v=20261121152132">
-  <link rel="stylesheet" href="/css/m3-site.css?v=20261121152132">
+  <link rel="stylesheet" href="/css/style.css?v=20261121162046">
+  <link rel="stylesheet" href="/css/post.css?v=20261121162046">
+  <link rel="stylesheet" href="/css/topics.css?v=20261121162046">
+  <link rel="stylesheet" href="/css/chatbot.css?v=20261121162046">
+  <link rel="stylesheet" href="/css/dark-mode.css?v=20261121162046">
+  <link rel="stylesheet" href="/css/m3-site.css?v=20261121162046">
 </head>
 <body class="post-page">
   <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
@@ -322,10 +322,7 @@ export async function onRequestGet({ params, env, request }) {
 
   <!-- ── ARTICLE ── -->
   <main id="main-content" class="post-page-wrap">
-    <div class="post-page-layout">
-
-      <!-- ── Main Content ── -->
-      <div class="post-page-main">
+    <div class="post-page-main">
 
         <div class="post-page-meta">
           <a href="/${cat.key}" data-action="history-back" class="post-page-back-link">← 이전 화면</a>
@@ -345,6 +342,7 @@ export async function onRequestGet({ params, env, request }) {
         <div class="post-page-share" role="group" aria-label="기사 도구">
           <button id="post-share-btn" class="post-action-btn" type="button">공유하기</button>
           <button id="post-edit-btn" class="post-action-btn" type="button">수정하기</button>
+          <a class="post-continue-jump" href="#post-continue-heading">다른 기사 읽기 <span aria-hidden="true">↓</span></a>
         </div>
 
         ${post.image_url ? renderPostCover(post, id, title) : ''}
@@ -370,14 +368,6 @@ export async function onRequestGet({ params, env, request }) {
 
         ${renderRelatedPostsSection(relatedPosts, navLabels)}
 
-      </div>
-
-      <!-- ── Sidebar ── -->
-      <div class="post-reader-rail">
-        <a class="post-continue-jump" href="#post-continue-heading">다른 기사 읽기 <span aria-hidden="true">↓</span></a>
-
-      </div>
-
     </div>
   </main>
 
@@ -395,7 +385,7 @@ export async function onRequestGet({ params, env, request }) {
         <h4>관리자</h4>
         <a href="/admin.html">관리자 페이지 →</a>
         <a href="/glossary-raw">용어집 RAW로 보기 →</a>
-        <p class="footer-build">Site <span class="site-build-version">V00.200.09</span> · Admin <span class="admin-build-version">V03.165.00</span></p>
+        <p class="footer-build">Site <span class="site-build-version">V00.200.10</span> · Admin <span class="admin-build-version">V03.165.00</span></p>
       </div>
       <div class="footer-bottom">
         <p data-i18n="footer.copyright">© 2026 ${SITE_BRAND_NAME} · ${SITE_DOMAIN_LABEL}</p>
@@ -625,10 +615,10 @@ export async function onRequestGet({ params, env, request }) {
 
   <script>window.GW_BOOT_RUNTIME=${serializeForScript(publicRuntime)};window.GW_KAKAO_JS_KEY=${serializeForScript(String(publicRuntime.kakao_js_key || ''))};window.GW_POST_BOOT=${serializeForScript({ editPostId: id, sharePostUrl: postUrl, sharePostTitle: titleText, sharePostSubtitle: subtitleText, editSeed: JSON.parse(editSeed), visibleTags })};</script>
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.4/dist/purify.min.js" integrity="sha384-eEu5CTj3qGvu9PdJuS+YlkNi7d2XxQROAFYOr59zgObtlcux1ae1Il3u7jvdCSWu" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-  <script src="/js/main.js?v=20261121152132"></script>
-  <script src="/js/site-chrome.js?v=20261121152132"></script>
-  <script src="/js/chatbot.js?v=20261121152132" defer></script>
-  <script src="/js/post-page.js?v=20261121152132"></script>
+  <script src="/js/main.js?v=20261121162046"></script>
+  <script src="/js/site-chrome.js?v=20261121162046"></script>
+  <script src="/js/chatbot.js?v=20261121162046" defer></script>
+  <script src="/js/post-page.js?v=20261121162046"></script>
 </body>
 </html>`;
 

@@ -290,7 +290,6 @@
   };
 
   Board.prototype._buildCard = function (post, idx) {
-    var self    = this;
     var cat     = GW.CATEGORIES[post.category] || GW.CATEGORIES.korea;
     var card    = document.createElement('article');
     card.className = 'post-card' + (post.image_url ? ' has-thumb' : ' no-thumb');
@@ -308,8 +307,6 @@
     }
 
     var isNew = GW.isPostNew(post);
-    var safeTitle = GW.escapeHtml(post.title || '기사');
-    var shareHtml = '<div class="post-card-share-row"><button class="post-share-btn post-card-share-btn" type="button" aria-label="' + safeTitle + ' 공유하기" data-share-url="/post/' + post.id + '" data-share-title="' + safeTitle + '">공유하기</button></div>';
     var kickerHtml = (isNew ? '<span class="post-kicker post-kicker-new">NEW</span>' : '') +
       (post.tag ? post.tag.split(',').map(function(t){ t = t.trim(); return t ? '<span class="post-kicker ' + cat.tagClass + '-kicker">' + GW.escapeHtml(t) + '</span>' : ''; }).join('') : '');
     // 게시판 카테고리 태그(채움)와 글머리 태그(아웃라인) 동시 표시
@@ -329,7 +326,6 @@
         subtitleHtml +
         '<p class="post-card-excerpt">' + GW.escapeHtml(GW.truncate(post.content || '', 140)) + '</p>' +
         '<div class="post-card-footer">' +
-          shareHtml +
           '<div class="post-card-engagement">공감 ' + GW.formatNumber(post.likes || 0) + '</div>' +
           '<div class="post-card-meta">' +
             GW.renderPostDateLabel(post) +
@@ -349,22 +345,9 @@
     }
 
     card.addEventListener('click', function (e) {
-      if (e.target.classList.contains('post-permalink')) return;
-      if (e.target.classList.contains('post-card-share-btn')) return;
-      if (e.target.closest('.post-card-title-link')) return; // 제목 링크가 직접 이동 처리
+      if (e.target.closest('a[href]')) return;
       window.location.href = '/post/' + post.id;
     });
-    var shareBtn = card.querySelector('.post-card-share-btn');
-    if (shareBtn) {
-      shareBtn.addEventListener('click', function (e) {
-        e.stopPropagation();
-        var url = new URL('/post/' + post.id, window.location.origin).toString();
-        GW.sharePostLink({ url: url, title: post.title, text: post.title })
-          .catch(function (err) {
-            GW.showToast((err && err.message) || '링크 공유에 실패했습니다', 'error');
-          });
-      });
-    }
     return card;
   };
 

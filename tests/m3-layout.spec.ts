@@ -377,22 +377,24 @@ test('홈 섹션은 같은 축에 정렬되고 기사 본문은 넓은 화면에
     return { wrap: read('.home-wrapper'), hero: read('.site-hero-slider'), content: read('.home-priority') };
   });
 
-  await page.goto('/post/385');
-  const post = await page.evaluate(() => {
-    const read = (selector: string) => {
-      const rect = (document.querySelector(selector) as HTMLElement).getBoundingClientRect();
-      return { x: Math.round(rect.x), width: Math.round(rect.width) };
-    };
-    return { wrap: read('.post-page-wrap'), main: read('.post-page-main'), body: read('.post-page-body') };
-  });
-
   expect(home.wrap).toEqual(home.hero);
   expect(home.content).toEqual(home.hero);
-  expect(post.wrap.width).toBeLessThan(home.wrap.width);
-  expect(post.wrap.x * 2 + post.wrap.width).toBe(1920);
-  expect(post.body.width).toBe(760);
-  expect(post.body.x).toBe(post.main.x);
-  expect(post.body.width).toBe(post.main.width);
+  expect(home.wrap.width).toBeGreaterThan(1600);
+
+  await page.goto('/post/385');
+  const body = page.locator('.post-page-body');
+  const jump = page.locator('.post-page-share .post-continue-jump');
+  for (const width of [390, 900, 901, 1920]) {
+    await page.setViewportSize({ width, height: 1000 });
+    const bounds = await body.boundingBox();
+    expect(bounds!.width).toBe(Math.min(width - 40, 760));
+    expect(Math.abs(2 * bounds!.x + bounds!.width - width)).toBeLessThanOrEqual(1);
+    if (width > 900) await expect(jump).toBeVisible();
+    else await expect(jump).toBeHidden();
+  }
+  await jump.press('Enter');
+  await expect(page).toHaveURL(/#post-continue-heading$/);
+  await expect(page.locator('#post-continue-heading')).toBeInViewport();
 });
 
 test('태블릿 홈은 목록 역할을 2열로 합쳐 불필요한 세로 길이를 만들지 않는다', async ({ page }) => {
@@ -492,7 +494,8 @@ test('게시판 D-day는 별도 박스가 아닌 배경 오브제로 표시된�
 });
 
 test('게시판 필터는 히어로·검색·카드와 같은 축의 한 기능 surface를 사용한다', async ({ page }) => {
-  for (const viewport of [{ width: 390, height: 844 }, { width: 1440, height: 1000 }]) {
+  for (const [width, columns] of [[390, 1], [1440, 2], [1920, 3], [3008, 4]]) {
+    const viewport = { width, height: 1000 };
     await page.setViewportSize(viewport);
     await page.goto('/latest');
     if (viewport.width === 390) {
@@ -518,11 +521,15 @@ test('게시판 필터는 히어로·검색·카드와 같은 축의 한 기능 
       };
       return {
         hero: read('.board-banner'), sort: read('.board-sort-bar'), tags: read('.tag-filter-bar'),
-        search: read('.board-search-wrap'), grid: read('.board-grid'),
+        search: read('.board-search-wrap'), grid: read('.board-grid'), mast: read('.masthead-top'),
+        columns: getComputedStyle(document.querySelector('.board-grid')!).gridTemplateColumns.split(' ').length,
       };
     });
 
-    for (const item of [layout.sort, layout.tags, layout.search, layout.grid]) {
+    expect(layout.columns).toBe(columns);
+    const aligned = [layout.sort, layout.tags, layout.search, layout.grid];
+    if (width >= 1440) aligned.push(layout.mast);
+    for (const item of aligned) {
       expect(item.x).toBe(layout.hero.x);
       expect(item.width).toBe(layout.hero.width);
     }
@@ -555,26 +562,24 @@ test('게시판 정렬 용어는 의미를 설명하고 모바일 주제 행은 
   expect(tagRow.touchAction).toBe('pan-x');
 });
 
-test('게시판 카드의 공유 버튼은 카드 안에서 외곽선과 48px 누름 영역을 갖는다', async ({ page }) => {
-  await page.setViewportSize({ width: 1440, height: 1000 });
-  await page.goto('/latest');
-  const shareButton = page.locator('.post-card-share-btn').first();
-  await expect(shareButton).toBeVisible({ timeout: 10_000 });
-  const result = await shareButton.evaluate((share) => {
-    const card = share.closest('.post-card') as HTMLElement;
-    const cardRect = card.getBoundingClientRect();
-    const body = card.querySelector('.post-card-body') as HTMLElement;
-    const bodyRect = body.getBoundingClientRect();
-    const style = getComputedStyle(share);
-    return {
-      bodyBottom: Math.round(bodyRect.bottom), cardBottom: Math.round(cardRect.bottom),
-      shareBackground: style.backgroundColor, shareBorder: style.borderTopWidth, shareHeight: share.getBoundingClientRect().height,
-    };
-  });
-  expect(result.bodyBottom).toBeLessThanOrEqual(result.cardBottom);
-  expect(result.shareBackground).not.toBe('rgba(0, 0, 0, 0)');
-  expect(result.shareBorder).toBe('1px');
-  expect(result.shareHeight).toBeGreaterThanOrEqual(48);
+test('기사 목록 카드는 제목으로 바로 이동하고 개별 공유 동작은 본문에서 제공한다', async ({ page }) => {
+  for (const path of ['/korea', '/latest', '/jamboree16']) {
+    await page.goto(path, { waitUntil: 'domcontentloaded' });
+    const grid = page.locator('main .board-grid');
+    const first = grid.locator('.post-card').first();
+    await expect(first.locator('.post-card-meta')).toBeVisible();
+    await expect(first.locator('.post-card-title-link')).toHaveAttribute('href', /^\/post\/\d+$/);
+    await expect(grid.getByRole('button', { name: /공유/ })).toHaveCount(0);
+    await expect(grid.locator('.post-card-share-row, [data-share-url]')).toHaveCount(0);
+  }
+
+  const title = page.locator('#jam16-grid .post-card-title-link').first();
+  const path = await title.getAttribute('href');
+  await title.focus();
+  await page.keyboard.press('Enter');
+  await expect(page).toHaveURL(new URL(path!, page.url()).href);
+  await expect(page.locator('.post-page-share #post-share-btn')).toBeVisible();
+  await expect(page.locator('.post-page-share #post-edit-btn')).toBeVisible();
 });
 
 test('홈 섹션 제목과 장문 페이지 장은 별도 카드로 중첩되지 않는다', async ({ page }) => {

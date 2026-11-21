@@ -83,7 +83,6 @@
         '</div>' +
         summaryHtml +
         '<div class="post-card-footer">' +
-          '<div class="post-card-share-row"><button class="post-share-btn post-card-share-btn" type="button" aria-label="' + GW.escapeHtml(post.title || '기사') + ' 공유하기">공유하기</button></div>' +
           '<div class="post-card-engagement">공감 ' + GW.formatNumber(post.likes || 0) + '</div>' +
           '<div class="post-card-meta">' +
             GW.renderPostDateLabel(post) +
@@ -103,23 +102,9 @@
     }
 
     card.addEventListener('click', function (e) {
-      if (e.target.classList.contains('post-permalink')) return;
-      if (e.target.classList.contains('post-card-share-btn')) return;
-      if (e.target.closest('.post-card-title-link')) return;
+      if (e.target.closest('a[href]')) return;
       window.location.href = '/post/' + post.id;
     });
-
-    var shareBtn = card.querySelector('.post-card-share-btn');
-    if (shareBtn) {
-      shareBtn.addEventListener('click', function (e) {
-        e.stopPropagation();
-        var url = new URL('/post/' + post.id, window.location.origin).toString();
-        GW.sharePostLink({ url: url, title: post.title, text: post.title })
-          .catch(function (err) {
-            GW.showToast((err && err.message) || '링크 공유에 실패했습니다', 'error');
-          });
-      });
-    }
     return card;
   }
 

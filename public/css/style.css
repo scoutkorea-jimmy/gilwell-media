@@ -2571,13 +2571,6 @@ body[data-home-bootstrap] .lang-btn:hover {
   gap: var(--gap-tight);
 }
 
-.post-card-share-row {
-  display: flex;
-  align-items: center;
-  gap: var(--gap-tight);
-  padding-top: 2px;
-}
-
 .post-card-meta {
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size:      var(--fs-micro);
@@ -5346,8 +5339,7 @@ footer a:hover { color: var(--on-accent); }
   flex: 1 1 180px;
 }
 
-.post-action-btn,
-.post-share-btn {
+.post-action-btn {
   display:        inline-flex;
   align-items:    center;
   justify-content: center;
@@ -5366,8 +5358,7 @@ footer a:hover { color: var(--on-accent); }
   white-space:    nowrap;
 }
 
-.post-action-btn:hover,
-.post-share-btn:hover {
+.post-action-btn:hover {
   border-color: var(--accent-border);
   color: var(--accent-text);
 }
@@ -7198,7 +7189,6 @@ body.wosm-members-page #main-content {
   }
 }
 
-.post-card-share-btn:active,
 .board-more-btn:active,
 .board-page-btn:active,
 .bw-btn:active,
@@ -7209,7 +7199,6 @@ body.wosm-members-page #main-content {
 
 .post-card,
 .card,
-.post-card-share-btn,
 .board-more-btn,
 .board-page-btn,
 .bw-btn {
@@ -7222,7 +7211,6 @@ body.wosm-members-page #main-content {
 @media (prefers-reduced-motion: reduce) {
   .post-card:active,
   .card:active,
-  .post-card-share-btn:active,
   .board-more-btn:active,
   .board-page-btn:active,
   .bw-btn:active,
@@ -7286,7 +7274,6 @@ body.wosm-members-page #main-content {
   .skip-link,
   .hero-pause-btn,
   .home-section-more,
-  .post-share-btn,
   .post-action-btn,
   .mobile-compact-brand {
     min-height: 44px;
