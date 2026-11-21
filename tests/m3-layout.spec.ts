@@ -46,6 +46,7 @@ test('홈 카드 역할은 대표 surface와 tonal 목록으로 명확히 분리
       const style = getComputedStyle(el);
       return {
         top: Math.round(rect.top),
+        bottom: Math.round(rect.bottom),
         borderTop: style.borderTopWidth,
         borderLeft: style.borderLeftWidth,
         borderBottom: style.borderBottomWidth,
@@ -61,6 +62,7 @@ test('홈 카드 역할은 대표 surface와 tonal 목록으로 명확히 분리
   });
 
   expect(result.lead.top).toBe(result.rail.top);
+  expect(Math.abs(result.lead.bottom - result.rail.bottom)).toBeLessThanOrEqual(1);
   expect(result.lead.borderTop).toBe('0px');
   expect(result.lead.background).not.toBe('rgba(0, 0, 0, 0)');
   expect(result.rail.borderTop).toBe('0px');
@@ -69,6 +71,11 @@ test('홈 카드 역할은 대표 surface와 tonal 목록으로 명확히 분리
   expect(result.row.borderTop).toBe('0px');
   expect(result.row.borderLeft).toBe('0px');
   expect(result.row.borderBottom).toBe('0px');
+  const newsCards = page.locator('.home-2col .home-rail-card');
+  for (const card of await newsCards.all()) await expect(card.locator('.mini-item').first()).toBeAttached();
+  const edges = await newsCards.evaluateAll(cards => cards.map(card => card.getBoundingClientRect().bottom));
+  expect(edges).toHaveLength(2);
+  expect(Math.abs(edges[0] - edges[1])).toBeLessThanOrEqual(1);
 });
 
 for (const width of [390, 820, 900, 1440]) {
@@ -379,16 +386,31 @@ test('홈 섹션은 같은 축에 정렬되고 기사 본문은 넓은 화면에
 
   expect(home.wrap).toEqual(home.hero);
   expect(home.content).toEqual(home.hero);
-  expect(home.wrap.width).toBeGreaterThan(1600);
+  expect(home.wrap.width).toBe(1280);
 
   await page.goto('/post/385');
-  const body = page.locator('.post-page-body');
   const jump = page.locator('.post-page-share .post-continue-jump');
-  for (const width of [390, 900, 901, 1920]) {
+  for (const width of [390, 820, 900, 901, 1440, 1920, 3008]) {
     await page.setViewportSize({ width, height: 1000 });
-    const bounds = await body.boundingBox();
-    expect(bounds!.width).toBe(Math.min(width - 40, 760));
-    expect(Math.abs(2 * bounds!.x + bounds!.width - width)).toBeLessThanOrEqual(1);
+    const frame = await page.locator('.post-page-wrap').boundingBox();
+    const ticker = await page.locator('.ticker').boundingBox();
+    const pageWidth = Math.min(width - (width <= 599 ? 32 : 48), 1280);
+    expect(frame!.width).toBe(pageWidth);
+    expect(frame!.x).toBe((width - pageWidth) / 2);
+    if (ticker) {
+      for (const box of [ticker, await page.locator('.masthead-top').boundingBox(), await page.locator('.nav[data-managed-nav]').boundingBox()]) {
+        expect(box!.x).toBe(frame!.x);
+        expect(box!.width).toBe(frame!.width);
+      }
+    }
+    for (const selector of ['.post-page-title', '.post-reader-meta', '.post-page-share', '.post-page-cover-frame', '.post-content-gallery', '.post-related-posts']) {
+      const box = await page.locator(selector).boundingBox();
+      expect(box!.x, selector).toBe(frame!.x);
+      expect(box!.width, selector).toBe(frame!.width);
+    }
+    const paragraph = await page.locator('.post-page-body > p:not(.post-image-caption)').first().boundingBox();
+    expect(paragraph!.width).toBe(Math.min(pageWidth, 760));
+    expect(Math.abs(2 * paragraph!.x + paragraph!.width - width)).toBeLessThanOrEqual(1);
     if (width > 900) await expect(jump).toBeVisible();
     else await expect(jump).toBeHidden();
   }
@@ -494,7 +516,7 @@ test('게시판 D-day는 별도 박스가 아닌 배경 오브제로 표시된�
 });
 
 test('게시판 필터는 히어로·검색·카드와 같은 축의 한 기능 surface를 사용한다', async ({ page }) => {
-  for (const [width, columns] of [[390, 1], [1440, 2], [1920, 3], [3008, 4]]) {
+  for (const [width, columns] of [[390, 1], [1440, 2], [1920, 2], [3008, 2]]) {
     const viewport = { width, height: 1000 };
     await page.setViewportSize(viewport);
     await page.goto('/latest');
@@ -527,6 +549,7 @@ test('게시판 필터는 히어로·검색·카드와 같은 축의 한 기능 
     });
 
     expect(layout.columns).toBe(columns);
+    if (width >= 1440) expect(layout.grid.width).toBe(1280);
     const aligned = [layout.sort, layout.tags, layout.search, layout.grid];
     if (width >= 1440) aligned.push(layout.mast);
     for (const item of aligned) {
