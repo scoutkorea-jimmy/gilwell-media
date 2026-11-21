@@ -374,13 +374,6 @@
       banner.dataset.bound = '1';
     }
 
-    function setSectionInteractiveState(el, active) {
-      if (!el) return;
-      el.hidden = !active;
-      el.setAttribute('aria-hidden', active ? 'false' : 'true');
-      if ('inert' in el) el.inert = !active;
-    }
-
     var clampDebounceTimer = null;
     function debouncedClampMiniLabels() {
       if (clampDebounceTimer !== null) clearTimeout(clampDebounceTimer);
@@ -388,12 +381,6 @@
         clampDebounceTimer = null;
         helpers.clampMiniLabelRows();
       }, 150);
-    }
-
-    function syncResponsiveSectionVisibility() {
-      var isMobile = window.matchMedia('(max-width: 900px)').matches;
-      setSectionInteractiveState(document.querySelector('.home-mobile-stack'), isMobile);
-      setSectionInteractiveState(document.querySelector('.home-2col'), !isMobile);
     }
 
     function startHomeRefreshTimer() {
@@ -589,7 +576,6 @@
       });
       bindRuntimeIssueReporting();
       bindHomeStatusActions();
-      syncResponsiveSectionVisibility();
 
       lastHomeRequestAt = Date.now();
 
@@ -630,7 +616,6 @@
       initPullToRefresh();
       startFreshnessTick();
       loadMemorabiliaRail();
-      window.addEventListener('resize', syncResponsiveSectionVisibility);
       // 폭이 바뀌면 칩이 몇 행을 차지하는지도 바뀌므로 클램프를 다시 계산한다.
       // 리사이즈는 모바일 URL 바 여닫힘만으로도 연속 발생하므로 디바운스한다.
       window.addEventListener('resize', debouncedClampMiniLabels);

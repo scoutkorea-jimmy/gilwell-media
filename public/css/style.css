@@ -291,7 +291,6 @@ strong, b,
   --home-grid-gap:       24px;
   --home-block-bottom:   72px;
   --home-title-gap:      14px;
-  --home-priority-height: 640px;
 
   /* Gradients */
   --gradient-ink: linear-gradient(90deg, var(--black) 0%, #191717 52%, #221d1c 100%);
@@ -2000,31 +1999,16 @@ body[data-home-bootstrap] .lang-btn:hover {
   margin-top: 0;
 }
 
-.home-priority-side {
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-}
-
 .home-priority-main,
 .home-priority-side,
 .home-priority-latest {
   display: flex;
   flex-direction: column;
-}
-
-.home-priority-main,
-.home-priority-side {
-  /* 고정 height 대신 min-height 바닥값만 — 최신 소식 제목이 2줄로 늘어나면
-     영역이 콘텐츠에 맞춰 자연스럽게 커지고, 부모 grid 의 align-items:stretch 가
-     메인 스토리를 같은 높이로 늘려 맞춘다. (이전 height:640px 는 콘텐츠가
-     넘칠 때 하단 RSS/검색 버튼이 오버플로우했다.) */
-  min-height: var(--home-priority-height);
-}
-
-.home-priority-latest {
-  flex: 1;
   min-height: 0;
+}
+
+.home-priority-side {
+  align-self: start;
 }
 
 .home-rail-card {
@@ -2034,20 +2018,6 @@ body[data-home-bootstrap] .lang-btn:hover {
   border-radius: var(--radius-lg);    /* radius 통일 자동 주입 */
   background: linear-gradient(135deg, rgba(255,255,255,0.98), rgba(244,241,236,0.96));
   padding: var(--gap-card) 18px;
-  /* height:100% 는 .home-priority-latest 컨텍스트(flex:1 부모) 에서만 필요.
-     home-2col/home-3col 의 일반 grid 컬럼에서는 부모 stretch + 100% 가
-     무한 stretch 와 컬럼간 정렬 불일치를 일으켜 layout 깨짐 → 컨텍스트 한정. */
-}
-.home-priority-latest .home-rail-card {
-  height: 100%;
-}
-
-#latest-list {
-  flex: 1;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
 }
 
 #latest-list .mini-item {
@@ -2081,7 +2051,6 @@ body[data-home-bootstrap] .lang-btn:hover {
   display: flex;
   gap: var(--gap-element);
   flex-wrap: wrap;
-  margin-top: auto;
   padding-top: var(--gap-card);
   border-top: 1px solid var(--border);
 }
@@ -4667,13 +4636,10 @@ footer a:hover { color: var(--on-accent); }
   .content-wrapper    { grid-template-columns: 1fr; }
   .sidebar            { border-top: 2px solid var(--border-strong); }
   .home-priority      { grid-template-columns: 1fr; gap: var(--home-section-gap, 18px); margin-bottom: max(28px, var(--home-block-bottom, 36px)); }
-  .home-priority-main,
-  .home-priority-side { height: auto; min-height: 0; }
   .home-lead-card     { grid-template-columns: 1fr; }
   .home-lead-thumb-link { height: auto; }
   .home-lead-thumb    { height: auto; min-height: 220px; }
   .home-rail-card     { min-height: auto; }
-  #latest-list        { display: flex; }
 
   .article-card       { padding: var(--gap-section); }
   .section-header     { padding: var(--gap-section) var(--gap-section) var(--gap-card); }

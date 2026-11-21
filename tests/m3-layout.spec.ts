@@ -34,7 +34,7 @@ test('홈 카드 역할은 대표 surface와 tonal 목록으로 명확히 분리
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto('/');
   const lead = page.locator('.home-lead-card');
-  await expect(page.locator('#latest-list .mini-item').first()).toBeAttached();
+  await expect(page.locator('#latest-list .mini-item-overlay').first()).toBeAttached();
   await lead.scrollIntoViewIfNeeded();
   await expect(lead).toHaveCSS('transform', 'none');
   await expect(lead).toHaveCSS('opacity', '1');
@@ -46,7 +46,6 @@ test('홈 카드 역할은 대표 surface와 tonal 목록으로 명확히 분리
       const style = getComputedStyle(el);
       return {
         top: Math.round(rect.top),
-        bottom: Math.round(rect.bottom),
         borderTop: style.borderTopWidth,
         borderLeft: style.borderLeftWidth,
         borderBottom: style.borderBottomWidth,
@@ -62,7 +61,6 @@ test('홈 카드 역할은 대표 surface와 tonal 목록으로 명확히 분리
   });
 
   expect(result.lead.top).toBe(result.rail.top);
-  expect(Math.abs(result.lead.bottom - result.rail.bottom)).toBeLessThanOrEqual(1);
   expect(result.lead.borderTop).toBe('0px');
   expect(result.lead.background).not.toBe('rgba(0, 0, 0, 0)');
   expect(result.rail.borderTop).toBe('0px');
@@ -71,6 +69,48 @@ test('홈 카드 역할은 대표 surface와 tonal 목록으로 명확히 분리
   expect(result.row.borderTop).toBe('0px');
   expect(result.row.borderLeft).toBe('0px');
   expect(result.row.borderBottom).toBe('0px');
+});
+
+for (const width of [390, 820, 900, 1440]) {
+  test(`홈 최신 기사 바로 아래에 RSS 행이 표시된다 (${width}px)`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto('/');
+    const card = page.locator('.home-priority-latest .home-rail-card');
+    await expect(card.locator('#latest-list .mini-item-overlay').first()).toBeAttached();
+    await expect(card.getByRole('link', { name: 'RSS 구독' })).toBeVisible();
+    const lastStory = card.locator('#latest-list .mini-item').last();
+    await lastStory.scrollIntoViewIfNeeded();
+    await expect(lastStory).toHaveCSS('transform', 'none');
+    await expect(lastStory).toHaveCSS('opacity', '1');
+    await page.evaluate(() => document.fonts.ready);
+
+    const gaps = await card.evaluate((el) => {
+      const lastStory = el.querySelector('#latest-list .mini-item:last-child')!.getBoundingClientRect();
+      const actions = el.querySelector('.home-rail-actions')!.getBoundingClientRect();
+      const rss = el.querySelector('a[href="/rss.xml"]')!.getBoundingClientRect();
+      return {
+        '마지막 기사와 RSS 링크': rss.top - lastStory.bottom,
+        'RSS 행과 카드 하단': el.getBoundingClientRect().bottom - actions.bottom,
+      };
+    });
+    for (const [label, gap] of Object.entries(gaps)) {
+      expect(gap, label).toBeGreaterThanOrEqual(0);
+      expect(gap, label).toBeLessThanOrEqual(16);
+    }
+  });
+}
+
+test('태블릿 홈에서 인기 기사 제목을 누르면 본문이 열린다', async ({ page }) => {
+  await page.setViewportSize({ width: 820, height: 900 });
+  await page.goto('/');
+  const list = page.locator(':is(#popular-list, #popular-list-mobile):visible');
+  await expect(list.locator('.mini-item-overlay').first()).toBeAttached();
+  const article = list.locator('h4 a').first();
+  const path = await article.getAttribute('href');
+  expect(path).toMatch(/^\/post\/\d+$/);
+  await article.click();
+  await expect(page).toHaveURL(path!);
+  await expect(page.locator('h1.post-page-title')).toBeVisible();
 });
 
 test('홈 리뉴얼 감사 인사는 M3 대화상자로 뜨고 닫기·오늘 그만 보기를 지킨다', async ({ page }) => {
