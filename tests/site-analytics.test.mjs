@@ -110,6 +110,10 @@ test('public analytics opt-in, reader flow, search privacy, opt-out', async () =
       tagRequests++;
       return route.fulfill({ contentType: 'text/javascript', body: '/* synthetic Google tag */' });
     });
+    const otherCookieNames = ['_ga', '_ga_ANOTHER123', 'bpmedia_ga_ANOTHER123'];
+    await context.addCookies([...otherCookieNames, '_ga_' + measurementId.slice(2)].map(name =>
+      ({ name, value: 'synthetic', url: origin })));
+    const cookieNames = async () => (await context.cookies(origin)).map(cookie => cookie.name).sort();
     const page = await context.newPage();
     const events = () => page.evaluate(() => Array.from(window.dataLayer || [], (item) => Array.from(item))
       .filter(([kind]) => kind === 'event').map(([, name, params]) => ({ name, params })));
@@ -117,6 +121,7 @@ test('public analytics opt-in, reader flow, search privacy, opt-out', async () =
     await page.getByRole('button', { name: '허용 안 함' }).click();
     await page.keyboard.press('Tab');
     assert.equal(await page.locator(':focus').textContent(), '첫 기사');
+    assert.deepEqual(await cookieNames(), otherCookieNames.slice().sort());
     assert.equal(tagRequests, 0);
     assert.deepEqual(await events(), []);
     await page.reload();
@@ -130,6 +135,9 @@ test('public analytics opt-in, reader flow, search privacy, opt-out', async () =
     let seen = await events();
     const initialization = await page.evaluate(() => Array.from(window.dataLayer || [], args => Array.from(args)));
     assert.equal(initialization[0][0], 'set');
+    assert.equal(initialization[0][1].cookie_prefix, 'bpmedia');
+    assert.equal(initialization[0][1].cookie_expires, 60 * 24 * 60 * 60);
+    assert.equal(initialization[0][1].cookie_update, false);
     assert.equal(initialization[0][1].page_location, origin + '/');
     assert.equal(initialization.find(([command]) => command === 'config')[2].send_page_view, true);
     assert.equal(seen.filter(({ name }) => name === 'page_view').length, 0);
@@ -170,12 +178,23 @@ test('public analytics opt-in, reader flow, search privacy, opt-out', async () =
     await page.reload();
     assert.ok(!(await events()).some(({ name }) => name === 'search_article_view'));
 
+    await context.addCookies(['bpmedia_ga', 'bpmedia_ga_' + measurementId.slice(2)].map(name =>
+      ({ name, value: 'synthetic', url: origin })));
     await page.goto(origin + '/search?q=noresults');
     await page.waitForFunction(() => Array.from(window.dataLayer || []).some((args) => args[2]?.result_state === 'zero_results'));
     await page.getByRole('button', { name: '방문 분석 설정' }).click();
     await page.getByRole('button', { name: '허용 안 함' }).click();
     assert.equal(await page.evaluate((id) => window['ga-disable-' + id], measurementId), true);
     assert.equal(await page.evaluate((key) => localStorage.getItem(key), consentKey), 'denied');
+    assert.deepEqual(await cookieNames(), otherCookieNames.slice().sort());
+    const otherStream = '_ga_ANOTHER123';
+    await context.clearCookies({ name: otherStream });
+    await context.addCookies([{ name: '_ga_' + measurementId.slice(2), value: 'synthetic', url: origin }]);
+    await page.reload();
+    assert.deepEqual(await cookieNames(), ['bpmedia_ga_ANOTHER123']);
+    await context.addCookies([{ name: '_ga', value: 'unattributed', url: origin }]);
+    await page.reload();
+    assert.deepEqual(await cookieNames(), ['_ga', 'bpmedia_ga_ANOTHER123']);
     const before = tagRequests;
     await page.goto(origin);
     assert.equal(tagRequests, before);

@@ -9,6 +9,7 @@
   const searchLinkKey = 'bpmedia-analytics-search-link';
   const homeLinkKey = 'bpmedia-analytics-home-link';
   const disableKey = 'ga-disable-' + measurementId;
+  const streamCookie = '_ga_' + measurementId.slice(2);
   const articlePath = /^\/post\/([1-9]\d*)\/?$/;
   const path = location.pathname.replace(/\/$/, '') || '/';
   const isHome = path === '/' || path === '/index.html';
@@ -174,6 +175,9 @@
     if (!started) {
       // The tag can emit its initial pageview before the destination config is applied.
       tag('set', {
+        cookie_prefix: 'bpmedia',
+        cookie_expires: 60 * 24 * 60 * 60,
+        cookie_update: false,
         page_location: pageLocation,
         page_referrer: pageReferrer,
         page_title: pageType === 'search' ? 'BP미디어 검색' : document.title,
@@ -189,9 +193,6 @@
         send_page_view: true,
         allow_google_signals: false,
         allow_ad_personalization_signals: false,
-        cookie_prefix: 'bpmedia',
-        cookie_expires: 60 * 24 * 60 * 60,
-        cookie_update: false,
         page_location: pageLocation,
         page_referrer: pageReferrer,
         page_title: pageType === 'search' ? 'BP미디어 검색' : document.title,
@@ -208,9 +209,20 @@
     watchVisibleContent();
   }
 
+  function clearCookie(name) {
+    document.cookie = name + '=; Max-Age=0; Path=/';
+    document.cookie = name + '=; Max-Age=0; Path=/; Domain=' + location.hostname;
+  }
+
   function applyConsent(choice) {
     if (choice === consent) return;
     consent = choice;
+    // An older tag used shared GA cookie names. Only remove the pair when this is the sole known stream.
+    const cookieNames = document.cookie.split(';').map(item => item.trim().split('=', 1)[0]);
+    if (cookieNames.includes(streamCookie)) {
+      if (!cookieNames.some(name => name.startsWith('_ga_') && name !== streamCookie)) clearCookie('_ga');
+      clearCookie(streamCookie);
+    }
     window[disableKey] = choice !== 'granted';
     visibilityObserver?.disconnect();
     if (choice === 'granted') {
@@ -220,12 +232,8 @@
       writeStorage('sessionStorage', visitKey, null);
       writeStorage('sessionStorage', searchLinkKey, null);
       writeStorage('sessionStorage', homeLinkKey, null);
-      for (const item of document.cookie.split(';')) {
-        const name = item.split('=', 1)[0].trim();
-        if (!/^bpmedia_ga(?:_[A-Z0-9]+)?$/.test(name)) continue;
-        document.cookie = name + '=; Max-Age=0; Path=/';
-        document.cookie = name + '=; Max-Age=0; Path=/; Domain=' + location.hostname;
-      }
+      clearCookie('bpmedia_ga');
+      clearCookie('bpmedia' + streamCookie);
     }
   }
 
