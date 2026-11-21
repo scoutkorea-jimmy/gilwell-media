@@ -10,82 +10,10 @@
   <link rel="apple-touch-icon" href="/img/logo.png">
   <link rel="shortcut icon" href="/img/favicon-48.png">
   <style>.nav[data-managed-nav]{visibility:hidden;opacity:0}</style>
-  <link rel="stylesheet" href="/css/style.css?v=20261121110836">
-  <link rel="stylesheet" href="/css/chatbot.css?v=20261121110836">
-  <link rel="stylesheet" href="/css/dark-mode.css?v=20261121110836">
-  <link rel="stylesheet" href="/css/m3-site.css?v=20261121110836">
-  <style>
-    .search-page-wrap { max-width: 900px; margin: 0 auto; padding: 40px 10%; }
-    .search-page-header { margin-bottom: 32px; border-bottom: 2px solid var(--border-strong); padding-bottom: 20px; }
-    .search-page-header h2 {
-      font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
-      font-size: 28px; font-weight: 700; color: var(--text-strong); margin-bottom: 16px;
-    }
-    .search-bar-row { display: flex; gap: 8px; }
-    .search-filter-grid { display:grid; grid-template-columns: 1.2fr 1fr 1fr 1fr; gap:8px; margin-top:12px; }
-    .search-scope-row { display:flex; gap:8px; margin-bottom:12px; }
-    .search-scope-btn {
-      border:1px solid var(--border); background:var(--surface); color:var(--ink); padding:9px 14px;
-      font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif; font-size:11px; letter-spacing:.08em; text-transform:uppercase; cursor:pointer;
-      min-height:44px;
-    }
-    .search-scope-btn.active { background: var(--surface-inverse); color: var(--on-accent); border-color: var(--border-strong); }
-    .search-page-input {
-      flex: 1; padding: 11px 16px; border: 1px solid var(--border);
-      font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif; font-size: 16px;
-      color: var(--ink); outline: none; transition: border-color 0.15s;
-    }
-    .search-page-input:focus { border-color: var(--accent); }
-    .search-page-btn {
-      padding: 11px 24px; background: var(--surface-inverse); color: var(--on-accent);
-      border: none; font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif; font-size: 11px;
-      letter-spacing: 0.12em; text-transform: uppercase; cursor: pointer;
-      transition: background 0.15s;
-    }
-    .search-page-btn:hover { background: var(--accent); }
-    .search-count {
-      font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif; font-size: 11px; color: var(--muted);
-      letter-spacing: 0.05em; margin: 16px 0;
-    }
-    .search-pagination { margin-top: 24px; }
-    .search-results-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-      gap: 16px;
-    }
-    .search-result-card {
-      display: block; padding: 20px; border: 1px solid var(--border);
-      text-decoration: none; color: var(--ink);
-      transition: border-color 0.15s, box-shadow 0.15s;
-    }
-    .search-result-card:hover { border-color: var(--accent); box-shadow: 0 2px 12px rgba(0,0,0,0.07); }
-    .search-result-card .category-tag { margin-bottom: 8px; }
-    .search-result-card h3 {
-      font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
-      font-size: 16px; font-weight: 600; line-height: 1.45;
-      color: var(--text-strong); margin-bottom: 6px;
-    }
-    .search-result-card .result-sub {
-      font-size: 12px; color: var(--muted); line-height: 1.6; margin-bottom: 8px;
-    }
-    .search-result-meta {
-      font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif; font-size: 10px; color: var(--muted);
-      letter-spacing: 0.05em; margin-top: 8px;
-    }
-    .search-no-results {
-      text-align: center; padding: 60px 0;
-      font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
-      font-size: 15px; color: var(--muted); line-height: 1.8;
-    }
-    .search-no-results strong { display: block; font-size: 18px; color: var(--text-strong); margin-bottom: 8px; }
-    .search-filter-input {
-      width:100%; padding:10px 12px; border:1px solid var(--border); font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif; font-size:13px;
-    }
-    @media (max-width: 760px) {
-      .search-filter-grid { grid-template-columns: 1fr 1fr; }
-      .search-scope-row { flex-wrap: wrap; }
-    }
-  </style>
+  <link rel="stylesheet" href="/css/style.css?v=20261121120234">
+  <link rel="stylesheet" href="/css/chatbot.css?v=20261121120234">
+  <link rel="stylesheet" href="/css/dark-mode.css?v=20261121120234">
+  <link rel="stylesheet" href="/css/m3-site.css?v=20261121120234">
   <noscript><style>.nav[data-managed-nav]{visibility:visible!important;opacity:1!important}.nav[data-managed-nav] a{font-size:0!important}.nav[data-managed-nav] a::before{content:attr(data-fallback-label);font-size:12px}</style></noscript>
 </head>
 <body>
@@ -144,27 +72,32 @@
 
   <!-- ── SEARCH PAGE ── -->
   <div class="search-page-wrap">
-    <div class="search-page-header">
-      <h1>전체 검색</h1>
-      <div class="search-scope-row" role="group" aria-label="검색 범위">
-        <button class="search-scope-btn active" id="scope-site-btn" data-scope="site" type="button" aria-pressed="true" aria-label="사이트 검색">Site</button>
-        <button class="search-scope-btn" id="scope-dp-btn" data-scope="dreampath" type="button" aria-pressed="false" aria-label="Dreampath 검색">Dreampath</button>
+    <form id="reader-search" class="search-page-header" role="search" action="/search" method="get">
+      <div class="search-heading-row">
+        <h1 id="search-heading">기사 검색</h1>
+        <div class="search-scope-row" role="group" aria-label="검색 범위">
+          <button class="search-scope-btn active" id="scope-site-btn" data-scope="site" type="button" aria-pressed="true">기사</button>
+          <button class="search-scope-btn" id="scope-dp-btn" data-scope="dreampath" type="button" aria-pressed="false">Dreampath</button>
+        </div>
       </div>
       <div class="search-bar-row">
-        <input type="search" id="search-input" class="search-page-input" placeholder="검색어를 입력하세요…" autocomplete="off" aria-label="검색어 입력" />
-        <button class="search-page-btn" id="search-btn" type="button" aria-label="검색 실행">검색</button>
+        <input type="search" name="q" id="search-input" class="search-page-input" placeholder="검색어를 입력하세요…" autocomplete="off" aria-label="검색어" required>
+        <button class="search-page-btn" id="search-btn" type="submit">검색</button>
       </div>
-      <div class="search-filter-grid" id="search-filter-grid" role="group" aria-label="검색 필터">
-        <select id="search-category" class="search-filter-input" aria-label="카테고리 필터">
-          <option value="">전체 카테고리</option>
-        </select>
-        <input type="date" id="search-start-date" class="search-filter-input" aria-label="시작 날짜" />
-        <input type="date" id="search-end-date" class="search-filter-input" aria-label="종료 날짜" />
-        <input type="text" id="search-tag" class="search-filter-input" placeholder="태그 검색" aria-label="태그 필터" />
-      </div>
-    </div>
-    <div id="search-count" class="search-count" style="display:none;"></div>
-    <div id="search-results"></div>
+      <details id="search-options">
+        <summary>상세 검색</summary>
+        <div class="search-filter-grid" id="search-filter-grid">
+          <label>카테고리<select id="search-category" name="category" class="search-filter-input">
+            <option value="">전체 카테고리</option>
+          </select></label>
+          <label>태그<input type="text" id="search-tag" name="tag" class="search-filter-input" placeholder="태그 입력"></label>
+          <label>시작 날짜<input type="date" id="search-start-date" name="start_date" class="search-filter-input"></label>
+          <label>종료 날짜<input type="date" id="search-end-date" name="end_date" class="search-filter-input"></label>
+        </div>
+      </details>
+    </form>
+    <div id="search-count" class="search-count" role="status"></div>
+    <div id="search-results"><p class="search-idle"><a href="/latest">최신 기사 목록 보기 →</a></p></div>
     <div id="search-pagination" class="board-pagination search-pagination"></div>
   </div>
 
@@ -198,7 +131,7 @@
         <h4>관리자</h4>
         <a href="/admin.html">관리자 페이지 →</a>
         <a href="/glossary-raw">용어집 RAW로 보기 →</a>
-        <p class="footer-build">Site <span class="site-build-version">V00.199.02</span> · Admin <span class="admin-build-version">V03.165.00</span></p>
+        <p class="footer-build">Site <span class="site-build-version">V00.200.00</span> · Admin <span class="admin-build-version">V03.165.00</span></p>
       </div>
       <div class="footer-bottom">
         <p data-i18n="footer.copyright">© 2026 BP미디어 · bpmedia.net</p>
@@ -211,10 +144,10 @@
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.4/dist/purify.min.js" integrity="sha384-eEu5CTj3qGvu9PdJuS+YlkNi7d2XxQROAFYOr59zgObtlcux1ae1Il3u7jvdCSWu" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-  <script src="/js/main.js?v=20261121110836"></script>
-  <script src="/js/site-chrome.js?v=20261121110836"></script>
-  <script src="/js/chatbot.js?v=20261121110836" defer></script>
-  <script src="/js/search.js?v=20261121110836"></script>
+  <script src="/js/main.js?v=20261121120234"></script>
+  <script src="/js/site-chrome.js?v=20261121120234"></script>
+  <script src="/js/chatbot.js?v=20261121120234" defer></script>
+  <script src="/js/search.js?v=20261121120234"></script>
   <script type="text/javascript" src="https://t1.kakaocdn.net/kas/static/ba.min.js" async></script>
 
 </body>

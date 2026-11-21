@@ -224,41 +224,33 @@ test('상단 검색은 입력과 버튼을 한 surface와 한 포커스 링으�
   expect(result.wrapRadius).not.toBe('0px');
 });
 
-test('넓은 화면의 홈 히어로 배지·제목·설명·동작은 같은 수평 중심축을 사용한다', async ({ page }) => {
-  for (const viewport of [{ width: 1440, height: 1000 }]) {
-    await page.setViewportSize(viewport);
-    await page.goto('/');
-    await expect(page.locator('.site-hero-slide.active .site-hero-title')).toBeVisible({ timeout: 10_000 });
-    const result = await page.locator('.site-hero-slide.active').evaluate((hero) => {
-      const selectors = [
-        '.site-hero-content',
-        '.site-hero-labels',
-        '.site-hero-title',
-        '.site-hero-subtitle, .site-hero-sub',
-        '.site-hero-actions',
-      ];
-      const heroRect = hero.getBoundingClientRect();
-      const content = hero.querySelector('.site-hero-content') as HTMLElement;
-      const style = getComputedStyle(content);
-      return {
-        heroCenter: Math.round((heroRect.left + heroRect.right) / 2),
-        centers: selectors.flatMap((selector) => {
-          const element = hero.querySelector(selector) as HTMLElement | null;
-          if (!element) return [];
-          const rect = element.getBoundingClientRect();
-          return [Math.round((rect.left + rect.right) / 2)];
-        }),
-        align: style.alignItems,
-        textAlign: style.textAlign,
-      };
-    });
-    expect(result.centers.length).toBeGreaterThanOrEqual(3);
-    for (const center of result.centers) {
-      expect(Math.abs(center - result.heroCenter)).toBeLessThanOrEqual(1);
-    }
-    expect(result.align).toBe('center');
-    expect(result.textAlign).toBe('center');
-  }
+test('넓은 화면의 주요 기사는 사진 옆에 제목과 읽기 링크를 정렬한다', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.goto('/');
+  const slide = page.locator('.site-hero-slide.active.has-bg');
+  await expect(slide.locator('.site-hero-title a')).toBeVisible();
+  const layout = await slide.evaluate(hero => {
+    const box = (selector: string) => hero.querySelector(selector)!.getBoundingClientRect();
+    return {
+      contentRight: box('.site-hero-content').right,
+      photoLeft: box('.site-hero-media').left,
+      titleLeft: box('.site-hero-title').left,
+      actionsLeft: box('.site-hero-actions').left,
+      headingsLink: hero.querySelector('.site-hero-title a')!.getAttribute('href'),
+      imageLink: hero.querySelector('.site-hero-media')!.getAttribute('href'),
+    };
+  });
+  expect(layout.contentRight).toBeCloseTo(layout.photoLeft, 0);
+  expect(layout.titleLeft).toBeCloseTo(layout.actionsLeft, 0);
+  expect(layout.headingsLink).toBe(layout.imageLink);
+
+  await page.route('**/test-missing-hero-image', route => route.fulfill({ status: 404 }));
+  await page.evaluate(() => {
+    const home = (window as any).GW.HomeHero;
+    home.renderHero({ posts: [{ id: 1, title: '사진을 가져오지 못한 기사', image_url: '/test-missing-hero-image' }] });
+  });
+  await expect(page.locator('.site-hero-slide.active .site-hero-media')).toHaveCount(0);
+  await expect(page.locator('.site-hero-slide.active .site-hero-title a')).toHaveAttribute('href', '/post/1');
 });
 
 test('기념품 검색과 필터는 한 겹 외곽선과 동일한 컨트롤 높이를 사용한다', async ({ page }) => {
@@ -323,7 +315,7 @@ test('잼버리 개요는 이중 캡이나 구분선 없이 하나의 tonal surf
   expect(styles.outerBackground).not.toBe('rgba(0, 0, 0, 0)');
 });
 
-test('홈과 기사 페이지는 같은 1280px 외곽 축을 사용하고 기사 본문은 본문 열을 채운다', async ({ page }) => {
+test('홈 섹션은 같은 축에 정렬되고 기사 본문은 넓은 화면에서도 읽기 폭을 유지한다', async ({ page }) => {
   await page.setViewportSize({ width: 1920, height: 1000 });
   await page.goto('/');
   const home = await page.evaluate(() => {
@@ -345,7 +337,9 @@ test('홈과 기사 페이지는 같은 1280px 외곽 축을 사용하고 기사
 
   expect(home.wrap).toEqual(home.hero);
   expect(home.content).toEqual(home.hero);
-  expect(post.wrap).toEqual(home.wrap);
+  expect(post.wrap.width).toBeLessThan(home.wrap.width);
+  expect(post.wrap.x * 2 + post.wrap.width).toBe(1920);
+  expect(post.body.width).toBe(760);
   expect(post.body.x).toBe(post.main.x);
   expect(post.body.width).toBe(post.main.width);
 });
@@ -397,30 +391,20 @@ test('compact 화면은 큰 4단 메뉴 대신 64px 상단바와 중앙 정렬 �
   }
 });
 
-test('compact 기사 화면도 64px 상단바와 양축 중앙 정렬 메뉴를 사용한다', async ({ page }) => {
+test('모바일 기사에서 공통 헤더 메뉴와 이전 화면 링크를 함께 사용할 수 있다', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/post/385');
-  const header = page.locator('.post-mobile-header');
-  const bar = page.locator('.post-mobile-header-bar');
+  const header = page.locator('#mobile-compact-header');
   await expect(header).toBeVisible();
+  await expect(page.locator('.post-mobile-header')).toBeHidden();
   await expect(page.locator('body.post-page > .masthead')).toBeHidden();
-
-  const geometry = await bar.evaluate((el) => {
-    const rect = el.getBoundingClientRect();
-    const brand = (el.querySelector('.post-mobile-brand') as HTMLElement).getBoundingClientRect();
-    return { height: Math.round(rect.height), brandCenter: Math.round(brand.left + brand.width / 2) };
-  });
-  expect(geometry.height).toBe(64);
-  expect(geometry.brandCenter).toBe(195);
-
-  const alignment = await page.locator('.post-mobile-quicknav a').evaluateAll((items) => items.map((item) => {
-    const style = getComputedStyle(item);
-    return { align: style.alignItems, justify: style.justifyContent, textAlign: style.textAlign };
-  }));
-  expect(alignment.length).toBeGreaterThan(0);
-  for (const item of alignment) {
-    expect(item).toEqual({ align: 'center', justify: 'center', textAlign: 'center' });
-  }
+  await expect(page.locator('.post-page-meta [data-action="history-back"]')).toBeVisible();
+  const rect = await header.boundingBox();
+  expect(rect?.y).toBe(0);
+  expect(rect?.height).toBe(64);
+  await page.locator('#mobile-compact-toggle').click();
+  await expect(page.locator('#mobile-compact-drawer')).toBeVisible();
+  await expect(page.locator('#mobile-compact-drawer a[href="/latest"]')).toBeVisible();
 });
 
 test('게시판 D-day는 별도 박스가 아닌 배경 오브제로 표시된다', async ({ page }) => {
@@ -460,6 +444,13 @@ test('게시판 필터는 히어로·검색·카드와 같은 축의 한 기능 
   for (const viewport of [{ width: 390, height: 844 }, { width: 1440, height: 1000 }]) {
     await page.setViewportSize(viewport);
     await page.goto('/latest');
+    if (viewport.width === 390) {
+      const filter = page.getByRole('button', { name: /목록 필터/ });
+      await expect(filter).toHaveAttribute('aria-expanded', 'false');
+      await expect(page.locator('.board-sort-bar')).toBeHidden();
+      await expect(page.locator('#board-search-input')).toBeVisible();
+      await filter.click();
+    }
     await expect(page.locator('.board-sort-bar')).toBeVisible({ timeout: 10_000 });
     await expect(page.locator('.tag-filter-btn').first()).toBeVisible({ timeout: 10_000 });
     await expect(page.locator('.board-search-wrap')).toBeVisible({ timeout: 10_000 });
@@ -495,6 +486,7 @@ test('게시판 필터는 히어로·검색·카드와 같은 축의 한 기능 
 test('게시판 정렬 용어는 의미를 설명하고 모바일 주제 행은 한 줄을 유지한다', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/apr');
+  await page.getByRole('button', { name: /목록 필터/ }).click();
   await expect(page.locator('.board-sort-bar')).toBeVisible({ timeout: 10_000 });
   await expect(page.locator('.tag-filter-btn').first()).toBeVisible({ timeout: 10_000 });
 

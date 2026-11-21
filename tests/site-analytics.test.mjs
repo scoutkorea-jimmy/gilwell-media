@@ -68,8 +68,8 @@ test('public policy lists the optional overseas transfer only when GA4 is config
 });
 
 test('public analytics opt-in, reader flow, search privacy, opt-out', async () => {
-  const searchMarkup = '<input id="search-input"><button id="search-btn">검색</button>' +
-    '<div id="search-count"></div><div id="search-results"></div><div id="search-pagination"></div>';
+  const searchHtml = await readFile(new URL('../public/search.html', import.meta.url), 'utf8');
+  const searchMarkup = searchHtml.match(/<form id="reader-search"[\s\S]*?<div id="search-pagination"[^>]*><\/div>/)[0];
   const siteMarkup = {
     '/': '<div id="home-lead-story"><a href="/post/1">첫 기사</a></div>',
     '/post/1': '<div class="post-page-body"><p style="height:1400px">기사 본문</p></div><a href="/post/2">다음 기사</a>',
@@ -90,7 +90,8 @@ test('public analytics opt-in, reader flow, search privacy, opt-out', async () =
     response.setHeader('Content-Type', 'text/html; charset=utf-8');
     response.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
     response.end(`<!doctype html><title>Fixture</title><style>.site-analytics-body-end{display:block;height:1px}</style>
-      <body>${siteMarkup[pathname] || '<div class="post-page-body">검색 결과 기사</div>'}
+      <body><a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
+      <main id="main-content">${siteMarkup[pathname] || '<div class="post-page-body">검색 결과 기사</div>'}</main>
       <footer><div class="footer-brand"></div></footer>
       <script defer src="/site-analytics.js" data-measurement-id="${measurementId}"></script></body>`);
   });
@@ -111,6 +112,8 @@ test('public analytics opt-in, reader flow, search privacy, opt-out', async () =
       .filter(([kind]) => kind === 'event').map(([, name, params]) => ({ name, params })));
     await page.goto(origin + '/?q=private%40example.test#private');
     await page.getByRole('button', { name: '허용 안 함' }).click();
+    await page.keyboard.press('Tab');
+    assert.equal(await page.locator(':focus').textContent(), '첫 기사');
     assert.equal(tagRequests, 0);
     assert.deepEqual(await events(), []);
     await page.reload();
@@ -120,6 +123,7 @@ test('public analytics opt-in, reader flow, search privacy, opt-out', async () =
       page.waitForResponse('https://www.googletagmanager.com/**'),
       page.getByRole('button', { name: '분석 및 국외 이전 동의' }).click(),
     ]);
+    assert.equal(await page.locator(':focus').textContent(), '방문 분석 설정');
     let seen = await events();
     const initialization = await page.evaluate(() => Array.from(window.dataLayer || [], args => Array.from(args)));
     assert.equal(initialization[0][0], 'set');

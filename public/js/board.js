@@ -49,8 +49,9 @@
     this.page          = Math.min(100000, Math.max(1, parseInt(new URL(window.location.href).searchParams.get('page'), 10) || 1));
     this.pageSize      = 16;
     this.totalPages    = 1;
-    this.total         = 0;
+    this.total         = null;
     this.loading       = false;
+    this._listRequest = 0;
     this._searchQuery  = new URL(window.location.href).searchParams.get('q') || '';
     this._selectedTag  = new URL(window.location.href).searchParams.get('tag') || null;
     this._loginTurnstileWidgetId = null;
@@ -158,18 +159,33 @@
         var tags = data.tags || [];
         if (!tags.length) return;
 
-        var html = '<div class="tag-filter-bar-inner"><span class="board-control-label board-tag-label">주제</span><button class="tag-filter-btn' + (self._selectedTag ? '' : ' active') + '" data-tag="">전체</button>';
+        var html = '<div class="tag-filter-bar-inner" id="board-tag-options"><span class="board-control-label board-tag-label">주제</span><button class="tag-filter-btn' + (self._selectedTag ? '' : ' active') + '" data-tag="">전체</button>';
         tags.forEach(function (t) {
           html += '<button class="tag-filter-btn' + (self._selectedTag === t ? ' active' : '') + '" data-tag="' + GW.escapeHtml(t) + '">' + GW.escapeHtml(t) + '</button>';
         });
         html += '</div>';
+        if (tags.length > 6) {
+          html += '<button type="button" class="board-topics-toggle" aria-expanded="false" aria-controls="board-tag-options">주제 모두 보기</button>';
+        }
         barEl.innerHTML = html;
+        var toggle = barEl.querySelector('.board-topics-toggle');
+        if (toggle) toggle.addEventListener('click', function () {
+          var expanded = barEl.classList.toggle('topics-expanded');
+          toggle.setAttribute('aria-expanded', String(expanded));
+          toggle.textContent = expanded ? '주제 접기' : '주제 모두 보기';
+        });
 
         barEl.querySelectorAll('.tag-filter-btn').forEach(function (btn) {
+          btn.setAttribute('aria-pressed', String(btn.classList.contains('active')));
           btn.addEventListener('click', function () {
-            barEl.querySelectorAll('.tag-filter-btn').forEach(function (b) { b.classList.remove('active'); });
+            barEl.querySelectorAll('.tag-filter-btn.active').forEach(function (b) {
+              b.classList.remove('active');
+              b.setAttribute('aria-pressed', 'false');
+            });
             btn.classList.add('active');
+            btn.setAttribute('aria-pressed', 'true');
             self._selectedTag = btn.dataset.tag || null;
+            self._renderSortControls();
             self._resetAndLoad();
           });
         });
@@ -184,7 +200,8 @@
     if (this._searchQuery) stateUrl.searchParams.set('q', this._searchQuery); else stateUrl.searchParams.delete('q');
     if (this._selectedTag) stateUrl.searchParams.set('tag', this._selectedTag); else stateUrl.searchParams.delete('tag');
     window.history.replaceState(null, '', stateUrl.pathname + stateUrl.search);
-    this.total   = 0;
+    this.total   = null;
+    this._updateCount();
     this.totalPages = 1;
     this.loading = false;
     this.gridEl.innerHTML = '';
@@ -200,6 +217,7 @@
     var self = this;
     var silent = !!(opts && opts.silent);
     this.loading = true;
+    var request = ++this._listRequest;
     if (!silent && !this.gridEl.querySelector('.post-card')) this._showLoading();
     this.pageSize = this._getPageSize();
 
@@ -219,6 +237,7 @@
     endpoint += '&_t=' + Date.now();
     GW.apiFetch(endpoint, { cache: 'no-store' })
       .then(function (data) {
+        if (request !== self._listRequest) return;
         self.total   = data.total;
         self.pageSize = data.pageSize || self.pageSize || 16;
         self.totalPages = Math.max(1, Math.ceil(self.total / self.pageSize));
@@ -228,11 +247,12 @@
         self._lastFetchAt = Date.now();
       })
       .catch(function (err) {
+        if (request !== self._listRequest) return;
         console.error('[board] load failed:', err);
         if (!silent && !self.gridEl.querySelector('.post-card')) { try { self._showError(); } catch (_) {} }
       })
       .finally(function () {
-        self.loading = false;
+        if (request === self._listRequest) self.loading = false;
       });
   };
 
@@ -538,7 +558,8 @@
   };
 
   Board.prototype._updateCount = function () {
-    if (this.countEl) this.countEl.textContent = '총 ' + this.total + '개';
+    var count = this.total == null ? '—' : this.total + '개';
+    if (this.countEl) this.countEl.textContent = this.total == null ? '집계 중' : '총 ' + count;
     if (!this.bannerTotalEl) return;
 
     var eventName = this.bannerInfo && this.bannerInfo.event_name;
@@ -553,7 +574,7 @@
     }
 
     this.bannerTotalEl.classList.remove('has-event');
-    this.bannerTotalEl.textContent = this.total + '개';
+    this.bannerTotalEl.textContent = count;
   };
 
   function getDdayLabel(dateStr) {
@@ -585,8 +606,8 @@
     wrap.className = 'board-search-wrap';
     wrap.innerHTML =
       '<div class="board-search-inner">' +
-        '<input type="text" id="board-search-input" class="board-search-input" placeholder="이 게시판에서 검색…" autocomplete="off" />' +
-        '<button class="board-search-clear" id="board-search-clear" style="display:none;">✕</button>' +
+        '<input type="text" id="board-search-input" class="board-search-input" aria-label="목록 내 기사 검색" placeholder="목록 내 기사 검색…" autocomplete="off" />' +
+        '<button type="button" class="board-search-clear" id="board-search-clear" aria-label="검색어 지우기" style="display:none;">✕</button>' +
       '</div>';
     container.insertBefore(wrap, container.firstChild);
 
@@ -604,7 +625,9 @@
     });
 
     clear.addEventListener('click', function () {
+      clearTimeout(timer);
       input.value = '';
+      input.focus();
       clear.style.display = 'none';
       self._search('');
     });
@@ -618,7 +641,8 @@
     if (this._searchQuery) stateUrl.searchParams.set('q', this._searchQuery); else stateUrl.searchParams.delete('q');
     if (this._selectedTag) stateUrl.searchParams.set('tag', this._selectedTag); else stateUrl.searchParams.delete('tag');
     window.history.replaceState(null, '', stateUrl.pathname + stateUrl.search);
-    this.total   = 0;
+    this.total   = null;
+    this._updateCount();
     this.totalPages = 1;
     this.loading = false;
     this.gridEl.innerHTML = '';
@@ -696,6 +720,18 @@
       container.insertBefore(bar, container.firstChild);
     }
     this._sortBarEl = bar;
+    bar.id = 'board-sort-options';
+    var disclosure = document.createElement('button');
+    disclosure.type = 'button';
+    disclosure.className = 'board-filter-disclosure';
+    disclosure.setAttribute('aria-expanded', 'false');
+    disclosure.setAttribute('aria-controls', tagBar ? bar.id + ' ' + tagBar.id : bar.id);
+    disclosure.innerHTML = '목록 필터 <span class="board-choice-summary"></span>';
+    disclosure.addEventListener('click', function () {
+      disclosure.setAttribute('aria-expanded', String(disclosure.getAttribute('aria-expanded') !== 'true'));
+    });
+    bar.before(disclosure);
+    this._choiceSummary = disclosure.querySelector('.board-choice-summary');
 
     bar.querySelectorAll('.board-sort-btn').forEach(function (btn) {
       btn.addEventListener('click', function () {
@@ -737,6 +773,12 @@
     if (!this._sortBarEl) return;
     var mode = this._sortMode;
     var period = this._periodKey;
+    var latest = this.category === 'latest';
+    this._choiceSummary.textContent = [
+      mode === 'popular' ? '많이 본 기사' : (latest ? '최신 기사' : '추천 기사'),
+      latest ? DAYS_FILTER_LABELS[this._daysFilter] : (mode === 'popular' ? PERIOD_LABELS[period] : ''),
+      this._selectedTag,
+    ].filter(Boolean).join(' · ');
     this._sortBarEl.querySelectorAll('.board-sort-btn').forEach(function (btn) {
       var active = btn.getAttribute('data-sort') === (mode === 'popular' ? 'popular' : 'default');
       btn.classList.toggle('active', active);
@@ -748,11 +790,15 @@
       else periodGroup.setAttribute('hidden', '');
     }
     this._sortBarEl.querySelectorAll('.board-period-btn').forEach(function (btn) {
-      btn.classList.toggle('active', btn.getAttribute('data-period') === period);
+      var active = btn.getAttribute('data-period') === period;
+      btn.classList.toggle('active', active);
+      btn.setAttribute('aria-pressed', String(active));
     });
     var days = String(this._daysFilter || 0);
     this._sortBarEl.querySelectorAll('.board-days-btn').forEach(function (btn) {
-      btn.classList.toggle('active', String(btn.getAttribute('data-days') || '0') === days);
+      var active = btn.getAttribute('data-days') === days;
+      btn.classList.toggle('active', active);
+      btn.setAttribute('aria-pressed', String(active));
     });
   };
 

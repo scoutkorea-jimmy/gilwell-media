@@ -48,3 +48,20 @@ test('공유한 태그 주소의 선택 표시를 복원한다', async ({page}) 
   await page.goto('/korea?tag='+encodeURIComponent('검증태그'));
   await expect(page.locator('.tag-filter-btn.active')).toHaveText('검증태그');
 });
+
+test('기사에서 돌아오면 검색 범위와 페이지가 복원된다', async ({ page }) => {
+  await page.goto('/search');
+  await page.getByRole('searchbox', { name: '검색어', exact: true }).fill('스카우트');
+  await page.locator('#search-options summary').click();
+  await page.getByLabel('카테고리', { exact: true }).selectOption('korea');
+  await page.locator('#search-btn').click();
+  await page.locator('#search-pagination').getByRole('link', { name: '2페이지', exact: true }).click();
+  const result = page.locator('#search-results .search-result-card').first();
+  const href = await result.getAttribute('href');
+  await result.click();
+  await expect(page).toHaveURL(new URL(href!, page.url()).href);
+  await page.goBack();
+  await expect(page.locator('#search-category')).toHaveValue('korea');
+  await expect(page.locator('#search-pagination [aria-current="page"]')).toHaveText('2');
+  await expect(result).toHaveAttribute('href', href!);
+});

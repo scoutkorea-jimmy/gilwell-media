@@ -239,12 +239,12 @@ export async function onRequestGet({ params, env, request }) {
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png"/>
   <link rel="apple-touch-icon" href="/img/logo.png"/>
   <link rel="shortcut icon" href="/img/favicon-48.png"/>
-  <link rel="stylesheet" href="/css/style.css?v=20261121110836">
-  <link rel="stylesheet" href="/css/post.css?v=20261121110836">
-  <link rel="stylesheet" href="/css/topics.css?v=20261121110836">
-  <link rel="stylesheet" href="/css/chatbot.css?v=20261121110836">
-  <link rel="stylesheet" href="/css/dark-mode.css?v=20261121110836">
-  <link rel="stylesheet" href="/css/m3-site.css?v=20261121110836">
+  <link rel="stylesheet" href="/css/style.css?v=20261121120234">
+  <link rel="stylesheet" href="/css/post.css?v=20261121120234">
+  <link rel="stylesheet" href="/css/topics.css?v=20261121120234">
+  <link rel="stylesheet" href="/css/chatbot.css?v=20261121120234">
+  <link rel="stylesheet" href="/css/dark-mode.css?v=20261121120234">
+  <link rel="stylesheet" href="/css/m3-site.css?v=20261121120234">
 </head>
 <body class="post-page">
   <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
@@ -329,39 +329,31 @@ export async function onRequestGet({ params, env, request }) {
       <!-- ── Main Content ── -->
       <div class="post-page-main">
 
-        <div class="post-page-back">
-          <a href="/${post.category}" data-action="history-back" class="post-page-back-link">← 뒤로가기</a>
-          <a href="/${post.category}" class="post-page-back-link" style="margin-left:16px;">
-            <span style="display:inline-block;background:${cat.color};color:#fff;font-size:9px;letter-spacing:0.12em;text-transform:uppercase;padding:2px 7px;border-radius:var(--radius-tight);font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;">${cat.label}</span>
-          </a>
+        <div class="post-page-meta">
+          <a href="/${cat.key}" data-action="history-back" class="post-page-back-link">← 이전 화면</a>
+          <a href="/${cat.key}" class="post-section-link">${escapeHtml(cat.label)}</a>
+          ${isNew ? '<span class="post-kicker post-kicker-new">NEW</span>' : ''}
+          ${(post.tag || '').split(',').map(tag => tag.trim()).filter(Boolean).map(tag => `<span class="post-kicker ${cat.tagClass}-kicker">${escapeHtml(tag)}</span>`).join('')}
         </div>
 
         <h1 class="post-page-title">${title}</h1>
         ${subtitle ? `<p class="post-page-subtitle">${subtitle}</p>` : ''}
-        <div class="post-page-meta">
-          <span class="category-tag" style="background:${cat.color};">${cat.label}</span>
-          ${isNew ? `<span class="post-kicker post-kicker-new">NEW</span>` : ''}
-          ${(post.tag || '').split(',').map(tag => tag.trim()).filter(Boolean).map(tag => `<span class="post-kicker ${cat.tagClass}-kicker">${escapeHtml(tag)}</span>`).join('')}
-          <time class="post-page-date" datetime="${escapeHtml(post.publish_at || post.created_at || '')}">${dateStr}</time>
-        </div>
-        <div class="post-page-share">
+        <div class="post-page-share post-reader-meta">
+          <time datetime="${escapeHtml(publishedIso)}">${dateStr}</time>
+          <span>읽기 약 ${readingMins}분</span>
           <button id="post-share-btn" class="post-action-btn" type="button">공유하기</button>
-          <button id="post-edit-btn" class="post-action-btn" type="button">수정하기</button>
         </div>
 
         ${post.image_url ? renderPostCover(post, id, title) : ''}
         ${youtubeEmbedUrl ? `<div class="post-page-video">${renderYouTubeEmbed(youtubeEmbedUrl, post.title)}</div>` : ''}
 
-        <div class="post-page-body modal-body">
-          ${bodyHtml}
-        </div>
+        <div class="post-page-body modal-body">${bodyHtml}</div>
         ${locationSectionHtml}
         ${bodyGalleryHtml}
 
         <nav class="post-page-tags topic-links" aria-label="관련 스카우트 주제">${renderTopicLinks([post.title, post.subtitle, post.meta_tags, post.tag, post.content].filter(Boolean).join(" "))}</nav>
-        ${visibleTags.length ? `<div class="post-page-tags"><span class="post-page-tags-label">Tags:</span> ${visibleTags.map((tag) => `<button type="button" class="post-page-tag post-page-tag-btn" data-tag="${escapeHtml(tag)}">${escapeHtml(tag)}</button>`).join('')}</div>` : ''}
+        ${visibleTags.length ? `<div class="post-page-tags"><span class="post-page-tags-label">기사 태그</span> ${visibleTags.map((tag) => `<button type="button" class="post-page-tag post-page-tag-btn" data-tag="${escapeHtml(tag)}">${escapeHtml(tag)}</button>`).join('')}</div>` : ''}
         ${renderSpecialFeatureSection(post, specialFeaturePosts)}
-        ${renderRelatedPostsSection(relatedPosts, false, navLabels)}
 
         ${post.ai_assisted ? `<div class="ai-disclaimer"><span class="ai-disclaimer-text">${escapeHtml(aiDisclaimer)}</span> <a class="ai-disclaimer-link" href="/editorial-policy">편집·AI 정책 ›</a></div>` : ''}
 
@@ -370,8 +362,11 @@ export async function onRequestGet({ params, env, request }) {
             <button id="post-like-btn" class="post-like-btn${likeStats.liked ? ' liked' : ''}"${likeStats.liked ? ' disabled' : ''}>공감 <span id="post-like-count">${likeStats.likes}</span></button>
             <span class="post-like-help">${likeStats.liked ? '이미 공감한 기사입니다' : '한 IP당 1회 공감할 수 있습니다'}</span>
           </span>
+          <button id="post-edit-btn" class="post-action-btn" type="button">수정하기</button>
           <span class="post-byline-report">오류제보 <!--email_off--><a href="mailto:${DEFAULT_CONTACT_EMAILS.contact}">${DEFAULT_CONTACT_EMAILS.contact}</a><!--/email_off--></span>
         </div>
+
+        ${renderRelatedPostsSection(relatedPosts, navLabels)}
 
         <!-- Kakao AdFit horizontal — 기사 본문 하단, 기사 너비 기준 중앙 정렬.
              PC 728x90 / 모바일 320x50. 이전에는 그리드 바깥에 두어 페이지 전체
@@ -388,30 +383,23 @@ export async function onRequestGet({ params, env, request }) {
 
       </div>
 
-      ${renderRelatedPostsSection(relatedPosts, true, navLabels)}
-
       <!-- ── Sidebar ── -->
-      <aside class="post-page-sidebar">
-
-        <div class="pps-section">
-          <p class="pps-label">섹션</p>
-          <a href="/${post.category}" class="pps-category" style="background:${cat.color};">${cat.label}</a>
-        </div>
-
-        <div class="pps-section">
-          <p class="pps-label">정보</p>
-          ${post.author ? `<div class="pps-row"><span class="pps-key">작성자</span><span class="pps-val">${escapeHtml(post.author)}</span></div>` : ''}
-          <div class="pps-row"><span class="pps-key">게시일</span><span class="pps-val">${dateStr}</span></div>
-          <div class="pps-row"><span class="pps-key">읽기 시간</span><span class="pps-val">약 ${readingMins}분</span></div>
-          <div class="pps-row"><span class="pps-key">조회수</span><span class="pps-val">${post.views || 0}</span></div>
-          ${post.ai_assisted ? `<div class="pps-row"><span class="pps-key">AI</span><span class="pps-val" style="color:#622599;">AI 지원 작성</span></div>` : ''}
-        </div>
+      <div class="post-reader-rail">
+        <aside class="post-page-sidebar" aria-label="기사 정보">
+          <div class="pps-section">
+            <h2 class="pps-label">기사 정보</h2>
+            ${post.author ? `<div class="pps-row"><span class="pps-key">작성자</span><span class="pps-val">${escapeHtml(post.author)}</span></div>` : ''}
+            <div class="pps-row"><span class="pps-key">조회수</span><span class="pps-val">${post.views || 0}</span></div>
+            ${post.ai_assisted ? '<div class="pps-row"><span class="pps-key">편집</span><a class="pps-val" href="/editorial-policy">AI 지원 작성</a></div>' : ''}
+            <a class="post-continue-jump" href="#post-continue-heading">다른 기사 읽기 <span aria-hidden="true">↓</span></a>
+          </div>
+        </aside>
 
         <!-- Kakao AdFit 160x600 (vertical) — PC 사이드바 하단, AI 행 아래 -->
         <aside class="kakao-adfit kakao-adfit-vertical" aria-label="광고">
           <ins class="kakao_ad_area" style="display:none;width:100%;" data-ad-unit="DAN-XitWF05D9NK5NjVi" data-ad-width="160" data-ad-height="600"></ins>
         </aside>
-      </aside>
+      </div>
 
     </div>
   </main>
@@ -430,7 +418,7 @@ export async function onRequestGet({ params, env, request }) {
         <h4>관리자</h4>
         <a href="/admin.html">관리자 페이지 →</a>
         <a href="/glossary-raw">용어집 RAW로 보기 →</a>
-        <p class="footer-build">Site <span class="site-build-version">V00.199.02</span> · Admin <span class="admin-build-version">V03.165.00</span></p>
+        <p class="footer-build">Site <span class="site-build-version">V00.200.00</span> · Admin <span class="admin-build-version">V03.165.00</span></p>
       </div>
       <div class="footer-bottom">
         <p data-i18n="footer.copyright">© 2026 ${SITE_BRAND_NAME} · ${SITE_DOMAIN_LABEL}</p>
@@ -660,10 +648,10 @@ export async function onRequestGet({ params, env, request }) {
 
   <script>window.GW_BOOT_RUNTIME=${serializeForScript(publicRuntime)};window.GW_KAKAO_JS_KEY=${serializeForScript(String(publicRuntime.kakao_js_key || ''))};window.GW_POST_BOOT=${serializeForScript({ editPostId: id, sharePostUrl: postUrl, sharePostTitle: titleText, sharePostSubtitle: subtitleText, editSeed: JSON.parse(editSeed), visibleTags })};</script>
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.4/dist/purify.min.js" integrity="sha384-eEu5CTj3qGvu9PdJuS+YlkNi7d2XxQROAFYOr59zgObtlcux1ae1Il3u7jvdCSWu" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-  <script src="/js/main.js?v=20261121110836"></script>
-  <script src="/js/site-chrome.js?v=20261121110836"></script>
-  <script src="/js/chatbot.js?v=20261121110836" defer></script>
-  <script src="/js/post-page.js?v=20261121110836"></script>
+  <script src="/js/main.js?v=20261121120234"></script>
+  <script src="/js/site-chrome.js?v=20261121120234"></script>
+  <script src="/js/chatbot.js?v=20261121120234" defer></script>
+  <script src="/js/post-page.js?v=20261121120234"></script>
   <script async type="text/javascript" charset="utf-8" src="https://t1.kakaocdn.net/kas/static/ba.min.js"></script>
 </body>
 </html>`;
@@ -1137,21 +1125,20 @@ function renderSpecialFeatureSection(post, items) {
   </section>`;
 }
 
-function renderRelatedPostsSection(items, mobileOnly, navLabels) {
-  if (!Array.isArray(items) || !items.length) return '';
-  return `<section class="post-related-posts post-related-surface${mobileOnly ? ' post-related-posts-mobile' : ' post-related-posts-desktop'}">
-    <h3 class="post-related-heading">유관기사 읽어보기</h3>
-    <ul class="post-related-list">
-      ${items.map((item) => {
-        const publicDate = item.publish_at || item.created_at || '';
-        return `<li>
-          <a href="/post/${item.id}">
-            <span class="post-related-title">[${escapeHtml(resolveCategoryLabel(item.category, navLabels))}] ${escapeHtml(item.title || '')}</span>
-            <span class="post-related-date">${escapeHtml(formatDateShort(publicDate))}</span>
-          </a>
-        </li>`;
-      }).join('')}
-    </ul>
+function renderRelatedPostsSection(items, navLabels) {
+  const rows = (Array.isArray(items) ? items : []).map((item) => {
+    const publicDate = item.publish_at || item.created_at || '';
+    return `<li><a href="/post/${item.id}">
+      <span class="post-related-meta">${escapeHtml(resolveCategoryLabel(item.category, navLabels))} · ${escapeHtml(formatDateShort(publicDate))}</span>
+      <span class="post-related-title">${escapeHtml(item.title || '')}</span>
+    </a></li>`;
+  });
+  return `<section class="post-related-posts" aria-labelledby="post-continue-heading">
+    <div class="post-continue-head">
+      <h2 id="post-continue-heading">${rows.length ? '함께 읽을 기사' : '다른 기사 읽기'}</h2>
+      <a href="/latest">최신 기사 목록 <span aria-hidden="true">→</span></a>
+    </div>
+    ${rows.length ? `<ul class="post-related-list">${rows.join('')}</ul>` : ''}
   </section>`;
 }
 

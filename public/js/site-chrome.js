@@ -25,6 +25,10 @@
     'section.latest': { ko: '최신 소식', en: 'Latest News' },
     'section.popular': { ko: '인기 소식', en: 'Popular News' },
     'section.picks': { ko: '에디터 추천', en: "Editor's Picks" },
+    'section.top': { ko: '주요 기사', en: 'Top stories' },
+    'home.articleList': { ko: '최신 기사 목록', en: 'Latest articles' },
+    'home.articleSearch': { ko: '기사 검색', en: 'Search articles' },
+    'home.moreLatest': { ko: '최신 기사 더 보기 →', en: 'More recent articles →' },
     'home.more': { ko: '더보기 →', en: 'More →' },
     'footer.title': { ko: 'BP미디어', en: 'BPmedia' },
     'footer.sections': { ko: '섹션', en: 'Sections' },
@@ -1069,8 +1073,7 @@
 
     function go(query) {
       var q = String(query || '').trim();
-      if (!q) return;
-      window.location.href = '/search?q=' + encodeURIComponent(q);
+      window.location.href = q ? '/search?q=' + encodeURIComponent(q) : '/search';
     }
 
     function submitFromInput() {

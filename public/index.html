@@ -11,12 +11,12 @@
   <link rel="apple-touch-icon" href="/img/logo.png">
   <link rel="shortcut icon" href="/img/favicon-48.png">
   <style>.nav[data-managed-nav]{visibility:hidden;opacity:0}</style>
-  <link rel="stylesheet" href="/css/style.css?v=20261121110836">
-  <link rel="stylesheet" href="/css/home-banner.css?v=20261121110836">
-  <link rel="stylesheet" href="/css/topics.css?v=20261121110836">
-  <link rel="stylesheet" href="/css/chatbot.css?v=20261121110836">
-  <link rel="stylesheet" href="/css/dark-mode.css?v=20261121110836">
-  <link rel="stylesheet" href="/css/m3-site.css?v=20261121110836">
+  <link rel="stylesheet" href="/css/style.css?v=20261121120234">
+  <link rel="stylesheet" href="/css/home-banner.css?v=20261121120234">
+  <link rel="stylesheet" href="/css/topics.css?v=20261121120234">
+  <link rel="stylesheet" href="/css/chatbot.css?v=20261121120234">
+  <link rel="stylesheet" href="/css/dark-mode.css?v=20261121120234">
+  <link rel="stylesheet" href="/css/m3-site.css?v=20261121120234">
   <script>
     (function () {
       function markHomeScriptFailure(name) {
@@ -108,31 +108,33 @@
     </nav>
   </header>
 
-  <!-- ── TICKER ── -->
   <main id="main-content">
-  <div class="ticker">
-    <div class="ticker-inner" id="ticker-inner" data-fallback-items="길웰 미디어는 스카우트 운동의 소식을 기록하는 미디어입니다||한국스카우트연맹 및 세계스카우트연맹 소식을 전합니다||The BP Media · bpmedia.net"></div>
-  </div>
   <div class="home-runtime-alert" id="home-runtime-alert" hidden aria-live="polite"></div>
 
-
-
-  <!-- ── SITE HERO (slider) ── -->
-  <div class="site-hero-slider" id="site-hero-slider">
-    <!-- Slides injected by JS; static fallback shown until JS runs -->
-    <div class="site-hero site-hero-slide active" id="site-hero-static">
-      <div class="site-hero-bg-text"></div>
-      <div class="site-hero-content">
-        <div class="site-hero-eyebrow">BP미디어 · bpmedia.net</div>
-        <h2 class="site-hero-title">스카우트 운동의 소식을<br>기록합니다</h2>
-        <p class="site-hero-sub">한국스카우트연맹과 세계스카우트연맹의 소식을 자발적인 봉사로 전합니다</p>
+  <section aria-labelledby="home-front-title">
+    <div class="home-front-heading">
+      <h2 id="home-front-title" data-i18n="section.top">주요 기사</h2>
+      <nav aria-label="기사 탐색">
+        <a href="/latest" data-i18n="home.articleList">최신 기사 목록</a>
+        <a href="/search" data-i18n="home.articleSearch">기사 검색</a>
+      </nav>
+    </div>
+    <!-- ── SITE HERO (slider) ── -->
+    <div class="site-hero-slider" id="site-hero-slider">
+      <!-- Slides injected by JS; static fallback shown until JS runs -->
+      <div class="site-hero site-hero-slide active" id="site-hero-static">
+        <div class="site-hero-content">
+          <div class="site-hero-eyebrow">BP미디어 · bpmedia.net</div>
+          <h3 class="site-hero-title">스카우트 운동의 소식을<br>기록합니다</h3>
+          <p class="site-hero-sub">한국스카우트연맹과 세계스카우트연맹의 소식을 자발적인 봉사로 전합니다</p>
+        </div>
+      </div>
+      <div class="hero-controls" id="hero-controls">
+        <div class="hero-dots" id="hero-dots"></div>
+        <button type="button" class="hero-pause-btn" id="hero-pause-btn" aria-pressed="false">일시정지</button>
       </div>
     </div>
-    <div class="hero-controls" id="hero-controls">
-      <div class="hero-dots" id="hero-dots"></div>
-      <button type="button" class="hero-pause-btn" id="hero-pause-btn" aria-pressed="false">일시정지</button>
-    </div>
-  </div>
+  </section>
 
   <!-- ── HOME CONTENT ── -->
   <div class="home-wrapper">
@@ -150,7 +152,7 @@
         <div class="home-priority-latest">
           <h2 class="home-section-title home-section-title-latest">
             <span data-i18n="section.latest">최신 소식</span>
-            <a href="/latest" class="home-section-more" data-i18n="home.more">더보기 →</a>
+            <a href="/latest" class="home-section-more" data-i18n="home.moreLatest">최신 기사 더 보기 →</a>
             <span class="rule" aria-hidden="true"></span>
           </h2>
           <div class="home-rail-card">
@@ -165,6 +167,10 @@
         </div>
       </aside>
     </section>
+
+    <div class="ticker">
+      <div class="ticker-inner" id="ticker-inner" data-fallback-items="길웰 미디어는 스카우트 운동의 소식을 기록하는 미디어입니다||한국스카우트연맹 및 세계스카우트연맹 소식을 전합니다||The BP Media · bpmedia.net"></div>
+    </div>
 
     <div class="home-mobile-stack">
       <div>
@@ -338,7 +344,7 @@
         <h4>관리자</h4>
         <a href="/admin.html">관리자 페이지 →</a>
         <a href="/glossary-raw">용어집 RAW로 보기 →</a>
-        <p class="footer-build">Site <span class="site-build-version">V00.199.02</span> · Admin <span class="admin-build-version">V03.165.00</span></p>
+        <p class="footer-build">Site <span class="site-build-version">V00.200.00</span> · Admin <span class="admin-build-version">V03.165.00</span></p>
         <div class="footer-live-stats" id="home-footer-stats">
           <p class="footer-live-stat">전체 방문자 <strong id="home-total-visitors">—</strong></p>
           <p class="footer-live-stat">누적 페이지뷰 <strong id="home-total-views">—</strong></p>
@@ -356,15 +362,15 @@
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.4/dist/purify.min.js" integrity="sha384-eEu5CTj3qGvu9PdJuS+YlkNi7d2XxQROAFYOr59zgObtlcux1ae1Il3u7jvdCSWu" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-  <script src="/js/main.js?v=20261121110836" data-gw-script-module="main.js" data-gw-script-primary></script>
-  <script src="/js/site-chrome.js?v=20261121110836" data-gw-script-module="site-chrome.js"></script>
-  <script src="/js/chatbot.js?v=20261121110836" defer></script>
-  <script src="/js/home-helpers.js?v=20261121110836" data-gw-script-module="home-helpers.js"></script>
-  <script src="/js/home-render.js?v=20261121110836" data-gw-script-module="home-render.js"></script>
-  <script src="/js/home-hero.js?v=20261121110836" data-gw-script-module="home-hero.js"></script>
-  <script src="/js/home-runtime.js?v=20261121110836" data-gw-script-module="home-runtime.js"></script>
-  <script src="/js/home.js?v=20261121110836" data-gw-script-module="home.js"></script>
-  <script src="/js/home-banner.js?v=20261121110836" defer></script>
+  <script src="/js/main.js?v=20261121120234" data-gw-script-module="main.js" data-gw-script-primary></script>
+  <script src="/js/site-chrome.js?v=20261121120234" data-gw-script-module="site-chrome.js"></script>
+  <script src="/js/chatbot.js?v=20261121120234" defer></script>
+  <script src="/js/home-helpers.js?v=20261121120234" data-gw-script-module="home-helpers.js"></script>
+  <script src="/js/home-render.js?v=20261121120234" data-gw-script-module="home-render.js"></script>
+  <script src="/js/home-hero.js?v=20261121120234" data-gw-script-module="home-hero.js"></script>
+  <script src="/js/home-runtime.js?v=20261121120234" data-gw-script-module="home-runtime.js"></script>
+  <script src="/js/home.js?v=20261121120234" data-gw-script-module="home.js"></script>
+  <script src="/js/home-banner.js?v=20261121120234" defer></script>
   <script type="text/javascript" src="https://t1.kakaocdn.net/kas/static/ba.min.js" async></script>
 
 </body>

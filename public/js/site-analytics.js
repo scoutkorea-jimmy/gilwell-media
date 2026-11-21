@@ -271,7 +271,7 @@
       writeStorage('localStorage', consentKey, choice);
       applyConsent(choice);
       showSettings(false);
-      (openedFromFooter ? settings : skipLink || settings).focus({ preventScroll: !openedFromFooter });
+      if (openedFromFooter) settings.focus();
     });
     actions.append(button);
   }

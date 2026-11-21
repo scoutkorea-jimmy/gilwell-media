@@ -67,24 +67,21 @@
       var div = document.createElement('div');
       div.className = 'site-hero site-hero-slide';
       if (helpers.isTransparentPng(post.image_url)) div.classList.add('site-hero-png');
-      // 플레이스홀더(밝은 크림색 로고)는 흰 히어로 텍스트가 묻히므로 더 강한
-      // 스크림을 걸 수 있도록 슬라이드 자체에 신호 클래스를 단다. (CSS .site-hero.is-ph)
-      if (post.image_is_placeholder) div.classList.add('is-ph');
       div.setAttribute('data-post-id', post.id);
 
+      var articleUrl = '/post/' + post.id;
       var mediaMarkup = '';
       if (post.image_url) {
         div.classList.add('has-bg');
         mediaMarkup =
-          '<div class="site-hero-media' + (helpers.isTransparentPng(post.image_url) ? ' is-png' : '') + (post.image_is_placeholder ? ' is-placeholder' : '') + '" aria-hidden="true" style="' + helpers.getResponsiveMediaStyle(post.media) + '">' +
+          '<a href="' + articleUrl + '" tabindex="-1" class="site-hero-media' + (helpers.isTransparentPng(post.image_url) ? ' is-png' : '') + (post.image_is_placeholder ? ' is-placeholder' : '') + '" aria-hidden="true" style="' + helpers.getResponsiveMediaStyle(post.media) + '">' +
             '<div class="site-hero-media-backdrop" style="background-image:url(' + GW.escapeHtml(post.image_url) + ')"></div>' +
             '<img class="site-hero-media-img' + (post.image_is_placeholder ? ' is-placeholder' : '') + '" src="' + GW.escapeHtml(post.image_url) + '" alt="" loading="' + (index === 0 ? 'eager' : 'lazy') + '" fetchpriority="' + (index === 0 ? 'high' : 'auto') + '" decoding="async">' +
-          '</div>';
+          '</a>';
       }
 
       div.innerHTML =
         mediaMarkup +
-        '<div class="site-hero-bg-text">' + (post.subtitle ? GW.escapeHtml(post.subtitle) : '') + '</div>' +
         '<div class="site-hero-content">' +
           '<div class="site-hero-labels">' +
             '<span class="category-tag ' + cat.tagClass + '">' + GW.escapeHtml(cat.label) + '</span>' +
@@ -93,23 +90,24 @@
             }).join('') +
             (GW.isPostNew(post) ? '<span class="post-kicker post-kicker-new">NEW</span>' : '') +
           '</div>' +
-          '<h2 class="site-hero-title">' + GW.escapeHtml(post.title) + '</h2>' +
+          '<h3 class="site-hero-title"><a class="site-hero-link" href="' + articleUrl + '">' + GW.escapeHtml(post.title) + '</a></h3>' +
           (post.subtitle ? '<p class="site-hero-subtitle">' + GW.escapeHtml(post.subtitle) + '</p>' : '') +
           '<div class="site-hero-actions">' +
-            '<a class="site-hero-cta" href="/post/' + post.id + '">소식 읽기 →</a>' +
+            '<a class="site-hero-cta" href="' + articleUrl + '">기사 읽기 →</a>' +
             '<button class="site-hero-share-btn" type="button" data-share-url="/post/' + post.id + '" data-share-title="' + GW.escapeHtml(post.title) + '">공유하기</button>' +
           '</div>' +
         '</div>';
 
+      var image = div.querySelector('.site-hero-media-img');
+      if (image) image.addEventListener('error', function () {
+        image.closest('.site-hero-media').remove();
+        div.classList.remove('has-bg');
+      }, { once: true });
+
       helpers.bindShareButtons(div, '.site-hero-share-btn');
-      div.style.cursor = 'pointer';
       div.addEventListener('click', function (event) {
         if (Date.now() < suppressClickUntil) {
           event.preventDefault();
-          return;
-        }
-        if (!event.target.classList.contains('site-hero-cta') && !event.target.classList.contains('site-hero-share-btn')) {
-          window.location.href = '/post/' + post.id;
         }
       });
       return div;
@@ -139,7 +137,7 @@
           // 숨겨진 탭에서는 넘기지 않는다. 보이지 않는 전환에 렌더·배터리를 쓰고,
           // 복귀 시 엉뚱한 슬라이드에서 시작하게 된다. (홈의 다른 주기 작업도
           // 같은 규칙 — home-runtime.js 의 갱신·상대시각 타이머 참조)
-          if (document.visibilityState !== 'visible') return;
+          if (document.visibilityState !== 'visible' || slider.contains(document.activeElement)) return;
           goTo(current + 1, 1);
         }, intervalMs);
       }
