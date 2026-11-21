@@ -106,32 +106,18 @@ test('홈 리뉴얼 감사 인사는 M3 대화상자로 뜨고 닫기·오늘 �
   }
 });
 
-test('기사 상단과 보조 정보는 중첩 외곽선을 만들지 않는다', async ({ page }) => {
-  await page.setViewportSize({ width: 1440, height: 1000 });
-  await page.goto('/post/385');
-  await page.waitForTimeout(1_500);
-
-  const styles = await page.evaluate(() => {
-    const read = (selector: string) => {
-      const style = getComputedStyle(document.querySelector(selector) as Element);
-      return {
-        border: style.borderTopWidth,
-        paddingTop: style.paddingTop,
-        background: style.backgroundColor,
-      };
-    };
-    return {
-      actions: read('.post-page-share'),
-      sidebar: read('.post-page-sidebar'),
-      sidebarSection: read('.post-page-sidebar .pps-section'),
-    };
-  });
-
-  expect(styles.actions).toMatchObject({ border: '0px', paddingTop: '0px', background: 'rgba(0, 0, 0, 0)' });
-  expect(styles.sidebar.border).toBe('0px');
-  expect(styles.sidebar.background).not.toBe('rgba(0, 0, 0, 0)');
-  expect(styles.sidebarSection.border).toBe('0px');
-  expect(styles.sidebarSection.background).toBe('rgba(0, 0, 0, 0)');
+test('기사 정보와 공유·수정은 모든 화면에서 제목 아래 본문 앞에 표시된다', async ({ page }) => {
+  for (const width of [390, 1440]) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto('/post/385', { waitUntil: 'domcontentloaded' });
+    const info = page.locator('dl.post-reader-meta');
+    await expect(info).toHaveCount(1);
+    await expect(info.locator('dt')).toHaveText(['섹션', '작성자', '게시일', '읽기 시간', '조회수']);
+    await expect(info.locator('a')).toBeVisible();
+    await expect(page.locator('.post-reader-meta + .post-page-share #post-edit-btn')).toBeVisible();
+    await expect(page.locator('.post-reader-meta + .post-page-share #post-share-btn')).toBeVisible();
+    await expect(page.locator('.post-page-body ~ .post-reader-meta, .post-reader-rail .post-reader-meta')).toHaveCount(0);
+  }
 });
 
 test('공개 화면의 보이는 버튼은 이름과 최소 터치 크기를 가진다', async ({ page }) => {
@@ -512,11 +498,12 @@ test('게시판 정렬 용어는 의미를 설명하고 모바일 주제 행은 
 test('게시판 카드의 공유 버튼은 카드 안에서 외곽선과 48px 누름 영역을 갖는다', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto('/latest');
-  await expect(page.locator('.post-card').first()).toBeVisible({ timeout: 10_000 });
-  const result = await page.locator('.post-card').first().evaluate((card) => {
+  const shareButton = page.locator('.post-card-share-btn').first();
+  await expect(shareButton).toBeVisible({ timeout: 10_000 });
+  const result = await shareButton.evaluate((share) => {
+    const card = share.closest('.post-card') as HTMLElement;
     const cardRect = card.getBoundingClientRect();
     const body = card.querySelector('.post-card-body') as HTMLElement;
-    const share = card.querySelector('.post-card-share-btn') as HTMLElement;
     const bodyRect = body.getBoundingClientRect();
     const style = getComputedStyle(share);
     return {
@@ -588,7 +575,7 @@ test('입력 필드·칩·버튼 그룹은 M3 규격(56/48 필드, 16px 입력, 
         .map((el) => ({ height: Math.round(el.getBoundingClientRect().height), font: parseFloat(getComputedStyle(el).fontSize) }));
       const groups = [...document.querySelectorAll('.board-sort-toggle, .search-scope-row, .members-view-chips')]
         .filter(visible)
-        .map((el) => getComputedStyle(el).columnGap);
+        .map((el) => ({ gap: getComputedStyle(el).columnGap, segmented: el.matches('.search-scope-row') }));
       return { fields, chips, groups };
     });
     for (const field of result.fields) {
@@ -599,7 +586,7 @@ test('입력 필드·칩·버튼 그룹은 M3 규격(56/48 필드, 16px 입력, 
       expect(chip.height, `${path} 칩 높이`).toBe(32);
       expect(chip.font, `${path} 칩 글자`).toBeGreaterThanOrEqual(14);
     }
-    for (const gap of result.groups) expect(gap, `${path} 버튼 그룹 간격`).toBe('8px');
+    for (const group of result.groups) expect(group.gap, `${path} 버튼 그룹 간격`).toBe(group.segmented ? '0px' : '8px');
   }
 });
 
@@ -629,6 +616,7 @@ test('기사 제목 아래 공유·수정 버튼을 키보드로 열고 돌아�
       await expect(button).toBeInViewport();
       const box = await button.boundingBox();
       expect(box!.height).toBeGreaterThanOrEqual(48);
+      await expect(button).toHaveCSS('border-radius', '12px');
     }
     await share.focus();
     await page.keyboard.press('Enter');

@@ -32,6 +32,13 @@ for (const category of ['korea', 'apr', 'wosm', 'people']) {
     assert.ok(!meta.includes('<script>bad</script>'));
     assert.ok(!meta.includes('본문태그')); // SEO tags stay below the article.
     assert.ok(html.includes('data-tag="본문태그"'));
+    assert.equal(html.split('aria-label="기사 정보"').length, 2);
+    const info = html.match(/<dl class="post-reader-meta"[^>]*>([\s\S]*?)<\/dl>/)[1];
+    assert.deepEqual([...info.matchAll(/<dt>(.*?)<\/dt>/g)].map(match => match[1]), ['섹션', '작성자', '게시일', '읽기 시간', '조회수']);
+    assert.ok(info.includes('href="/' + category + '"'));
+    assert.ok(info.includes('<dt>작성자</dt><dd>BP미디어</dd>')); // Missing public author uses the site byline.
+    assert.ok(info.includes('<dt>조회수</dt><dd>0회</dd>'));
+    assert.ok(!html.includes('class="post-page-sidebar"'));
     const actions = html.match(/<div class="post-page-share"[^>]*>([\s\S]*?)<\/div>/)[1];
     for (const id of ['post-share-btn', 'post-edit-btn']) {
       assert.ok(actions.includes('id="' + id + '"'));

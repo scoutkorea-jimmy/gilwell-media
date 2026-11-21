@@ -93,7 +93,7 @@
           '<h3 class="site-hero-title"><a class="site-hero-link" href="' + articleUrl + '">' + GW.escapeHtml(post.title) + '</a></h3>' +
           (post.subtitle ? '<p class="site-hero-subtitle">' + GW.escapeHtml(post.subtitle) + '</p>' : '') +
           '<div class="site-hero-actions">' +
-            '<a class="site-hero-cta" href="' + articleUrl + '">기사 읽기 →</a>' +
+            '<a class="site-hero-cta" href="' + articleUrl + '">기사 읽기</a>' +
             '<button class="site-hero-share-btn" type="button" data-share-url="/post/' + post.id + '" data-share-title="' + GW.escapeHtml(post.title) + '">공유하기</button>' +
           '</div>' +
         '</div>';

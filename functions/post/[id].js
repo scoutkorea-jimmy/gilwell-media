@@ -246,12 +246,12 @@ export async function onRequestGet(context) {
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png"/>
   <link rel="apple-touch-icon" href="/img/logo.png"/>
   <link rel="shortcut icon" href="/img/favicon-48.png"/>
-  <link rel="stylesheet" href="/css/style.css?v=20261121121427">
-  <link rel="stylesheet" href="/css/post.css?v=20261121121427">
-  <link rel="stylesheet" href="/css/topics.css?v=20261121121427">
-  <link rel="stylesheet" href="/css/chatbot.css?v=20261121121427">
-  <link rel="stylesheet" href="/css/dark-mode.css?v=20261121121427">
-  <link rel="stylesheet" href="/css/m3-site.css?v=20261121121427">
+  <link rel="stylesheet" href="/css/style.css?v=20261121123011">
+  <link rel="stylesheet" href="/css/post.css?v=20261121123011">
+  <link rel="stylesheet" href="/css/topics.css?v=20261121123011">
+  <link rel="stylesheet" href="/css/chatbot.css?v=20261121123011">
+  <link rel="stylesheet" href="/css/dark-mode.css?v=20261121123011">
+  <link rel="stylesheet" href="/css/m3-site.css?v=20261121123011">
 </head>
 <body class="post-page">
   <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
@@ -338,17 +338,19 @@ export async function onRequestGet(context) {
 
         <div class="post-page-meta">
           <a href="/${cat.key}" data-action="history-back" class="post-page-back-link">← 이전 화면</a>
-          <a href="/${cat.key}" class="post-section-link">${escapeHtml(cat.label)}</a>
           ${isNew ? '<span class="post-kicker post-kicker-new">NEW</span>' : ''}
           ${(post.tag || '').split(',').map(tag => tag.trim()).filter(Boolean).map(tag => `<span class="post-kicker ${cat.tagClass}-kicker">${escapeHtml(tag)}</span>`).join('')}
         </div>
 
         <h1 class="post-page-title">${title}</h1>
         ${subtitle ? `<p class="post-page-subtitle">${subtitle}</p>` : ''}
-        <div class="post-reader-meta">
-          <time datetime="${escapeHtml(publishedIso)}">${dateStr}</time>
-          <span>읽기 약 ${readingMins}분</span>
-        </div>
+        <dl class="post-reader-meta" aria-label="기사 정보">
+          <div><dt>섹션</dt><dd><a href="/${cat.key}">${escapeHtml(cat.label)}</a></dd></div>
+          <div><dt>작성자</dt><dd>${escapeHtml(post.author)}</dd></div>
+          <div><dt>게시일</dt><dd>${publishedIso && dateStr ? `<time datetime="${escapeHtml(publishedIso)}">${escapeHtml(dateStr)}</time>` : '미상'}</dd></div>
+          <div><dt>읽기 시간</dt><dd>약 ${readingMins}분</dd></div>
+          <div><dt>조회수</dt><dd>${Number(post.views || 0).toLocaleString('ko-KR')}회</dd></div>
+        </dl>
         <div class="post-page-share" role="group" aria-label="기사 도구">
           <button id="post-share-btn" class="post-action-btn" type="button">공유하기</button>
           <button id="post-edit-btn" class="post-action-btn" type="button">수정하기</button>
@@ -394,15 +396,7 @@ export async function onRequestGet(context) {
 
       <!-- ── Sidebar ── -->
       <div class="post-reader-rail">
-        <aside class="post-page-sidebar" aria-label="기사 정보">
-          <div class="pps-section">
-            <h2 class="pps-label">기사 정보</h2>
-            ${post.author ? `<div class="pps-row"><span class="pps-key">작성자</span><span class="pps-val">${escapeHtml(post.author)}</span></div>` : ''}
-            <div class="pps-row"><span class="pps-key">조회수</span><span class="pps-val">${post.views || 0}</span></div>
-            ${post.ai_assisted ? '<div class="pps-row"><span class="pps-key">편집</span><a class="pps-val" href="/editorial-policy">AI 지원 작성</a></div>' : ''}
-            <a class="post-continue-jump" href="#post-continue-heading">다른 기사 읽기 <span aria-hidden="true">↓</span></a>
-          </div>
-        </aside>
+        <a class="post-continue-jump" href="#post-continue-heading">다른 기사 읽기 <span aria-hidden="true">↓</span></a>
 
         <!-- Kakao AdFit 160x600 (vertical) — PC 사이드바 하단, AI 행 아래 -->
         <aside class="kakao-adfit kakao-adfit-vertical" aria-label="광고">
@@ -427,7 +421,7 @@ export async function onRequestGet(context) {
         <h4>관리자</h4>
         <a href="/admin.html">관리자 페이지 →</a>
         <a href="/glossary-raw">용어집 RAW로 보기 →</a>
-        <p class="footer-build">Site <span class="site-build-version">V00.200.02</span> · Admin <span class="admin-build-version">V03.165.00</span></p>
+        <p class="footer-build">Site <span class="site-build-version">V00.200.03</span> · Admin <span class="admin-build-version">V03.165.00</span></p>
       </div>
       <div class="footer-bottom">
         <p data-i18n="footer.copyright">© 2026 ${SITE_BRAND_NAME} · ${SITE_DOMAIN_LABEL}</p>
@@ -657,10 +651,10 @@ export async function onRequestGet(context) {
 
   <script>window.GW_BOOT_RUNTIME=${serializeForScript(publicRuntime)};window.GW_KAKAO_JS_KEY=${serializeForScript(String(publicRuntime.kakao_js_key || ''))};window.GW_POST_BOOT=${serializeForScript({ editPostId: id, sharePostUrl: postUrl, sharePostTitle: titleText, sharePostSubtitle: subtitleText, editSeed: JSON.parse(editSeed), visibleTags })};</script>
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.4/dist/purify.min.js" integrity="sha384-eEu5CTj3qGvu9PdJuS+YlkNi7d2XxQROAFYOr59zgObtlcux1ae1Il3u7jvdCSWu" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-  <script src="/js/main.js?v=20261121121427"></script>
-  <script src="/js/site-chrome.js?v=20261121121427"></script>
-  <script src="/js/chatbot.js?v=20261121121427" defer></script>
-  <script src="/js/post-page.js?v=20261121121427"></script>
+  <script src="/js/main.js?v=20261121123011"></script>
+  <script src="/js/site-chrome.js?v=20261121123011"></script>
+  <script src="/js/chatbot.js?v=20261121123011" defer></script>
+  <script src="/js/post-page.js?v=20261121123011"></script>
   <script async type="text/javascript" charset="utf-8" src="https://t1.kakaocdn.net/kas/static/ba.min.js"></script>
 </body>
 </html>`;

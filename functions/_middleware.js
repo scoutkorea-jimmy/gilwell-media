@@ -280,7 +280,8 @@ function buildCsp(request, nonce, enableAnalytics) {
   // throughout the markup (both admin and public) and tightening style-src
   // would break layout. Low priority compared to script-src.
   // fonts.googleapis.com is added for @import of Google Sans Flex / Noto Sans.
-  const styleSrc = "style-src 'self' 'unsafe-inline' https://unpkg.com https://cdn.jsdelivr.net https://fonts.googleapis.com";
+  const styleSrc = "style-src 'self' 'unsafe-inline' https://unpkg.com https://cdn.jsdelivr.net https://fonts.googleapis.com" +
+    (enableAnalytics ? " https://www.googletagmanager.com/debug/badge.css" : "");
 
   return [
     "default-src 'self'",

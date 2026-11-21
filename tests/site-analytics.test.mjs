@@ -48,6 +48,9 @@ test('middleware limits analytics and CSP to configured public HTML', async () =
       assert.equal(html.includes('site-analytics.js'), expected, path);
       assert.equal(csp.includes('https://www.googletagmanager.com'), expected, path);
       assert.equal(csp.includes('https://*.google-analytics.com'), expected, path);
+      const styles = csp.split(';').find(directive => directive.trim().startsWith('style-src ')).trim().split(/\s+/);
+      assert.equal(styles.includes('https://www.googletagmanager.com/debug/badge.css'), expected, path);
+      assert.equal(styles.includes('https://www.googletagmanager.com'), false, path);
       if (expected) {
         const nonce = html.match(/nonce="([^"]+)"/)[1];
         assert.ok(csp.includes("'nonce-" + nonce + "'"));
