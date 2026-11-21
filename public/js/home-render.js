@@ -29,7 +29,6 @@
             '<div class="mini-item-labels">' + helpers.buildMiniLabels(post, options) + '</div>' +
             '<h4><a class="mini-item-link" href="' + overlayHref + '">' + GW.escapeHtml(post.title) + '</a></h4>' +
             '<div class="mini-meta">' + GW.renderPostDateLabel(post) + '</div>' +
-            '<div class="mini-item-actions">' + helpers.buildMiniShareButton(post) + '</div>' +
           '</div>' +
           thumb +
         '</div>' +
@@ -85,12 +84,10 @@
             '<div class="home-lead-meta">' + GW.renderPostDateLabel(post) + (post.author ? ' · ' + GW.escapeHtml(post.author) : '') + '</div>' +
             '<div class="home-lead-actions">' +
               '<a class="home-subscribe-btn" href="/post/' + post.id + '">기사 읽기</a>' +
-              '<button class="home-subscribe-btn secondary" type="button" data-share-url="/post/' + post.id + '" data-share-title="' + GW.escapeHtml(post.title) + '">공유하기</button>' +
             '</div>' +
           '</div>' +
         '</div>' +
       '</article>';
-    helpers.bindShareButtons(el, '[data-share-url]');
   }
 
   function renderMiniList(el, posts, emptyMsg, options) {
@@ -107,7 +104,6 @@
     el.innerHTML = posts.map(function (post) {
       return buildMiniItem(post, options);
     }).join('');
-    helpers.bindShareButtons(el, '.mini-share-link');
   }
 
   function buildHomeSections(data) {

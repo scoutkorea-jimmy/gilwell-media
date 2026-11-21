@@ -94,7 +94,6 @@
           (post.subtitle ? '<p class="site-hero-subtitle">' + GW.escapeHtml(post.subtitle) + '</p>' : '') +
           '<div class="site-hero-actions">' +
             '<a class="site-hero-cta" href="' + articleUrl + '">기사 읽기</a>' +
-            '<button class="site-hero-share-btn" type="button" data-share-url="/post/' + post.id + '" data-share-title="' + GW.escapeHtml(post.title) + '">공유하기</button>' +
           '</div>' +
         '</div>';
 
@@ -104,7 +103,6 @@
         div.classList.remove('has-bg');
       }, { once: true });
 
-      helpers.bindShareButtons(div, '.site-hero-share-btn');
       div.addEventListener('click', function (event) {
         if (Date.now() < suppressClickUntil) {
           event.preventDefault();

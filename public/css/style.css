@@ -1784,8 +1784,7 @@ body[data-home-bootstrap] .lang-btn:hover {
 }
 
 /* CTA button on dynamic hero */
-.site-hero-cta,
-.site-hero-share-btn {
+.site-hero-cta {
   display:        inline-flex;
   align-items:    center;
   justify-content: center;
@@ -1805,8 +1804,7 @@ body[data-home-bootstrap] .lang-btn:hover {
   text-decoration: none;
   transition:     background .2s, border-color .2s, transform .2s;
 }
-.site-hero-cta:hover,
-.site-hero-share-btn:hover {
+.site-hero-cta:hover {
   background:   rgba(255,255,255,0.18);
   border-color: var(--border-on-accent);
   transform: translateY(-1px);
@@ -2079,10 +2077,6 @@ body[data-home-bootstrap] .lang-btn:hover {
   align-items: flex-start;
 }
 
-#latest-list .mini-item-actions {
-  margin-top: 2px;
-}
-
 .home-rail-actions {
   display: flex;
   gap: var(--gap-element);
@@ -2265,17 +2259,15 @@ body[data-home-bootstrap] .lang-btn:hover {
   text-decoration: none;
   border-radius: inherit;
 }
-/* 카드 내부 콘텐츠는 overlay 위에, 상호작용 요소(공유 버튼 등)는 더 위로 */
+/* 제목 링크는 직접 누르고 카드의 나머지 영역은 오버레이 링크로 이동한다. */
 .mini-item-row, .mini-item-text, .mini-item-labels, .mini-thumb {
   position: relative;
   z-index: 2;
   pointer-events: none; /* 텍스트/이미지 자체는 overlay가 처리 */
 }
-.mini-item h4, .mini-item h4 a, .mini-item-link,
-.mini-item-actions, .mini-item-actions * {
-  pointer-events: auto; /* 제목 anchor와 공유 버튼은 직접 클릭 가능 */
+.mini-item h4 a, .mini-item-link {
+  pointer-events: auto;
 }
-.mini-item-actions { position: relative; z-index: 3; }
 
 .mini-item .category-tag { margin-bottom: 0; }
 
@@ -2347,35 +2339,6 @@ body[data-home-bootstrap] .lang-btn:hover {
   font-size:      var(--fs-micro);
   color:          var(--muted);
   letter-spacing: 0.05em;
-}
-
-.mini-item-actions {
-  display: flex;
-  align-items: center;
-  gap: var(--gap-tight);
-  flex-wrap: wrap;
-  margin-top: var(--gap-micro);
-}
-
-.mini-share-link {
-  display: inline-flex;
-  align-items: center;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: var(--muted);
-  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
-  font-size: var(--fs-meta);
-  line-height: 1.4;
-  letter-spacing: 0.04em;
-  cursor: pointer;
-  text-decoration: underline;
-  text-underline-offset: 2px;
-  text-decoration-thickness: 1px;
-}
-
-.mini-share-link:hover {
-  color: var(--accent-text);
 }
 
 /* Thumbnail layout for mini-items */
@@ -4801,7 +4764,6 @@ footer a:hover { color: var(--on-accent); }
     flex-direction: column;
     align-items: stretch;
   }
-  .site-hero-share-btn,
   .site-hero-cta {
     width: 100%;
     text-align: center;
@@ -7358,7 +7320,6 @@ body.wosm-members-page #main-content {
   .skip-link,
   .hero-pause-btn,
   .home-section-more,
-  .mini-share-link,
   .post-share-btn,
   .post-action-btn,
   .mobile-compact-brand {
@@ -7386,7 +7347,6 @@ body.wosm-members-page #main-content {
   }
 
   .home-section-more,
-  .mini-share-link,
   .post-page-tag,
   .board-page-btn {
     min-width: 44px;

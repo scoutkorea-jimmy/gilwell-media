@@ -762,8 +762,7 @@ input[type='radio'] {
   justify-content: center !important;
 }
 
-.hero-pause-btn,
-.site-hero-share-btn {
+.hero-pause-btn {
   min-height: 40px;
   padding-inline: 16px !important;
   border: 1px solid rgb(255 255 255 / .32) !important;
@@ -807,7 +806,6 @@ input[type='radio'] {
   background: #ffffff;
 }
 
-.mini-share-link,
 .post-share-btn,
 .calendar-event-title-btn {
   min-width: 44px;
@@ -817,7 +815,6 @@ input[type='radio'] {
   justify-content: center;
 }
 
-.mini-share-link,
 .post-share-btn,
 .post-action-btn {
   border: 0 !important;
@@ -826,7 +823,6 @@ input[type='radio'] {
 }
 
 /* 공유는 콘텐츠의 보조 동작이다. 채운 캡을 제거해 제목·본문보다 먼저 보이지 않게 한다. */
-.mini-share-link,
 .post-share-btn {
   min-height: 32px;
   padding: 4px 0 !important;
@@ -839,7 +835,6 @@ input[type='radio'] {
   text-decoration: none !important;
 }
 
-.mini-share-link:hover,
 .post-share-btn:hover {
   color: var(--md-sys-color-primary) !important;
   background: transparent !important;
@@ -1061,10 +1056,6 @@ input[type='radio'] {
 
 .home-rail-card .mini-meta {
   color: var(--md-sys-color-on-surface-variant) !important;
-}
-
-.home-rail-card .mini-item-actions {
-  margin-top: 0 !important;
 }
 
 .home-lead-footer,
@@ -1987,7 +1978,6 @@ footer a,
 
 /* 기사 목록 카드의 보조 메타는 M3 body-small 이상으로 읽힌다. */
 .post-share-btn,
-.mini-share-link,
 .post-card-meta,
 .mini-item .meta,
 .home-lead-meta,
@@ -2758,7 +2748,7 @@ html body .mobile-nav-sublink.active {
     gap: 8px;
   }
 
-  .site-hero-actions :is(.site-hero-cta, .site-hero-share-btn) {
+  .site-hero-actions .site-hero-cta {
     min-width: 0;
     min-height: 48px;
     flex: 1 1 0;
@@ -3263,7 +3253,7 @@ html body .mobile-nav-sublink.active {
   margin: 0;
   padding-top: 18px;
 }
-.site-hero-slider .site-hero-actions :is(.site-hero-cta, .site-hero-share-btn) {
+.site-hero-slider .site-hero-actions .site-hero-cta {
   min-height: 48px;
   min-width: 0;
   flex: 0 1 auto;
@@ -3271,13 +3261,10 @@ html body .mobile-nav-sublink.active {
   border-radius: var(--md-sys-shape-small);
   font-size: var(--md-sys-type-label);
   font-weight: 700;
-}
-.site-hero-slider .site-hero-actions .site-hero-cta {
   border: 0 !important;
   background: var(--md-sys-color-primary) !important;
   color: var(--md-sys-color-on-primary) !important;
 }
-.site-hero-slider .site-hero-actions .site-hero-share-btn,
 .site-hero-slider .hero-pause-btn {
   border: 1px solid var(--md-sys-color-outline-variant) !important;
   background: var(--md-sys-color-surface) !important;
@@ -3665,7 +3652,7 @@ html body .mobile-nav-sublink.active {
 
 /* Reading actions share one silhouette. Reserve the filled brand color for reading and search. */
 :is(.site-hero-slider .site-hero-actions, .home-lead-actions, .post-page-share, .search-bar-row, .home-rail-card, .board-grid)
-:is(.site-hero-cta, .site-hero-share-btn, .home-subscribe-btn, .post-action-btn, .search-page-btn, .mini-share-link, .post-card-share-btn) {
+:is(.site-hero-cta, .home-subscribe-btn, .post-action-btn, .search-page-btn, .post-card-share-btn) {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -3691,7 +3678,7 @@ html body .mobile-nav-sublink.active {
   --action-ink: var(--md-sys-color-on-primary);
   --action-edge: var(--md-sys-color-primary);
 }
-:is(.site-hero-share-btn, .mini-share-link, .post-card-share-btn, .home-lead-actions [data-share-url], #post-share-btn) {
+:is(.post-card-share-btn, #post-share-btn) {
   --action-ink: var(--md-sys-color-primary);
   --action-bg: color-mix(in srgb, var(--action-ink) 8%, var(--md-sys-color-surface));
   --action-edge: color-mix(in srgb, var(--action-ink) 32%, var(--md-sys-color-surface));
@@ -3700,16 +3687,17 @@ html body .mobile-nav-sublink.active {
 #post-edit-btn {
   --action-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m15 5 4 4M3 21l4.5-1 13-13a2.8 2.8 0 0 0-4-4l-13 13L3 21Z'/%3E%3C/svg%3E");
 }
-[data-theme='dark'] :is(.site-hero-share-btn, .mini-share-link, .post-card-share-btn, .home-lead-actions [data-share-url], #post-share-btn, #post-edit-btn) {
+[data-theme='dark'] :is(.post-card-share-btn, #post-share-btn, #post-edit-btn) {
   --action-edge: var(--md-sys-color-outline);
 }
 .search-bar-row .search-page-btn {
   --action-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round'%3E%3Ccircle cx='10.5' cy='10.5' r='6.5'/%3E%3Cpath d='m16 16 5 5'/%3E%3C/svg%3E");
 }
 :is(.site-hero-cta, .home-lead-actions a.home-subscribe-btn) {
+  width: fit-content;
   --action-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 12h15m-6-6 6 6-6 6'/%3E%3C/svg%3E");
 }
-:is(.site-hero-share-btn, .home-rail-card .mini-share-link, .board-grid .post-card-share-btn, .home-lead-actions [data-share-url], .post-page-share .post-action-btn, .search-bar-row .search-page-btn)::before,
+:is(.board-grid .post-card-share-btn, .post-page-share .post-action-btn, .search-bar-row .search-page-btn)::before,
 :is(.site-hero-cta, .home-lead-actions a.home-subscribe-btn)::after {
   content: '';
   flex: none;
@@ -3721,7 +3709,6 @@ html body .mobile-nav-sublink.active {
 }
 .site-hero-slider .site-hero-actions,
 .post-page-main .post-page-share { gap: 8px; }
-.home-rail-card .mini-item-actions { width: fit-content; }
 .site-hero-slider .hero-pause-btn {
   display: inline-flex;
   align-items: center;
@@ -3749,45 +3736,14 @@ html body .mobile-nav-sublink.active {
   border-left-color: currentColor;
 }
 @media (hover: hover) {
-  :is(.site-hero-actions a, .site-hero-actions button, .home-lead-actions .home-subscribe-btn, .home-rail-card .mini-share-link, .board-grid .post-card-share-btn, .post-page-share .post-action-btn, .search-bar-row .search-page-btn, .site-hero-slider .hero-pause-btn):hover {
+  :is(.site-hero-actions a, .home-lead-actions .home-subscribe-btn, .board-grid .post-card-share-btn, .post-page-share .post-action-btn, .search-bar-row .search-page-btn, .site-hero-slider .hero-pause-btn):hover {
     box-shadow: inset 0 0 0 100px color-mix(in srgb, currentColor 8%, transparent) !important;
   }
 }
-:is(.site-hero-actions a, .site-hero-actions button, .home-lead-actions .home-subscribe-btn, .home-rail-card .mini-share-link, .board-grid .post-card-share-btn, .post-page-share .post-action-btn, .search-bar-row .search-page-btn):active {
+:is(.site-hero-actions a, .home-lead-actions .home-subscribe-btn, .board-grid .post-card-share-btn, .post-page-share .post-action-btn, .search-bar-row .search-page-btn):active {
   box-shadow: inset 0 0 0 100px color-mix(in srgb, currentColor 14%, transparent) !important;
 }
 
-/* A desktop sidebar and a phone feed can have the same narrow card width. */
-.home-priority-latest { container: latest-stories / inline-size; }
-#latest-list .mini-item-text {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
-  column-gap: 8px;
-}
-#latest-list .mini-item-text > :is(.mini-item-labels, h4) { grid-column: 1 / -1; }
-#latest-list .mini-item-actions { margin: 0; }
-#latest-list .mini-share-link {
-  --action-bg: transparent;
-  --action-edge: transparent;
-  --action-ink: var(--md-sys-color-on-surface-variant);
-  padding-inline: 10px !important;
-}
-#latest-list .mini-share-link:is(:hover, :focus-visible) { --action-ink: var(--md-sys-color-primary); }
-@container latest-stories (max-width: 480px) {
-  #latest-list .mini-share-link {
-    width: var(--md-comp-touch-target);
-    padding: 0 !important;
-  }
-  #latest-list .mini-share-link > span {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    clip-path: inset(50%);
-    overflow: hidden;
-    white-space: nowrap;
-  }
-}
 .home-priority-latest .home-rail-actions {
   flex-direction: row;
   align-items: center;

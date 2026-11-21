@@ -22,6 +22,26 @@ test('home API returns ok within 5s', async ({ request }) => {
   expect(body).toHaveProperty('latest');
 });
 
+for (const width of [390, 1440]) {
+  test(`home opens articles directly and sharing is available on the article at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 844 });
+    await page.addInitScript(() => localStorage.setItem('bpmedia-analytics-transfer-consent', 'denied'));
+    await page.goto('/');
+
+    // Both SSR renderers supply the title link. The client adds the card overlay.
+    await expect(page.locator('#latest-list .mini-item-overlay').first()).toBeAttached();
+    await expect(page.getByRole('button', { name: /공유/, includeHidden: true })).toHaveCount(0);
+    await expect(page.locator('[data-share-url], .site-hero-share-btn, .mini-share-link')).toHaveCount(0);
+
+    const article = page.locator('#latest-list h4 a[href^="/post/"]').first();
+    const articlePath = await article.getAttribute('href');
+    expect(articlePath).toMatch(/^\/post\/\d+$/);
+    await article.click();
+    await expect(page).toHaveURL(articlePath!);
+    await page.getByRole('button', { name: '공유하기', exact: true }).click();
+    await expect(page.locator('#share-modal-close')).toBeVisible();
+  });
+}
 
 test('scout topic buttons keep icons, touch targets and keyboard focus', async ({ page }) => {
   for (const width of [1440, 800, 768, 601, 390, 320]) {

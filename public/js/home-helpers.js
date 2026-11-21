@@ -273,11 +273,6 @@
     });
   }
 
-  function buildMiniShareButton(post) {
-    var title = GW.escapeHtml(post.title);
-    return '<button class="mini-share-link" type="button" title="공유하기" aria-label="' + title + ' 공유하기" data-share-url="/post/' + post.id + '" data-share-title="' + title + '"><span>공유하기</span></button>';
-  }
-
   function normalizeResponsiveMedia(media) {
     var raw = media && typeof media === 'object' ? media : {};
     function clamp(value, min, max, fallback) {
@@ -337,26 +332,6 @@
     ].join(';');
   }
 
-  function bindShareButtons(root, selector) {
-    if (!root) return;
-    root.querySelectorAll(selector).forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        var path = btn.getAttribute('data-share-url') || '';
-        var title = btn.getAttribute('data-share-title') || '';
-        var url;
-        try {
-          url = new URL(path, window.location.origin).toString();
-        } catch (_) {
-          url = path ? window.location.origin + path : window.location.href;
-        }
-        GW.sharePostLink({ url: url, title: title, text: title })
-          .catch(function (err) {
-            GW.showToast((err && err.message) || '링크 공유에 실패했습니다', 'error');
-          });
-      });
-    });
-  }
-
   function getPostSortTime(post) {
     if (!post || typeof post !== 'object') return 0;
     var raw = post.publish_at || post.created_at || '';
@@ -396,10 +371,8 @@
     isTransparentPng: isTransparentPng,
     buildMiniLabels: buildMiniLabels,
     clampMiniLabelRows: clampMiniLabelRows,
-    buildMiniShareButton: buildMiniShareButton,
     normalizeResponsiveMedia: normalizeResponsiveMedia,
     getResponsiveMediaStyle: getResponsiveMediaStyle,
-    bindShareButtons: bindShareButtons,
     getPostSortTime: getPostSortTime,
     sortPostsLatest: sortPostsLatest,
     renderHomeFooterStats: renderHomeFooterStats
