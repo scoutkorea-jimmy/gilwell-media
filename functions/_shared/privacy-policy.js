@@ -1,4 +1,5 @@
 import { privacySnapshot } from './rust-server.js';
+import { configuredAnalyticsId } from './site-analytics-config.js';
 
 /**
  * Gilwell Media · Privacy Policy storage + default content
@@ -124,23 +125,44 @@ export const DEFAULT_PRIVACY_POLICY_HTML = `<h1>개인정보 처리방침</h1>
 
 export const PRIVACY_POLICY_MAX_CHARS = 100_000;
 
+const ANALYTICS_POLICY_DATE = '2026-11-21T00:00:00+09:00';
+const ANALYTICS_POLICY_HTML = `
+<h2 id="analytics-privacy">9. 선택적 방문 분석과 개인정보 국외 이전</h2>
+<p>2026년 11월 21일부터, 방문 분석과 국외 이전에 동의한 경우에만 공개 사이트의 이용 통계를 Google Analytics 4로 측정합니다. 대한민국 개인정보 보호법 제28조의8 제1항 제1호의 별도 동의에 근거합니다.</p>
+<ul>
+  <li><strong>이전 항목</strong> — 분석 쿠키 식별자, 열람한 공개 페이지 경로와 유입 경로, 방문 시각, 기기·브라우저 정보, 접속 지역, 기사 클릭·본문 끝 도달·다음 기사 이동·검색 결과 열람 등 이용 기록. 검색어 원문과 URL 쿼리 문자열은 계측 이벤트에서 제외합니다. Google은 접속 지역을 추정할 때 IP 주소를 일시적으로 처리합니다.</li>
+  <li><strong>이전받는 자·국가</strong> — Google LLC와 Google Analytics 운영을 지원하는 Google 계열사 및 수탁사. 미국과 <a href="https://www.google.com/about/datacenters/locations/">Google 데이터센터가 위치한 국가</a>에서 처리될 수 있습니다. 문의는 <a href="https://support.google.com/policies/contact/general_privacy_form">Google 개인정보 문의 양식</a> 또는 <a href="mailto:info@bpmedia.net">info@bpmedia.net</a>으로 보내실 수 있습니다.</li>
+  <li><strong>이전 시점과 방법</strong> — 동의한 이후 공개 페이지를 열거나 측정 대상 행동을 할 때, 브라우저가 암호화된 HTTPS 연결로 Google에 전송합니다.</li>
+  <li><strong>목적과 보관 기간</strong> — 사이트 이용 통계를 만들어 기사 탐색과 열람 경험을 개선합니다. GA4의 사용자 및 이벤트 수준 데이터는 2개월로 설정했습니다. 표준 보고서의 집계 통계에는 이 보관 기간이 적용되지 않습니다. 분석 쿠키는 최대 60일로 설정합니다.</li>
+  <li><strong>거부와 철회</strong> — ‘허용 안 함’을 선택해 거부할 수 있고, 페이지 하단 ‘방문 분석 설정’에서 언제든 선택을 바꿀 수 있습니다. 거부하거나 철회해도 기사 열람과 공개 검색을 이용할 수 있습니다. 만 14세 미만 방문자는 ‘허용 안 함’을 선택해 주세요.</li>
+</ul>`;
+
+function withAnalyticsPolicy(env, policy) {
+  if (!configuredAnalyticsId(env)) return policy;
+  const newer = Date.parse(policy.updated_at) > Date.parse(ANALYTICS_POLICY_DATE);
+  return {
+    ...policy,
+    html: (newer ? policy.html : policy.html.replace(/최종 개정 \d{4}-\d{2}-\d{2}/, '최종 개정 2026-11-21')) + ANALYTICS_POLICY_HTML,
+    updated_at: newer ? policy.updated_at : ANALYTICS_POLICY_DATE,
+  };
+}
+
 export async function loadPrivacyPolicy(env) {
-  if (!env || !env.DB) return { html: DEFAULT_PRIVACY_POLICY_HTML, updated_at: null, is_default: true };
   try {
-    const { results } = await privacySnapshot(env);
+    const { results } = env?.DB ? await privacySnapshot(env) : {};
     const rows = Object.fromEntries((results || []).map(row => [row.key, row]));
     const bodyRow = rows[PRIVACY_SETTINGS_KEY];
     const tsRow = rows[PRIVACY_SETTINGS_UPDATED_KEY];
     const stored = bodyRow && typeof bodyRow.value === 'string' ? bodyRow.value.trim() : '';
     if (stored) {
-      return {
+      return withAnalyticsPolicy(env, {
         html: stored,
         updated_at: (tsRow && tsRow.value) || null,
         is_default: false,
-      };
+      });
     }
   } catch (_) { /* fall through */ }
-  return { html: DEFAULT_PRIVACY_POLICY_HTML, updated_at: null, is_default: true };
+  return withAnalyticsPolicy(env, { html: DEFAULT_PRIVACY_POLICY_HTML, updated_at: null, is_default: true });
 }
 
 export function normalizePrivacyHtml(raw) {

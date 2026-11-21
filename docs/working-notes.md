@@ -168,3 +168,22 @@ curl -s 'https://bpmedia.net/api/version' | python3 -m json.tool
 ## 12 P0 점검 시 transient 패턴 구분
 
 `homepage_issues` `severity=high status=open` 이라도 `occurrence_count <= 2` + `reporter = system:auto-home` + `summary = Load failed` 단일 메시지면 **일시 네트워크 단절** 가능성이 높다 (CLAUDE.md §0 Step 1 단서). 5분 디듀프 윈도우 (00.135.00+)로 이 패턴 추가 억제.
+
+## 공개 Site GA4 연결
+
+Pages의 `GA4_MEASUREMENT_ID`가 비어 있으면 분석 모듈과 동의 UI를 주입하지 않는다.
+운영 활성화 전에 기존 BP미디어 웹 스트림과 연결된 태그 대상을 확인하고, 스트림의 향상된 측정과 광고 기능을 끈다.
+검색어·쿼리 문자열을 전송하지 않는 동작과 동의 철회 후 실제 네트워크 차단을 태그의 네트워크 요청과 DebugView에서 확인한다.
+공개 개인정보 처리방침은 측정 ID가 설정되면 기존 관리자 저장본 아래에 방문 분석·국외 이전 조항을 표시한다. 계측 태그는 운영 도메인 `bpmedia.net`에서만 삽입한다.
+
+| 이벤트 | 기준 |
+|---|---|
+| `page_view` | 허용한 공개 문서별 첫 측정 |
+| `home_section_view` | 홈 영역이 화면에 들어오거나 그 영역의 링크를 클릭할 때, 문서마다 영역당 한 번 |
+| `home_article_click` | 홈 영역의 기사 링크를 활성화할 때 |
+| `article_body_end` | 기사 본문 끝이 화면에 들어올 때, 문서당 한 번 |
+| `next_article_view` | 같은 탭에서 내부 경로로 30분 이내에 이전과 다른 기사에 도달할 때 |
+| `site_search_results` | 공개 검색 결과 또는 0건 표시. 페이지 번호 이동과 Dreampath 검색 제외 |
+| `search_article_view` | 공개 검색 결과를 같은 탭에서 클릭하고 목적지 기사가 열렸을 때 |
+
+GA4에서 영역과 검색 상태를 보고서에 사용하려면 이벤트 범위 맞춤 측정기준 `home_section`과 `result_state`를 등록한다.

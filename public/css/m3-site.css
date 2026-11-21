@@ -3068,3 +3068,25 @@ html body .mobile-nav-sublink.active {
     animation: none;
   }
 }
+
+.site-analytics-consent {
+  padding: 12px 20px;
+  border-bottom: 1px solid currentColor;
+}
+
+.site-analytics-consent p {
+  margin: 0 0 8px;
+}
+
+.site-analytics-consent button,
+.footer-brand > button[aria-controls="bpmedia-analytics-consent"] {
+  min-height: 48px;
+  padding-inline: 12px;
+  margin-inline-end: 8px;
+  cursor: pointer;
+}
+
+.site-analytics-body-end {
+  display: block;
+  block-size: 1px;
+}

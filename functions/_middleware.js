@@ -20,6 +20,8 @@
  */
 
 import { ASSET_VERSION } from './_shared/build-version.js';
+import { configuredAnalyticsId } from './_shared/site-analytics-config.js';
+import { SITE_PAGE_KEY_BY_PATH } from './_shared/site-structure.mjs';
 
 export async function onRequest(context) {
   const { request, next } = context;
@@ -74,16 +76,28 @@ export async function onRequest(context) {
 
   const nonce = generateNonce();
 
-  const rewritten = new HTMLRewriter()
+  const configuredId = configuredAnalyticsId(context.env);
+  const enableAnalytics = configuredId && requestUrl.hostname === 'bpmedia.net' &&
+    response.status === 200 && !/noindex/i.test(response.headers.get('X-Robots-Tag') || '') &&
+    isAnalyticsPage(pathname);
+
+  const rewriter = new HTMLRewriter()
     .on('script', {
       element(el) {
         el.setAttribute('nonce', nonce);
       },
-    })
-    .transform(response);
+    });
+  if (enableAnalytics) {
+    rewriter.on('body', {
+      element(el) {
+        el.append(`<script defer nonce="${nonce}" src="/js/site-analytics.js?v=${ASSET_VERSION}" data-measurement-id="${configuredId}"></script>`, { html: true });
+      },
+    });
+  }
 
+  const rewritten = rewriter.transform(response);
   const headers = new Headers(rewritten.headers);
-  headers.set('Content-Security-Policy', buildCsp(request, nonce));
+  headers.set('Content-Security-Policy', buildCsp(request, nonce, enableAnalytics));
   if (isDreampathTemplatePath(pathname)) {
     headers.set('X-Frame-Options', 'SAMEORIGIN');
   }
@@ -230,7 +244,14 @@ export function isBlockedInternalPath(pathname) {
   return false;
 }
 
-function buildCsp(request, nonce) {
+function isAnalyticsPage(pathname) {
+  const path = pathname.replace(/\/$/, '') || '/';
+  return path === '/' || path === '/help' || Object.hasOwn(SITE_PAGE_KEY_BY_PATH, path) ||
+    /^\/post\/[1-9]\d*$/.test(path) || /^\/topics\/[a-z0-9-]+$/.test(path) ||
+    /^\/feature\/[a-z0-9-]+\/[a-z0-9-]+$/.test(path) || /^\/memorabilia\/[1-9]\d*$/.test(path);
+}
+
+function buildCsp(request, nonce, enableAnalytics) {
   const pathname = getPathname(request);
 
   const legacy = isLegacyInlinePath(pathname);
@@ -263,7 +284,7 @@ function buildCsp(request, nonce) {
 
   return [
     "default-src 'self'",
-    scriptSrc,
+    scriptSrc + (enableAnalytics ? ' https://www.googletagmanager.com' : ''),
     scriptSrcElem,
     styleSrc,
     "img-src 'self' data: https:",
@@ -280,7 +301,8 @@ function buildCsp(request, nonce) {
     // 테스트가 상시 실패하고, 진짜 회귀가 그 노이즈에 묻힌다. 광고 표시 자체는
     // 이것 없이도 되지만 품질 측정 신호가 빠진다. 실제로 관측된 도메인만 넣는다
     // (ep2 등은 관측되면 그때 추가).
-    "connect-src 'self' https://cdn.jsdelivr.net https://unpkg.com https://esm.sh https://nominatim.openstreetmap.org https://challenges.cloudflare.com https://cloudflareinsights.com https://display.ad.daum.net https://t1.daumcdn.net https://t1.kakaocdn.net https://serv.ds.kakao.com https://*.onkakao.net https://pagead2.googlesyndication.com https://googleads.g.doubleclick.net https://csi.gstatic.com https://ep1.adtrafficquality.google",
+    "connect-src 'self' https://cdn.jsdelivr.net https://unpkg.com https://esm.sh https://nominatim.openstreetmap.org https://challenges.cloudflare.com https://cloudflareinsights.com https://display.ad.daum.net https://t1.daumcdn.net https://t1.kakaocdn.net https://serv.ds.kakao.com https://*.onkakao.net https://pagead2.googlesyndication.com https://googleads.g.doubleclick.net https://csi.gstatic.com https://ep1.adtrafficquality.google" +
+      (enableAnalytics ? " https://www.google-analytics.com https://*.google-analytics.com https://analytics.google.com https://*.analytics.google.com https://www.googletagmanager.com" : ""),
     // Kakao ad iframes are served from t1.kakaocdn.net. AdSense ad iframes from
     // googleads.g.doubleclick.net / tpc.googlesyndication.com / www.google.com.
     "frame-src 'self' https://www.youtube-nocookie.com https://www.openstreetmap.org https://challenges.cloudflare.com https://t1.daumcdn.net https://display.ad.daum.net https://t1.kakaocdn.net https://googleads.g.doubleclick.net https://tpc.googlesyndication.com https://www.google.com",

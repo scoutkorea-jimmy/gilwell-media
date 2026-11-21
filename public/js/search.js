@@ -84,6 +84,7 @@
     var lastQuery = '';
     var pageSize = 16;
     var totalPages = 1;
+    var searchRequest = 0;
 
     if (!searchInput || !searchBtn || !searchCount || !searchRes) {
       return;
@@ -140,6 +141,7 @@
       if (!query) return;
       if (!opts.preservePage) currentPage = 1;
       lastQuery = query;
+      var request = ++searchRequest;
 
       renderLoading(searchRes, searchCount);
       if (searchPagination) searchPagination.innerHTML = '';
@@ -158,10 +160,14 @@
 
       GW.apiFetch(endpoint + (endpoint.indexOf('?') >= 0 ? '&' : '?') + params.toString())
         .then(function (data) {
+          if (request !== searchRequest) return;
           var posts = activeScope === 'dreampath' ? (data.results || []) : (data.posts || []);
           var total = data.total || posts.length;
           pageSize = Math.max(1, parseInt(data.pageSize, 10) || posts.length || 16);
           totalPages = Math.max(1, Math.ceil(total / pageSize));
+          if (activeScope === 'site' && !opts.preservePage) {
+            document.dispatchEvent(new CustomEvent('bp:search-results', { detail: total > 0 }));
+          }
           var startIndex = total ? ((currentPage - 1) * pageSize) + 1 : 0;
           var endIndex = total ? Math.min(total, startIndex + posts.length - 1) : 0;
 
@@ -179,6 +185,7 @@
           renderPagination();
         })
         .catch(function (error) {
+          if (request !== searchRequest) return;
           totalPages = 1;
           if (activeScope === 'dreampath') {
             if (error && Number(error.status) === 401) {
