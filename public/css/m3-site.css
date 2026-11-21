@@ -827,8 +827,7 @@ input[type='radio'] {
 
 /* 공유는 콘텐츠의 보조 동작이다. 채운 캡을 제거해 제목·본문보다 먼저 보이지 않게 한다. */
 .mini-share-link,
-.post-share-btn,
-#post-share-btn {
+.post-share-btn {
   min-height: 32px;
   padding: 4px 0 !important;
   border: 0 !important;
@@ -840,14 +839,8 @@ input[type='radio'] {
   text-decoration: none !important;
 }
 
-#post-share-btn {
-  min-height: 40px;
-  padding-block: 8px !important;
-}
-
 .mini-share-link:hover,
-.post-share-btn:hover,
-#post-share-btn:hover {
+.post-share-btn:hover {
   color: var(--md-sys-color-primary) !important;
   background: transparent !important;
 }
@@ -3559,16 +3552,40 @@ html body .mobile-nav-sublink.active {
 }
 
 .post-page-main .post-reader-meta {
+  display: flex;
+  flex-wrap: wrap;
   gap: 4px 12px;
-  margin: 4px 0 12px !important;
+  margin-top: 8px;
   color: var(--md-sys-color-on-surface-variant);
   font-size: .875rem;
 }
 
-.post-reader-meta #post-share-btn {
-  min-height: 48px;
-  margin-inline-start: auto;
-  color: var(--md-sys-color-primary) !important;
+.post-page-share .post-action-btn {
+  min-height: 48px !important;
+  padding: 0 16px !important;
+  border: 1px solid var(--md-sys-color-outline) !important;
+  border-radius: var(--md-sys-shape-small) !important;
+  background: var(--md-sys-color-surface) !important;
+  color: var(--md-sys-color-on-surface) !important;
+  font-size: .9375rem;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+.post-page-share #post-share-btn {
+  border-color: var(--md-sys-color-primary) !important;
+  background: var(--md-sys-color-primary) !important;
+  color: var(--md-sys-color-on-primary) !important;
+}
+
+.post-page-share .post-action-btn:hover {
+  text-decoration: underline;
+  text-underline-offset: .18em;
+}
+
+.post-page-share .post-action-btn:focus-visible {
+  outline: 3px solid var(--md-sys-color-primary);
+  outline-offset: 3px;
 }
 
 .post-page-main .post-page-body {
@@ -3673,4 +3690,33 @@ html body .mobile-nav-sublink.active {
   /* The shared compact menu replaces the article header after hydration. */
   body.post-page:has(.mobile-compact-header.is-visible) { padding-top: 64px; }
   body.post-page:has(.mobile-compact-header.is-visible) .post-mobile-header { display: none !important; }
+}
+
+/* A share action remains a distinct control inside a linked article card. */
+:is(.home-rail-card .mini-share-link, .board-grid .post-card-share-btn, .home-lead-actions button[data-share-url], .site-hero-slider .site-hero-actions .site-hero-share-btn) {
+  min-height: 48px;
+  padding: 0 16px !important;
+  border: 1px solid var(--md-sys-color-outline) !important;
+  border-radius: var(--md-sys-shape-small) !important;
+  background: var(--md-sys-color-surface) !important;
+  color: var(--md-sys-color-primary) !important;
+  font-size: var(--md-sys-type-label) !important;
+  font-weight: 700 !important;
+  cursor: pointer;
+}
+.home-rail-card .mini-item-actions { width: fit-content; }
+@media (hover: hover) {
+  :is(.home-rail-card .mini-share-link, .board-grid .post-card-share-btn, .home-lead-actions button[data-share-url], .site-hero-slider .site-hero-actions .site-hero-share-btn):hover {
+    border-color: var(--md-sys-color-primary) !important;
+    background: var(--md-sys-color-surface-container-high) !important;
+  }
+}
+:is(.mini-share-link, .post-card-share-btn, .home-lead-actions button[data-share-url], .site-hero-slider .site-hero-actions .site-hero-share-btn):focus-visible {
+  outline: 2px solid var(--md-sys-color-primary) !important;
+  outline-offset: 2px;
+}
+:is(.home-rail-card .mini-share-link, .board-grid .post-card-share-btn, .home-lead-actions button[data-share-url], .site-hero-slider .site-hero-actions .site-hero-share-btn):active {
+  border-color: var(--md-sys-color-primary) !important;
+  background: var(--md-sys-color-primary-container) !important;
+  color: var(--md-sys-color-on-primary-container) !important;
 }

@@ -204,6 +204,8 @@
     }
   }
 
+  GW.trapFocus = trapFocus;
+
   GW.applySiteChrome = function () {
     GW.syncBuildVersion();
     GW.ensureFavicon();

@@ -525,6 +525,7 @@ window._closePostLogin = function () {
   modal.setAttribute('aria-hidden', 'true');
   modal.inert = true;
   _setBodyModalLock(false);
+  document.getElementById('post-edit-btn')?.focus({ preventScroll: true });
   var err = document.getElementById('post-login-err');
   if (err) err.style.display = 'none';
   if (window.turnstile && _postTurnstileWidgetId != null) {

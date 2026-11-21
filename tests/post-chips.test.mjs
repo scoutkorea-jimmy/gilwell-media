@@ -32,6 +32,13 @@ for (const category of ['korea', 'apr', 'wosm', 'people']) {
     assert.ok(!meta.includes('<script>bad</script>'));
     assert.ok(!meta.includes('본문태그')); // SEO tags stay below the article.
     assert.ok(html.includes('data-tag="본문태그"'));
+    const actions = html.match(/<div class="post-page-share"[^>]*>([\s\S]*?)<\/div>/)[1];
+    for (const id of ['post-share-btn', 'post-edit-btn']) {
+      assert.ok(actions.includes('id="' + id + '"'));
+      assert.equal(html.split('id="' + id + '"').length, 2);
+    }
+    assert.ok(html.indexOf('class="post-reader-meta"') < html.indexOf('class="post-page-share"'));
+    assert.ok(html.indexOf('class="post-page-share"') < html.indexOf('class="post-page-body modal-body"'));
     assert.equal(html.match(/id="post-continue-heading"/g)?.length, 1);
     assert.match(html, /id="post-continue-heading">다른 기사 읽기<\/h2>/);
     assert.match(html, /<a href="\/latest">최신 기사 목록/);

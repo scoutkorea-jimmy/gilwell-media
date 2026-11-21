@@ -6,9 +6,9 @@
   'use strict';
 
   const GW = window.GW = {};
-  GW.APP_VERSION = '00.200.01';
+  GW.APP_VERSION = '00.200.02';
   GW.ADMIN_VERSION = '03.165.00';
-  GW.ASSET_VERSION = '20261121120814';
+  GW.ASSET_VERSION = '20261121121427';
   GW.PALETTE = {
     scoutingPurple: '#622599',
     canvasWhite: '#FFFFFF',
@@ -1781,14 +1781,16 @@
         GW.handleShareChannel(btn.getAttribute('data-share-channel') || '');
       });
     });
-    document.addEventListener('keydown', function (event) {
+    overlay.addEventListener('keydown', function (event) {
       if (event.key === 'Escape') GW.closeShareModal();
+      else if (GW.trapFocus) GW.trapFocus(event, overlay);
     });
   };
 
   GW.openShareModal = function (options) {
     options = options || {};
     GW._shareModalState = {
+      trigger: document.activeElement,
       url: String(options.url || window.location.href || '').trim(),
       title: String(options.title || document.title || '').trim(),
       text: String(options.text || options.title || document.title || '').trim(),
@@ -1802,12 +1804,16 @@
     titleEl.textContent = GW._shareModalState.title || '이 글을 공유합니다';
     overlay.classList.add('open');
     document.body.classList.add('share-modal-open');
+    document.getElementById('share-modal-close').focus();
   };
 
   GW.closeShareModal = function () {
     var overlay = document.getElementById('share-modal');
-    if (overlay) overlay.classList.remove('open');
+    if (!overlay || !overlay.classList.contains('open')) return;
+    overlay.classList.remove('open');
     document.body.classList.remove('share-modal-open');
+    var trigger = GW._shareModalState && GW._shareModalState.trigger;
+    if (trigger && trigger.isConnected) trigger.focus({ preventScroll: true });
   };
 
   GW.loadKakaoSdk = function () {

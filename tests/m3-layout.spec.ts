@@ -509,7 +509,7 @@ test('게시판 정렬 용어는 의미를 설명하고 모바일 주제 행은 
   expect(tagRow.touchAction).toBe('pan-x');
 });
 
-test('게시판 카드 콘텐츠는 카드 안에 끝나고 공유는 비강조 텍스트 동작이다', async ({ page }) => {
+test('게시판 카드의 공유 버튼은 카드 안에서 외곽선과 48px 누름 영역을 갖는다', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto('/latest');
   await expect(page.locator('.post-card').first()).toBeVisible({ timeout: 10_000 });
@@ -521,13 +521,13 @@ test('게시판 카드 콘텐츠는 카드 안에 끝나고 공유는 비강조 
     const style = getComputedStyle(share);
     return {
       bodyBottom: Math.round(bodyRect.bottom), cardBottom: Math.round(cardRect.bottom),
-      shareBackground: style.backgroundColor, shareBorder: style.borderTopWidth, shareRadius: style.borderRadius,
+      shareBackground: style.backgroundColor, shareBorder: style.borderTopWidth, shareHeight: share.getBoundingClientRect().height,
     };
   });
   expect(result.bodyBottom).toBeLessThanOrEqual(result.cardBottom);
-  expect(result.shareBackground).toBe('rgba(0, 0, 0, 0)');
-  expect(result.shareBorder).toBe('0px');
-  expect(result.shareRadius).toBe('0px');
+  expect(result.shareBackground).not.toBe('rgba(0, 0, 0, 0)');
+  expect(result.shareBorder).toBe('1px');
+  expect(result.shareHeight).toBeGreaterThanOrEqual(48);
 });
 
 test('홈 섹션 제목과 장문 페이지 장은 별도 카드로 중첩되지 않는다', async ({ page }) => {
@@ -615,5 +615,33 @@ test('공개 화면은 보이는 H1 이 하나이고, 로고는 홈에서만 H1 
     }));
     expect(result.visible, `${path} 보이는 H1`).toHaveLength(1);
     expect(result.logoIsH1, `${path} 로고 H1`).toBe(path === '/');
+  }
+});
+
+test('기사 제목 아래 공유·수정 버튼을 키보드로 열고 돌아온다', async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem('bpmedia-analytics-transfer-consent', 'denied'));
+  for (const width of [390, 1440]) {
+    await page.setViewportSize({ width, height: 844 });
+    await page.goto('/post/628');
+    const share = page.getByRole('button', { name: '공유하기', exact: true });
+    const edit = page.getByRole('button', { name: '수정하기', exact: true });
+    for (const button of [share, edit]) {
+      await expect(button).toBeInViewport();
+      const box = await button.boundingBox();
+      expect(box!.height).toBeGreaterThanOrEqual(48);
+    }
+    await share.focus();
+    await page.keyboard.press('Enter');
+    const close = page.locator('#share-modal-close');
+    await expect(close).toBeFocused();
+    await page.keyboard.press('Shift+Tab');
+    await expect(page.locator('[data-share-channel="copy"]')).toBeFocused();
+    await page.keyboard.press('Escape');
+    await expect(share).toBeFocused();
+    await edit.focus();
+    await page.keyboard.press('Enter');
+    await expect(page.getByRole('dialog', { name: '관리자 로그인' })).toBeVisible();
+    await page.locator('#post-login-cancel-btn').click();
+    await expect(edit).toBeFocused();
   }
 });
