@@ -1830,16 +1830,6 @@ footer {
   color: var(--md-sys-color-inverse-on-surface) !important;
 }
 
-/* 광고 슬롯 앞뒤와 footer가 각각 여백을 더하지 않도록 마지막 슬롯이 간격을 한 번만 소유한다. */
-main > .kakao-adfit-horizontal:last-child {
-  margin-top: 0 !important;
-  margin-bottom: 0 !important;
-}
-
-main:has(> .kakao-adfit-horizontal:last-child) + footer {
-  margin-top: 0 !important;
-}
-
 .footer-inner {
   width: min(calc(100% - (var(--md-sys-gutter) * 2)), var(--md-sys-content-max));
   margin-inline: auto;
@@ -3037,6 +3027,10 @@ html body .mobile-nav-sublink.active {
   }
 }
 
+@media (min-width: 901px) and (max-width: 1199px) {
+  .home-3col { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
 @media (prefers-contrast: more) {
   :where(.home-lead-card, .home-rail-card, .mini-item, .article-card, .post-card, .sidebar-section, .about-box, .memo-card, .member-country-card, .calendar-event-card, .calendar-panel, .static-page-section) {
     border-color: var(--md-sys-color-on-surface) !important;
@@ -3761,6 +3755,54 @@ html body .mobile-nav-sublink.active {
 }
 :is(.site-hero-actions a, .site-hero-actions button, .home-lead-actions .home-subscribe-btn, .home-rail-card .mini-share-link, .board-grid .post-card-share-btn, .post-page-share .post-action-btn, .search-bar-row .search-page-btn):active {
   box-shadow: inset 0 0 0 100px color-mix(in srgb, currentColor 14%, transparent) !important;
+}
+
+/* A desktop sidebar and a phone feed can have the same narrow card width. */
+.home-priority-latest { container: latest-stories / inline-size; }
+#latest-list .mini-item-text {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: 8px;
+}
+#latest-list .mini-item-text > :is(.mini-item-labels, h4) { grid-column: 1 / -1; }
+#latest-list .mini-item-actions { margin: 0; }
+#latest-list .mini-share-link {
+  --action-bg: transparent;
+  --action-edge: transparent;
+  --action-ink: var(--md-sys-color-on-surface-variant);
+  padding-inline: 10px !important;
+}
+#latest-list .mini-share-link:is(:hover, :focus-visible) { --action-ink: var(--md-sys-color-primary); }
+@container latest-stories (max-width: 480px) {
+  #latest-list .mini-share-link {
+    width: var(--md-comp-touch-target);
+    padding: 0 !important;
+  }
+  #latest-list .mini-share-link > span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    clip-path: inset(50%);
+    overflow: hidden;
+    white-space: nowrap;
+  }
+}
+.home-priority-latest .home-rail-actions {
+  flex-direction: row;
+  align-items: center;
+  gap: 16px;
+  padding-top: 4px;
+}
+.home-priority-latest .home-rail-actions .home-subscribe-btn {
+  width: auto;
+  min-width: 0;
+  padding-inline: 0 !important;
+  border-color: transparent !important;
+  background: transparent !important;
+  color: var(--md-sys-color-on-surface-variant) !important;
+  text-decoration: underline !important;
+  text-underline-offset: .2em;
 }
 
 /* Public article search and reader dialogs. */

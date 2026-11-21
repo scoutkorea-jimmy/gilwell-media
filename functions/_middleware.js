@@ -268,12 +268,12 @@ function buildCsp(request, nonce, enableAnalytics) {
   const scriptSrc = template
     ? "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://unpkg.com https://cdn.jsdelivr.net https://esm.sh https://cdnjs.cloudflare.com https://static.cloudflareinsights.com"
     : legacy
-    ? "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://unpkg.com https://esm.sh https://cdnjs.cloudflare.com https://challenges.cloudflare.com https://t1.kakaocdn.net https://t1.daumcdn.net https://static.cloudflareinsights.com"
-    : `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' https://cdn.jsdelivr.net https://unpkg.com https://esm.sh https://cdnjs.cloudflare.com https://challenges.cloudflare.com https://t1.kakaocdn.net https://t1.daumcdn.net https://static.cloudflareinsights.com https://pagead2.googlesyndication.com https://partner.googleadservices.com https://tpc.googlesyndication.com https://www.googletagservices.com https://adservice.google.com`;
+    ? "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://unpkg.com https://esm.sh https://cdnjs.cloudflare.com https://challenges.cloudflare.com https://t1.kakaocdn.net https://static.cloudflareinsights.com"
+    : `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' https://cdn.jsdelivr.net https://unpkg.com https://esm.sh https://cdnjs.cloudflare.com https://challenges.cloudflare.com https://t1.kakaocdn.net https://static.cloudflareinsights.com https://pagead2.googlesyndication.com https://partner.googleadservices.com https://tpc.googlesyndication.com https://www.googletagservices.com https://adservice.google.com`;
   const scriptSrcElem = template
     ? "script-src-elem 'self' 'unsafe-inline' https://unpkg.com https://cdn.jsdelivr.net https://esm.sh https://cdnjs.cloudflare.com https://static.cloudflareinsights.com"
     : legacy
-    ? "script-src-elem 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://unpkg.com https://esm.sh https://cdnjs.cloudflare.com https://challenges.cloudflare.com https://t1.kakaocdn.net https://t1.daumcdn.net https://static.cloudflareinsights.com"
+    ? "script-src-elem 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://unpkg.com https://esm.sh https://cdnjs.cloudflare.com https://challenges.cloudflare.com https://t1.kakaocdn.net https://static.cloudflareinsights.com"
     : "";
 
   // Style policy is left as-is — inline `style="..."` attributes are sprinkled
@@ -291,8 +291,6 @@ function buildCsp(request, nonce, enableAnalytics) {
     "img-src 'self' data: https:",
     // fonts.gstatic.com is where Google Fonts actually serves .woff2 files.
     "font-src 'self' data: https://cdn.jsdelivr.net https://fonts.gstatic.com",
-    // Kakao AdFit SDK fetches ad banners from serv.ds.kakao.com, health-reports
-    // to *.onkakao.net, and loads aux assets from t1.kakaocdn.net.
     // cdn.jsdelivr.net 은 DOMPurify sourcemap(.map) 요청 때문에 필요. script-src에는
     // 이미 있지만 sourcemap은 brower devtools가 fetch로 가져와 connect-src 적용을 받는다.
     // unpkg.com 도 동일 이유 (leaflet.js.map). leaflet 자체는 script-src 로 통과.
@@ -302,11 +300,9 @@ function buildCsp(request, nonce, enableAnalytics) {
     // 테스트가 상시 실패하고, 진짜 회귀가 그 노이즈에 묻힌다. 광고 표시 자체는
     // 이것 없이도 되지만 품질 측정 신호가 빠진다. 실제로 관측된 도메인만 넣는다
     // (ep2 등은 관측되면 그때 추가).
-    "connect-src 'self' https://cdn.jsdelivr.net https://unpkg.com https://esm.sh https://nominatim.openstreetmap.org https://challenges.cloudflare.com https://cloudflareinsights.com https://display.ad.daum.net https://t1.daumcdn.net https://t1.kakaocdn.net https://serv.ds.kakao.com https://*.onkakao.net https://pagead2.googlesyndication.com https://googleads.g.doubleclick.net https://csi.gstatic.com https://ep1.adtrafficquality.google" +
+    "connect-src 'self' https://cdn.jsdelivr.net https://unpkg.com https://esm.sh https://nominatim.openstreetmap.org https://challenges.cloudflare.com https://cloudflareinsights.com https://t1.kakaocdn.net https://pagead2.googlesyndication.com https://googleads.g.doubleclick.net https://csi.gstatic.com https://ep1.adtrafficquality.google" +
       (enableAnalytics ? " https://www.google-analytics.com https://*.google-analytics.com https://analytics.google.com https://*.analytics.google.com https://www.googletagmanager.com" : ""),
-    // Kakao ad iframes are served from t1.kakaocdn.net. AdSense ad iframes from
-    // googleads.g.doubleclick.net / tpc.googlesyndication.com / www.google.com.
-    "frame-src 'self' https://www.youtube-nocookie.com https://www.openstreetmap.org https://challenges.cloudflare.com https://t1.daumcdn.net https://display.ad.daum.net https://t1.kakaocdn.net https://googleads.g.doubleclick.net https://tpc.googlesyndication.com https://www.google.com",
+    "frame-src 'self' https://www.youtube-nocookie.com https://www.openstreetmap.org https://challenges.cloudflare.com https://googleads.g.doubleclick.net https://tpc.googlesyndication.com https://www.google.com",
     "media-src 'self' data: https:",
     "object-src 'none'",
     "base-uri 'self'",

@@ -274,7 +274,8 @@
   }
 
   function buildMiniShareButton(post) {
-    return '<button class="mini-share-link" type="button" data-share-url="/post/' + post.id + '" data-share-title="' + GW.escapeHtml(post.title) + '">공유하기</button>';
+    var title = GW.escapeHtml(post.title);
+    return '<button class="mini-share-link" type="button" title="공유하기" aria-label="' + title + ' 공유하기" data-share-url="/post/' + post.id + '" data-share-title="' + title + '"><span>공유하기</span></button>';
   }
 
   function normalizeResponsiveMedia(media) {

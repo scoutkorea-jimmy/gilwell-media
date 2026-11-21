@@ -231,20 +231,18 @@ export async function onRequestGet({ params, env, request }) {
   <link rel="alternate" type="text/markdown" title="${title} (Markdown)" href="${postUrl}.md"/>
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin/>
   <link rel="preconnect" href="https://t1.kakaocdn.net" crossorigin/>
-  <link rel="dns-prefetch" href="https://t1.daumcdn.net"/>
-  <link rel="dns-prefetch" href="https://display.ad.daum.net"/>
   ${coverImage ? `<link rel="preload" as="image" href="${coverImage}" fetchpriority="high"/>` : ''}
   <script type="application/ld+json">${articleJsonLd}</script>
   <link rel="icon" type="image/svg+xml" href="/img/favicon.svg"/>
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png"/>
   <link rel="apple-touch-icon" href="/img/logo.png"/>
   <link rel="shortcut icon" href="/img/favicon-48.png"/>
-  <link rel="stylesheet" href="/css/style.css?v=20261121123337">
-  <link rel="stylesheet" href="/css/post.css?v=20261121123337">
-  <link rel="stylesheet" href="/css/topics.css?v=20261121123337">
-  <link rel="stylesheet" href="/css/chatbot.css?v=20261121123337">
-  <link rel="stylesheet" href="/css/dark-mode.css?v=20261121123337">
-  <link rel="stylesheet" href="/css/m3-site.css?v=20261121123337">
+  <link rel="stylesheet" href="/css/style.css?v=20261121132123">
+  <link rel="stylesheet" href="/css/post.css?v=20261121132123">
+  <link rel="stylesheet" href="/css/topics.css?v=20261121132123">
+  <link rel="stylesheet" href="/css/chatbot.css?v=20261121132123">
+  <link rel="stylesheet" href="/css/dark-mode.css?v=20261121132123">
+  <link rel="stylesheet" href="/css/m3-site.css?v=20261121132123">
 </head>
 <body class="post-page">
   <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
@@ -372,29 +370,12 @@ export async function onRequestGet({ params, env, request }) {
 
         ${renderRelatedPostsSection(relatedPosts, navLabels)}
 
-        <!-- Kakao AdFit horizontal — 기사 본문 하단, 기사 너비 기준 중앙 정렬.
-             PC 728x90 / 모바일 320x50. 이전에는 그리드 바깥에 두어 페이지 전체
-             중앙에 정렬됐지만(사이드바 공간 때문에 기사보다 우측으로 치우침),
-             여기로 옮겨 기사 column 내부에서 centering되도록 함. -->
-        <aside class="kakao-adfit kakao-adfit-horizontal" aria-label="광고">
-          <div class="kakao-adfit-pc">
-            <ins class="kakao_ad_area" style="display:none;width:100%;" data-ad-unit="DAN-Hcz89LyJbpNeh8B0" data-ad-width="728" data-ad-height="90"></ins>
-          </div>
-          <div class="kakao-adfit-mobile">
-            <ins class="kakao_ad_area" style="display:none;width:100%;" data-ad-unit="DAN-R2YAuLwc7UVkfzQb" data-ad-width="320" data-ad-height="50"></ins>
-          </div>
-        </aside>
-
       </div>
 
       <!-- ── Sidebar ── -->
       <div class="post-reader-rail">
         <a class="post-continue-jump" href="#post-continue-heading">다른 기사 읽기 <span aria-hidden="true">↓</span></a>
 
-        <!-- Kakao AdFit 160x600 (vertical) — PC 사이드바 하단, AI 행 아래 -->
-        <aside class="kakao-adfit kakao-adfit-vertical" aria-label="광고">
-          <ins class="kakao_ad_area" style="display:none;width:100%;" data-ad-unit="DAN-XitWF05D9NK5NjVi" data-ad-width="160" data-ad-height="600"></ins>
-        </aside>
       </div>
 
     </div>
@@ -414,7 +395,7 @@ export async function onRequestGet({ params, env, request }) {
         <h4>관리자</h4>
         <a href="/admin.html">관리자 페이지 →</a>
         <a href="/glossary-raw">용어집 RAW로 보기 →</a>
-        <p class="footer-build">Site <span class="site-build-version">V00.200.04</span> · Admin <span class="admin-build-version">V03.165.00</span></p>
+        <p class="footer-build">Site <span class="site-build-version">V00.200.05</span> · Admin <span class="admin-build-version">V03.165.00</span></p>
       </div>
       <div class="footer-bottom">
         <p data-i18n="footer.copyright">© 2026 ${SITE_BRAND_NAME} · ${SITE_DOMAIN_LABEL}</p>
@@ -644,11 +625,10 @@ export async function onRequestGet({ params, env, request }) {
 
   <script>window.GW_BOOT_RUNTIME=${serializeForScript(publicRuntime)};window.GW_KAKAO_JS_KEY=${serializeForScript(String(publicRuntime.kakao_js_key || ''))};window.GW_POST_BOOT=${serializeForScript({ editPostId: id, sharePostUrl: postUrl, sharePostTitle: titleText, sharePostSubtitle: subtitleText, editSeed: JSON.parse(editSeed), visibleTags })};</script>
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.4/dist/purify.min.js" integrity="sha384-eEu5CTj3qGvu9PdJuS+YlkNi7d2XxQROAFYOr59zgObtlcux1ae1Il3u7jvdCSWu" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-  <script src="/js/main.js?v=20261121123337"></script>
-  <script src="/js/site-chrome.js?v=20261121123337"></script>
-  <script src="/js/chatbot.js?v=20261121123337" defer></script>
-  <script src="/js/post-page.js?v=20261121123337"></script>
-  <script async type="text/javascript" charset="utf-8" src="https://t1.kakaocdn.net/kas/static/ba.min.js"></script>
+  <script src="/js/main.js?v=20261121132123"></script>
+  <script src="/js/site-chrome.js?v=20261121132123"></script>
+  <script src="/js/chatbot.js?v=20261121132123" defer></script>
+  <script src="/js/post-page.js?v=20261121132123"></script>
 </body>
 </html>`;
 

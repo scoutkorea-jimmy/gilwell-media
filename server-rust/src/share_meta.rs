@@ -171,8 +171,6 @@ pub async fn render(req: &mut Request) -> Result<Response> {
         ),
         "<link rel=\"preconnect\" href=\"https://cdn.jsdelivr.net\" crossorigin/>".into(),
         "<link rel=\"preconnect\" href=\"https://t1.kakaocdn.net\" crossorigin/>".into(),
-        "<link rel=\"dns-prefetch\" href=\"https://t1.daumcdn.net\"/>".into(),
-        "<link rel=\"dns-prefetch\" href=\"https://display.ad.daum.net\"/>".into(),
         "<meta property=\"og:locale\" content=\"ko_KR\"/>".into(),
         "<meta property=\"og:type\" content=\"website\"/>".into(),
         format!("<meta property=\"og:title\" content=\"{title}\"/>"),

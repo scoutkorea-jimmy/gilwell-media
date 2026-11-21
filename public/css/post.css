@@ -154,9 +154,6 @@
 }
 .post-page-layout {
   display:               grid;
-  /* 사이드바 200px — Kakao AdFit 세로 광고(160x600)가 사이드바 폭에 거의
-     꽉 차도록(좌우 20px 여유) 좁혔음(2026-04-21 운영자 요청). 기존 280px에서는
-     광고가 사이드바 중앙에 작게 놓여 빈 공간이 양쪽으로 60px씩 남아 어색. */
   grid-template-columns: 1fr 200px;
   gap:                   var(--gap-page);
   align-items:           start;
@@ -786,21 +783,6 @@
   .post-page-share { gap: var(--gap-tight); }
   .post-action-btn { font-size: var(--fs-meta); padding: 8px 14px; }
 }
-.kakao-adfit-vertical {
-  /* 세로 광고: 사이드바(200px) 안에서 좌우 auto 마진으로 정확히 중앙 정렬.
-     padding 0 — .kakao-adfit의 0 16px이 상속되면 실제 슬롯이 128px로
-     좁아져 ins가 왼쪽으로 쳐져 보이는 문제 발생. */
-  display: block;
-  width: 160px;
-  min-height: 600px;
-  margin: 40px auto;
-  padding: 0;
-}
-@media (max-width: 900px) {
-  /* 세로 광고는 모바일에서 사이드바 공간 자체가 없으므로 전체 숨김 */
-  .kakao-adfit-vertical { display: none; }
-}
-
 /* 터치 타겟 확보 (00.176.10) — 기사 상단 모바일 바.
    실측 34×34px / 높이 24px 였다. 자세한 기준은 style.css 의 동명 블록 참조. */
 @media (pointer: coarse) {

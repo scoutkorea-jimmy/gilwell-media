@@ -6922,15 +6922,6 @@ footer a:hover { color: var(--on-accent); }
    ══════════════════════════════════════════════════════════ */
 
 /* ════════════════════════════════════════════════════════════
-   KAKAO ADFIT — 광고 슬롯
-   PC: 728x90 horizontal + 160x600 vertical(사이드바 전용)
-   Mobile: 320x50 horizontal만 (세로 광고는 숨김)
-
-   여백 규칙:
-     - 가로 광고: 상하 48px, 좌우 auto(중앙 정렬) + 슬롯 좌우 16px 안쪽 여백
-     - 세로 광고: 상하 40px, 좌우 auto(사이드바 내 중앙 정렬) / 내부 padding 0
-   ════════════════════════════════════════════════════════════ */
-/* ════════════════════════════════════════════════════════════
    HOME MEMORABILIA RAIL (2026-05-27)
    4컬럼 카테고리 그리드 직후 home-wrapper 안에 위치.
    PC ≥901px: 6 컬럼. 모바일 ≤900px: 2 컬럼 + 처음 2개만 노출.
@@ -7068,37 +7059,6 @@ footer a:hover { color: var(--on-accent); }
   .home-memorabilia-rail-grid > .home-memo-card:nth-child(n+3) {
     display: none;
   }
-}
-
-.kakao-adfit {
-  display: block;
-  text-align: center;
-  box-sizing: border-box;
-}
-.kakao-adfit-horizontal {
-  /* 가로 광고 공통: 기사·섹션 끝과 48px 간격 유지, 좌우 16px 내부 여백으로
-     좁은 화면에서 광고가 뷰포트에 닿지 않도록 보호. */
-  margin: 48px auto;
-  padding: 0 16px;
-}
-.kakao-adfit-horizontal .kakao-adfit-pc {
-  display: block;
-  max-width: 728px;
-  min-height: 90px;
-  margin: 0 auto;
-}
-.kakao-adfit-horizontal .kakao-adfit-mobile {
-  display: none;
-  max-width: 320px;
-  min-height: 50px;
-  margin: 0 auto;
-}
-@media (max-width: 900px) {
-  .kakao-adfit-horizontal .kakao-adfit-pc { display: none; }
-  .kakao-adfit-horizontal .kakao-adfit-mobile { display: block; }
-  /* 모바일은 상하 여백을 32px로 약간 축소 — 좁은 화면에서 간격이 과하게
-     보이는 느낌을 줄이되 콘텐츠와 확실히 분리되는 정도는 유지. */
-  .kakao-adfit-horizontal { margin: 32px auto; padding: 0 12px; }
 }
 
 /* ── New-build update banner (shared between public site + admin) ──

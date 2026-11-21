@@ -16,7 +16,7 @@ export const PRIVACY_SETTINGS_UPDATED_KEY = 'privacy_policy_updated_at';
 // Keep the default aligned with what we shipped in Phase 4's static
 // privacy.html so first-load UX matches regardless of DB state.
 export const DEFAULT_PRIVACY_POLICY_HTML = `<h1>개인정보 처리방침</h1>
-<p class="privacy-sub">최종 개정 2026-05-26 · 본 방침은 GDPR(EU 일반 개인정보보호법) 및 대한민국 개인정보 보호법의 기본 원칙에 맞춰 작성되었습니다.</p>
+<p class="privacy-sub">최종 개정 2026-11-21 · 본 방침은 GDPR(EU 일반 개인정보보호법) 및 대한민국 개인정보 보호법의 기본 원칙에 맞춰 작성되었습니다.</p>
 
 <div class="privacy-note">
   BP미디어는 스카우트 네트워크의 자발적인 봉사로 운영되는 독립 미디어 아카이브입니다. 본 서비스는 최소한의 개인정보만 수집하며, 수집한 정보는 명시된 목적 외로는 사용하지 않습니다.
@@ -97,7 +97,6 @@ export const DEFAULT_PRIVACY_POLICY_HTML = `<h1>개인정보 처리방침</h1>
 <p>BP미디어는 원칙적으로 개인정보를 제3자에게 제공하지 않습니다. 다만 서비스 운영을 위해 다음 처리 수탁자의 인프라를 이용합니다.</p>
 <ul>
   <li><strong>Cloudflare, Inc.</strong> (미국) — 호스팅, DNS, CDN, Workers(서버리스 실행 환경), D1 데이터베이스, R2 오브젝트 저장소. GDPR 적정성 결정 대체 수단으로 SCC(Standard Contractual Clauses)가 적용됩니다.</li>
-  <li><strong>Kakao AdFit</strong> (대한민국) — 게시글 페이지 광고 서빙. 광고 식별 쿠키 관련은 Kakao의 개인정보 처리방침을 따릅니다.</li>
   <li><strong>Cloudflare Turnstile</strong> — 로그인 페이지 봇 방지 CAPTCHA. 쿠키를 사용하지 않으며 개인 식별 정보를 수집하지 않습니다.</li>
 </ul>
 
