@@ -114,7 +114,7 @@ test('public analytics opt-in, reader flow, search privacy, opt-out', async () =
     assert.equal(tagRequests, 0);
     assert.deepEqual(await events(), []);
     await page.reload();
-    assert.equal(await page.getByLabel('방문 분석 설정').isVisible(), false);
+    assert.equal(await page.getByRole('region', { name: '선택적 방문 분석' }).isVisible(), false);
     await page.getByRole('button', { name: '방문 분석 설정' }).click();
     await Promise.all([
       page.waitForResponse('https://www.googletagmanager.com/**'),
@@ -130,10 +130,13 @@ test('public analytics opt-in, reader flow, search privacy, opt-out', async () =
     await page.getByRole('link', { name: '첫 기사' }).click();
     const homeEvents = await page.evaluate(() => JSON.parse(sessionStorage.getItem('test-home-events')));
     assert.equal(homeEvents.filter((args) => args[1] === 'home_section_view').length, 1);
-    const homeClicks = homeEvents.filter((args) => args[1] === 'home_article_click');
+    await page.waitForLoadState('domcontentloaded');
+    assert.equal(homeEvents.filter((args) => args[1] === 'home_article_click').length, 0);
+    const homeClicks = (await events()).filter(({ name }) => name === 'home_article_click');
     assert.equal(homeClicks.length, 1);
-    assert.equal(homeClicks[0][2].home_section, 'main_story');
-    assert.equal(homeClicks[0][2].article_id, '1');
+    assert.equal(homeClicks[0].params.home_section, 'main_story');
+    assert.equal(homeClicks[0].params.article_id, '1');
+    assert.equal(homeClicks[0].params.page_location, origin + '/');
     await page.locator('.site-analytics-body-end').scrollIntoViewIfNeeded();
     await page.waitForFunction(() => Array.from(window.dataLayer || []).some((args) => args[1] === 'article_body_end'));
     await page.locator('.site-analytics-body-end').scrollIntoViewIfNeeded();

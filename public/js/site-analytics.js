@@ -7,6 +7,7 @@
   const consentKey = 'bpmedia-analytics-transfer-consent';
   const visitKey = 'bpmedia-analytics-visit';
   const searchLinkKey = 'bpmedia-analytics-search-link';
+  const homeLinkKey = 'bpmedia-analytics-home-link';
   const disableKey = 'ga-disable-' + measurementId;
   const articlePath = /^\/post\/([1-9]\d*)\/?$/;
   const path = location.pathname.replace(/\/$/, '') || '/';
@@ -73,6 +74,15 @@
     if (articleId && searchLink?.article === articleId && Date.now() - searchLink.at < 60_000) {
       track('search_article_view', { article_id: articleId });
     }
+    const homeLink = sameSite && ['/', '/index.html'].includes(referrer.pathname) ? readSession(homeLinkKey) : null;
+    if (articleId && homeLink?.article === articleId && Date.now() - homeLink.at < 60_000 &&
+      homeSections.some(([section]) => section === homeLink.section)) {
+      track('home_article_click', {
+        article_id: articleId, home_section: homeLink.section, page_type: 'home',
+        page_location: location.origin + '/', page_referrer: '',
+      });
+    }
+    writeStorage('sessionStorage', homeLinkKey, null);
     writeStorage('sessionStorage', searchLinkKey, null);
     writeStorage('sessionStorage', visitKey, JSON.stringify({
       article: articleId || previousArticle, at: Date.now(),
@@ -133,14 +143,19 @@
     if (!link || link.origin !== location.origin) return;
     const targetId = link.pathname.match(articlePath)?.[1];
     if (!targetId) return;
+    const sameTab = event.type === 'click' && !event.metaKey && !event.ctrlKey &&
+      !event.shiftKey && !event.altKey && (!link.target || link.target === '_self') && !link.hasAttribute('download');
     if (isHome) {
       const section = homeSections.find(([, selector]) => link.closest(selector))?.[0];
       if (!section) return;
       reportSection(section);
-      track('home_article_click', { home_section: section, article_id: targetId });
-    } else if (pageType === 'search' && event.type === 'click' && !event.metaKey && !event.ctrlKey &&
-      !event.shiftKey && !event.altKey && (!link.target || link.target === '_self') &&
-      link.matches('#search-results .search-result-card')) {
+      if (sameTab) {
+        // The article sends the event after navigation, including when the tag was still loading on home.
+        writeStorage('sessionStorage', homeLinkKey, JSON.stringify({ article: targetId, section, at: Date.now() }));
+      } else {
+        track('home_article_click', { home_section: section, article_id: targetId });
+      }
+    } else if (pageType === 'search' && sameTab && link.matches('#search-results .search-result-card')) {
       if (!searchResultsTracked) {
         searchResultsTracked = true;
         track('site_search_results', { result_state: 'has_results' });
@@ -197,6 +212,7 @@
       searchResultsTracked = false;
       writeStorage('sessionStorage', visitKey, null);
       writeStorage('sessionStorage', searchLinkKey, null);
+      writeStorage('sessionStorage', homeLinkKey, null);
       for (const item of document.cookie.split(';')) {
         const name = item.split('=', 1)[0].trim();
         if (!/^bpmedia_ga(?:_[A-Z0-9]+)?$/.test(name)) continue;
@@ -210,28 +226,39 @@
   const settingsLabel = english ? 'Analytics preferences' : '방문 분석 설정';
   const panel = document.createElement('section');
   panel.className = 'site-analytics-consent';
-  panel.setAttribute('aria-label', settingsLabel);
+  panel.id = 'bpmedia-analytics-consent';
+  const title = document.createElement('h2');
+  title.id = 'bpmedia-analytics-title';
+  title.textContent = english ? 'Optional visitor analytics' : '선택적 방문 분석';
+  panel.setAttribute('aria-labelledby', title.id);
+  const copy = document.createElement('div');
+  copy.className = 'site-analytics-copy';
   const message = document.createElement('p');
   message.textContent = english
-    ? 'With your permission, BP Media sends site usage and device data to Google for analytics, with processing in the US and other countries. You can decline, or change your choice in the footer. If you are under 14, please decline. '
-    : '동의하면 사이트 개선을 위해 방문 기록과 기기 정보가 Google로 전송되어 미국 등 국외에서 처리됩니다. 거부해도 사이트를 이용할 수 있으며, 페이지 하단에서 선택을 바꿀 수 있습니다. 만 14세 미만은 허용 안 함을 선택해 주세요. ';
+    ? 'If you agree, Google processes site activity and device data overseas to help improve BP Media. You can decline and still use the site. Visitors under 14 should decline. '
+    : '동의하면 사이트 개선을 위해 방문 기록과 기기 정보를 Google에 보내 국외에서 처리합니다. 거부해도 사이트를 이용할 수 있습니다. 만 14세 미만은 허용 안 함을 선택해 주세요. ';
   const policy = document.createElement('a');
   policy.href = '/privacy#analytics-privacy';
-  policy.textContent = english ? 'Privacy policy' : '개인정보 처리방침';
+  policy.textContent = english ? 'Data and privacy details' : '수집·이전 자세히 보기';
   message.append(policy);
+  copy.append(title, message);
+
+  const actions = document.createElement('div');
+  actions.className = 'site-analytics-actions';
   const settings = document.createElement('button');
   settings.type = 'button';
+  settings.className = 'site-analytics-preferences';
   settings.textContent = settingsLabel;
   settings.setAttribute('aria-expanded', 'false');
-  panel.id = 'bpmedia-analytics-consent';
   settings.setAttribute('aria-controls', panel.id);
-  panel.append(message);
+  panel.append(copy, actions);
   const skipLink = document.querySelector('.skip-link');
   let openedFromFooter = false;
-  for (const [choice, label] of [['granted', english ? 'Allow analytics and overseas transfer' : '분석 및 국외 이전 동의'],
-    ['denied', english ? 'Decline' : '허용 안 함']]) {
+  for (const [choice, label] of [['denied', english ? 'Decline' : '허용 안 함'],
+    ['granted', english ? 'Allow analytics and overseas transfer' : '분석 및 국외 이전 동의']]) {
     const button = document.createElement('button');
     button.type = 'button';
+    button.dataset.analyticsChoice = choice;
     button.textContent = label;
     button.addEventListener('click', () => {
       writeStorage('localStorage', consentKey, choice);
@@ -239,9 +266,10 @@
       showSettings(false);
       (openedFromFooter ? settings : skipLink || settings).focus({ preventScroll: true });
     });
-    panel.append(button);
+    actions.append(button);
   }
-  if (skipLink) skipLink.after(panel);
+  const anchor = document.querySelector('header.masthead') || skipLink;
+  if (anchor) anchor.after(panel);
   else document.body.prepend(panel);
   (document.querySelector('.footer-brand') || document.body).append(settings);
 

@@ -180,7 +180,7 @@ Pages의 `GA4_MEASUREMENT_ID`가 비어 있으면 분석 모듈과 동의 UI를 
 |---|---|
 | `page_view` | 허용한 공개 문서별 첫 측정 |
 | `home_section_view` | 홈 영역이 화면에 들어오거나 그 영역의 링크를 클릭할 때, 문서마다 영역당 한 번 |
-| `home_article_click` | 홈 영역의 기사 링크를 활성화할 때 |
+| `home_article_click` | 홈 영역의 기사 링크를 활성화할 때. 같은 탭에서는 기사 도착 후 홈 이벤트를 전달 |
 | `article_body_end` | 기사 본문 끝이 화면에 들어올 때, 문서당 한 번 |
 | `next_article_view` | 같은 탭에서 내부 경로로 30분 이내에 이전과 다른 기사에 도달할 때 |
 | `site_search_results` | 공개 검색 결과 또는 0건 표시. 페이지 번호 이동과 Dreampath 검색 제외 |
