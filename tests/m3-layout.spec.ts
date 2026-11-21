@@ -227,6 +227,11 @@ test('상단 검색은 입력과 버튼을 한 surface와 한 포커스 링으�
 test('넓은 화면의 주요 기사는 사진 옆에 제목과 읽기 링크를 정렬한다', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto('/');
+  const ticker = page.locator('#main-content > .ticker');
+  await expect(ticker).toBeVisible();
+  const tickerBox = await ticker.boundingBox();
+  const headingBox = await page.locator('#home-front-title').boundingBox();
+  expect(tickerBox!.y + tickerBox!.height).toBeLessThanOrEqual(headingBox!.y);
   const slide = page.locator('.site-hero-slide.active.has-bg');
   await expect(slide.locator('.site-hero-title a')).toBeVisible();
   const layout = await slide.evaluate(hero => {

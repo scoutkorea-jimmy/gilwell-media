@@ -3312,7 +3312,6 @@ html body .mobile-nav-sublink.active {
 .site-hero-slider .hero-dot::before { width: 7px; height: 7px; background: var(--md-sys-color-outline); }
 .site-hero-slider .hero-dot.active::before { width: 20px; background: var(--md-sys-color-primary); }
 .site-hero-slider .hero-pause-btn { min-height: 48px; }
-.home-wrapper .ticker { width: 100%; margin: 0 auto var(--home-block-bottom); }
 .home-section-title .home-section-more { min-height: 48px; }
 @media (min-width: 600px) {
   .site-hero-slider { grid-template-columns: minmax(0, 1fr) minmax(0, 1.08fr); }

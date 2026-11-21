@@ -53,7 +53,7 @@ test('기사에서 돌아오면 검색 범위와 페이지가 복원된다', asy
   await page.goto('/search');
   await page.getByRole('searchbox', { name: '검색어', exact: true }).fill('스카우트');
   await page.locator('#search-options summary').click();
-  await page.getByLabel('카테고리', { exact: true }).selectOption('korea');
+  await page.getByRole('combobox', { name: '카테고리', exact: true }).selectOption('korea');
   await page.locator('#search-btn').click();
   await page.locator('#search-pagination').getByRole('link', { name: '2페이지', exact: true }).click();
   const result = page.locator('#search-results .search-result-card').first();
