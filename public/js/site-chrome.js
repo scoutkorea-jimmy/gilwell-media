@@ -389,7 +389,7 @@
     function toggleVisibility() {
       var visible = getTop() > 240;
       button.classList.toggle('is-visible', visible);
-      button.disabled = !visible;
+      button.inert = !visible;
     }
 
     function scrollToTop() {

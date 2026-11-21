@@ -9,6 +9,8 @@ struct Topic {
     english: String,
     age: String,
     tagline: String,
+    #[serde(rename = "imageAlt")]
+    image_alt: Option<String>,
     lead: String,
     intro: String,
     focus: String,
@@ -52,6 +54,7 @@ fn build(o: Input) -> Result<String> {
     }).collect::<String>();
     let activities=t.activities.iter().enumerate().map(|(i,(heading,copy))|format!("<article class=\"topic-activity-card\"><span class=\"topic-step\" aria-hidden=\"true\">0{}</span><h3>{heading}</h3><p>{copy}</p></article>",i+1)).collect::<String>();
     let title = esc(&o.title);
+    let image_alt = esc(t.image_alt.as_deref().unwrap_or(&t.tagline));
     let rover = t.slug == "rover-scouts";
     let rover_link = if rover {
         " · <a href=\"https://www.scout.org/what-we-do/world-scout-events/world-scout-moot\">WOSM 세계스카우트무트 안내 ↗</a>"
@@ -84,7 +87,7 @@ fn build(o: Input) -> Result<String> {
             "NAME" => &t.name,
             "SLUG" => &t.slug,
             "ENGLISH" => &t.english,
-            "TAGLINE" => &t.tagline,
+            "IMAGE_ALT" => &image_alt,
             "LEAD" => &t.lead,
             "INTRO" => &t.intro,
             "FOCUS" => &t.focus,

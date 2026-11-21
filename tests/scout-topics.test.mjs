@@ -54,6 +54,7 @@ for (const topic of SCOUT_TOPICS) {
   assert.match(html, /<h1 id="topic-title">[\s\S]+<details class="topic-stage-switch">\s*<summary>스카우트 활동 단계 바꾸기<\/summary>/);
   assert.equal((html.match(/class="topic-activity-card"/g)||[]).length,3);
   assert.ok(html.includes('활동의 분위기를 담은 AI 일러스트'));
+  assert.equal(html.match(/<figure class="topic-hero-art"><img[^>]* alt="([^"]*)"/)?.[1], topic.imageAlt);
   assert.ok(html.includes(`/img/topics/${topic.slug}.webp`));
   assert.ok(html.includes('class="masthead"') && html.includes('data-managed-nav'));
   assert.ok(html.includes('GW.bootstrapStandardPage()'));

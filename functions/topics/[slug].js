@@ -8,6 +8,7 @@ export const SCOUT_TOPICS = [
   {
     slug: 'cub-scouts', name: '컵스카우트', english: 'Cub Scouts',
     age: '6~12세', tagline: '함께 놀며 배우는 첫 모험', lead: '친구와 함께 발견하고, 작은 도전으로 자신감을 키워요.',
+    imageAlt: '숲속 야영장에서 컵스카우트들이 텐트를 치고 돋보기로 풀잎을 살펴본다.',
     activities: [["협동과 배려", "단체 활동에서 친구의 생각을 듣고 함께 힘을 모읍니다."], ["모험과 발견", "새로운 환경을 탐색하며 호기심을 활동으로 이어갑니다."], ["진급과 취미장", "관심 있는 과제에 도전하며 성취를 하나씩 쌓습니다."]],
     aliases: ['컵스카우트', 'Cub Scout'],
     intro: '컵스카우트는 한국스카우트연맹 부문별 소개 기준 6~12세 어린이를 위한 단계입니다. 단체 활동과 모험, 진급·취미장 활동을 통해 협동심과 성취감을 기릅니다.',
@@ -18,6 +19,7 @@ export const SCOUT_TOPICS = [
   {
     slug: 'scouts', name: '스카우트', english: 'Scouts',
     age: '12~15세', tagline: '함께 계획하고 실천하는 성장', lead: '나의 관심과 개성을 살리고, 함께하는 활동으로 세상을 배워요.',
+    imageAlt: '스카우트들이 산길에서 지도를 펼쳐 보고 나침반으로 방향을 확인한다.',
     activities: [["대원이 중심인 활동", "자신의 관심을 표현하고 프로그램에 주도적으로 참여합니다."], ["개성과 협력", "서로 다른 강점을 발견하고 친구들과 힘을 모읍니다."], ["지역사회 봉사", "공동체에 필요한 일을 실천하며 기여하는 기쁨을 배웁니다."]],
     aliases: ['스카우트', 'Scout'],
     intro: '스카우트는 한국스카우트연맹 부문별 소개 기준 12~15세 청소년을 위한 단계입니다. 대원이 중심이 되는 프로그램과 사회봉사로 개성을 살리고 공동체에 기여합니다.',
@@ -28,6 +30,7 @@ export const SCOUT_TOPICS = [
   {
     slug: 'venture-scouts', name: '벤처스카우트', english: 'Venture Scouts',
     age: '15~18세', tagline: '스스로 선택하고 이끄는 도전', lead: '내가 세운 목표를 직접 계획하고 실행하며 책임감을 키워요.',
+    imageAlt: '호수가 내려다보이는 산비탈에서 벤처스카우트 두 명이 어린나무를 심는다.',
     activities: [["자율적인 계획", "목표와 관심에 맞는 프로그램을 선택하고 구상합니다."], ["자기관리와 리더십", "시간·계획·체력을 관리하며 주변의 모범이 되는 경험을 쌓습니다."], ["환경과 사회공헌", "환경보전과 봉사를 활동에 연결해 변화를 실천합니다."]],
     aliases: ['벤처스카우트', 'Venture Scout', 'Venturer'],
     intro: '벤처스카우트는 한국스카우트연맹 부문별 소개 기준 15~18세 청소년을 위한 단계입니다. 관심과 목표에 따라 활동을 선택하고 직접 구상하며 자율성과 책임감을 기릅니다.',
@@ -38,6 +41,7 @@ export const SCOUT_TOPICS = [
   {
     slug: 'rover-scouts', name: '로버스카우트', english: 'Rover Scouts',
     age: '18~24세', tagline: '봉사와 탐험으로 넓히는 세계', lead: '사회에 기여하고 새로운 도전에 나서며 나만의 길을 만들어 가요.',
+    imageAlt: '로버스카우트들이 산길에서 플라스틱병을 주워 봉투에 담는다.',
     activities: [["사회에 대한 봉사", "공동체에 필요한 역할을 찾아 적극적으로 참여합니다."], ["챌린지와 탐험", "낯선 도전과 어려움을 스스로 극복하는 경험을 쌓습니다."], ["진취적인 삶의 준비", "봉사와 도전에서 얻은 경험을 앞으로의 삶에 연결합니다."]],
     aliases: ['로버스카우트', 'Rover Scout', 'Rover Moot', 'Rovermoot', '로버무트'],
     intro: '로버스카우트는 한국스카우트연맹 부문별 소개 기준 18~24세 청년층을 안내하는 부문입니다. 사회봉사와 챌린지·탐험활동으로 공동체에 기여하고 진취적인 삶을 준비합니다.',
@@ -151,7 +155,7 @@ export function renderTopicShell({title,meta,articleList,news,topic}) {
       <h1 id="topic-title">${topic.name}</h1><p class="topic-lead">${topic.lead}</p>
       <p class="topic-intro-summary">${topic.intro}</p>
       <div class="topic-links"><a href="#topic-activities">활동 살펴보기 ↓</a><a href="#topic-news">관련 소식 읽기 ↓</a></div></div>
-      <figure class="topic-hero-art"><img src="/img/topics/${topic.slug}.webp?v=${ASSET_VERSION}" width="1536" height="1024" alt="${topic.tagline}을 표현한 일러스트" fetchpriority="high" decoding="async"><figcaption>활동의 분위기를 담은 AI 일러스트</figcaption></figure>
+      <figure class="topic-hero-art"><img src="/img/topics/${topic.slug}.webp?v=${ASSET_VERSION}" width="1536" height="1024" alt="${escapeHtml(topic.imageAlt ?? topic.tagline)}" fetchpriority="high" decoding="async"><figcaption>활동의 분위기를 담은 AI 일러스트</figcaption></figure>
     </section>
     <details class="topic-stage-switch">
       <summary>스카우트 활동 단계 바꾸기</summary>

@@ -707,3 +707,19 @@ test('메뉴를 첫 클릭으로 열고 Escape로 원래 버튼에 돌아간다'
   await expect(toggle).toBeFocused();
   await expect(toggle).toHaveAttribute('aria-expanded', 'false');
 });
+
+test('맨 위로 버튼은 스크롤한 뒤 나타나고 상단에 돌아오면 사라진다', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/latest', { waitUntil: 'domcontentloaded' });
+  const topButton = page.locator('#global-scroll-top-btn');
+  await expect(topButton).toHaveCSS('opacity', '0');
+  await expect(topButton).toHaveJSProperty('inert', true);
+  await page.locator('.post-card').first().waitFor();
+  await page.evaluate(() => window.scrollTo(0, 900));
+  await expect(topButton).toHaveCSS('opacity', '1');
+  await topButton.click();
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
+  await expect(topButton).toHaveCSS('opacity', '0');
+  await expect(topButton).toHaveJSProperty('inert', true);
+});

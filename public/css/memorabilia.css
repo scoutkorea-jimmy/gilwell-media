@@ -40,13 +40,6 @@
   gap: var(--gap-card);
   margin-bottom: 28px;
 }
-.memo-hero-title-row {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: var(--gap-element);
-}
 .memo-hero :is(h1, h2) {
   margin: 0;
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
@@ -56,19 +49,48 @@
   letter-spacing: -0.01em;
 }
 .memo-hero-en {
-  display: inline-block;
-  font-size: 0.5em; font-weight: 500;
-  opacity: 0.7;
-  margin-left: 8px;
-  letter-spacing: 0.04em;
+  display: block;
+  margin-top: 4px;
+  color: var(--md-sys-color-on-surface-variant);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.4;
+  letter-spacing: normal;
 }
-.memo-hero-desc {
+.memo-search-tip {
   margin: 0;
-  color: var(--muted, var(--gray-700));
-  font-size: var(--fs-reading); line-height: 1.7;
-  word-break: keep-all;
+  font-size: 14px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
 }
-/* 호환 유지용 빈 룰 (구 .memo-hero-add-btn 사용처는 .memo-btn-primary 로 마이그레이션됨) */
+.memo-search-tip span[lang="en"] { display: inline-block; }
+.memo-results-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px 12px;
+  margin-bottom: 12px;
+}
+.memo-results-toolbar .memo-results-meta { margin: 0; }
+.memo-results-toolbar #memo-add-btn {
+  --md-comp-button-height: 48px;
+  --md-comp-button-padding: 12px;
+  gap: 6px;
+  color: var(--md-sys-color-primary);
+  border-color: var(--md-sys-color-outline-variant);
+  border-radius: var(--md-sys-shape-medium) !important;
+  background: var(--md-sys-color-surface);
+}
+.memo-results-toolbar #memo-add-btn span[lang="en"] {
+  color: var(--md-sys-color-on-surface-variant);
+  font-size: 12px;
+}
+@media (hover: hover) {
+  .memo-results-toolbar #memo-add-btn:hover {
+    background: var(--md-sys-color-surface-container);
+  }
+}
 
 .memo-search-bar {
   display: flex; gap: var(--gap-tight);

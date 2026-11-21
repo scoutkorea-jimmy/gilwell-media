@@ -3361,6 +3361,28 @@ html body .mobile-nav-sublink.active {
   border-bottom: 2px solid var(--md-sys-color-primary) !important;
   border-radius: 0 !important;
 }
+/* Resource search follows the archive heading and rule. */
+.glossary-page-wrap .glossary-hero,
+.memorabilia-page-wrap .memo-hero {
+  gap: 12px 24px;
+  margin: 0 0 16px !important;
+  padding: clamp(14px, 2vw, 24px) 0 !important;
+  border-bottom: 2px solid var(--md-sys-color-primary) !important;
+  border-radius: 0 !important;
+  background: var(--md-sys-color-surface) !important;
+  color: var(--md-sys-color-on-surface) !important;
+}
+.glossary-page-wrap .glossary-hero h1,
+.memorabilia-page-wrap .memo-hero h1 {
+  color: var(--md-sys-color-on-surface) !important;
+}
+.glossary-page-wrap .glossary-hero p,
+.memorabilia-page-wrap .memo-hero p {
+  color: var(--md-sys-color-on-surface-variant) !important;
+}
+.glossary-hero .glossary-search-card {
+  position: static;
+}
 .board-banner-text > .category-tag { margin-bottom: 8px !important; }
 .board-banner .board-banner-total:not(.has-event) { display: none; }
 .board-banner p,
