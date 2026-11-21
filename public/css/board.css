@@ -113,6 +113,30 @@
   font-size:   var(--fs-body);
   line-height: 1.7;
 }
+.board-container .board-state-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  margin-top: 12px;
+  padding: 0 16px;
+  border: 1px solid var(--md-sys-color-outline);
+  border-radius: var(--md-sys-shape-medium);
+  background: var(--md-sys-color-surface);
+  color: var(--md-sys-color-primary);
+  font: inherit;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+}
+.board-container .board-state-action:is(:hover, :focus-visible) {
+  background: var(--md-sys-color-surface-container);
+}
+.board-container .board-pagination a.board-page-btn {
+  min-width: 48px;
+  min-height: 48px;
+  text-decoration: none;
+}
 .error-state {
   padding:    40px 48px;
   text-align: center;

@@ -146,10 +146,6 @@ export function renderTopicShell({title,meta,articleList,news,topic}) {
     </nav>
   </header>
   <main id="main-content" class="topic-wrap">
-    <nav aria-label="스카우트 활동 단계" class="topic-stage-grid">${SCOUT_TOPICS.map(item => `<a class="topic-stage-card" href="/topics/${item.slug}"${item.slug === topic.slug ? ' aria-current="page"' : ''}>
-      <img src="/img/topics/${item.slug}.webp?v=${ASSET_VERSION}" alt="" width="1536" height="1024" decoding="async">
-      <span class="topic-stage-body"><span class="topic-stage-heading">${item.name}<span class="topic-age">${item.age}</span></span><span class="topic-stage-caption">${item.tagline}</span><span class="topic-stage-state">${item.slug === topic.slug ? '지금 보고 있어요' : '활동 알아보기'} <span aria-hidden="true">↗</span></span></span>
-    </a>`).join('')}</nav>
     <section class="topic-intro" aria-labelledby="topic-title">
       <div class="topic-intro-copy"><p class="topic-eyebrow">스카우트 활동 안내 · ${topic.english}</p>
       <h1 id="topic-title">${topic.name}</h1><p class="topic-lead">${topic.lead}</p>
@@ -157,6 +153,13 @@ export function renderTopicShell({title,meta,articleList,news,topic}) {
       <div class="topic-links"><a href="#topic-activities">활동 살펴보기 ↓</a><a href="#topic-news">관련 소식 읽기 ↓</a></div></div>
       <figure class="topic-hero-art"><img src="/img/topics/${topic.slug}.webp?v=${ASSET_VERSION}" width="1536" height="1024" alt="${topic.tagline}을 표현한 일러스트" fetchpriority="high" decoding="async"><figcaption>활동의 분위기를 담은 AI 일러스트</figcaption></figure>
     </section>
+    <details class="topic-stage-switch">
+      <summary>스카우트 활동 단계 바꾸기</summary>
+    <nav aria-label="스카우트 활동 단계" class="topic-stage-grid">${SCOUT_TOPICS.map(item => `<a class="topic-stage-card" href="/topics/${item.slug}"${item.slug === topic.slug ? ' aria-current="page"' : ''}>
+      <img src="/img/topics/${item.slug}.webp?v=${ASSET_VERSION}" alt="" width="1536" height="1024" decoding="async">
+      <span class="topic-stage-body"><span class="topic-stage-heading">${item.name}<span class="topic-age">${item.age}</span></span><span class="topic-stage-caption">${item.tagline}</span><span class="topic-stage-state">${item.slug === topic.slug ? '지금 보고 있어요' : '활동 알아보기'} <span aria-hidden="true">↗</span></span></span>
+    </a>`).join('')}</nav>
+    </details>
     <div class="topic-guide">
       <section id="topic-activities" aria-labelledby="activities-heading"><p class="topic-eyebrow">활동으로 배우고, 경험으로 성장해요</p><h2 id="activities-heading">${topic.name}의 활동과 성장</h2><p class="topic-section-copy">${topic.focus}</p>
         <div class="topic-activity-grid">${topic.activities.map(([heading,copy],i)=>`<article class="topic-activity-card"><span class="topic-step" aria-hidden="true">0${i+1}</span><h3>${heading}</h3><p>${copy}</p></article>`).join('')}</div>

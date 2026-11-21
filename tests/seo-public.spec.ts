@@ -65,3 +65,14 @@ test('기사에서 돌아오면 검색 범위와 페이지가 복원된다', asy
   await expect(page.locator('#search-pagination [aria-current="page"]')).toHaveText('2');
   await expect(result).toHaveAttribute('href', href!);
 });
+
+test('검색 결과가 없으면 검색어를 유지한 채 상세 조건을 해제할 수 있다', async ({ page }) => {
+  const query = '스카우트';
+  await page.goto('/search?' + new URLSearchParams({ q: query, start_date: '2099-01-01' }));
+  const retry = page.getByRole('link', { name: '상세 조건 없이 다시 검색' });
+  await expect(retry).toBeVisible();
+  await retry.press('Enter');
+  await expect(page.locator('#search-input')).toHaveValue(query);
+  await expect(page.locator('#search-start-date')).toHaveValue('');
+  await expect(page.locator('#search-results .search-result-card').first()).toBeVisible();
+});

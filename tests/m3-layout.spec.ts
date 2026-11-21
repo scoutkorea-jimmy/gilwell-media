@@ -113,12 +113,19 @@ test('태블릿 홈에서 인기 기사 제목을 누르면 본문이 열린다'
   await expect(page.locator('h1.post-page-title')).toBeVisible();
 });
 
-test('홈 리뉴얼 감사 인사는 M3 대화상자로 뜨고 닫기·오늘 그만 보기를 지킨다', async ({ page }) => {
+test('홈 리뉴얼 감사 인사는 캠페인 기간의 닫기·오늘 그만 보기와 종료 시각을 지킨다', async ({ page }) => {
+  const fixtureTitle = '리뉴얼 기간의 최신 기사';
+  await page.route(/\/api\/home(?:\?|$)/, route => route.fulfill({ json: {
+    banners: [], latest: { posts: [{ id: 1, title: fixtureTitle, category: 'korea', created_at: '2026-09-30' }] },
+  } }));
+  await page.addInitScript(() => localStorage.setItem('bpmedia-analytics-transfer-consent', 'denied'));
+  await page.clock.setFixedTime(new Date('2026-09-30T23:59:59+09:00'));
+  const homeReady = () => expect(page.locator('#latest-list .mini-item-link').first()).toHaveText(fixtureTitle);
   for (const viewport of [{ width: 390, height: 844 }, { width: 1440, height: 1000 }]) {
     await page.setViewportSize(viewport);
-    await page.goto('/');
+    await page.goto('/', { waitUntil: 'domcontentloaded' });
     await page.evaluate(() => { localStorage.removeItem('gw_renewal_thanks_hidden_until'); sessionStorage.removeItem('gw_renewal_thanks_dismissed'); });
-    await page.reload();
+    await page.reload({ waitUntil: 'domcontentloaded' });
     const dialog = page.locator('.gw-thanks-dialog[role="dialog"]');
     await expect(dialog).toBeVisible({ timeout: 10_000 });
     await expect(page.locator('.home-renewal-banner')).toHaveCount(0);
@@ -134,20 +141,29 @@ test('홈 리뉴얼 감사 인사는 M3 대화상자로 뜨고 닫기·오늘 �
     // 닫기 = 이번 방문(세션) 동안 다시 뜨지 않는다
     await page.locator('.gw-thanks-ok').click();
     await expect(dialog).toHaveCount(0);
-    await page.reload();
-    await page.waitForTimeout(2_000);
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await homeReady();
     await expect(page.locator('.gw-thanks-dialog')).toHaveCount(0);
     // 오늘 그만 보기 = 새 방문(세션 초기화)에도 오늘은 뜨지 않는다
-    await page.evaluate(() => sessionStorage.clear());
-    await page.reload();
+    await page.evaluate(() => sessionStorage.removeItem('gw_renewal_thanks_dismissed'));
+    await page.reload({ waitUntil: 'domcontentloaded' });
     await expect(dialog).toBeVisible({ timeout: 10_000 });
     await page.locator('.gw-thanks-today').click();
     await expect(dialog).toHaveCount(0);
-    await page.evaluate(() => sessionStorage.clear());
-    await page.reload();
-    await page.waitForTimeout(2_000);
+    await page.evaluate(() => sessionStorage.removeItem('gw_renewal_thanks_dismissed'));
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await homeReady();
     await expect(page.locator('.gw-thanks-dialog')).toHaveCount(0);
   }
+  // 마감 직후의 새 방문. 두 저장소의 숨김 여부와 무관하게 캠페인이 끝난다.
+  await page.clock.setFixedTime(new Date('2026-10-01T00:00:00+09:00'));
+  await page.evaluate(() => {
+    localStorage.removeItem('gw_renewal_thanks_hidden_until');
+    sessionStorage.removeItem('gw_renewal_thanks_dismissed');
+  });
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await homeReady();
+  await expect(page.locator('.gw-thanks-dialog')).toHaveCount(0);
 });
 
 test('기사 정보와 공유·수정은 모든 화면에서 제목 아래 본문 앞에 표시된다', async ({ page }) => {
@@ -676,4 +692,18 @@ test('기사 제목 아래 공유·수정 버튼을 키보드로 열고 돌아�
     await page.locator('#post-login-cancel-btn').click();
     await expect(edit).toBeFocused();
   }
+});
+
+test('메뉴를 첫 클릭으로 열고 Escape로 원래 버튼에 돌아간다', async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem('bpmedia-analytics-transfer-consent', 'denied'));
+  await page.goto('/latest');
+  const group = page.locator('.nav-group').first();
+  const toggle = group.getByRole('button');
+  await toggle.click();
+  await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+  await page.keyboard.press('Tab');
+  await expect(group.getByRole('link').first()).toBeFocused();
+  await page.keyboard.press('Escape');
+  await expect(toggle).toBeFocused();
+  await expect(toggle).toHaveAttribute('aria-expanded', 'false');
 });

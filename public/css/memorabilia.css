@@ -6,6 +6,27 @@
 
 .memorabilia-page main { background: var(--canvas, var(--surface)); }
 
+.memorabilia-page-wrap [hidden] { display: none !important; }
+
+.memo-filter-panel > summary { display: none; }
+@media (max-width: 599px) {
+  .memo-filter-panel > summary {
+    display: list-item;
+    width: fit-content;
+    padding: 12px 4px;
+    min-height: 48px;
+    box-sizing: border-box;
+    color: var(--md-sys-color-primary);
+    cursor: pointer;
+    font-weight: 600;
+  }
+  .memo-filter-panel > summary span[lang="en"] {
+    color: var(--md-sys-color-on-surface-variant);
+    font-size: .85em;
+    font-weight: 400;
+  }
+}
+
 .memorabilia-page-wrap {
   max-width: 1366px;
   margin: 0 auto;

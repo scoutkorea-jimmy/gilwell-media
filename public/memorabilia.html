@@ -10,11 +10,11 @@
   <link rel="apple-touch-icon" href="/img/logo.png">
   <link rel="shortcut icon" href="/img/favicon-48.png">
   <style>.nav[data-managed-nav]{visibility:hidden;opacity:0}</style>
-  <link rel="stylesheet" href="/css/style.css?v=20261121144824">
-  <link rel="stylesheet" href="/css/memorabilia.css?v=20261121144824">
-  <link rel="stylesheet" href="/css/chatbot.css?v=20261121144824">
-  <link rel="stylesheet" href="/css/dark-mode.css?v=20261121144824">
-  <link rel="stylesheet" href="/css/m3-site.css?v=20261121144824">
+  <link rel="stylesheet" href="/css/style.css?v=20261121151146">
+  <link rel="stylesheet" href="/css/memorabilia.css?v=20261121151146">
+  <link rel="stylesheet" href="/css/chatbot.css?v=20261121151146">
+  <link rel="stylesheet" href="/css/dark-mode.css?v=20261121151146">
+  <link rel="stylesheet" href="/css/m3-site.css?v=20261121151146">
   <noscript><style>.nav[data-managed-nav]{visibility:visible!important;opacity:1!important}.nav[data-managed-nav] a{font-size:0!important}.nav[data-managed-nav] a::before{content:attr(data-fallback-label);font-size:12px}</style></noscript>
 </head>
 <body class="memorabilia-page">
@@ -78,24 +78,27 @@
           <input type="search" id="memo-search-input" placeholder="Search · 검색 (Title · Event · Issuer · 제목 · 행사 · 제작기관…)" autocomplete="off" aria-label="Search memorabilia · 도감 검색"/>
           <button id="memo-search-btn" aria-label="Search · 검색"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg></button>
         </div>
-        <div class="memo-filters" id="memo-filters" aria-label="Filters · 필터">
-          <select id="memo-filter-category" aria-label="Category · 분류"><option value="">All Categories · 분류 전체</option></select>
-          <select id="memo-filter-country" aria-label="Country · 국가"><option value="">All Countries · 국가 전체</option></select>
-          <select id="memo-filter-event" aria-label="Event · 행사"><option value="">All Events · 행사 전체</option></select>
-          <div class="memo-filter-year-range" aria-label="Year range · 연도 범위">
-            <input type="number" id="memo-filter-year-from" placeholder="Year · 연도" min="1900" max="2100" aria-label="From year · 연도 부터"/>
-            <span aria-hidden="true">~</span>
-            <input type="number" id="memo-filter-year-to" placeholder="to" min="1900" max="2100" aria-label="To year · 연도 까지"/>
+        <details class="memo-filter-panel" id="memo-filter-panel" open>
+          <summary><span lang="ko">검색 필터</span> <span lang="en">Filters</span></summary>
+          <div class="memo-filters" id="memo-filters" aria-label="Filters · 필터">
+            <select id="memo-filter-category" aria-label="Category · 분류"><option value="">All Categories · 분류 전체</option></select>
+            <select id="memo-filter-country" aria-label="Country · 국가"><option value="">All Countries · 국가 전체</option></select>
+            <select id="memo-filter-event" aria-label="Event · 행사"><option value="">All Events · 행사 전체</option></select>
+            <div class="memo-filter-year-range" aria-label="Year range · 연도 범위">
+              <input type="number" id="memo-filter-year-from" placeholder="Year · 연도" min="1900" max="2100" aria-label="From year · 연도 부터"/>
+              <span aria-hidden="true">~</span>
+              <input type="number" id="memo-filter-year-to" placeholder="to" min="1900" max="2100" aria-label="To year · 연도 까지"/>
+            </div>
+            <input type="text" class="memo-filter-issuer" id="memo-filter-issuer" placeholder="Issuer · 제작기관" autocomplete="off" aria-label="Issuer · 제작기관"/>
+            <select id="memo-filter-sort" aria-label="Sort · 정렬">
+              <option value="relevance">Relevance · 관련도</option>
+              <option value="newest">Newest · 최신 등록</option>
+              <option value="year_desc">Year ↓ · 최근 연도</option>
+              <option value="year_asc">Year ↑ · 오래된 연도</option>
+              <option value="title">Title · 제목순</option>
+            </select>
           </div>
-          <input type="text" class="memo-filter-issuer" id="memo-filter-issuer" placeholder="Issuer · 제작기관" autocomplete="off" aria-label="Issuer · 제작기관"/>
-          <select id="memo-filter-sort" aria-label="Sort · 정렬">
-            <option value="relevance">Relevance · 관련도</option>
-            <option value="newest">Newest · 최신 등록</option>
-            <option value="year_desc">Year ↓ · 최근 연도</option>
-            <option value="year_asc">Year ↑ · 오래된 연도</option>
-            <option value="title">Title · 제목순</option>
-          </select>
-        </div>
+        </details>
         <div class="memo-filter-tags-wrap" id="memo-filter-tags-wrap" hidden>
           <span class="memo-filter-tags-label memo-bilingual-inline">
             <span class="lang-en" lang="en">Popular Tags</span>
@@ -477,7 +480,7 @@
       <div class="footer-admin">
         <h4>관리자</h4>
         <a href="/admin.html">관리자 페이지 →</a>
-        <p class="footer-build">Site <span class="site-build-version">V00.200.07</span> · Admin <span class="admin-build-version">V03.165.00</span></p>
+        <p class="footer-build">Site <span class="site-build-version">V00.200.08</span> · Admin <span class="admin-build-version">V03.165.00</span></p>
       </div>
       <div class="footer-bottom">
         <p data-i18n="footer.copyright">© 2026 BP미디어 · bpmedia.net</p>
@@ -490,10 +493,10 @@
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.4/dist/purify.min.js" integrity="sha384-eEu5CTj3qGvu9PdJuS+YlkNi7d2XxQROAFYOr59zgObtlcux1ae1Il3u7jvdCSWu" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-  <script src="/js/main.js?v=20261121144824"></script>
-  <script src="/js/site-chrome.js?v=20261121144824"></script>
-  <script src="/js/chatbot.js?v=20261121144824" defer></script>
-  <script src="/js/memorabilia-shared.js?v=20261121144824"></script>
-  <script src="/js/memorabilia.js?v=20261121144824"></script>
+  <script src="/js/main.js?v=20261121151146"></script>
+  <script src="/js/site-chrome.js?v=20261121151146"></script>
+  <script src="/js/chatbot.js?v=20261121151146" defer></script>
+  <script src="/js/memorabilia-shared.js?v=20261121151146"></script>
+  <script src="/js/memorabilia.js?v=20261121151146"></script>
 </body>
 </html>

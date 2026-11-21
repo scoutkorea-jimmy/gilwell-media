@@ -32,15 +32,19 @@
   function renderBucketBar() {
     var el = byId('glossary-letter-bar');
     if (!el) return;
-    var parts = ['<button type="button" class="glossary-letter-btn' + (_bucket === 'all' ? ' active' : '') + '" data-bucket="all">전체</button>'];
+    var parts = ['<button type="button" class="glossary-letter-btn' + (_bucket === 'all' ? ' active' : '') + '" aria-pressed="' + (_bucket === 'all') + '" data-bucket="all">전체</button>'];
     BUCKETS.forEach(function (bucket) {
-      parts.push('<button type="button" class="glossary-letter-btn' + (_bucket === bucket ? ' active' : '') + '" data-bucket="' + bucket + '">' + bucket + '</button>');
+      parts.push('<button type="button" class="glossary-letter-btn' + (_bucket === bucket ? ' active' : '') + '" aria-pressed="' + (_bucket === bucket) + '" data-bucket="' + bucket + '">' + bucket + '</button>');
     });
     el.innerHTML = parts.join('');
     el.querySelectorAll('.glossary-letter-btn').forEach(function (btn) {
       btn.addEventListener('click', function () {
         _bucket = btn.getAttribute('data-bucket') || 'all';
-        renderBucketBar();
+        el.querySelectorAll('[data-bucket]').forEach(function (item) {
+          var active = item === btn;
+          item.classList.toggle('active', active);
+          item.setAttribute('aria-pressed', String(active));
+        });
         renderGlossary();
       });
     });

@@ -84,6 +84,8 @@ done
 # public/memorabilia.html — its own public/js/css + shared module (memorabilia-shared.js)
 perl -0pi -e "s#/css/memorabilia\\.css\\?v=[0-9A-Za-z.-]+#/css/memorabilia.css?v=${ASSET_VERSION}#g; s#/js/memorabilia\\.js\\?v=[0-9A-Za-z.-]+#/js/memorabilia.js?v=${ASSET_VERSION}#g; s#/js/memorabilia-shared\\.js\\?v=[0-9A-Za-z.-]+#/js/memorabilia-shared.js?v=${ASSET_VERSION}#g" public/memorabilia.html
 
+perl -0pi -e "s#/js/shared-country-name-ko\\.js\\?v=[0-9A-Za-z.-]+#/js/shared-country-name-ko.js?v=${ASSET_VERSION}#g" public/wosm-members.html
+
 # public/admin.html — admin-memorabilia.js + memorabilia 공유 자산 (public/admin.html 도 같은 public/css/shared module 사용)
 perl -0pi -e "s#/js/admin-memorabilia\\.js\\?v=[0-9A-Za-z.-]+#/js/admin-memorabilia.js?v=${ASSET_VERSION}#g; s#/js/admin-memorabilia-comments\\.js\\?v=[0-9A-Za-z.-]+#/js/admin-memorabilia-comments.js?v=${ASSET_VERSION}#g; s#/js/memorabilia-shared\\.js\\?v=[0-9A-Za-z.-]+#/js/memorabilia-shared.js?v=${ASSET_VERSION}#g; s#/css/memorabilia\\.css\\?v=[0-9A-Za-z.-]+#/css/memorabilia.css?v=${ASSET_VERSION}#g" public/admin.html
 

@@ -61,20 +61,30 @@
     document.getElementById('memo-results-wrap').hidden = false;
     document.getElementById('memo-detail-view').hidden = true;
     document.title = '스카우트 기념품 도감 — BP미디어';
-    initListIfNeeded();
-    runSearch();
+    if (!state.ready) state.ready = initList();
+    state.ready.then(() => {
+      if (!getSlugFromPath()) runSearch();
+    });
   }
 
   function showDetail(slug) {
     document.getElementById('memo-list-view').hidden = true;
     document.getElementById('memo-results-wrap').hidden = true;
     document.getElementById('memo-detail-view').hidden = false;
+    if (document.referrer) {
+      const previous = new URL(document.referrer);
+      if (previous.origin === location.origin && /^\/memorabilia(?:\.html)?\/?$/.test(previous.pathname)) {
+        document.querySelectorAll('#memo-detail-view .memo-back-link').forEach(link => {
+          link.href = '/memorabilia' + previous.search;
+        });
+      }
+    }
     loadDetail(slug);
   }
 
   // ── List/Search state ──────────────────────────────────────────────────
   const state = {
-    initialized: false,
+    ready: null,
     page: 1,
     pageSize: 16,             // 4컬럼 × 4줄 (PC). 좁은 viewport 에서는 computePageSize() 가 조정.
     selectedTags: new Set(),  // 인기 태그 칩 다중 선택 (AND 필터)
@@ -112,14 +122,43 @@
   let _searchToken = 0;
   let _searchAbortCtrl = null;
 
-  async function initListIfNeeded() {
-    if (state.initialized) return;
-    state.initialized = true;
-
-    // Read URL query
+  async function initList() {
+    // Capture the link state before a search can update the address bar.
     const params = new URLSearchParams(location.search);
     const q = params.get('q') || '';
     if (q) $('#memo-search-input').value = q;
+
+    // Load filter options
+    const catalogs = Promise.all([loadCategoryOptions(), populateCountryOptions(), populateEventOptions(), loadPopularTags()]);
+    if (['category', 'country', 'event'].some(key => params.has(key))) await catalogs;
+    // URL 의 사전 적용된 필터 반영
+    if (params.get('category')) $('#memo-filter-category').value = params.get('category');
+    if (params.get('country'))  $('#memo-filter-country').value  = params.get('country');
+    if (params.get('event'))    { const ef = $('#memo-filter-event'); if (ef) ef.value = params.get('event'); }
+    if (params.get('sort'))     $('#memo-filter-sort').value     = params.get('sort');
+    if (params.get('year_from')) $('#memo-filter-year-from').value = params.get('year_from');
+    if (params.get('year_to'))   $('#memo-filter-year-to').value   = params.get('year_to');
+    if (params.get('issuer'))    $('#memo-filter-issuer').value    = params.get('issuer');
+    if (params.get('tag')) {
+      params.get('tag').split(',').map((s) => s.trim()).filter(Boolean).forEach((t) => state.selectedTags.add(t));
+      updateTagChipsActiveState();
+      $('#memo-filter-tags-clear').hidden = !state.selectedTags.size;
+    }
+
+    const page = Number(params.get('page'));
+    state.page = Number.isSafeInteger(page) && page > 0 ? page : 1;
+    state.pageSize = computePageSize();
+    const filterPanel = $('#memo-filter-panel');
+    if (filterPanel) {
+      const narrowScreen = window.matchMedia('(max-width: 599px)');
+      const setPanel = () => {
+        const active = new URLSearchParams(location.search);
+        filterPanel.open = !narrowScreen.matches || [...active.keys()].some(key =>
+          ['category', 'country', 'event', 'sort', 'year_from', 'year_to', 'issuer', 'tag'].includes(key));
+      };
+      setPanel();
+      narrowScreen.addEventListener('change', setPanel);
+    }
 
     // Wire events
     const debouncedSearch = debounce(runSearch, 250);
@@ -158,23 +197,6 @@
       state.page = 1;
       runSearch();
     });
-
-    // Load filter options
-    await Promise.all([loadCategoryOptions(), populateCountryOptions(), populateEventOptions(), loadPopularTags()]);
-    // URL 의 사전 적용된 필터 반영
-    const cur = new URLSearchParams(location.search);
-    if (cur.get('category')) $('#memo-filter-category').value = cur.get('category');
-    if (cur.get('country'))  $('#memo-filter-country').value  = cur.get('country');
-    if (cur.get('event'))    { const ef = $('#memo-filter-event'); if (ef) ef.value = cur.get('event'); }
-    if (cur.get('sort'))     $('#memo-filter-sort').value     = cur.get('sort');
-    if (cur.get('year_from')) $('#memo-filter-year-from').value = cur.get('year_from');
-    if (cur.get('year_to'))   $('#memo-filter-year-to').value   = cur.get('year_to');
-    if (cur.get('issuer'))    $('#memo-filter-issuer').value    = cur.get('issuer');
-    if (cur.get('tag')) {
-      cur.get('tag').split(',').map((s) => s.trim()).filter(Boolean).forEach((t) => state.selectedTags.add(t));
-      updateTagChipsActiveState();
-      if (tagClearBtn && state.selectedTags.size) tagClearBtn.hidden = false;
-    }
   }
 
   // 인기 태그 영역 — 사용자 요청(2026-05-27)으로 도감 페이지에서 영구 숨김.
@@ -566,7 +588,7 @@
           </div>` : ''}
         </div>
       ` : ''}
-      <h2 class="memo-detail-title" lang="en">${escapeHtml(titleEn)}</h2>
+      <h1 class="memo-detail-title" lang="en">${escapeHtml(titleEn)}</h1>
       ${titleKo && titleKo !== titleEn ? `<div class="memo-detail-title-ko" lang="ko">${escapeHtml(titleKo)}</div>` : ''}
       <div class="memo-detail-actions">
         <div class="memo-detail-views" aria-label="조회수">조회 <span data-role="view-count">${Number(item.view_count || 0)}</span></div>

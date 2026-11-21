@@ -52,7 +52,6 @@
     </nav>
   </header>
   <main id="main-content" class="topic-wrap">
-    <nav aria-label="스카우트 활동 단계" class="topic-stage-grid">@@STAGES@@</nav>
     <section class="topic-intro" aria-labelledby="topic-title">
       <div class="topic-intro-copy"><p class="topic-eyebrow">스카우트 활동 안내 · @@ENGLISH@@</p>
       <h1 id="topic-title">@@NAME@@</h1><p class="topic-lead">@@LEAD@@</p>
@@ -60,6 +59,10 @@
       <div class="topic-links"><a href="#topic-activities">활동 살펴보기 ↓</a><a href="#topic-news">관련 소식 읽기 ↓</a></div></div>
       <figure class="topic-hero-art"><img src="/img/topics/@@SLUG@@.webp?v=@@ASSET_VERSION@@" width="1536" height="1024" alt="@@TAGLINE@@을 표현한 일러스트" fetchpriority="high" decoding="async"><figcaption>활동의 분위기를 담은 AI 일러스트</figcaption></figure>
     </section>
+    <details class="topic-stage-switch">
+      <summary>스카우트 활동 단계 바꾸기</summary>
+    <nav aria-label="스카우트 활동 단계" class="topic-stage-grid">@@STAGES@@</nav>
+    </details>
     <div class="topic-guide">
       <section id="topic-activities" aria-labelledby="activities-heading"><p class="topic-eyebrow">활동으로 배우고, 경험으로 성장해요</p><h2 id="activities-heading">@@NAME@@의 활동과 성장</h2><p class="topic-section-copy">@@FOCUS@@</p>
         <div class="topic-activity-grid">@@ACTIVITIES@@</div>

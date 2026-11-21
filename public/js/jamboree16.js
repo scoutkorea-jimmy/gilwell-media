@@ -83,7 +83,7 @@
         '</div>' +
         summaryHtml +
         '<div class="post-card-footer">' +
-          '<div class="post-card-share-row"><button class="post-share-btn post-card-share-btn" type="button">공유하기</button></div>' +
+          '<div class="post-card-share-row"><button class="post-share-btn post-card-share-btn" type="button" aria-label="' + GW.escapeHtml(post.title || '기사') + ' 공유하기">공유하기</button></div>' +
           '<div class="post-card-engagement">공감 ' + GW.formatNumber(post.likes || 0) + '</div>' +
           '<div class="post-card-meta">' +
             GW.renderPostDateLabel(post) +

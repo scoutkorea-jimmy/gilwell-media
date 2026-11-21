@@ -73,11 +73,11 @@ async function renderFeaturePage({ params, request, env }, headOnly = false) {
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png">
   <link rel="apple-touch-icon" href="/img/logo.png">
   <link rel="shortcut icon" href="/img/favicon-48.png">
-  <link rel="stylesheet" href="/css/style.css?v=20261121144824">
-  <link rel="stylesheet" href="/css/post.css?v=20261121144824">
-  <link rel="stylesheet" href="/css/chatbot.css?v=20261121144824">
-  <link rel="stylesheet" href="/css/dark-mode.css?v=20261121144824">
-  <link rel="stylesheet" href="/css/m3-site.css?v=20261121144824">
+  <link rel="stylesheet" href="/css/style.css?v=20261121151146">
+  <link rel="stylesheet" href="/css/post.css?v=20261121151146">
+  <link rel="stylesheet" href="/css/chatbot.css?v=20261121151146">
+  <link rel="stylesheet" href="/css/dark-mode.css?v=20261121151146">
+  <link rel="stylesheet" href="/css/m3-site.css?v=20261121151146">
   <style>
     .feature-page {
       background:
@@ -431,12 +431,10 @@ async function renderFeaturePage({ params, request, env }, headOnly = false) {
           <span class="post-page-tag">특집 기사 컬렉션</span>
         </div>
         <h1>${escapeHtml(collection.special_feature)}</h1>
-        <p>${escapeHtml(description)}</p>
       </article>
       <aside class="feature-page-summary-card">
         <div class="feature-page-summary-head">
-          <strong>Collection Brief</strong>
-          <h2>${escapeHtml(categoryMeta.label)} 큐레이션</h2>
+          <h2>특집 정보</h2>
         </div>
         <div class="feature-page-summary-stats">
           <div class="feature-page-stat">
@@ -450,7 +448,7 @@ async function renderFeaturePage({ params, request, env }, headOnly = false) {
         </div>
         <div class="feature-page-summary-links">
           <a href="/${category}">${escapeHtml(categoryMeta.label)} 전체 보기</a>
-          <a href="/post/${leadItem.id}">리드 기사 읽기</a>
+          <a href="/post/${leadItem.id}">대표 기사 읽기</a>
         </div>
       </aside>
     </section>
@@ -462,8 +460,7 @@ async function renderFeaturePage({ params, request, env }, headOnly = false) {
       </div>
       <aside class="feature-page-rail">
         <div class="feature-page-rail-head">
-          <strong>Story Lineup</strong>
-          <p class="post-card-excerpt" style="margin-bottom:0;">이 특집에 묶인 기사 흐름을 최신순으로 빠르게 훑어볼 수 있습니다.</p>
+          <h2>특집 기사 목록</h2>
         </div>
         <div class="feature-page-rail-list">
           ${featureParts.rail}
@@ -486,7 +483,7 @@ async function renderFeaturePage({ params, request, env }, headOnly = false) {
         <h4>바로가기</h4>
         <a href="/${category}">${escapeHtml(categoryMeta.label)} 목록 →</a>
         <a href="/latest">최신 기사 보기 →</a>
-        <p class="footer-build">Site <span class="site-build-version">V00.200.07</span> · Admin <span class="admin-build-version">V03.165.00</span></p>
+        <p class="footer-build">Site <span class="site-build-version">V00.200.08</span> · Admin <span class="admin-build-version">V03.165.00</span></p>
       </div>
       <div class="footer-bottom">
         <p>© 2026 ${footerTitle} · ${footerDomain}</p>
@@ -495,9 +492,9 @@ async function renderFeaturePage({ params, request, env }, headOnly = false) {
     </div>
   </footer>
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.4/dist/purify.min.js" integrity="sha384-eEu5CTj3qGvu9PdJuS+YlkNi7d2XxQROAFYOr59zgObtlcux1ae1Il3u7jvdCSWu" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-  <script src="/js/main.js?v=20261121144824"></script>
-  <script src="/js/site-chrome.js?v=20261121144824"></script>
-  <script src="/js/chatbot.js?v=20261121144824" defer></script>
+  <script src="/js/main.js?v=20261121151146"></script>
+  <script src="/js/site-chrome.js?v=20261121151146"></script>
+  <script src="/js/chatbot.js?v=20261121151146" defer></script>
   <script>GW.bootstrapStandardPage();</script>
 </body>
 </html>`;

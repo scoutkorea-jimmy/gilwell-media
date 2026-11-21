@@ -181,9 +181,11 @@
 
   function getFocusableElements(root) {
     if (!root) return [];
-    return Array.from(root.querySelectorAll('a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'))
+    return Array.from(root.querySelectorAll('a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), summary, [tabindex]:not([tabindex="-1"])'))
       .filter(function (node) {
-        return !node.hidden && node.getAttribute('aria-hidden') !== 'true';
+        return node.tabIndex !== -1 && !node.closest('[inert],[aria-hidden="true"]') &&
+          node.getClientRects().length > 0 && window.getComputedStyle(node).visibility === 'visible' &&
+          (!node.checkVisibility || node.checkVisibility({ contentVisibilityAuto: true }));
       });
   }
 
@@ -385,15 +387,14 @@
     }
 
     function toggleVisibility() {
-      button.classList.toggle('is-visible', getTop() > 240);
+      var visible = getTop() > 240;
+      button.classList.toggle('is-visible', visible);
+      button.disabled = !visible;
     }
 
     function scrollToTop() {
-      if (isWindowMode) {
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-        return;
-      }
-      scrollContainer.scrollTo({ top: 0, behavior: 'smooth' });
+      var behavior = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth';
+      (isWindowMode ? window : scrollContainer).scrollTo({ top: 0, behavior: behavior });
     }
 
     button.onclick = scrollToTop;
@@ -443,9 +444,6 @@
   // renderManagedNav 를 부른다. 아무 변화가 없어도 innerHTML 을 갈아엎으면
   //  (1) 열려 있던 드롭다운이 사라지고
   //  (2) 키보드 포커스가 <body> 로 튕기며
-  //  (3) setupNavDropdowns 의 그룹별 mouseleave 핸들러가 죽은 노드에 남아
-  //      이후로는 마우스를 빼도 패널이 닫히지 않는다 (핸들러는 _navDropdownsBound
-  //      가드 때문에 재부착되지 않음).
   // 그래서 라벨·언어·경로 시그니처가 실제로 바뀐 경우에만 다시 그린다.
   function getNavRenderSignature(currentPath) {
     var labelParts = [];
@@ -477,7 +475,7 @@
             var childActive = childHrefMatches(child.href, currentPath);
             return '<a class="nav-sublink' + (childActive ? ' active' : '') + '" ' +
               'href="' + GW.escapeHtml(child.href) + '" ' +
-              'role="menuitem" ' +
+              (childActive ? 'aria-current="page" ' : '') +
               'data-i18n="' + GW.escapeHtml(child.key) + '">' +
               GW.escapeHtml(GW.t(child.key)) +
               '</a>';
@@ -485,11 +483,11 @@
           return '<div class="nav-group" data-nav-group="' + GW.escapeHtml(groupSlug) + '">' +
               '<button type="button" class="' + triggerCls + '" ' +
                 'data-nav-group-trigger="' + GW.escapeHtml(groupSlug) + '" ' +
-                'aria-haspopup="true" aria-expanded="false">' +
+                'aria-expanded="false">' +
                 '<span data-i18n="' + GW.escapeHtml(item.key) + '">' + GW.escapeHtml(label) + '</span>' +
                 '<span class="nav-group-caret" aria-hidden="true"></span>' +
               '</button>' +
-              '<div class="nav-group-panel" role="menu" aria-label="' + GW.escapeHtml(label) + '">' +
+              '<div class="nav-group-panel">' +
                 childrenHtml +
               '</div>' +
             '</div>';
@@ -497,6 +495,7 @@
         // 단독 link
         var active = childHrefMatches(item.href, currentPath);
         return '<a class="nav-link' + (active ? ' active' : '') + '" ' +
+          (active ? 'aria-current="page" ' : '') +
           'href="' + GW.escapeHtml(item.href) + '" ' +
           'data-i18n="' + GW.escapeHtml(item.key) + '">' +
           GW.escapeHtml(GW.t(item.key)) +
@@ -553,7 +552,9 @@
       panel.style.setProperty('--nav-panel-top', Math.round(trigRect.bottom - baseRect.top - base.clientTop + 2) + 'px');
     }
 
+    var pinnedGroup = null;
     function closeAllExcept(skipGroup) {
+      if (pinnedGroup !== skipGroup) pinnedGroup = null;
       document.querySelectorAll('.nav-group.is-open').forEach(function (g) {
         if (g === skipGroup) return;
         g.classList.remove('is-open');
@@ -571,8 +572,9 @@
         e.stopPropagation();
         var group = trig.closest('.nav-group');
         if (!group) return;
-        var willOpen = !group.classList.contains('is-open');
+        var willOpen = e.detail ? pinnedGroup !== group : !group.classList.contains('is-open');
         closeAllExcept(willOpen ? group : null);
+        pinnedGroup = willOpen ? group : null;
         group.classList.toggle('is-open', willOpen);
         trig.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
         syncNavPanelState();
@@ -586,7 +588,10 @@
 
     // ESC → 닫기
     document.addEventListener('keydown', function (e) {
-      if (e.key === 'Escape') closeAllExcept(null);
+      if (e.key !== 'Escape') return;
+      var group = document.activeElement.closest('.nav-group.is-open');
+      if (group) group.querySelector('.nav-group-trigger').focus();
+      closeAllExcept(null);
     });
 
     // 메뉴바를 가로로 밀면 계산해 둔 패널 좌표가 트리거와 어긋나므로 닫고, 화면 크기가 바뀌면 다시 계산한다.
@@ -598,13 +603,16 @@
       }
     }, true);
     window.addEventListener('resize', syncNavPanelState);
+    document.addEventListener('focusin', function (e) {
+      if (document.querySelector('.nav-group.is-open')) closeAllExcept(e.target.closest('.nav-group'));
+    });
 
     // hover open (데스크톱) — pointer:fine 일 때만
     if (window.matchMedia && window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
       document.addEventListener('mouseover', function (e) {
         if (!e.target.closest) return;
         var group = e.target.closest('.nav-group');
-        if (group) {
+        if (group && !group.contains(e.relatedTarget)) {
           closeAllExcept(group);
           if (!group.classList.contains('is-open')) {
             group.classList.add('is-open');
@@ -614,19 +622,14 @@
           }
         }
       });
-      document.addEventListener('mouseleave', function () { closeAllExcept(null); });
-      document.querySelectorAll('.nav-group').forEach(function (g) {
-        g.addEventListener('mouseleave', function () {
-          // 약간의 지연 후 닫기 (멀어졌다가 돌아오는 경우 대비)
-          setTimeout(function () {
-            if (!g.matches(':hover')) {
-              g.classList.remove('is-open');
-              var trig = g.querySelector('.nav-group-trigger');
-              if (trig) trig.setAttribute('aria-expanded', 'false');
-              syncNavPanelState();
-            }
-          }, 150);
-        });
+      document.addEventListener('mouseout', function (e) {
+        var group = e.target.closest && e.target.closest('.nav-group.is-open');
+        if (!group || group.contains(e.relatedTarget)) return;
+        setTimeout(function () {
+          if (group.classList.contains('is-open') && !group.matches(':hover, :focus-within')) {
+            closeAllExcept(null);
+          }
+        }, 150);
       });
     }
   }
@@ -638,7 +641,8 @@
         header: document.getElementById('mobile-compact-header'),
         overlay: document.getElementById('mobile-compact-overlay'),
         drawer: document.getElementById('mobile-compact-drawer'),
-        nav: document.getElementById('mobile-compact-nav')
+        nav: document.getElementById('mobile-compact-nav'),
+        toggle: document.getElementById('mobile-compact-toggle')
       };
     }
     if (!document.body || document.body.classList.contains('admin-page') || document.body.classList.contains('admin-v3')) return null;
@@ -646,7 +650,7 @@
 
     var shell = document.createElement('div');
     shell.innerHTML =
-      '<div class="mobile-compact-header" id="mobile-compact-header" aria-hidden="true">' +
+      '<div class="mobile-compact-header" id="mobile-compact-header" inert aria-hidden="true">' +
         '<button type="button" class="mobile-compact-toggle" id="mobile-compact-toggle" aria-label="메뉴 열기" aria-expanded="false" aria-controls="mobile-compact-drawer">' +
           '<span></span><span></span><span></span>' +
         '</button>' +
@@ -657,9 +661,9 @@
         '<a href="/search" class="mobile-compact-search" aria-label="검색"></a>' +
       '</div>' +
       '<div class="mobile-compact-overlay" id="mobile-compact-overlay" hidden></div>' +
-      '<aside class="mobile-compact-drawer" id="mobile-compact-drawer" aria-hidden="true">' +
+      '<aside class="mobile-compact-drawer" id="mobile-compact-drawer" role="dialog" aria-modal="true" aria-labelledby="mobile-compact-title" inert aria-hidden="true">' +
         '<div class="mobile-compact-drawer-head">' +
-          '<strong class="mobile-compact-drawer-title">메뉴</strong>' +
+          '<strong class="mobile-compact-drawer-title" id="mobile-compact-title">메뉴</strong>' +
           '<button type="button" class="mobile-compact-drawer-close" id="mobile-compact-drawer-close" aria-label="메뉴 닫기"></button>' +
         '</div>' +
         '<nav class="mobile-compact-nav" id="mobile-compact-nav" aria-label="모바일 메뉴"></nav>' +
@@ -678,23 +682,24 @@
 
     function closeDrawer(restoreFocus) {
       document.body.classList.remove('mobile-compact-drawer-open');
-      refs.drawer.setAttribute('aria-hidden', 'true');
       refs.overlay.hidden = true;
       refs.toggle.setAttribute('aria-expanded', 'false');
       if (restoreFocus !== false && drawerRestoreFocus && typeof drawerRestoreFocus.focus === 'function') {
         drawerRestoreFocus.focus();
       }
+      refs.drawer.inert = true;
+      refs.drawer.setAttribute('aria-hidden', 'true');
     }
 
     function openDrawer() {
       drawerRestoreFocus = document.activeElement;
       document.body.classList.add('mobile-compact-drawer-open');
+      refs.drawer.inert = false;
       refs.drawer.setAttribute('aria-hidden', 'false');
       refs.overlay.hidden = false;
       refs.toggle.setAttribute('aria-expanded', 'true');
       window.requestAnimationFrame(function () {
-        var focusables = getFocusableElements(refs.drawer);
-        if (focusables.length) focusables[0].focus();
+        if (!refs.drawer.inert && !refs.drawer.contains(document.activeElement)) refs.close.focus();
       });
     }
 
@@ -735,7 +740,7 @@
         var children = item.children.map(function (child) {
           var active = childHrefMatches(child.href, currentPath);
           return '<a href="' + GW.escapeHtml(child.href) + '"' +
-            (active ? ' class="mobile-nav-sublink active"' : ' class="mobile-nav-sublink"') + '>' +
+            (active ? ' class="mobile-nav-sublink active" aria-current="page"' : ' class="mobile-nav-sublink"') + '>' +
             GW.escapeHtml(GW.t(child.key)) + '</a>';
         }).join('');
         return '<details class="mobile-nav-group' + (groupActive ? ' is-active' : '') + '"' + openAttr + '>' +
@@ -745,7 +750,7 @@
       }
       var active = childHrefMatches(item.href, currentPath);
       return '<a href="' + GW.escapeHtml(item.href) + '"' +
-        (active ? ' class="mobile-nav-link active"' : ' class="mobile-nav-link"') + '>' +
+        (active ? ' class="mobile-nav-link active" aria-current="page"' : ' class="mobile-nav-link"') + '>' +
         GW.escapeHtml(GW.t(item.key)) + '</a>';
     }).join('');
   };
@@ -774,8 +779,10 @@
       }
       var shouldShow = isCompact || (isMobile && navHidden);
       refs.header.classList.toggle('is-visible', shouldShow);
+      refs.header.inert = !shouldShow;
       refs.header.setAttribute('aria-hidden', shouldShow ? 'false' : 'true');
-      if (!isMobile && document.body.classList.contains('mobile-compact-drawer-open')) {
+      if (!shouldShow && document.body.classList.contains('mobile-compact-drawer-open')) {
+        refs.drawer.inert = true;
         document.body.classList.remove('mobile-compact-drawer-open');
         refs.drawer.setAttribute('aria-hidden', 'true');
         refs.overlay.hidden = true;

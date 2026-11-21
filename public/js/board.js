@@ -308,7 +308,8 @@
     }
 
     var isNew = GW.isPostNew(post);
-    var shareHtml = '<div class="post-card-share-row"><button class="post-share-btn post-card-share-btn" type="button" data-share-url="/post/' + post.id + '" data-share-title="' + GW.escapeHtml(post.title) + '">공유하기</button></div>';
+    var safeTitle = GW.escapeHtml(post.title || '기사');
+    var shareHtml = '<div class="post-card-share-row"><button class="post-share-btn post-card-share-btn" type="button" aria-label="' + safeTitle + ' 공유하기" data-share-url="/post/' + post.id + '" data-share-title="' + safeTitle + '">공유하기</button></div>';
     var kickerHtml = (isNew ? '<span class="post-kicker post-kicker-new">NEW</span>' : '') +
       (post.tag ? post.tag.split(',').map(function(t){ t = t.trim(); return t ? '<span class="post-kicker ' + cat.tagClass + '-kicker">' + GW.escapeHtml(t) + '</span>' : ''; }).join('') : '');
     // 게시판 카테고리 태그(채움)와 글머리 태그(아웃라인) 동시 표시
@@ -543,18 +544,26 @@
   };
 
   Board.prototype._showEmpty = function () {
+    var url = new URL(window.location.href);
+    var hasQuery = !!(this._searchQuery || this._selectedTag || this._sortMode === 'popular' || (this.category === 'latest' && this._daysFilter !== 30));
+    var message = this.category === 'latest' ? '최근 30일 동안 게시된 기사가 없습니다.' : '아직 게시된 기사가 없습니다.';
+    var link = '';
+    if (this.page > 1 && this.total > 0) {
+      message = '이 페이지에는 기사가 없습니다.';
+      url.searchParams.delete('page');
+      link = '<a class="board-state-action" href="' + GW.escapeHtml(url.pathname + url.search) + '">첫 페이지로</a>';
+    } else if (hasQuery) {
+      message = '현재 검색어나 필터에 맞는 기사가 없습니다.';
+      link = '<a class="board-state-action" href="' + GW.escapeHtml(url.pathname) + '">검색·필터 초기화</a>';
+    }
     this.gridEl.innerHTML =
-      '<div class="empty-state" style="grid-column:1/-1;">' +
-        '<span class="empty-icon">◌</span>' +
-        '<p>아직 게시된 글이 없습니다.<br>관리자가 첫 번째 글을 올릴 예정입니다.</p>' +
-      '</div>';
+      '<div class="empty-state" style="grid-column:1/-1;"><p role="status">' + message + '</p>' + link + '</div>';
   };
 
   Board.prototype._showError = function () {
-    if (this.page === 1) {
-      this.gridEl.innerHTML =
-        '<div class="error-state" style="grid-column:1/-1;">게시글을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.</div>';
-    }
+    var self = this;
+    this.gridEl.innerHTML = '<div class="error-state" style="grid-column:1/-1;"><p role="status">기사 목록을 불러오지 못했습니다.</p><button class="board-state-action" type="button">다시 시도</button></div>';
+    this.gridEl.querySelector('button').addEventListener('click', function () { self._load(); });
   };
 
   Board.prototype._updateCount = function () {

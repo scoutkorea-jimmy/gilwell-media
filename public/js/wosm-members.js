@@ -243,7 +243,11 @@
     var extra = item && item.extra_fields && typeof item.extra_fields === 'object'
       ? Object.keys(item.extra_fields).map(function (key) { return item.extra_fields[key]; })
       : [];
+    var commonCountryName = window.GW_COUNTRY_NAME_KO && item
+      ? window.GW_COUNTRY_NAME_KO.translate(item.country_en)
+      : '';
     var haystack = [
+      commonCountryName,
       item && item.country_ko,
       item && item.country_en,
       item && item.membership_category,

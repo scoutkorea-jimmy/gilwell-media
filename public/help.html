@@ -10,10 +10,10 @@
   <link rel="apple-touch-icon" href="/img/logo.png">
   <link rel="shortcut icon" href="/img/favicon-48.png">
   <style>.nav[data-managed-nav]{visibility:hidden;opacity:0}</style>
-  <link rel="stylesheet" href="/css/style.css?v=20261121144824">
-  <link rel="stylesheet" href="/css/chatbot.css?v=20261121144824">
-  <link rel="stylesheet" href="/css/dark-mode.css?v=20261121144824">
-  <link rel="stylesheet" href="/css/m3-site.css?v=20261121144824">
+  <link rel="stylesheet" href="/css/style.css?v=20261121151146">
+  <link rel="stylesheet" href="/css/chatbot.css?v=20261121151146">
+  <link rel="stylesheet" href="/css/dark-mode.css?v=20261121151146">
+  <link rel="stylesheet" href="/css/m3-site.css?v=20261121151146">
   <noscript><style>.nav[data-managed-nav]{visibility:visible!important;opacity:1!important}.nav[data-managed-nav] a{font-size:0!important}.nav[data-managed-nav] a::before{content:attr(data-fallback-label);font-size:12px}</style></noscript>
 
 </head>
@@ -62,7 +62,25 @@
   <!-- GNB ↔ 운영주체 본문 사이 가로 배너. 이미지 파일: img/about-banner.jpg -->
 
 
-  <main id="main-content" class="privacy-wrap"><h1>BP미디어 이용 안내</h1><p>기사 정정, 제보 및 이용 문의는 <a href="mailto:info@bpmedia.net">info@bpmedia.net</a>으로 보내주세요.</p><p><a href="/editorial-policy">편집 및 정정 정책</a> · <a href="/privacy">개인정보처리방침</a> · <a href="/about">운영자 소개</a></p><h2>서비스 변경 기록</h2><p><a href="/data/changelog.json">공개 버전 기록</a>에서 서비스 변경 내역을 확인할 수 있습니다. 개별 기사 정정은 해당 기사 본문과 갱신일을 확인해주세요.</p><h2>기사 찾기</h2><p><a href="/korea">한국</a> · <a href="/apr">아시아태평양</a> · <a href="/wosm">세계</a> · <a href="/people">인물</a> 목록의 페이지 번호로 지난 기사를 찾아볼 수 있습니다.</p></main>
+  <main id="main-content" class="static-page">
+    <header class="static-page-head">
+      <h1>BP미디어 이용 안내</h1>
+      <p class="static-page-lead">기사 정정, 제보 및 이용 문의는 <!--email_off--><a href="mailto:info@bpmedia.net">info@bpmedia.net</a><!--/email_off-->으로 보내주세요.</p>
+      <nav class="topic-links" aria-label="BP미디어 안내">
+        <a href="/editorial-policy">편집 및 정정 정책</a>
+        <a href="/privacy">개인정보처리방침</a>
+        <a href="/about">운영자 소개</a>
+      </nav>
+    </header>
+    <section class="static-page-section">
+      <h2>서비스 변경 기록</h2>
+      <p><a href="/data/changelog.json">공개 버전 기록</a>에서 서비스 변경 내역을 확인할 수 있습니다. 개별 기사 정정은 해당 기사 본문과 갱신일을 확인해주세요.</p>
+    </section>
+    <section class="static-page-section">
+      <h2>기사 찾기</h2>
+      <p><a href="/korea">한국</a> · <a href="/apr">아시아태평양</a> · <a href="/wosm">세계</a> · <a href="/people">인물</a> 목록의 페이지 번호로 지난 기사를 찾아볼 수 있습니다.</p>
+    </section>
+  </main>
 
   <footer>
     <div class="footer-inner">
@@ -79,7 +97,7 @@
         <h4>관리자</h4>
         <a href="/admin.html">관리자 페이지 →</a>
         <a href="/glossary-raw">용어집 RAW로 보기 →</a>
-        <p class="footer-build">Site <span class="site-build-version">V00.200.07</span> · Admin <span class="admin-build-version">V03.165.00</span></p>
+        <p class="footer-build">Site <span class="site-build-version">V00.200.08</span> · Admin <span class="admin-build-version">V03.165.00</span></p>
       </div>
       <div class="footer-bottom">
         <p data-i18n="footer.copyright">© 2026 BP미디어 · bpmedia.net</p>
@@ -92,9 +110,9 @@
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.4/dist/purify.min.js" integrity="sha384-eEu5CTj3qGvu9PdJuS+YlkNi7d2XxQROAFYOr59zgObtlcux1ae1Il3u7jvdCSWu" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-  <script src="/js/main.js?v=20261121144824"></script>
-  <script src="/js/site-chrome.js?v=20261121144824"></script>
-  <script src="/js/chatbot.js?v=20261121144824" defer></script>
+  <script src="/js/main.js?v=20261121151146"></script>
+  <script src="/js/site-chrome.js?v=20261121151146"></script>
+  <script src="/js/chatbot.js?v=20261121151146" defer></script>
   <script>
     GW.bootstrapStandardPage();
   </script>

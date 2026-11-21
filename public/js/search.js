@@ -7,11 +7,15 @@
     searchCount.textContent = '검색 중…';
   }
 
-  function renderEmpty(searchRes, query, scope) {
+  function renderEmpty(searchRes, query, scope, hasFilters) {
+    var retryLink = hasFilters
+      ? '<a href="/search?' + new URLSearchParams({ q: query }).toString() + '">상세 조건 없이 다시 검색</a>'
+      : '';
     searchRes.innerHTML =
       '<div class="search-no-results">' +
         '<strong>검색 결과가 없습니다</strong>' +
-        '“' + GW.escapeHtml(query) + '” 대신 다른 검색어를 입력해 보세요.' +
+        (hasFilters ? '검색 조건을 해제하면 같은 검색어로 전체 기사를 찾을 수 있습니다.' : '띄어쓰기를 확인하거나 다른 검색어를 입력해 보세요.') +
+        retryLink +
         (scope === 'site' ? ' <a href="/latest">최신 기사 목록 보기 →</a>' : '') +
       '</div>';
   }
@@ -184,7 +188,8 @@
             (activeScope === 'site' && total ? ' · ' + startIndex + '-' + endIndex + '건 표시' : '');
 
           if (!posts.length) {
-            renderEmpty(searchRes, query, activeScope);
+            var hasFilters = activeScope === 'site' && Object.keys(filters).some(function (key) { return params.has(key); });
+            renderEmpty(searchRes, query, activeScope, hasFilters);
             renderPagination();
             return;
           }
