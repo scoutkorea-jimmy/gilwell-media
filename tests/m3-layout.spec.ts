@@ -33,7 +33,11 @@ for (const viewport of [
 test('홈 카드 역할은 대표 surface와 tonal 목록으로 명확히 분리된다', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto('/');
-  await page.waitForTimeout(3_000);
+  const lead = page.locator('.home-lead-card');
+  await expect(page.locator('#latest-list .mini-item').first()).toBeAttached();
+  await lead.scrollIntoViewIfNeeded();
+  await expect(lead).toHaveCSS('transform', 'none');
+  await expect(lead).toHaveCSS('opacity', '1');
 
   const result = await page.evaluate(() => {
     const box = (selector: string) => {
