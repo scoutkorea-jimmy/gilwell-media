@@ -172,13 +172,21 @@
 
   function startMeasurement() {
     if (!started) {
+      // The tag can emit its initial pageview before the destination config is applied.
+      tag('set', {
+        page_location: pageLocation,
+        page_referrer: pageReferrer,
+        page_title: pageType === 'search' ? 'BP미디어 검색' : document.title,
+        page_type: pageType,
+        ...(articleId ? { article_id: articleId } : {}),
+      });
       tag('consent', 'default', {
         analytics_storage: 'denied', ad_storage: 'denied', ad_user_data: 'denied', ad_personalization: 'denied',
       });
       tag('consent', 'update', { analytics_storage: 'granted' });
       tag('js', new Date());
       tag('config', measurementId, {
-        send_page_view: false,
+        send_page_view: true,
         allow_google_signals: false,
         allow_ad_personalization_signals: false,
         cookie_prefix: 'bpmedia',
@@ -188,7 +196,6 @@
         page_referrer: pageReferrer,
         page_title: pageType === 'search' ? 'BP미디어 검색' : document.title,
       });
-      track('page_view', articleId ? { article_id: articleId } : {});
 
       const script = document.createElement('script');
       script.async = true;
@@ -264,7 +271,7 @@
       writeStorage('localStorage', consentKey, choice);
       applyConsent(choice);
       showSettings(false);
-      (openedFromFooter ? settings : skipLink || settings).focus({ preventScroll: true });
+      (openedFromFooter ? settings : skipLink || settings).focus({ preventScroll: !openedFromFooter });
     });
     actions.append(button);
   }

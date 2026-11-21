@@ -121,9 +121,12 @@ test('public analytics opt-in, reader flow, search privacy, opt-out', async () =
       page.getByRole('button', { name: '분석 및 국외 이전 동의' }).click(),
     ]);
     let seen = await events();
-    assert.equal(seen.filter(({ name }) => name === 'page_view').length, 1);
-    assert.equal(seen[0].params.page_location, origin + '/');
-    assert.doesNotMatch(JSON.stringify(seen), /private/);
+    const initialization = await page.evaluate(() => Array.from(window.dataLayer || [], args => Array.from(args)));
+    assert.equal(initialization[0][0], 'set');
+    assert.equal(initialization[0][1].page_location, origin + '/');
+    assert.equal(initialization.find(([command]) => command === 'config')[2].send_page_view, true);
+    assert.equal(seen.filter(({ name }) => name === 'page_view').length, 0);
+    assert.doesNotMatch(JSON.stringify(initialization), /private/);
 
     await page.evaluate(() => addEventListener('pagehide', () =>
       sessionStorage.setItem('test-home-events', JSON.stringify(Array.from(dataLayer, (args) => Array.from(args))))));
