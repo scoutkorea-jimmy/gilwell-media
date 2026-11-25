@@ -1,0 +1,34 @@
+{
+  "items": [
+    {
+      "id": "20261125T140438Z-22fed905",
+      "version": "00.200.12",
+      "site_version": "00.200.12",
+      "admin_version": "03.165.00",
+      "environment": "production",
+      "commit_sha": "22fed9058157fac419e014ab7ecf91e8cd39a72d",
+      "commit_short": "22fed90",
+      "commit_message": "Filter articles from responsive topic badges and align photos with the text",
+      "deployment_url": "https://bpmedia.net",
+      "archived_at": "2026-11-25T14:04:39Z",
+      "archive_path": "snapshots/20261125T140438Z-22fed905.tar.gz",
+      "rollback_workflow": ""
+    }
+  ],
+  "deployments": [
+    {
+      "id": "20261125T140438Z-22fed905",
+      "version": "00.200.12",
+      "site_version": "00.200.12",
+      "admin_version": "03.165.00",
+      "environment": "production",
+      "branch": "main",
+      "source": "22fed9058157fac419e014ab7ecf91e8cd39a72d",
+      "url": "https://bpmedia.net",
+      "created_on": "2026-11-25T14:04:39Z",
+      "latest_stage": "success",
+      "is_current_production": true,
+      "commit_message": "Filter articles from responsive topic badges and align photos with the text"
+    }
+  ]
+}
