@@ -71,7 +71,7 @@
             '<div class="home-lead-labels">' +
               '<span class="category-tag ' + cat.tagClass + '">' + GW.escapeHtml(categoryLabel) + '</span>' +
               tags.map(function (tag) {
-                return '<span class="post-kicker tag-' + GW.escapeHtml(post.category) + '-kicker">' + GW.escapeHtml(tag) + '</span>';
+                return GW.postTagChip(tag, post.category);
               }).join('') +
               '<span class="home-lead-kicker">' + GW.escapeHtml(label || '메인 스토리') + '</span>' +
               (GW.isPostNew(post) ? '<span class="post-kicker post-kicker-new">NEW</span>' : '') +
@@ -158,7 +158,7 @@
 
     // 모든 레일을 그린 뒤 한 번에 클램프한다. 항목별로 하면 레이아웃을 여러 번
     // 강제로 계산하게 된다.
-    helpers.clampMiniLabelRows();
+    GW.fitPostTagRows();
   }
 
   GW.HomeRender = {

@@ -334,6 +334,37 @@ test('Rust article list matches legacy results across public and admin query con
   }
 });
 
+test('public topic chips match complete displayed tags and keep unscoped keyword searches', async () => {
+  const {loadPublicPage, applyPublicParts} = await import('../functions/_shared/public-page-ssr.js');
+  const f = fixture();
+  try {
+    f.sqlite.exec("UPDATE posts SET tag='', meta_tags=''");
+    const update = f.sqlite.prepare('UPDATE posts SET tag=?, meta_tags=? WHERE id=?');
+    update.run('소식,   인도네시아연맹  , 50%_할인, 인용"문', '', 1);
+    update.run('인도네시아연맹후원, 현지소식, 500할인', '', 2);
+    update.run('교육', '인도네시아연맹, 소식', 3);
+    for (const [tag, scoped, expected] of [
+      ['인도네시아연맹', true, [1]], ['소식', true, [1]], ['50%_할인', true, [1]], ['%', true, []],
+      ['인용"문', true, [1]], ['인도네시아연맹', false, [1, 2, 3]],
+    ]) {
+      const params = new URLSearchParams({tag});
+      if (scoped) params.set('tag_scope', 'topic');
+      const result = await invoke(actual, f, '?' + params);
+      assert.equal(result.status, 200);
+      assert.deepEqual(result.body.posts.map(post => post.id).sort((a,b) => a-b), expected);
+      assert.equal(result.body.total, expected.length);
+    }
+
+    const page = await loadPublicPage(f.env, new URL('https://synthetic.invalid/apr?sort=latest&tag=인도네시아연맹'), 'apr');
+    assert.deepEqual(page.posts.map(post => post.id), [1]);
+    assert.match(page.parts.tagFilter, /href="\/apr\?sort=latest" aria-label="주제 필터 해제"/);
+    assert.match(page.parts.tagFilter, /aria-current="true">인도네시아연맹<\/span>/);
+    assert.ok(page.parts.board.includes(`/apr?sort=latest&amp;tag=${encodeURIComponent('소식')}`));
+    const marker = '<!-- PUBLIC_SSR:tagFilter -->';
+    assert.equal(applyPublicParts(marker, {parts:{tagFilter:'$&amp;'}}), '$&amp;');
+  } finally { f.sqlite.close(); }
+});
+
 test('article search sends legacy UTF-16 code units to D1 for emoji boundaries', async () => {
   for (const suffix of [
     '?q='+encodeURIComponent('😀')+'&sort=relevance',

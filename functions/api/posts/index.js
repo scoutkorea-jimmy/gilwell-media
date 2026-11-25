@@ -82,7 +82,7 @@ export async function onRequestGet(context) {
 
   try {
     const rust = await queryRust(context, 'posts', {
-      category, page, pageSize, q, tagFilter,
+      category, page, pageSize, q, tagFilter, topicTagsOnly: url.searchParams.get('tag_scope') === 'topic',
       startDate, endDate, featuredOnly, specialFeature, allRequested, days,
       sort, popularPeriod, requestedOrderBy, requestedOrderDir,
       publishedParam, isAdmin, includeDwell, publicDateExpr: PUBLIC_DATE_EXPR, origin,

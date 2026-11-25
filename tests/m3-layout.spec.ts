@@ -403,7 +403,7 @@ test('홈 섹션은 같은 축에 정렬되고 기사 본문은 넓은 화면에
         expect(box!.width).toBe(frame!.width);
       }
     }
-    for (const selector of ['.post-page-title', '.post-reader-meta', '.post-page-share', '.post-page-cover-frame', '.post-content-gallery', '.post-related-posts']) {
+    for (const selector of ['.post-page-title', '.post-reader-meta', '.post-page-share', '.post-related-posts']) {
       const box = await page.locator(selector).boundingBox();
       expect(box!.x, selector).toBe(frame!.x);
       expect(box!.width, selector).toBe(frame!.width);
@@ -411,6 +411,11 @@ test('홈 섹션은 같은 축에 정렬되고 기사 본문은 넓은 화면에
     const paragraph = await page.locator('.post-page-body > p:not(.post-image-caption)').first().boundingBox();
     expect(paragraph!.width).toBe(Math.min(pageWidth, 760));
     expect(Math.abs(2 * paragraph!.x + paragraph!.width - width)).toBeLessThanOrEqual(1);
+    for (const selector of ['.post-page-cover-frame', '.post-page-cover', '.post-content-gallery']) {
+      const media = await page.locator(selector).boundingBox();
+      expect(media!.x, selector).toBe(paragraph!.x);
+      expect(media!.width, selector).toBe(paragraph!.width);
+    }
     if (width > 900) await expect(jump).toBeVisible();
     else await expect(jump).toBeHidden();
   }

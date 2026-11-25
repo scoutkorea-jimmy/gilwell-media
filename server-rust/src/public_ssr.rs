@@ -271,13 +271,15 @@ fn mini_labels(
             .locale_compare(b, &locales, &options)
             .cmp(&0)
     });
-    for tag in &tags {
-        labels.push_str(&format!(
-            "<span class=\"post-kicker tag-{}-kicker\">{}</span>",
-            escape(&row.category),
-            escape(tag)
-        ));
-    }
+    let path = match row.category.as_str() {
+        "apr" | "korea" | "people" | "wosm" => row.category.as_str(),
+        _ => "latest",
+    };
+    let links: Vec<_> = tags.into_iter().map(|text| {
+        let query = url::form_urlencoded::Serializer::new(String::new()).append_pair("tag", &text).finish();
+        TagLink { href: format!("/{path}?{query}"), text }
+    }).collect();
+    labels.push_str(&tag_links(&links, &format!("post-kicker tag-{category}-kicker")));
     labels
 }
 
@@ -515,8 +517,31 @@ pub async fn privacy_render(req: &mut Request) -> Result<Response> {
 }
 
 #[derive(Deserialize)]
+pub(crate) struct TagLink {
+    text: String,
+    href: String,
+}
+pub(crate) fn tag_links(tags: &[TagLink], class: &str) -> String {
+    tags.iter().map(|tag| format!(
+        r#"<a class="{class}" href="{}">{}</a>"#, escape(&tag.href), escape(&tag.text)
+    )).collect()
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct BoardCard {
+    id: u64,
+    title: String,
+    subtitle: String,
+    tag_class: String,
+    label: String,
+    is_new: bool,
+    tags: Vec<TagLink>,
+}
+
+#[derive(Deserialize)]
 struct BoardRenderInput {
-    posts: Vec<Value>,
+    cards: Vec<BoardCard>,
     page: u32,
     total_pages: u32,
     url: String,
@@ -558,13 +583,17 @@ fn board_page_href(original: &Url, page: u32) -> String {
 
 pub async fn board_render(req: &mut Request) -> Result<Response> {
     let input: BoardRenderInput = req.json().await?;
-    let board = if input.posts.is_empty() {
+    let board = if input.cards.is_empty() {
         "<p class=\"board-empty\">해당 조건의 기사가 없습니다.</p>".to_owned()
     } else {
-        input.posts.iter().map(|post| {
-            let text = |field: &str| post.get(field).filter(|v| !v.is_null()).map(crate::post_routes::js_string).unwrap_or_default();
-            let subtitle = post.get("subtitle").filter(|v| match v {Value::Null | Value::Bool(false) => false, Value::String(s) => !s.is_empty(), Value::Number(n) => n.as_f64() != Some(0.0), _ => true}).map(|_| format!("<p class=\"post-card-subtitle\">{}</p>", escape(&text("subtitle")))).unwrap_or_default();
-            format!("<article class=\"post-card no-thumb\"><div class=\"post-card-body\"><div class=\"post-card-head\"><h3><a class=\"post-card-title-link\" href=\"/post/{}\">{}</a></h3></div>{subtitle}</div></article>", number(post,"id"), escape(&text("title")))
+        input.cards.iter().map(|card| {
+            let class = escape(&card.tag_class);
+            let category = format!(r#"<span class="category-tag {class}">{}</span>"#, escape(&card.label));
+            let status = if card.is_new {r#"<span class="post-kicker post-kicker-new">NEW</span>"#} else {""};
+            let tags = tag_links(&card.tags, &format!("post-kicker {class}-kicker"));
+            let labels = format!(r#"<div class="post-card-labels">{category}{status}{tags}</div>"#);
+            let subtitle = if card.subtitle.is_empty() {String::new()} else {format!(r#"<p class="post-card-subtitle">{}</p>"#, escape(&card.subtitle))};
+            format!(r#"<article class="post-card no-thumb"><div class="post-card-body"><div class="post-card-head">{labels}<h3><a class="post-card-title-link" href="/post/{}">{}</a></h3></div>{subtitle}</div></article>"#, card.id, escape(&card.title))
         }).collect()
     };
     let url = Url::parse(&input.url).map_err(|error| Error::RustError(error.to_string()))?;

@@ -2349,7 +2349,11 @@ test('compiled Pages + real workerd + isolated D1 preserve glossary routes and s
     assert(legacyBoot);
     assert.equal(JSON.parse(legacyBoot[1]).legacy.charCodeAt(0),0xd83d);
     await db.prepare("UPDATE settings SET value=? WHERE key='translations'").bind(JSON.stringify({strings:{'home.title':{ko:'합성 홈 제목',en:'Synthetic'},'nav.synthetic':'must-not-appear','safe.text':{ko:'</script><script>bad</script>'}}})).run();
-    assert(serverHtml.indexOf('>가</span>') < serverHtml.indexOf('>나</span>'));
+    for (const rendered of [serverHtml, fallbackHtml]) {
+      const firstTag = rendered.indexOf('?tag=' + encodeURIComponent('가') + '">가</a>');
+      const secondTag = rendered.indexOf('?tag=' + encodeURIComponent('나') + '">나</a>');
+      assert(firstTag >= 0 && secondTag > firstTag);
+    }
     const bootMatch=serverHtml.match(/window\.GW_BOOT_CUSTOM_STRINGS=(.*?);window\.GW_BOOT_NAV_LABELS=/);
     assert(bootMatch);
     const bootStrings=JSON.parse(bootMatch[1]);

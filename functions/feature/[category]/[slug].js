@@ -1,6 +1,7 @@
 import { buildShareMetaBlockRust, getResolvedShareImage, loadSiteMeta } from '../../_shared/site-meta.js';
 import { getSpecialFeatureCollection } from '../../_shared/special-features.js';
 import { getNavLabel, loadNavLabels } from '../../_shared/nav-labels.js';
+import { categoryBoardPath, postTagLinks, splitPostTags, renderPostTagLinks } from '../../_shared/post-tag-links.js';
 import { getCategoryMeta } from '../../_shared/category-meta.mjs';
 import { SITE_BRAND_NAME, SITE_DOMAIN_LABEL, DEFAULT_CONTACT_EMAILS } from '../../_shared/site-copy.mjs';
 import { queryRust } from '../../_shared/rust-server.js';
@@ -73,11 +74,11 @@ async function renderFeaturePage({ params, request, env }, headOnly = false) {
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png">
   <link rel="apple-touch-icon" href="/img/logo.png">
   <link rel="shortcut icon" href="/img/favicon-48.png">
-  <link rel="stylesheet" href="/css/style.css?v=20261121163037">
-  <link rel="stylesheet" href="/css/post.css?v=20261121163037">
-  <link rel="stylesheet" href="/css/chatbot.css?v=20261121163037">
-  <link rel="stylesheet" href="/css/dark-mode.css?v=20261121163037">
-  <link rel="stylesheet" href="/css/m3-site.css?v=20261121163037">
+  <link rel="stylesheet" href="/css/style.css?v=20261125134657">
+  <link rel="stylesheet" href="/css/post.css?v=20261125134657">
+  <link rel="stylesheet" href="/css/chatbot.css?v=20261125134657">
+  <link rel="stylesheet" href="/css/dark-mode.css?v=20261125134657">
+  <link rel="stylesheet" href="/css/m3-site.css?v=20261125134657">
   <style>
     .feature-page {
       background:
@@ -483,7 +484,7 @@ async function renderFeaturePage({ params, request, env }, headOnly = false) {
         <h4>바로가기</h4>
         <a href="/${category}">${escapeHtml(categoryMeta.label)} 목록 →</a>
         <a href="/latest">최신 기사 보기 →</a>
-        <p class="footer-build">Site <span class="site-build-version">V00.200.11</span> · Admin <span class="admin-build-version">V03.165.00</span></p>
+        <p class="footer-build">Site <span class="site-build-version">V00.200.12</span> · Admin <span class="admin-build-version">V03.165.00</span></p>
       </div>
       <div class="footer-bottom">
         <p>© 2026 ${footerTitle} · ${footerDomain}</p>
@@ -492,9 +493,9 @@ async function renderFeaturePage({ params, request, env }, headOnly = false) {
     </div>
   </footer>
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.4/dist/purify.min.js" integrity="sha384-eEu5CTj3qGvu9PdJuS+YlkNi7d2XxQROAFYOr59zgObtlcux1ae1Il3u7jvdCSWu" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-  <script src="/js/main.js?v=20261121163037"></script>
-  <script src="/js/site-chrome.js?v=20261121163037"></script>
-  <script src="/js/chatbot.js?v=20261121163037" defer></script>
+  <script src="/js/main.js?v=20261125134657"></script>
+  <script src="/js/site-chrome.js?v=20261125134657"></script>
+  <script src="/js/chatbot.js?v=20261125134657" defer></script>
   <script>GW.bootstrapStandardPage();</script>
 </body>
 </html>`;
@@ -579,8 +580,7 @@ export function renderFeatureLead(item, categoryMeta, origin) {
     ${imageBlock}
     <div class="feature-page-lead-copy">
       <div class="feature-page-meta-row">
-        <span class="category-tag" style="background:${categoryMeta.color};">${escapeHtml(categoryMeta.label)}</span>
-        ${item.tag ? `<span class="post-page-tag">${escapeHtml(item.tag)}</span>` : ''}
+        <div class="post-card-labels"><span class="category-tag" style="background:${categoryMeta.color};">${escapeHtml(categoryMeta.label)}</span>${renderPostTagLinks(featureTagLinks(item, categoryMeta), 'post-kicker', escapeHtml)}</div>
         <span>${escapeHtml(formatDate(item.publish_at || item.created_at || ''))}</span>
         ${item.author ? `<span>${escapeHtml(item.author)}</span>` : ''}
       </div>
@@ -604,7 +604,7 @@ export function renderFeatureCard(item, categoryMeta, origin) {
     <div class="post-card-body">
       <div class="post-card-labels">
         <span class="category-tag" style="background:${categoryMeta.color};">${escapeHtml(categoryMeta.label)}</span>
-        ${item.tag ? `<span class="post-kicker">${escapeHtml(item.tag)}</span>` : ''}
+        ${renderPostTagLinks(featureTagLinks(item, categoryMeta), 'post-kicker', escapeHtml)}
       </div>
       <div class="post-card-head">
         <h3><a href="/post/${item.id}" style="color:inherit;text-decoration:none;">${escapeHtml(item.title || '')}</a></h3>
@@ -627,11 +627,15 @@ export function renderFeatureRailItem(item, isLead) {
   </article>`;
 }
 
+function featureTagLinks(item, categoryMeta) {
+  return postTagLinks(splitPostTags(item.tag), categoryBoardPath(categoryMeta.key));
+}
+
 function featurePartsInput(items,categoryMeta,origin) {
   const inputs = items.map((item,index) => {
     const excerpt = item.subtitle || truncatePlain(item.content || '', index===0 ? 220 : 120);
     return {id:String(item.id), title:String(item.title || ''), image:resolveFeatureImage(origin,item),
-      excerpt:String(excerpt), has_excerpt:!!excerpt, tag:String(item.tag || ''), has_tag:!!item.tag,
+      excerpt:String(excerpt), has_excerpt:!!excerpt, tags:featureTagLinks(item, categoryMeta),
       author:String(item.author || ''), has_author:!!item.author, date:formatDate(item.publish_at || item.created_at || '')};
   });
   return {items:inputs, label:String(categoryMeta.label || ''), color:String(categoryMeta.color), background:hexToRgba(categoryMeta.color,0.24)};

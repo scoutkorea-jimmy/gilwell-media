@@ -86,7 +86,7 @@
           '<div class="site-hero-labels">' +
             '<span class="category-tag ' + cat.tagClass + '">' + GW.escapeHtml(cat.label) + '</span>' +
             heroTags.map(function (tag) {
-              return '<span class="post-kicker tag-' + GW.escapeHtml(post.category) + '-kicker">' + GW.escapeHtml(tag) + '</span>';
+              return GW.postTagChip(tag, post.category);
             }).join('') +
             (GW.isPostNew(post) ? '<span class="post-kicker post-kicker-new">NEW</span>' : '') +
           '</div>' +

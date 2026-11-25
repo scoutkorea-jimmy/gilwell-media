@@ -2925,17 +2925,9 @@ html body .mobile-nav-sublink.active {
   }
 
   .tag-filter-bar .board-tag-label {
-    position: sticky;
-    left: 0;
-    z-index: 1;
     display: inline-flex;
     align-items: center;
-    align-self: stretch;
     min-height: var(--md-comp-chip-height);
-    margin-left: -16px;
-    padding: 0 12px 0 16px;
-    background: var(--md-sys-color-surface-container-low);
-    box-shadow: 8px 0 8px -4px var(--md-sys-color-surface-container-low);
   }
 
   .tag-filter-bar .tag-filter-btn {
@@ -3451,9 +3443,67 @@ html body .mobile-nav-sublink.active {
   line-height: 1.45; word-break: keep-all; overflow-wrap: anywhere;
 }
 .board-grid .post-card-body h3 { display: block; }
-.board-grid .post-card-labels .post-kicker:not(.post-kicker-new) {
-  padding-inline: 0; border: 0; background: transparent;
-  color: var(--md-sys-color-on-surface-variant); font-weight: 500;
+/* Topic links, section labels and the NEW status each have a distinct treatment. */
+:is(.post-card-labels, .mini-item-labels, .home-lead-labels, .site-hero-labels, .article-tag-row) > a.post-kicker {
+  padding: 2px 7px;
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: var(--md-sys-shape-small);
+  background: var(--md-sys-color-surface-container);
+  color: var(--md-sys-color-on-surface-variant);
+  font-weight: 600;
+  letter-spacing: 0;
+  text-decoration: none;
+  pointer-events: auto;
+}
+:is(.post-card-labels, .mini-item-labels, .home-lead-labels, .site-hero-labels, .article-tag-row) > a.post-kicker:hover {
+  background: var(--md-sys-color-secondary-container);
+  text-decoration: underline;
+}
+[data-tags-fitted] {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+[data-tags-fitted] > * {
+  flex: none;
+  transition-property: color, background-color, border-color;
+}
+[data-tags-fitted] > [hidden] { display: none !important; }
+[data-tags-fitted] > .mini-label-more {
+  min-height: 24px;
+  margin: 0;
+  padding: 2px 6px;
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: var(--md-sys-shape-small);
+  background: var(--md-sys-color-surface);
+  color: var(--md-sys-color-on-surface-variant);
+  letter-spacing: 0;
+  cursor: pointer;
+  pointer-events: auto;
+}
+[data-tags-tight] > :is(.category-tag, .home-lead-kicker) {
+  display: block;
+  flex-shrink: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+[data-tags-fitted][data-tags-open] {
+  flex-wrap: wrap;
+  max-height: none !important;
+  overflow: visible;
+}
+[data-tags-open] > a.post-kicker {
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+[data-tags-fitted] > :is(a, button):focus-visible {
+  outline: 2px solid var(--md-sys-color-primary);
+  outline-offset: -2px;
 }
 .board-grid .post-card-footer { flex-flow: row wrap; align-items: center; gap: 0 12px !important; padding-top: 6px; }
 .board-grid .post-card-meta { order: 0; font-size: .8125rem !important; }
@@ -3591,7 +3641,7 @@ html body .mobile-nav-sublink.active {
   .board-filter-disclosure + .board-sort-bar { border-radius: 0 !important; }
 }
 
-/* The headline, cover and related stories share the masthead's page edges. */
+/* The headline and related stories share the masthead's page edges. */
 .post-page .post-page-wrap {
   padding-inline: 0;
 }
@@ -3599,6 +3649,10 @@ html body .mobile-nav-sublink.active {
 .post-page-main .post-page-meta {
   gap: 6px 10px;
   margin-bottom: 10px;
+}
+.post-page-meta > .article-tag-row {
+  flex: 1 1 0;
+  min-width: 0;
 }
 
 .post-page-meta .post-page-back-link {
@@ -3655,19 +3709,13 @@ html body .mobile-nav-sublink.active {
   .post-reader-meta > div:first-child { grid-column: 1 / -1; }
 }
 
-.post-page-main .post-page-body {
-  max-width: var(--md-sys-reading-max);
-  margin: 24px auto 0;
-}
-
-/* Photos and tables can use the full page width. Text stays at its reading width,
-   including older articles rendered as plain text with line breaks. */
-.post-page-main .post-page-body:has(> :is(.post-inline-media, figure, table)) {
-  max-width: none;
-}
-.post-page-body > :is(p:not(.post-image-caption), h1, h2, h3, h4, h5, h6, ul, ol, blockquote, .post-citation) {
+.post-page-main > :is(.post-page-body, .post-page-cover-frame, .post-image-caption, .post-page-video, .post-content-gallery, .post-location-section) {
   max-width: var(--md-sys-reading-max);
   margin-inline: auto;
+}
+
+.post-page-main .post-page-body {
+  margin-block: 24px 0;
 }
 .post-page-body > table {
   display: block;

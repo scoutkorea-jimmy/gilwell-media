@@ -16,8 +16,7 @@ struct Item {
     image: String,
     excerpt: String,
     has_excerpt: bool,
-    tag: String,
-    has_tag: bool,
+    tags: Vec<crate::public_ssr::TagLink>,
     author: String,
     has_author: bool,
     date: String,
@@ -45,11 +44,7 @@ pub(crate) fn build(o: Input) -> Result<(String, String, String)> {
             esc(&first.title)
         )
     };
-    let tag = if first.has_tag {
-        format!("<span class=\"post-page-tag\">{}</span>", esc(&first.tag))
-    } else {
-        String::new()
-    };
+    let tag = crate::public_ssr::tag_links(&first.tags, "post-kicker");
     let author = if first.has_author {
         format!("<span>{}</span>", esc(&first.author))
     } else {
@@ -62,7 +57,7 @@ pub(crate) fn build(o: Input) -> Result<(String, String, String)> {
     };
     let id = &first.id;
     let lead = format!(
-        "<article class=\"feature-page-lead\">\n    {image}\n    <div class=\"feature-page-lead-copy\">\n      <div class=\"feature-page-meta-row\">\n        <span class=\"category-tag\" style=\"background:{color};\">{label}</span>\n        {tag}\n        <span>{}</span>\n        {author}\n      </div>\n      <h2><a href=\"/post/{id}\">{}</a></h2>\n      {excerpt}\n      <a class=\"read-more\" href=\"/post/{id}\">기사 읽기</a>\n    </div>\n  </article>",
+        "<article class=\"feature-page-lead\">\n    {image}\n    <div class=\"feature-page-lead-copy\">\n      <div class=\"feature-page-meta-row\">\n        <div class=\"post-card-labels\"><span class=\"category-tag\" style=\"background:{color};\">{label}</span>{tag}</div>\n        <span>{}</span>\n        {author}\n      </div>\n      <h2><a href=\"/post/{id}\">{}</a></h2>\n      {excerpt}\n      <a class=\"read-more\" href=\"/post/{id}\">기사 읽기</a>\n    </div>\n  </article>",
         esc(&first.date),
         esc(&first.title)
     );
@@ -70,7 +65,7 @@ pub(crate) fn build(o: Input) -> Result<(String, String, String)> {
         let id=&item.id;
         let title=esc(&item.title);
         let thumb=if item.image.is_empty() { format!("<div class=\"post-card-thumb placeholder\" style=\"background:linear-gradient(135deg, {}, rgba(31,31,31,0.04));\">Feature Story</div>",o.background) } else { format!("<img class=\"post-card-thumb\" src=\"{}\" alt=\"{title}\">",esc(&item.image)) };
-        let tag=if item.has_tag {format!("<span class=\"post-kicker\">{}</span>",esc(&item.tag))} else {String::new()};
+        let tag = crate::public_ssr::tag_links(&item.tags, "post-kicker");
         let excerpt=if item.has_excerpt {format!("<p class=\"post-card-excerpt\">{}</p>",esc(&item.excerpt))} else {String::new()};
         let author=if item.has_author {format!(" · {}",esc(&item.author))} else {String::new()};
         format!("<article class=\"post-card\" style=\"--card-accent:{color};\">\n    <a href=\"/post/{id}\" aria-label=\"{title}\">\n      {thumb}\n    </a>\n    <div class=\"post-card-body\">\n      <div class=\"post-card-labels\">\n        <span class=\"category-tag\" style=\"background:{color};\">{label}</span>\n        {tag}\n      </div>\n      <div class=\"post-card-head\">\n        <h3><a href=\"/post/{id}\" style=\"color:inherit;text-decoration:none;\">{title}</a></h3>\n        {excerpt}\n      </div>\n      <div class=\"post-card-footer\">\n        <div class=\"post-card-meta\">{}{author}</div>\n        <a class=\"read-more\" href=\"/post/{id}\">기사 읽기</a>\n      </div>\n    </div>\n  </article>",esc(&item.date))

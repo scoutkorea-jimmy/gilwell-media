@@ -66,7 +66,7 @@
     var kickerHtml = (GW.isPostNew(post) ? '<span class="post-kicker post-kicker-new">NEW</span>' : '') +
       (post.tag ? post.tag.split(',').map(function (t) {
         t = t.trim();
-        return t ? '<span class="post-kicker ' + cat.tagClass + '-kicker">' + GW.escapeHtml(t) + '</span>' : '';
+        return t ? GW.postTagChip(t, post.category) : '';
       }).join('') : '');
     var labelsHtml = '<span class="category-tag ' + cat.tagClass + '">' + GW.escapeHtml(cat.label) + '</span>' + kickerHtml;
     // 목록 API 응답에는 content 가 없다. 요약은 subtitle 로만 노출한다.
@@ -102,7 +102,7 @@
     }
 
     card.addEventListener('click', function (e) {
-      if (e.target.closest('a[href]')) return;
+      if (e.target.closest('a[href], button')) return;
       window.location.href = '/post/' + post.id;
     });
     return card;
@@ -116,6 +116,7 @@
       return;
     }
     posts.forEach(function (post, idx) { gridEl.appendChild(buildCard(post, idx)); });
+    GW.fitPostTagRows();
   }
 
   function fetchPosts(params) {

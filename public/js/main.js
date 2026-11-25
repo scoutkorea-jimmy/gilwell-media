@@ -6,9 +6,9 @@
   'use strict';
 
   const GW = window.GW = {};
-  GW.APP_VERSION = '00.200.11';
+  GW.APP_VERSION = '00.200.12';
   GW.ADMIN_VERSION = '03.165.00';
-  GW.ASSET_VERSION = '20261121163037';
+  GW.ASSET_VERSION = '20261125134657';
   GW.PALETTE = {
     scoutingPurple: '#622599',
     canvasWhite: '#FFFFFF',
@@ -678,6 +678,129 @@
     if (frame.x === 50 && frame.y === 50) return '';
     return 'object-position:' + frame.x + '% ' + frame.y + '%;';
   };
+
+  GW.postTagChip = function (tag, category) {
+    var current = new URL(window.location.href);
+    var params = new URLSearchParams();
+    var board = current.pathname.replace(/(?:\.html|\/)$/, '');
+    if (/^\/(latest|korea|apr|wosm|people)$/.test(board)) {
+      ['sort', 'period', 'days', 'q'].forEach(function (key) {
+        var value = current.searchParams.get(key);
+        if (value) params.set(key, value);
+      });
+    } else {
+      board = '/' + (/^(korea|apr|wosm|people)$/.test(category) ? category : 'latest');
+    }
+    params.set('tag', tag);
+    return '<a class="post-kicker" href="' + GW.escapeHtml(board + '?' + params.toString()) + '">' +
+      GW.escapeHtml(tag) + '</a>';
+  };
+
+  var postTagRows = '.post-card-labels, .mini-item-labels, .home-lead-labels, .site-hero-labels, .article-tag-row';
+
+  // Read layout widths before a parent's entrance transform scales the rendered row.
+  function tagChipWidth(chip) {
+    return parseFloat(getComputedStyle(chip).width) || chip.offsetWidth;
+  }
+
+  function fitTagRow(box) {
+    var width = box.clientWidth;
+    if (!width) return;
+    var more = box.querySelector('.mini-label-more');
+    var topics = Array.from(box.children).filter(function (chip) { return chip.matches('a.post-kicker'); });
+    if (!topics.length) return;
+    var expanded = more && more.getAttribute('aria-expanded') === 'true';
+    box.dataset.tagsFitted = '';
+    box.removeAttribute('data-tags-tight');
+    box.removeAttribute('data-tags-open');
+    topics.forEach(function (chip) { chip.hidden = false; });
+    var gap = parseFloat(getComputedStyle(box).columnGap) || 0;
+    var chips = Array.from(box.children).filter(function (chip) { return chip !== more; });
+    var used = chips.reduce(function (sum, chip) { return sum + tagChipWidth(chip); }, gap * (chips.length - 1));
+    if (used <= width + 0.1) {
+      if (more) {
+        if (document.activeElement === more) topics[topics.length - 1].focus({ preventScroll: true });
+        more.remove();
+      }
+      return;
+    }
+
+    if (!more) {
+      more = document.createElement('button');
+      more.type = 'button';
+      more.className = 'post-kicker mini-label-more';
+      more.addEventListener('click', function (event) {
+        var firstHidden = box.querySelector('a[hidden]');
+        more.setAttribute('aria-expanded', String(more.getAttribute('aria-expanded') !== 'true'));
+        fitTagRow(box);
+        if (firstHidden && event.detail === 0) firstHidden.focus({ preventScroll: true });
+      });
+      box.appendChild(more);
+    }
+    more.setAttribute('aria-expanded', String(!!expanded));
+    if (expanded) {
+      box.dataset.tagsOpen = '';
+      more.textContent = '접기';
+      more.setAttribute('aria-label', '태그 접기');
+      return;
+    }
+
+    var focused = document.activeElement;
+    var count = 0;
+    do {
+      var chip = topics[topics.length - 1 - count];
+      used -= tagChipWidth(chip) + gap;
+      chip.hidden = true;
+      more.textContent = '+' + (++count);
+    } while (count < topics.length && used + gap + tagChipWidth(more) > width + 0.1);
+    if (used + gap + tagChipWidth(more) > width) box.dataset.tagsTight = '';
+    more.setAttribute('aria-label', '태그 ' + count + '개 더 보기');
+    if (topics.includes(focused) && focused.hidden) more.focus({ preventScroll: true });
+  }
+
+  var tagWidths = new WeakMap();
+  var tagObserver = typeof ResizeObserver !== 'undefined' && new ResizeObserver(function (entries) {
+    var rows = new Set();
+    entries.forEach(function (entry) {
+      var node = entry.target;
+      if (tagWidths.get(node) !== node.offsetWidth) {
+        rows.add(node.matches(postTagRows) ? node : node.parentElement);
+      }
+    });
+    rows.forEach(observeTagRow);
+  });
+
+  function observeTagRow(box) {
+    fitTagRow(box);
+    if (!tagObserver) return;
+    // Fonts, translated labels and late styles can resize a chip without resizing its row.
+    [box].concat(Array.from(box.children)).forEach(function (node) {
+      if (node.classList.contains('mini-label-more')) return;
+      tagWidths.set(node, node.offsetWidth);
+      tagObserver.observe(node);
+    });
+  }
+
+  GW.fitPostTagRows = function () {
+    if (tagObserver) tagObserver.disconnect();
+    document.querySelectorAll(postTagRows).forEach(observeTagRow);
+  };
+
+  document.addEventListener('keydown', function (event) {
+    if (event.key !== 'Escape' || !event.target.closest) return;
+    var box = event.target.closest('[data-tags-open]');
+    if (!box) return;
+    var more = box.querySelector('.mini-label-more');
+    more.setAttribute('aria-expanded', 'false');
+    fitTagRow(box);
+    more.focus({ preventScroll: true });
+  });
+
+  // The server-rendered card list and subsequent API refreshes use the same chips.
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', GW.fitPostTagRows, { once: true });
+  else GW.fitPostTagRows();
+  if (!tagObserver) window.addEventListener('resize', GW.fitPostTagRows);
+  if (document.fonts) document.fonts.addEventListener('loadingdone', GW.fitPostTagRows);
 
   // ── IME-safe 입력 헬퍼 ───────────────────────────────────────
   // 한글 IME 조합 중 Enter/쉼표 키는 "조합 중인 마지막 음절을 확정"하는 키스트로크다.

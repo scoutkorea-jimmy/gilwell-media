@@ -374,15 +374,6 @@
       banner.dataset.bound = '1';
     }
 
-    var clampDebounceTimer = null;
-    function debouncedClampMiniLabels() {
-      if (clampDebounceTimer !== null) clearTimeout(clampDebounceTimer);
-      clampDebounceTimer = window.setTimeout(function () {
-        clampDebounceTimer = null;
-        helpers.clampMiniLabelRows();
-      }, 150);
-    }
-
     function startHomeRefreshTimer() {
       if (homeRefreshTimer !== null) return;
       homeRefreshTimer = window.setInterval(function () {
@@ -616,9 +607,6 @@
       initPullToRefresh();
       startFreshnessTick();
       loadMemorabiliaRail();
-      // 폭이 바뀌면 칩이 몇 행을 차지하는지도 바뀌므로 클램프를 다시 계산한다.
-      // 리사이즈는 모바일 URL 바 여닫힘만으로도 연속 발생하므로 디바운스한다.
-      window.addEventListener('resize', debouncedClampMiniLabels);
     }
 
     return {

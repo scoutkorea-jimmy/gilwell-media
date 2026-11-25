@@ -192,9 +192,14 @@ export async function onRequestGet({ request, env }) {
         baseArgs.push(specialFeature);
       }
       if (tagFilter) {
-        const tp = `%${tagFilter}%`;
-        conditions.push("(COALESCE(tag, '') LIKE ? OR COALESCE(meta_tags, '') LIKE ?)");
-        baseArgs.push(tp, tp);
+        if (url.searchParams.get('tag_scope') === 'topic') {
+          conditions.push(`EXISTS (SELECT 1 FROM json_each('[' || replace(json_quote(COALESCE(tag, '')), ',', '","') || ']') AS token WHERE trim(token.value, char(9, 10, 11, 12, 13, 32, 160, 65279)) = ? COLLATE NOCASE)`);
+          baseArgs.push(tagFilter.trim());
+        } else {
+          const tp = `%${tagFilter}%`;
+          conditions.push("(COALESCE(tag, '') LIKE ? OR COALESCE(meta_tags, '') LIKE ?)");
+          baseArgs.push(tp, tp);
+        }
       }
     }
 

@@ -1,5 +1,6 @@
 // Compatibility reference from origin/main 835a326a; test-only.
 import { publicAuthor } from '../../functions/_shared/post-author.js';
+import { categoryBoardPath, postTagLinks, splitPostTags, renderPostTagLinks } from '../../functions/_shared/post-tag-links.js';
 import { renderTopicLinks } from '../../functions/topics/[slug].js';
 import { verifyTokenRole, extractToken } from '../../functions/_shared/auth.js';
 import { getLikeStats, getViewerKey, isLikelyNonHumanRequest, recordUniqueView } from '../../functions/_shared/engagement.js';
@@ -135,6 +136,7 @@ export async function onRequestGet({ params, env, request }) {
   const locationSectionHtml = renderPostLocationSection(post);
   const youtubeEmbedUrl = getYouTubeEmbedUrl(post.youtube_url);
   const visibleTags = collectVisiblePostTags(post);
+  const topicTags = postTagLinks([...new Set(splitPostTags(post.tag))], categoryBoardPath(cat.key));
   const postUrl  = `${siteUrl}/post/${id}`;
   // share_ref는 FB 스크래퍼 캐시를 매 클릭마다 무효화하려는 목적일 뿐,
   // 기사의 고유 식별자가 아니다. og:url에 share_ref를 포함시키면 FB Graph에서
@@ -237,12 +239,12 @@ export async function onRequestGet({ params, env, request }) {
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png"/>
   <link rel="apple-touch-icon" href="/img/logo.png"/>
   <link rel="shortcut icon" href="/img/favicon-48.png"/>
-  <link rel="stylesheet" href="/css/style.css?v=20261121163037">
-  <link rel="stylesheet" href="/css/post.css?v=20261121163037">
-  <link rel="stylesheet" href="/css/topics.css?v=20261121163037">
-  <link rel="stylesheet" href="/css/chatbot.css?v=20261121163037">
-  <link rel="stylesheet" href="/css/dark-mode.css?v=20261121163037">
-  <link rel="stylesheet" href="/css/m3-site.css?v=20261121163037">
+  <link rel="stylesheet" href="/css/style.css?v=20261125134657">
+  <link rel="stylesheet" href="/css/post.css?v=20261125134657">
+  <link rel="stylesheet" href="/css/topics.css?v=20261125134657">
+  <link rel="stylesheet" href="/css/chatbot.css?v=20261125134657">
+  <link rel="stylesheet" href="/css/dark-mode.css?v=20261125134657">
+  <link rel="stylesheet" href="/css/m3-site.css?v=20261125134657">
 </head>
 <body class="post-page">
   <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
@@ -326,8 +328,10 @@ export async function onRequestGet({ params, env, request }) {
 
         <div class="post-page-meta">
           <a href="/${cat.key}" data-action="history-back" class="post-page-back-link">← 이전 화면</a>
-          ${isNew ? '<span class="post-kicker post-kicker-new">NEW</span>' : ''}
-          ${(post.tag || '').split(',').map(tag => tag.trim()).filter(Boolean).map(tag => `<span class="post-kicker ${cat.tagClass}-kicker">${escapeHtml(tag)}</span>`).join('')}
+          ${isNew || topicTags.length ? `<span class="article-tag-row">
+            ${isNew ? '<span class="post-kicker post-kicker-new">NEW</span>' : ''}
+            ${renderPostTagLinks(topicTags, 'post-kicker ' + cat.tagClass + '-kicker', escapeHtml)}
+          </span>` : ''}
         </div>
 
         <h1 class="post-page-title">${title}</h1>
@@ -385,7 +389,7 @@ export async function onRequestGet({ params, env, request }) {
         <h4>관리자</h4>
         <a href="/admin.html">관리자 페이지 →</a>
         <a href="/glossary-raw">용어집 RAW로 보기 →</a>
-        <p class="footer-build">Site <span class="site-build-version">V00.200.11</span> · Admin <span class="admin-build-version">V03.165.00</span></p>
+        <p class="footer-build">Site <span class="site-build-version">V00.200.12</span> · Admin <span class="admin-build-version">V03.165.00</span></p>
       </div>
       <div class="footer-bottom">
         <p data-i18n="footer.copyright">© 2026 ${SITE_BRAND_NAME} · ${SITE_DOMAIN_LABEL}</p>
@@ -615,10 +619,10 @@ export async function onRequestGet({ params, env, request }) {
 
   <script>window.GW_BOOT_RUNTIME=${serializeForScript(publicRuntime)};window.GW_KAKAO_JS_KEY=${serializeForScript(String(publicRuntime.kakao_js_key || ''))};window.GW_POST_BOOT=${serializeForScript({ editPostId: id, sharePostUrl: postUrl, sharePostTitle: titleText, sharePostSubtitle: subtitleText, editSeed: JSON.parse(editSeed), visibleTags })};</script>
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.4/dist/purify.min.js" integrity="sha384-eEu5CTj3qGvu9PdJuS+YlkNi7d2XxQROAFYOr59zgObtlcux1ae1Il3u7jvdCSWu" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-  <script src="/js/main.js?v=20261121163037"></script>
-  <script src="/js/site-chrome.js?v=20261121163037"></script>
-  <script src="/js/chatbot.js?v=20261121163037" defer></script>
-  <script src="/js/post-page.js?v=20261121163037"></script>
+  <script src="/js/main.js?v=20261125134657"></script>
+  <script src="/js/site-chrome.js?v=20261125134657"></script>
+  <script src="/js/chatbot.js?v=20261125134657" defer></script>
+  <script src="/js/post-page.js?v=20261125134657"></script>
 </body>
 </html>`;
 

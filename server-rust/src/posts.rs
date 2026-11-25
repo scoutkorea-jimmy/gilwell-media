@@ -10,6 +10,8 @@ struct ListOptions {
     page_size: Option<String>,
     q: Option<String>,
     tag_filter: Option<String>,
+    #[serde(default)]
+    topic_tags_only: bool,
     start_date: Option<String>,
     end_date: Option<String>,
     featured_only: Option<String>,
@@ -245,9 +247,15 @@ pub async fn list(req: &mut Request, env: &Env) -> Result<Response> {
             base.push(feature.clone().into());
         }
         if let Some(tag) = &o.tag_filter {
-            conditions.push("(COALESCE(tag, '') LIKE ? OR COALESCE(meta_tags, '') LIKE ?)".into());
-            let value = JsValue::from_str(&format!("%{tag}%"));
-            base.extend([value.clone(), value]);
+            if o.topic_tags_only {
+                // Quote before splitting so quotes and backslashes in CSV tags stay literal.
+                conditions.push(r#"EXISTS (SELECT 1 FROM json_each('[' || replace(json_quote(COALESCE(tag, '')), ',', '","') || ']') AS token WHERE trim(token.value, char(9, 10, 11, 12, 13, 32, 160, 65279)) = ? COLLATE NOCASE)"#.into());
+                base.push(JsValue::from_str(tag.trim()));
+            } else {
+                conditions.push("(COALESCE(tag, '') LIKE ? OR COALESCE(meta_tags, '') LIKE ?)".into());
+                let value = JsValue::from_str(&format!("%{tag}%"));
+                base.extend([value.clone(), value]);
+            }
         }
     }
     let where_clause = if conditions.is_empty() {

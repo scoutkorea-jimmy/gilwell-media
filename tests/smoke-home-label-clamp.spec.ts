@@ -4,8 +4,7 @@ import { test, expect } from '@playwright/test';
 //
 // 글마다 태그 개수가 달라 라벨 영역이 1~3행으로 갈렸고, 그 편차가 그대로 카드
 // 높이 → 4컬럼 하단 어긋남이 됐다(수정 전 실측: 열별 카드 높이 635·713·713·791px).
-// 이제 CSS 가 영역을 2행으로 고정하고, js/home-helpers.js clampMiniLabelRows 가
-// 넘치는 칩을 숨긴 뒤 "+N" 칩으로 대체한다.
+// 기본 한 줄에 들어가는 태그만 보이고 나머지는 +N 버튼으로 펼친다.
 
 const VIEWPORTS = [
   { name: '데스크톱', width: 1512, height: 1000 },

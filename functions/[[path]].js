@@ -1,4 +1,5 @@
 import { retiredCalendarResponse } from './_shared/retired-calendar.js';
+import { categoryBoardPath, postTagLinks, renderPostTagLinks } from './_shared/post-tag-links.js';
 import { BOARD_KEYS, loadPublicPage, applyPublicParts, pageNumber } from './_shared/public-page-ssr.js';
 import { buildShareMetaBlockRust, getResolvedShareImage, getSitePageKey, loadSiteMeta, getPageSeoDescriptor } from './_shared/site-meta.js';
 import { POPULAR_WEIGHTS } from './_shared/home-rails.js';
@@ -51,7 +52,7 @@ export async function onRequest(context) {
     navLabelsPromise,
   ]);
   const pageMeta = siteMeta.pages[pageKey] || siteMeta.pages.home;
-  const publicPage = await loadPublicPage(env, url, pageKey, request).catch(err => { console.error('Public SSR failed:', pageKey, err); return null; });
+  const publicPage = await loadPublicPage(env, url, pageKey, request, navLabels).catch(err => { console.error('Public SSR failed:', pageKey, err); return null; });
   const page = pageNumber(url);
   const canonical = await resolveCanonical(context, url.pathname, pageKey, page, pageMeta.title);
   const canonicalPath = canonical.path;
@@ -409,7 +410,7 @@ export function renderHomeLeadStory(post, navLabels) {
   const subtitle = escapeHtml(String(post.subtitle || '').trim());
   const categoryLabel = escapeHtml(getCategoryLabel(post.category, navLabels));
   const tagClass = escapeHtml(getCategoryTagClass(post.category));
-  const tags = getSortedPostTags(post).map((tag) => `<span class="post-kicker tag-${escapeHtml(post.category || 'korea')}-kicker">${escapeHtml(tag)}</span>`).join('');
+  const tags = renderPostTagLinks(postTagLinks(getSortedPostTags(post), categoryBoardPath(post.category)), 'post-kicker ' + tagClass + '-kicker', escapeHtml);
   const image = post.image_url
     ? `<a class="home-lead-thumb-link${post.image_is_placeholder ? ' is-placeholder' : ''}" href="/post/${post.id}"><img class="home-lead-thumb${post.image_is_placeholder ? ' is-placeholder' : ''}" src="${escapeHtml(post.image_url)}" alt="${escapeHtml(post.title)}" loading="eager" fetchpriority="high"></a>`
     : '';
@@ -506,9 +507,7 @@ function buildMiniLabels(post, navLabels, options) {
   if (!opts.hideCategoryChip) {
     labels.push(`<span class="category-tag ${escapeHtml(getCategoryTagClass(post.category))}">${escapeHtml(getCategoryLabel(post.category, navLabels))}</span>`);
   }
-  getSortedPostTags(post).forEach((tag) => {
-    labels.push(`<span class="post-kicker tag-${escapeHtml(post.category || 'korea')}-kicker">${escapeHtml(tag)}</span>`);
-  });
+  labels.push(renderPostTagLinks(postTagLinks(getSortedPostTags(post), categoryBoardPath(post.category)), 'post-kicker ' + escapeHtml(getCategoryTagClass(post.category)) + '-kicker', escapeHtml));
   return labels.join('');
 }
 

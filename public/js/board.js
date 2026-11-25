@@ -222,7 +222,7 @@
     this.pageSize = this._getPageSize();
 
     var searchParam = this._searchQuery ? '&q=' + encodeURIComponent(this._searchQuery) : '';
-    var tagParam    = this._selectedTag  ? '&tag=' + encodeURIComponent(this._selectedTag)  : '';
+    var tagParam    = this._selectedTag  ? '&tag_scope=topic&tag=' + encodeURIComponent(this._selectedTag)  : '';
     var endpoint = '/api/posts?page=' + this.page + '&limit=' + this.pageSize + searchParam + tagParam;
     if (this.apiCategory) endpoint += '&category=' + encodeURIComponent(this.apiCategory);
     Object.keys(this.extraParams).forEach(function (key) {
@@ -270,6 +270,7 @@
       var card = self._buildCard(post, i);
       self.gridEl.appendChild(card);
     });
+    GW.fitPostTagRows();
   };
 
   // 4줄 단위 번호 페이지네이션 (이전/1/2/3/…/다음)
@@ -308,7 +309,7 @@
 
     var isNew = GW.isPostNew(post);
     var kickerHtml = (isNew ? '<span class="post-kicker post-kicker-new">NEW</span>' : '') +
-      (post.tag ? post.tag.split(',').map(function(t){ t = t.trim(); return t ? '<span class="post-kicker ' + cat.tagClass + '-kicker">' + GW.escapeHtml(t) + '</span>' : ''; }).join('') : '');
+      (post.tag ? post.tag.split(',').map(function(t){ t = t.trim(); return t ? GW.postTagChip(t, post.category) : ''; }).join('') : '');
     // 게시판 카테고리 태그(채움)와 글머리 태그(아웃라인) 동시 표시
     var labelsHtml = '<span class="category-tag ' + cat.tagClass + '">' + cat.label + '</span>' + kickerHtml;
     var subtitleHtml = post.subtitle
@@ -345,7 +346,7 @@
     }
 
     card.addEventListener('click', function (e) {
-      if (e.target.closest('a[href]')) return;
+      if (e.target.closest('a[href], button')) return;
       window.location.href = '/post/' + post.id;
     });
     return card;
@@ -403,7 +404,7 @@
     var youtubeHtml = GW.buildYouTubeEmbed(post.youtube_url, post.title);
 
     var modalTagHtml = (GW.isPostNew(post) ? '<span class="post-kicker post-kicker-new">NEW</span>' : '') +
-      (post.tag ? post.tag.split(',').map(function(t){ t = t.trim(); return t ? '<span class="post-kicker ' + cat.tagClass + '-kicker">' + GW.escapeHtml(t) + '</span>' : ''; }).join('') : '');
+      (post.tag ? post.tag.split(',').map(function(t){ t = t.trim(); return t ? GW.postTagChip(t, post.category) : ''; }).join('') : '');
 
     var subtitleHtml = post.subtitle
       ? '<p class="modal-subtitle">' + GW.escapeHtml(post.subtitle) + '</p>'

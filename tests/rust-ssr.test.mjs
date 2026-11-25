@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { DatabaseSync } from 'node:sqlite';
 import { readFileSync } from 'node:fs';
-import { loadPublicPage as actual, renderPagination, pageHref, escapeText } from '../functions/_shared/public-page-ssr.js';
+import { loadPublicPage as actual, boardCardInput, renderBoardCard, renderPagination, pageHref, escapeText } from '../functions/_shared/public-page-ssr.js';
 import { loadPublicPage as original } from './fixtures/rust-public-page-ssr.js';
 import { renderMiniList, miniInput, renderHomeLeadStory, leadInput, renderHomeParts, resolveCanonical } from '../functions/[[path]].js';
 import { queryRust } from '../functions/_shared/rust-server.js';
@@ -86,12 +86,15 @@ test('combined Rust topic page uses one invocation and matches separate renderin
 
 test('Rust feature stories and rail match legacy output and fallback',async()=>{
   const context={env:{},request:{url:'https://synthetic.invalid/'}};
-  const items=[{id:1,title:'<기사> & "안전"',subtitle:'<부제>',image_url:'/img/a.png',tag:'<태그>',author:'기자 &',publish_at:'2026-01-02'}, {id:2,title:'둘째',content:'<b>텍스트</b> & 내용',created_at:'bad date'}, {id:3,title:'셋째',subtitle:[],image_url:'https://synthetic.invalid/a?x=1&y=2'}];
-  for(const category of [{label:'<분야>',color:'#123456'},{label:'',color:'bad'}]) {
+  const items=[{id:1,title:'<기사> & "안전"',subtitle:'<부제>',image_url:'/img/a.png',tag:'소식, <태그>',author:'기자 &',publish_at:'2026-01-02'}, {id:2,title:'둘째',tag:'소식,인도네시아연맹',content:'<b>텍스트</b> & 내용',created_at:'bad date'}, {id:3,title:'셋째',subtitle:[],image_url:'https://synthetic.invalid/a?x=1&y=2'}];
+  for(const category of [{key:'apr',label:'<분야>',color:'#123456'},{label:'',color:'bad'}]) {
     const expected={lead:renderFeatureLead(items[0],category,'https://synthetic.invalid'),cards:items.slice(1).map(item=>renderFeatureCard(item,category,'https://synthetic.invalid')).join(''),rail:items.map((item,index)=>renderFeatureRailItem(item,index===0)).join('')};
     let called=false;
     const result=await renderFeaturePartsRust(items,category,'https://synthetic.invalid',context,async (...args)=>{called=true;const response=await queryRust(...args);assert.equal(response.ok,true);return response;});
     assert.equal(called,true);assert.deepEqual(result,expected);
+    const path = category.key ? '/apr' : '/latest';
+    assert.ok(result.lead.includes(`href="${path}?tag=${encodeURIComponent('<태그>')}">&lt;태그&gt;</a>`));
+    assert.ok(result.cards.includes(`href="${path}?tag=${encodeURIComponent('인도네시아연맹')}">인도네시아연맹</a>`));
     assert.deepEqual(await renderFeaturePartsRust(items,category,'https://synthetic.invalid',context,async()=>new Response('',{status:503})),expected);
   }
   let called=false;
@@ -266,17 +269,24 @@ test('home SSR preserves loaded articles when Rust rendering fails',async()=>{
 test('Rust board SSR preserves card escaping, empty state, and pagination links',async()=>{
   const f=fixture();
   try {
-    const url=new URL('https://synthetic.invalid/korea?page=3&tag=%ED%95%9C%EA%B8%80&sort=popular');
-    const posts=[{id:1,title:'<기사> & "안전"',subtitle:'부제 <script>'},{id:2,title:null,subtitle:''}];
+    const url=new URL('https://synthetic.invalid/apr?page=3&tag=%ED%95%9C%EA%B8%80&sort=popular');
+    const posts=[{id:1,category:'apr',tag:'소식, 인도네시아연맹 , <&>',created_at:'2026-11-25T08:00:00Z',title:'<기사> & "안전"',subtitle:'부제 <script>'},{id:2,title:null,subtitle:''}];
     for (const [rows,page,total] of [[posts,3,10],[[],1,0],[posts,1,1],[posts,10,10]]) {
-      const response=await queryRust({env:f.env,request:{url:url.href}},'public-board-render',{posts:rows,page,total_pages:total,url:url.href});
+      const cards=rows.map(post=>boardCardInput(post,url.pathname,url.searchParams,{},'2026-11-25'));
+      const response=await queryRust({env:f.env,request:{url:url.href}},'public-board-render',{cards,page,total_pages:total,url:url.href});
       const result=await response.json();
-      const expected=rows.map(post=>`<article class="post-card no-thumb"><div class="post-card-body"><div class="post-card-head"><h3><a class="post-card-title-link" href="/post/${Number(post.id)}">${escapeText(post.title)}</a></h3></div>${post.subtitle ? `<p class="post-card-subtitle">${escapeText(post.subtitle)}</p>` : ''}</div></article>`).join('') || '<p class="board-empty">해당 조건의 기사가 없습니다.</p>';
+      const expected=cards.map(renderBoardCard).join('') || '<p class="board-empty">해당 조건의 기사가 없습니다.</p>';
       assert.equal(result.board,expected);
+      if (cards.length) {
+        assert.ok(result.board.includes(`href="/apr?sort=popular&amp;tag=${encodeURIComponent('인도네시아연맹')}">인도네시아연맹</a>`));
+        assert.ok(result.board.includes('>&lt;&amp;&gt;</a>'));
+        assert.ok(result.board.includes('post-kicker-new">NEW'));
+        assert.ok(!result.board.includes('page=3'));
+      }
       assert.equal(result.pagination,renderPagination(url,page,total));
       for (const suffix of ['?page=3&page=7&q=a%20b&x=~', '?q=%ED%95%9C%EA%B8%80&empty=&q=2', '?page=3&bad=%FF&plus=a+b', '?', '?page=3']) {
         const varied=new URL('https://synthetic.invalid/korea'+suffix);
-        const check=await queryRust({env:f.env,request:{url:varied.href}},'public-board-render',{posts:rows,page,total_pages:total,url:varied.href});
+        const check=await queryRust({env:f.env,request:{url:varied.href}},'public-board-render',{cards,page,total_pages:total,url:varied.href});
         assert.equal((await check.json()).pagination,renderPagination(varied,page,total),suffix);
       }
     }

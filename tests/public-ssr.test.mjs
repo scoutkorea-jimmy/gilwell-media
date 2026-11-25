@@ -37,9 +37,11 @@ assert.ok([...helpHtml.matchAll(/\?v=(\d+)/g)].every(match => match[1] === asset
 assert.ok(helpHtml.includes((await readFile(new URL('../public/VERSION',import.meta.url),'utf8')).trim()));
 assert.ok(helpHtml.includes((await readFile(new URL('../public/ADMIN_VERSION',import.meta.url),'utf8')).trim()));
 const { publicBoardRequest } = await import('../functions/_shared/public-page-ssr.js');
-const publicRequest = publicBoardRequest(new URL('https://bpmedia.net/korea?q=검증&scope=admin&published=0'), 'korea', new Request('https://bpmedia.net/korea', {headers:{'CF-Connecting-IP':'192.0.2.1',Cookie:'admin_token=fixture-only',Authorization:'Bearer fixture-only'}}));
+const publicRequest = publicBoardRequest(new URL('https://bpmedia.net/korea?q=검증&tag=소식&scope=admin&published=0'), 'korea', new Request('https://bpmedia.net/korea', {headers:{'CF-Connecting-IP':'192.0.2.1',Cookie:'admin_token=fixture-only',Authorization:'Bearer fixture-only'}}));
 assert.equal(publicRequest.headers.get('CF-Connecting-IP'),'192.0.2.1','SSR search must retain the visitor rate-limit identity');
 assert.equal(publicRequest.headers.get('Cookie'),null);
 assert.equal(publicRequest.headers.get('Authorization'),null);
 assert.equal(new URL(publicRequest.url).searchParams.has('scope'),false);
 assert.equal(new URL(publicRequest.url).searchParams.has('published'),false);
+
+assert.equal(new URL(publicRequest.url).searchParams.get('tag_scope'),'topic','board badges filter the displayed topic tags');

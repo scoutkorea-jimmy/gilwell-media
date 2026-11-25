@@ -1,3 +1,6 @@
+import { getCategoryMeta } from './category-meta.mjs';
+import { isoTimestamp } from './seo-dates.js';
+import { postTagHref, postTagLinks, splitPostTags, renderPostTagLinks } from './post-tag-links.js';
 import { queryRust } from './rust-server.js';
 import { onRequestGet as getPosts } from '../api/posts/index.js';
 import { onRequestGet as getMembers } from '../api/settings/wosm-members.js';
@@ -28,6 +31,7 @@ export function publicBoardRequest(url, key, originalRequest) {
   // Construct a public request: never forward cookies or admin-scope parameters.
   const api = new URL('/api/posts', url.origin);
   for (const param of ['sort','period','days','q','tag']) if (url.searchParams.has(param)) api.searchParams.set(param, url.searchParams.get(param));
+  if (api.searchParams.has('tag')) api.searchParams.set('tag_scope', 'topic');
   if (key !== 'latest') api.searchParams.set('category', key);
   if (!api.searchParams.has('sort')) api.searchParams.set('sort', key === 'latest' ? 'latest' : 'manual');
   if (key === 'latest' && !api.searchParams.has('days')) api.searchParams.set('days', '30');
@@ -38,24 +42,52 @@ export function publicBoardRequest(url, key, originalRequest) {
   if (visitorIp) headers.set('CF-Connecting-IP', visitorIp);
   return new Request(api, {headers});
 }
-export async function loadPublicPage(env, url, key, originalRequest) {
+const kstDay = new Intl.DateTimeFormat('en-CA', {timeZone: 'Asia/Seoul', year: 'numeric', month: '2-digit', day: '2-digit'});
+
+export function boardCardInput(post, path, filters, navLabels, today) {
+  const category = getCategoryMeta(navLabels, post.category);
+  const published = isoTimestamp(post.publish_at, '+09:00') || isoTimestamp(post.created_at);
+  return {
+    id: Number(post.id), title: String(post.title ?? ''), subtitle: String(post.subtitle || ''),
+    tagClass: category.tagClass, label: category.label,
+    isNew: Boolean(published && kstDay.format(new Date(published)) === today),
+    tags: postTagLinks(splitPostTags(post.tag), path, filters),
+  };
+}
+
+export function renderBoardCard(card) {
+  const status = card.isNew ? '<span class="post-kicker post-kicker-new">NEW</span>' : '';
+  const category = `<span class="category-tag ${escapeText(card.tagClass)}">${escapeText(card.label)}</span>`;
+  const tags = renderPostTagLinks(card.tags, 'post-kicker ' + escapeText(card.tagClass) + '-kicker', escapeText);
+  const labels = `<div class="post-card-labels">${category}${status}${tags}</div>`;
+  return `<article class="post-card no-thumb"><div class="post-card-body"><div class="post-card-head">${labels}<h3><a class="post-card-title-link" href="/post/${card.id}">${escapeText(card.title)}</a></h3></div>${card.subtitle ? `<p class="post-card-subtitle">${escapeText(card.subtitle)}</p>` : ''}</div></article>`;
+}
+
+export async function loadPublicPage(env, url, key, originalRequest, navLabels = {}) {
   const parts = {};
   if (BOARD_KEYS.includes(key)) {
     const page = pageNumber(url);
+    const selectedTag = url.searchParams.get('tag');
+    if (selectedTag) {
+      const clearHref = escapeText(postTagHref('/' + key, url.searchParams));
+      parts.tagFilter = `<div class="tag-filter-bar-inner"><span class="board-control-label board-tag-label">주제</span><a class="tag-filter-btn" href="${clearHref}" aria-label="주제 필터 해제">전체</a><span class="tag-filter-btn active" aria-current="true">${escapeText(selectedTag)}</span></div>`;
+    }
     const publicRequest = publicBoardRequest(url, key, originalRequest);
     const response = await getPosts({request: publicRequest, env});
     if (!response.ok) throw new Error(`Public board response ${response.status}`);
     const data = await response.json();
     const posts = data.posts || [];
+    const today = kstDay.format(new Date());
+    const cards = posts.map(post => boardCardInput(post, '/' + key, url.searchParams, navLabels, today));
     const totalPages = Math.ceil(Number(data.total || 0) / 16);
     try {
-      const rust = await queryRust({env, request: {url: url.href}}, 'public-board-render', {posts, page, total_pages: totalPages, url: url.href});
+      const rust = await queryRust({env, request: {url: url.href}}, 'public-board-render', {cards, page, total_pages: totalPages, url: url.href});
       if (!rust.ok) throw new Error('Rust board rendering failed');
       const rendered = await rust.json();
       if (typeof rendered.board !== 'string' || typeof rendered.pagination !== 'string') throw new Error('Invalid board rendering');
       Object.assign(parts, rendered);
     } catch (error) {
-      parts.board = posts.map(post => `<article class="post-card no-thumb"><div class="post-card-body"><div class="post-card-head"><h3><a class="post-card-title-link" href="/post/${Number(post.id)}">${escapeText(post.title)}</a></h3></div>${post.subtitle ? `<p class="post-card-subtitle">${escapeText(post.subtitle)}</p>` : ''}</div></article>`).join('') || '<p class="board-empty">해당 조건의 기사가 없습니다.</p>';
+      parts.board = cards.map(renderBoardCard).join('') || '<p class="board-empty">해당 조건의 기사가 없습니다.</p>';
       parts.pagination = renderPagination(url, page, totalPages);
     }
     return {parts, posts, page, status: page > 1 && !posts.length ? 404 : 200};
@@ -104,6 +136,6 @@ export async function loadPublicPage(env, url, key, originalRequest) {
   return {parts};
 }
 export function applyPublicParts(html, data) {
-  for (const [key, value] of Object.entries(data?.parts || {})) html = html.replace(`<!-- PUBLIC_SSR:${key} -->`, value);
+  for (const [key, value] of Object.entries(data?.parts || {})) html = html.replace(`<!-- PUBLIC_SSR:${key} -->`, () => value);
   return html;
 }
